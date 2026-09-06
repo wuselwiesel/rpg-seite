@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
+import { MobileMain } from "@/components/mobile-main";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,9 +44,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
-        <div className="mx-auto flex min-h-full max-w-6xl">
+        <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row">
           <Sidebar />
-          <main className="min-w-0 flex-1">{children}</main>
+          <MobileMain>{children}</MobileMain>
         </div>
       </body>
     </html>

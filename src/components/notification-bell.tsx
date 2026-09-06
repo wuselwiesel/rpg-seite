@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -40,6 +40,7 @@ export function NotificationBell({
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
   const [, forcePermissionRerender] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
+  const instanceId = useId();
 
   const permission = useSyncExternalStore(
     subscribePermission,
@@ -51,7 +52,7 @@ export function NotificationBell({
     const supabase = createClient();
 
     const channel = supabase
-      .channel(`notifications-${userId}`)
+      .channel(`notifications-${userId}-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
@@ -78,7 +79,7 @@ export function NotificationBell({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, instanceId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -123,7 +124,7 @@ export function NotificationBell({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface shadow-lg lg:right-auto lg:left-0">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <p className="font-serif text-lg text-fg">Benachrichtigungen</p>
             {permission === "default" && (

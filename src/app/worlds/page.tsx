@@ -17,7 +17,7 @@ export default async function WorldsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div>
           <h1 className="font-serif text-3xl text-fg">Deine Welten</h1>
           <p className="text-sm text-muted">Wähle eine Welt oder erschaffe eine neue.</p>
@@ -53,14 +53,14 @@ export default async function WorldsPage() {
             key={world.id}
             className="flex items-center justify-between gap-4 rounded-lg border border-line bg-surface p-4"
           >
-            <Link href={`/worlds/${world.id}`} className="flex flex-1 items-center gap-4">
+            <Link href={`/worlds/${world.id}`} className="flex min-w-0 flex-1 items-center gap-4">
               <WorldCover
                 name={world.name}
                 coverUrl={world.cover_image_url}
                 className="h-14 w-14 shrink-0 text-base"
               />
-              <div>
-                <p className="font-serif text-xl text-fg hover:text-accent">{world.name}</p>
+              <div className="min-w-0">
+                <p className="truncate font-serif text-xl text-fg hover:text-accent">{world.name}</p>
                 {world.description && (
                   <p className="line-clamp-1 text-sm text-muted">{world.description}</p>
                 )}

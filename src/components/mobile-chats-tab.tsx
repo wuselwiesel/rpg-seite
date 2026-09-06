@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { useUnreadChatIds } from "@/lib/use-unread-chats";
 
-export function ChatsNavLink({
+export function MobileChatsTab({
   userId,
   myCharacterIds,
   initialUnreadChatIds,
@@ -21,20 +21,14 @@ export function ChatsNavLink({
   return (
     <Link
       href="/chats"
-      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition ${
-        isActive ? "bg-accent-strong text-on-accent-strong" : "text-fg-soft hover:bg-surface-2 hover:text-fg"
+      className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition ${
+        isActive ? "text-accent" : "text-muted"
       }`}
     >
-      <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+      <MessageCircle className="h-5 w-5" strokeWidth={2} />
       Chats
       {unread.size > 0 && (
-        <span
-          className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold ${
-            isActive ? "bg-on-accent-strong text-accent-strong" : "bg-accent-strong text-on-accent-strong"
-          }`}
-        >
-          {unread.size}
-        </span>
+        <span className="absolute right-[28%] top-1 h-2 w-2 rounded-full bg-accent-strong" />
       )}
     </Link>
   );

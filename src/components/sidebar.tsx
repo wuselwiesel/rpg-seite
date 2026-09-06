@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ScrollText, Users, PenLine, BookOpen, UserPlus, Search } from "lucide-react";
+import { ScrollText, Users, PenLine, BookOpen, UserPlus, Search, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
@@ -13,6 +13,7 @@ import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
+import { MobileNav } from "./mobile-nav";
 
 export async function Sidebar() {
   const supabase = await createClient();
@@ -37,10 +38,30 @@ export async function Sidebar() {
 
   if (!activeWorld) {
     return (
-      <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6">
-        <div className="mb-8 flex items-center justify-between">
+      <>
+        <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6 lg:sticky lg:top-0 lg:flex">
+          <div className="mb-8 flex items-center justify-between">
+            <Link href="/worlds" className="block">
+              <span className="font-serif text-2xl text-fg">Chronik</span>
+            </Link>
+            <div className="flex items-center gap-1">
+              <NotificationBell
+                userId={user.id}
+                initialNotifications={initialNotifications}
+                initialUnreadCount={initialUnreadCount}
+              />
+              <ThemeToggle />
+            </div>
+          </div>
+          <div className="mt-auto flex items-center justify-between pt-6">
+            <Link href="/profile" className="text-sm text-muted hover:text-fg">
+              Profil
+            </Link>
+          </div>
+        </aside>
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-app px-4 py-2.5 lg:hidden">
           <Link href="/worlds" className="block">
-            <span className="font-serif text-2xl text-fg">Chronik</span>
+            <span className="font-serif text-xl text-fg">Chronik</span>
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell
@@ -49,14 +70,16 @@ export async function Sidebar() {
               initialUnreadCount={initialUnreadCount}
             />
             <ThemeToggle />
+            <Link
+              href="/profile"
+              className="ml-1 flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+              title="Profil"
+            >
+              <UserRound className="h-[18px] w-[18px]" strokeWidth={2} />
+            </Link>
           </div>
         </div>
-        <div className="mt-auto flex items-center justify-between pt-6">
-          <Link href="/profile" className="text-sm text-muted hover:text-fg">
-            Profil
-          </Link>
-        </div>
-      </aside>
+      </>
     );
   }
 
@@ -67,10 +90,12 @@ export async function Sidebar() {
 
   const myCharacterIds = characters.map((c) => c.id);
   const unreadChatIds = await getUnreadChatIds(user.id, myCharacterIds);
+  const isOwner = activeWorld.created_by === user.id;
 
   return (
-    <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6">
-      <div className="mb-2 flex items-center justify-end gap-1">
+    <>
+      <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6 lg:sticky lg:top-0 lg:flex">
+        <div className="mb-2 flex items-center justify-end gap-1">
         <NotificationBell
           userId={user.id}
           initialNotifications={initialNotifications}
@@ -79,7 +104,7 @@ export async function Sidebar() {
         <ThemeToggle />
       </div>
       <div className="mb-6">
-        <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={activeWorld.created_by === user.id} />
+        <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
       </div>
 
       {activeCharacter && (
@@ -142,5 +167,19 @@ export async function Sidebar() {
         </Link>
       </div>
     </aside>
+    <MobileNav
+      worlds={worlds}
+      activeWorld={activeWorld}
+      isOwner={isOwner}
+      activeCharacter={activeCharacter}
+      characters={characters}
+      profile={profile}
+      userId={user.id}
+      initialNotifications={initialNotifications}
+      initialUnreadCount={initialUnreadCount}
+      myCharacterIds={myCharacterIds}
+      unreadChatIds={unreadChatIds}
+    />
+    </>
   );
 }

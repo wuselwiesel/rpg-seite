@@ -36,9 +36,9 @@ export default async function CharacterProfilePage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-8 flex items-center gap-4">
+      <div className="mb-8 flex flex-wrap items-center gap-4">
         <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={72} />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <h1 className="font-serif text-3xl text-fg">{character.name}</h1>
           {character.bio && (
             <p className="mt-1 whitespace-pre-line text-sm text-muted">{character.bio}</p>
@@ -47,7 +47,7 @@ export default async function CharacterProfilePage({
         {isOwn && (
           <Link
             href={`/characters/${character.id}/edit`}
-            className="rounded-md border border-line px-3 py-1.5 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+            className="shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
           >
             Bearbeiten
           </Link>

@@ -39,14 +39,14 @@ export default async function ChatsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <h1 className="font-serif text-3xl text-fg">Chats</h1>
-          <p className="text-sm text-muted">in {activeWorld.name}</p>
+          <p className="truncate text-sm text-muted">in {activeWorld.name}</p>
         </div>
         <Link
           href="/chats/new"
-          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+          className="shrink-0 rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
         >
           + Neuer Chat
         </Link>
@@ -83,8 +83,8 @@ export default async function ChatsPage() {
                 ) : (
                   <CharacterAvatar name={title ?? "?"} avatarUrl={others[0]?.avatar_url} />
                 )}
-                <div className="flex-1">
-                  <p className="font-medium text-fg">{title}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-fg">{title}</p>
                   <p className="text-xs text-muted">
                     {chat.chat_participants.length} Teilnehmer:innen
                   </p>

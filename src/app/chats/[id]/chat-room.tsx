@@ -96,16 +96,16 @@ export function ChatRoom({
   }
 
   return (
-    <div className="mx-auto flex h-screen max-w-2xl flex-col px-4">
-      <div className="flex items-center justify-between border-b border-line py-4">
-        <div>
+    <div className="mx-auto flex h-dvh max-w-2xl flex-col px-4 lg:h-screen">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line py-4">
+        <div className="min-w-0">
           <Link href="/chats" className="text-xs text-muted hover:text-fg-soft">
             ← Alle Chats
           </Link>
-          <h1 className="font-serif text-2xl text-fg">{title}</h1>
+          <h1 className="truncate font-serif text-2xl text-fg">{title}</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <p className="text-right text-xs text-muted">
+        <div className="flex min-w-0 items-center gap-3">
+          <p className="min-w-0 truncate text-right text-xs text-muted">
             {participants.map((p) => p.name).join(", ")}
           </p>
           {availableCharacters.length > 0 && (
@@ -176,7 +176,11 @@ export function ChatRoom({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2 border-t border-line py-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex gap-2 border-t border-line pt-4"
+        style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+      >
         <input
           type="text"
           value={draft}

@@ -25,14 +25,14 @@ export default async function CharactersPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <h1 className="font-serif text-3xl text-fg">Deine Charaktere</h1>
-          <p className="text-sm text-muted">in {activeWorld.name}</p>
+          <p className="truncate text-sm text-muted">in {activeWorld.name}</p>
         </div>
         <Link
           href="/characters/new"
-          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+          className="shrink-0 rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
         >
           + Neuer Charakter
         </Link>
@@ -53,17 +53,17 @@ export default async function CharactersPage() {
             key={character.id}
             className="flex items-center gap-4 rounded-lg border border-line bg-surface p-4"
           >
-            <Link href={`/characters/${character.id}`} className="flex flex-1 items-center gap-4">
+            <Link href={`/characters/${character.id}`} className="flex min-w-0 flex-1 items-center gap-4">
               <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={48} />
-              <div className="flex-1">
-                <p className="font-medium text-fg hover:text-accent">{character.name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-fg hover:text-accent">{character.name}</p>
                 {character.bio && (
                   <p className="line-clamp-1 text-sm text-muted">{character.bio}</p>
                 )}
               </div>
             </Link>
             {character.id === activeId ? (
-              <span className="rounded-full bg-accent-strong/15 px-3 py-1 text-xs font-medium text-accent">
+              <span className="shrink-0 rounded-full bg-accent-strong/15 px-3 py-1 text-xs font-medium text-accent">
                 Aktiv
               </span>
             ) : (

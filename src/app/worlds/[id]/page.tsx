@@ -45,8 +45,8 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
     <div className="mx-auto max-w-2xl px-4 py-10">
       <WorldCover name={world.name} coverUrl={world.cover_image_url} className="mb-6 h-40 w-full" />
 
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <h1 className="font-serif text-3xl text-fg">{world.name}</h1>
           {world.description && <p className="mt-1 text-sm text-muted">{world.description}</p>}
         </div>
