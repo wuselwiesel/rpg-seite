@@ -55,11 +55,20 @@ export async function joinWorld(worldId: string): Promise<string | null> {
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const { error } = await supabase
+  const { data: existing } = await supabase
     .from("world_members")
-    .upsert({ world_id: worldId, user_id: user.id });
+    .select("world_id")
+    .eq("world_id", worldId)
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (error) return error.message;
+  if (!existing) {
+    const { error } = await supabase
+      .from("world_members")
+      .insert({ world_id: worldId, user_id: user.id });
+
+    if (error) return error.message;
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, { path: "/", httpOnly: false, sameSite: "lax" });
