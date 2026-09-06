@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chronik – Textbasiertes RPG für Freunde
 
-## Getting Started
+Eine kleine Web-App zum gemeinsamen Rollenspielen: Story-Posts wie ein Blog (mit Kommentaren) plus Chats in Echtzeit (1:1 und Gruppen), jeweils mit eigenen Charakteren.
 
-First, run the development server:
+## Setup
+
+### 1. Supabase-Projekt anlegen
+
+1. Auf [supabase.com](https://supabase.com) kostenlos ein Konto erstellen und ein neues Projekt anlegen.
+2. Im Projekt-Dashboard unter **SQL Editor** eine neue Query öffnen, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und ausführen. Das legt alle Tabellen, Sicherheitsregeln (Row Level Security) und die Realtime-Freigabe für den Chat an.
+3. Unter **Authentication → Sign In / Providers**: E-Mail-Login ist standardmäßig aktiv. Optional unter **Authentication → Sign In / Providers → Email** die Option "Confirm email" deaktivieren, damit sich Freunde ohne Mail-Bestätigung direkt einloggen können (praktisch für eine kleine private Gruppe).
+4. Unter **Project Settings → Data API** die **Project URL** und den **anon public key** kopieren.
+
+### 2. Lokal einrichten
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+In `.env.local` die beiden Werte aus Schritt 1.4 eintragen:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Dann:
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Die Seite läuft unter `http://localhost:3000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Online stellen (kostenlos via Vercel)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Repo auf GitHub pushen.
+2. Auf [vercel.com](https://vercel.com) einloggen, "New Project" → das Repo auswählen.
+3. Bei den Environment Variables dieselben zwei Werte (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) eintragen.
+4. Deployen. Danach ist die Seite über die Vercel-URL erreichbar – Link an die Freunde schicken.
 
-## Deploy on Vercel
+## Funktionen
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Charaktere**: Jede Person kann mehrere Charaktere anlegen und oben rechts umschalten. Alles, was man postet, kommentiert oder schreibt, ist dem gerade aktiven Charakter zugeordnet.
+- **Feed** (`/`): Story-Einträge aller Charaktere, chronologisch, mit Kommentaren darunter.
+- **Chats** (`/chats`): 1:1- und Gruppenchats zwischen Charakteren, Nachrichten erscheinen live (Supabase Realtime) ohne Neuladen.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Technik
+
+- Next.js (App Router) + TypeScript + Tailwind CSS
+- Supabase: Postgres-Datenbank, Auth (E-Mail/Passwort) und Realtime für den Chat
+- Zugriffsrechte laufen komplett über Row Level Security in Postgres (siehe `supabase/schema.sql`)
