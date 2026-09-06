@@ -6,6 +6,7 @@ import { deleteWorld } from "../../actions";
 export function DeleteWorldButton({ worldId, worldName }: { worldId: string; worldName: string }) {
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   if (!confirming) {
@@ -37,7 +38,13 @@ export function DeleteWorldButton({ worldId, worldName }: { worldId: string; wor
         <button
           type="button"
           disabled={typed !== worldName || isPending}
-          onClick={() => startTransition(() => deleteWorld(worldId))}
+          onClick={() => {
+            setError(null);
+            startTransition(async () => {
+              const result = await deleteWorld(worldId);
+              if (result) setError(result);
+            });
+          }}
           className="rounded-md bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? "Lösche..." : "Endgültig löschen"}
@@ -47,12 +54,14 @@ export function DeleteWorldButton({ worldId, worldName }: { worldId: string; wor
           onClick={() => {
             setConfirming(false);
             setTyped("");
+            setError(null);
           }}
           className="rounded-md border border-line px-4 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2"
         >
           Abbrechen
         </button>
       </div>
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

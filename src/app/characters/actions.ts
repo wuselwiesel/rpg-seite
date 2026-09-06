@@ -92,14 +92,21 @@ export async function updateCharacter(
   redirect(`/characters/${characterId}`);
 }
 
-export async function deleteCharacter(characterId: string) {
+export async function deleteCharacter(characterId: string): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return "Nicht angemeldet.";
 
-  await supabase.from("characters").delete().eq("id", characterId).eq("owner_id", user.id);
+  const { error, count } = await supabase
+    .from("characters")
+    .delete({ count: "exact" })
+    .eq("id", characterId)
+    .eq("owner_id", user.id);
+
+  if (error) return error.message;
+  if (!count) return "Charakter konnte nicht gelöscht werden. Bitte später erneut versuchen.";
 
   const cookieStore = await cookies();
   if (cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value === characterId) {

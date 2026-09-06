@@ -126,14 +126,21 @@ export async function unfollowWorld(worldId: string) {
   revalidatePath("/");
 }
 
-export async function deleteWorld(worldId: string) {
+export async function deleteWorld(worldId: string): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return "Nicht angemeldet.";
 
-  await supabase.from("worlds").delete().eq("id", worldId).eq("created_by", user.id);
+  const { error, count } = await supabase
+    .from("worlds")
+    .delete({ count: "exact" })
+    .eq("id", worldId)
+    .eq("created_by", user.id);
+
+  if (error) return error.message;
+  if (!count) return "Welt konnte nicht gelöscht werden. Bitte später erneut versuchen.";
 
   const cookieStore = await cookies();
   if (cookieStore.get(ACTIVE_WORLD_COOKIE)?.value === worldId) {
