@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
+import { getActiveWorld } from "@/lib/worlds";
 
 export async function createCharacter(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -24,10 +25,16 @@ export async function createCharacter(_prevState: string | null, formData: FormD
     return "Nicht angemeldet.";
   }
 
+  const activeWorld = await getActiveWorld(user.id);
+  if (!activeWorld) {
+    return "Keine aktive Welt ausgewählt.";
+  }
+
   const { data, error } = await supabase
     .from("characters")
     .insert({
       owner_id: user.id,
+      world_id: activeWorld.id,
       name,
       bio: bio || null,
       avatar_url: avatarUrl || null,

@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { ScrollText, Users, PenLine } from "lucide-react";
+import { ScrollText, Users, PenLine, BookOpen, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
+import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
 import { getUnreadChatIds } from "@/lib/chat-reads";
 import { CharacterAvatar } from "./character-avatar";
 import { CharacterSwitcher } from "./character-switcher";
+import { WorldSwitcher } from "./world-switcher";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
 import { NotificationBell } from "./notification-bell";
@@ -19,10 +21,34 @@ export async function Sidebar() {
 
   if (!user) return null;
 
-  const [characters, activeCharacter, profile] = await Promise.all([
-    getOwnCharacters(user.id),
-    getActiveCharacter(user.id),
+  const [worlds, profile] = await Promise.all([
+    getUserWorlds(user.id),
     supabase.from("profiles").select("username").eq("id", user.id).maybeSingle(),
+  ]);
+
+  const activeWorld = await getActiveWorld(user.id);
+
+  if (!activeWorld) {
+    return (
+      <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6">
+        <Link href="/worlds" className="mb-8 block px-1">
+          <span className="font-serif text-2xl text-fg">Chronik</span>
+        </Link>
+        <div className="mt-auto flex items-center justify-between pt-6">
+          <form action={logout}>
+            <button type="submit" className="text-sm text-muted hover:text-fg">
+              Abmelden
+            </button>
+          </form>
+          <ThemeToggle />
+        </div>
+      </aside>
+    );
+  }
+
+  const [characters, activeCharacter] = await Promise.all([
+    getOwnCharacters(user.id, activeWorld.id),
+    getActiveCharacter(user.id, activeWorld.id),
   ]);
 
   const myCharacterIds = characters.map((c) => c.id);
@@ -30,9 +56,20 @@ export async function Sidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6">
-      <Link href="/" className="mb-8 block px-1">
+      <Link href="/" className="mb-4 block px-1">
         <span className="font-serif text-2xl text-fg">Chronik</span>
       </Link>
+
+      <div className="mb-6 flex items-center gap-2 px-1">
+        <WorldSwitcher worlds={worlds} activeId={activeWorld.id} />
+        <Link
+          href="/worlds"
+          className="shrink-0 text-xs text-muted hover:text-accent"
+          title="Welten verwalten"
+        >
+          {worlds.length <= 1 ? activeWorld.name : "Verwalten"}
+        </Link>
+      </div>
 
       {activeCharacter && (
         <div className="mb-6 flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-4 py-6 text-center">
@@ -55,6 +92,9 @@ export async function Sidebar() {
         <NavLink href="/" icon={<ScrollText className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />} exact>
           Feed
         </NavLink>
+        <NavLink href="/story" icon={<BookOpen className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
+          Story
+        </NavLink>
         <ChatsNavLink
           userId={user.id}
           myCharacterIds={myCharacterIds}
@@ -63,6 +103,9 @@ export async function Sidebar() {
         <NavLink href="/characters" icon={<Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
           Charaktere
         </NavLink>
+        <NavLink href="/friends" icon={<UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
+          Freund:innen
+        </NavLink>
       </nav>
 
       <Link
@@ -70,7 +113,7 @@ export async function Sidebar() {
         className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
       >
         <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
-        Neuer Eintrag
+        Neuer Feed-Eintrag
       </Link>
 
       <div className="mt-auto flex items-center justify-between pt-6">

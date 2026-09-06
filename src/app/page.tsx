@@ -2,8 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveWorld } from "@/lib/worlds";
 import type { Post } from "@/lib/types";
-import { PostCard } from "@/components/post-card";
+import { EntryCard } from "@/components/entry-card";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { CharacterAvatar } from "@/components/character-avatar";
 
@@ -15,7 +16,10 @@ export default async function FeedPage() {
 
   if (!user) redirect("/login");
 
-  const activeCharacter = await getActiveCharacter(user.id);
+  const activeWorld = await getActiveWorld(user.id);
+  if (!activeWorld) redirect("/worlds");
+
+  const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   if (!activeCharacter) redirect("/characters/new");
 
   const { data: posts } = await supabase
@@ -28,7 +32,7 @@ export default async function FeedPage() {
     <div className="flex gap-8 px-6 py-8 lg:px-10">
       <div className="min-w-0 flex-1">
         <h1 className="mb-1 font-serif text-3xl text-fg">Die Chronik</h1>
-        <p className="mb-6 text-sm text-muted">Die gesammelten Geschichten der Gruppe.</p>
+        <p className="mb-6 text-sm text-muted">Die neuesten Beiträge deiner Freunde.</p>
 
         <Link
           href="/posts/new"
@@ -46,7 +50,20 @@ export default async function FeedPage() {
 
         <div className="flex flex-col gap-4">
           {posts?.length ? (
-            posts.map((post, index) => <PostCard key={post.id} post={post} index={index} />)
+            posts.map((post, index) => (
+              <EntryCard
+                key={post.id}
+                id={post.id}
+                title={post.title}
+                content={post.content}
+                createdAt={post.created_at}
+                character={post.characters}
+                characterHref={`/characters/${post.character_id}`}
+                detailHref={`/posts/${post.id}`}
+                replyCount={post.comments?.[0]?.count ?? 0}
+                index={index}
+              />
+            ))
           ) : (
             <p className="text-muted">
               Noch keine Einträge. Sei die*der Erste und{" "}
@@ -60,7 +77,7 @@ export default async function FeedPage() {
       </div>
 
       <aside className="hidden w-72 shrink-0 lg:block">
-        <FeedSidebar userId={user.id} />
+        <FeedSidebar userId={user.id} worldId={activeWorld.id} worldName={activeWorld.name} />
       </aside>
     </div>
   );

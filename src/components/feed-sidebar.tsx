@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { CharacterAvatar } from "./character-avatar";
@@ -8,20 +9,30 @@ type ChatWithParticipants = Chat & {
   chat_participants: { characters: Character }[];
 };
 
-export async function FeedSidebar({ userId }: { userId: string }) {
+export async function FeedSidebar({
+  userId,
+  worldId,
+  worldName,
+}: {
+  userId: string;
+  worldId: string;
+  worldName: string;
+}) {
   const supabase = await createClient();
-  const activeCharacter = await getActiveCharacter(userId);
+  const activeCharacter = await getActiveCharacter(userId, worldId);
 
   const [{ data: characters }, { data: chats }] = await Promise.all([
     supabase
       .from("characters")
       .select("*")
+      .eq("world_id", worldId)
       .order("created_at", { ascending: false })
       .limit(8)
       .returns<Character[]>(),
     supabase
       .from("chats")
-      .select("*, chat_participants(characters(*))")
+      .select("*, chat_participants!inner(characters!inner(*))")
+      .eq("chat_participants.characters.world_id", worldId)
       .order("created_at", { ascending: false })
       .limit(4)
       .returns<ChatWithParticipants[]>(),
@@ -29,8 +40,16 @@ export async function FeedSidebar({ userId }: { userId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <Link
+        href="/story"
+        className="flex items-center gap-3 rounded-2xl bg-accent-strong px-4 py-3 text-on-accent-strong transition hover:opacity-90"
+      >
+        <BookOpen className="h-5 w-5 shrink-0" strokeWidth={2} />
+        <span className="text-sm font-medium">Zur Story von {worldName}</span>
+      </Link>
+
       <section>
-        <h2 className="mb-3 px-1 font-serif text-lg text-fg">Charaktere der Gruppe</h2>
+        <h2 className="mb-3 px-1 font-serif text-lg text-fg">Charaktere in {worldName}</h2>
         <div className="flex flex-wrap gap-3 rounded-2xl bg-surface p-4">
           {characters?.length ? (
             characters.map((character) => (

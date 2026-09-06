@@ -9,7 +9,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
 
-async function getActiveCharacterId(userId: string) {
+async function getActiveCharacterInWorld(userId: string, worldId: string) {
   const cookieStore = await cookies();
   const cookieId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value;
 
@@ -21,18 +21,16 @@ async function getActiveCharacterId(userId: string) {
       .select("id")
       .eq("id", cookieId)
       .eq("owner_id", userId)
+      .eq("world_id", worldId)
       .maybeSingle();
     if (data) return data.id;
   }
-
-  const activeWorld = await getActiveWorld(userId);
-  if (!activeWorld) return null;
 
   const { data: fallback } = await supabase
     .from("characters")
     .select("id")
     .eq("owner_id", userId)
-    .eq("world_id", activeWorld.id)
+    .eq("world_id", worldId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -40,7 +38,7 @@ async function getActiveCharacterId(userId: string) {
   return fallback?.id ?? null;
 }
 
-export async function createPost(_prevState: string | null, formData: FormData) {
+export async function createStoryPost(_prevState: string | null, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const rawContent = String(formData.get("content") ?? "").trim();
   const content = sanitizePostHtml(rawContent);
@@ -54,48 +52,50 @@ export async function createPost(_prevState: string | null, formData: FormData) 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return "Nicht angemeldet.";
 
-  const characterId = await getActiveCharacterId(user.id);
-  if (!characterId) return "Du brauchst zuerst einen Charakter.";
+  const activeWorld = await getActiveWorld(user.id);
+  if (!activeWorld) return "Keine aktive Welt.";
+
+  const characterId = await getActiveCharacterInWorld(user.id, activeWorld.id);
+  if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
 
   const { data, error } = await supabase
-    .from("posts")
-    .insert({ character_id: characterId, title, content })
+    .from("story_posts")
+    .insert({ world_id: activeWorld.id, character_id: characterId, title, content })
     .select("id")
     .single();
 
-  if (error || !data) return error?.message ?? "Post konnte nicht erstellt werden.";
+  if (error || !data) return error?.message ?? "Szene konnte nicht erstellt werden.";
 
-  revalidatePath("/");
-  redirect(`/posts/${data.id}`);
+  revalidatePath("/story");
+  redirect(`/story/${data.id}`);
 }
 
-export async function createComment(
-  postId: string,
+export async function createStoryEntry(
+  storyPostId: string,
+  worldId: string,
   _prevState: string | null,
   formData: FormData,
 ) {
   const content = String(formData.get("content") ?? "").trim();
-  if (!content) return "Kommentar darf nicht leer sein.";
+  if (!content) return "Text darf nicht leer sein.";
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return "Nicht angemeldet.";
 
-  const characterId = await getActiveCharacterId(user.id);
-  if (!characterId) return "Du brauchst zuerst einen Charakter.";
+  const characterId = await getActiveCharacterInWorld(user.id, worldId);
+  if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
 
   const { error } = await supabase
-    .from("comments")
-    .insert({ post_id: postId, character_id: characterId, content });
+    .from("story_entries")
+    .insert({ story_post_id: storyPostId, character_id: characterId, content });
 
   if (error) return error.message;
 
-  revalidatePath(`/posts/${postId}`);
+  revalidatePath(`/story/${storyPostId}`);
   return null;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { PostCard } from "@/components/post-card";
+import { EntryCard } from "@/components/entry-card";
 import type { Character, Post } from "@/lib/types";
 
 export default async function CharacterProfilePage({
@@ -26,7 +26,7 @@ export default async function CharacterProfilePage({
 
   const { data: posts } = await supabase
     .from("posts")
-    .select("*, characters(*)")
+    .select("*, characters(*), comments(count)")
     .eq("character_id", id)
     .order("created_at", { ascending: false })
     .returns<Post[]>();
@@ -56,7 +56,20 @@ export default async function CharacterProfilePage({
       <h2 className="mb-4 font-serif text-xl text-fg">Einträge</h2>
       <div className="flex flex-col gap-4">
         {posts?.length ? (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+          posts.map((post, index) => (
+            <EntryCard
+              key={post.id}
+              id={post.id}
+              title={post.title}
+              content={post.content}
+              createdAt={post.created_at}
+              character={post.characters}
+              characterHref={`/characters/${post.character_id}`}
+              detailHref={`/posts/${post.id}`}
+              replyCount={post.comments?.[0]?.count ?? 0}
+              index={index}
+            />
+          ))
         ) : (
           <p className="text-muted">Noch keine Einträge von {character.name}.</p>
         )}

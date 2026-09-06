@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters } from "@/lib/active-character";
+import { getActiveWorld } from "@/lib/worlds";
 import { SetActiveButton } from "./set-active-button";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
@@ -15,14 +16,20 @@ export default async function CharactersPage() {
 
   if (!user) redirect("/login");
 
-  const characters = await getOwnCharacters(user.id);
+  const activeWorld = await getActiveWorld(user.id);
+  if (!activeWorld) redirect("/worlds");
+
+  const characters = await getOwnCharacters(user.id, activeWorld.id);
   const cookieStore = await cookies();
   const activeId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value ?? characters[0]?.id;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-serif text-3xl text-fg">Deine Charaktere</h1>
+        <div>
+          <h1 className="font-serif text-3xl text-fg">Deine Charaktere</h1>
+          <p className="text-sm text-muted">in {activeWorld.name}</p>
+        </div>
         <Link
           href="/characters/new"
           className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
@@ -33,7 +40,7 @@ export default async function CharactersPage() {
 
       {characters.length === 0 && (
         <p className="text-muted">
-          Du hast noch keinen Charakter.{" "}
+          Du hast noch keinen Charakter in dieser Welt.{" "}
           <Link href="/characters/new" className="text-accent hover:underline">
             Leg jetzt einen an.
           </Link>

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveWorld } from "@/lib/worlds";
 
 export async function createChat(_prevState: string | null, formData: FormData) {
   const isGroup = formData.get("is_group") === "on";
@@ -19,7 +20,10 @@ export async function createChat(_prevState: string | null, formData: FormData) 
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const activeCharacter = await getActiveCharacter(user.id);
+  const activeWorld = await getActiveWorld(user.id);
+  if (!activeWorld) return "Keine aktive Welt.";
+
+  const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   if (!activeCharacter) return "Du brauchst zuerst einen Charakter.";
 
   const allParticipantIds = Array.from(

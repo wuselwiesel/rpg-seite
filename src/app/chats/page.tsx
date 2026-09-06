@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
+import { getActiveWorld } from "@/lib/worlds";
 import { getUnreadChatIds } from "@/lib/chat-reads";
 import { CharacterAvatar } from "@/components/character-avatar";
 import type { Character, Chat } from "@/lib/types";
@@ -18,16 +19,20 @@ export default async function ChatsPage() {
 
   if (!user) redirect("/login");
 
-  const activeCharacter = await getActiveCharacter(user.id);
+  const activeWorld = await getActiveWorld(user.id);
+  if (!activeWorld) redirect("/worlds");
+
+  const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   if (!activeCharacter) redirect("/characters/new");
 
   const { data: chats } = await supabase
     .from("chats")
-    .select("*, chat_participants(characters(*))")
+    .select("*, chat_participants!inner(characters!inner(*))")
+    .eq("chat_participants.characters.world_id", activeWorld.id)
     .order("created_at", { ascending: false })
     .returns<ChatWithParticipants[]>();
 
-  const ownCharacters = await getOwnCharacters(user.id);
+  const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
   const unreadChatIds = new Set(
     await getUnreadChatIds(user.id, ownCharacters.map((c) => c.id)),
   );
@@ -35,7 +40,10 @@ export default async function ChatsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-serif text-3xl text-fg">Chats</h1>
+        <div>
+          <h1 className="font-serif text-3xl text-fg">Chats</h1>
+          <p className="text-sm text-muted">in {activeWorld.name}</p>
+        </div>
         <Link
           href="/chats/new"
           className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"

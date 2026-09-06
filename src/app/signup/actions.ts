@@ -23,5 +23,5 @@ export async function signup(_prevState: string | null, formData: FormData) {
     return error.message;
   }
 
-  redirect("/characters/new?welcome=1");
+  redirect("/worlds/new?welcome=1");
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveWorld } from "@/lib/worlds";
 import { NewChatForm } from "./new-chat-form";
 import type { Character } from "@/lib/types";
 
@@ -12,12 +13,16 @@ export default async function NewChatPage() {
 
   if (!user) redirect("/login");
 
-  const activeCharacter = await getActiveCharacter(user.id);
+  const activeWorld = await getActiveWorld(user.id);
+  if (!activeWorld) redirect("/worlds");
+
+  const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   if (!activeCharacter) redirect("/characters/new");
 
   const { data: characters } = await supabase
     .from("characters")
     .select("*")
+    .eq("world_id", activeWorld.id)
     .order("name")
     .returns<Character[]>();
 
