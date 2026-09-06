@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAcceptedFriends } from "@/lib/friends";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "../enter-world-button";
+import { JoinWorldButton } from "../join-world-button";
 import { LeaveWorldButton } from "./leave-world-button";
 import { InviteFriendForm } from "./invite-friend-form";
 import type { Profile, World } from "@/lib/types";
@@ -35,6 +36,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
 
   const isOwner = world.created_by === user.id;
   const memberIds = new Set((members ?? []).map((m) => m.user_id));
+  const isMember = memberIds.has(user.id);
 
   const friends = isOwner ? await getAcceptedFriends(user.id) : [];
   const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
@@ -57,7 +59,11 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
               Bearbeiten
             </Link>
           )}
-          <EnterWorldButton worldId={world.id} />
+          {isMember ? (
+            <EnterWorldButton worldId={world.id} />
+          ) : (
+            <JoinWorldButton worldId={world.id} />
+          )}
         </div>
       </div>
 
@@ -83,7 +89,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         </>
       )}
 
-      {!isOwner && <LeaveWorldButton worldId={world.id} />}
+      {isMember && !isOwner && <LeaveWorldButton worldId={world.id} />}
     </div>
   );
 }

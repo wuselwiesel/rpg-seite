@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
+import { JoinWorldButton } from "@/app/worlds/join-world-button";
 import type { Friendship, Profile, World } from "@/lib/types";
 import { AddFriendButton } from "./add-friend-button";
 import { FollowWorldButton } from "./follow-world-button";
@@ -14,6 +15,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";
   const tab = params.tab === "worlds" ? "worlds" : "users";
+  const isWelcome = params.welcome === "1";
 
   const supabase = await createClient();
   const {
@@ -78,12 +80,22 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Suche</h1>
       <p className="mb-6 text-sm text-muted">
-        Finde Freund:innen über ihren Benutzernamen oder entdecke neue Welten zum Folgen.
+        {isWelcome
+          ? "Tritt einer bestehenden Welt bei, um direkt mit einem Charakter loszulegen."
+          : "Finde Freund:innen über ihren Benutzernamen oder entdecke neue Welten zum Folgen."}
       </p>
+      {isWelcome && (
+        <p className="mb-6 text-sm text-muted">
+          Lieber eine eigene Welt erschaffen?{" "}
+          <Link href="/worlds/new?welcome=1" className="text-accent hover:underline">
+            Welt erschaffen
+          </Link>
+        </p>
+      )}
 
       <div className="mb-4 flex gap-1 rounded-lg bg-surface-2 p-1">
         <Link
-          href={`/search?tab=users${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+          href={`/search?tab=users${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
           className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
             tab === "users" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
           }`}
@@ -91,7 +103,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           Nutzer:innen
         </Link>
         <Link
-          href={`/search?tab=worlds${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+          href={`/search?tab=worlds${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
           className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
             tab === "worlds" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
           }`}
@@ -102,6 +114,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
       <form action="/search" className="mb-8 flex gap-2">
         <input type="hidden" name="tab" value={tab} />
+        {isWelcome && <input type="hidden" name="welcome" value="1" />}
         <input
           type="text"
           name="q"
@@ -180,7 +193,10 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
                   <EnterWorldButton worldId={w.id} />
                 </div>
               ) : (
-                <FollowWorldButton worldId={w.id} initialFollowing={followedWorldIds.has(w.id)} />
+                <div className="flex shrink-0 items-center gap-2">
+                  <FollowWorldButton worldId={w.id} initialFollowing={followedWorldIds.has(w.id)} />
+                  <JoinWorldButton worldId={w.id} />
+                </div>
               )}
             </li>
           ))}

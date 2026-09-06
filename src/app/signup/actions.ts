@@ -31,5 +31,5 @@ export async function signup(_prevState: string | null, formData: FormData) {
     return error.message;
   }
 
-  redirect("/worlds/new?welcome=1");
+  redirect("/search?tab=worlds&welcome=1");
 }

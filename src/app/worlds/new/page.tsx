@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createWorld } from "../actions";
 
 export default function NewWorldPage() {
@@ -17,6 +18,14 @@ export default function NewWorldPage() {
       <p className="mb-6 text-sm text-muted">
         Danach kannst du Freund:innen einladen und deinen ersten Charakter erstellen.
       </p>
+      {isWelcome && (
+        <p className="mb-6 text-sm text-muted">
+          Gibt es die Welt schon?{" "}
+          <Link href="/search?tab=worlds&welcome=1" className="text-accent hover:underline">
+            Welt suchen und beitreten
+          </Link>
+        </p>
+      )}
 
       <form action={formAction} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm text-fg-soft">

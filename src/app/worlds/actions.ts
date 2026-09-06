@@ -48,6 +48,27 @@ export async function setActiveWorld(worldId: string) {
   redirect("/");
 }
 
+export async function joinWorld(worldId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase
+    .from("world_members")
+    .upsert({ world_id: worldId, user_id: user.id });
+
+  if (error) return error.message;
+
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, { path: "/", httpOnly: false, sameSite: "lax" });
+  cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
 export async function addWorldMember(
   worldId: string,
   _prevState: string | null,
