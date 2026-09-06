@@ -31,13 +31,57 @@ export async function sendFriendRequest(_prevState: string | null, formData: For
     return error.message;
   }
 
+  const { data: own } = await supabase
+    .from("profiles")
+    .select("username, nickname, avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  await supabase.rpc("create_notification", {
+    p_user_id: target.id,
+    p_type: "friend_request",
+    p_actor_name: own?.nickname || own?.username || "Jemand",
+    p_actor_avatar_url: own?.avatar_url ?? null,
+    p_link: "/friends",
+    p_message: "möchte mit dir befreundet sein",
+  });
+
   revalidatePath("/friends");
   return null;
 }
 
 export async function acceptFriendRequest(friendshipId: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: friendship } = await supabase
+    .from("friendships")
+    .select("requester_id")
+    .eq("id", friendshipId)
+    .maybeSingle();
+
   await supabase.from("friendships").update({ status: "accepted" }).eq("id", friendshipId);
+
+  if (friendship) {
+    const { data: own } = await supabase
+      .from("profiles")
+      .select("username, nickname, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    await supabase.rpc("create_notification", {
+      p_user_id: friendship.requester_id,
+      p_type: "friend_accept",
+      p_actor_name: own?.nickname || own?.username || "Jemand",
+      p_actor_avatar_url: own?.avatar_url ?? null,
+      p_link: "/friends",
+      p_message: "hat deine Freundschaftsanfrage angenommen",
+    });
+  }
+
   revalidatePath("/friends");
 }
 

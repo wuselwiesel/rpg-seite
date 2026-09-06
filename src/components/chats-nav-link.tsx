@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Character } from "@/lib/types";
 
 export function ChatsNavLink({
   userId,
@@ -18,23 +17,10 @@ export function ChatsNavLink({
 }) {
   const [unread, setUnread] = useState(new Set(initialUnreadChatIds));
   const pathname = usePathname();
-  const pathnameRef = useRef(pathname);
-  const charactersRef = useRef<Map<string, Character>>(new Map());
   const isActive = pathname === "/chats" || pathname?.startsWith("/chats/");
 
   useEffect(() => {
-    pathnameRef.current = pathname;
-  }, [pathname]);
-
-  useEffect(() => {
     const supabase = createClient();
-
-    supabase
-      .from("characters")
-      .select("*")
-      .then(({ data }) => {
-        charactersRef.current = new Map((data ?? []).map((c: Character) => [c.id, c]));
-      });
 
     const channel = supabase
       .channel("global-message-watcher")
@@ -42,18 +28,10 @@ export function ChatsNavLink({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          const row = payload.new as { chat_id: string; character_id: string; content: string };
+          const row = payload.new as { chat_id: string; character_id: string };
           if (myCharacterIds.includes(row.character_id)) return;
 
           setUnread((prev) => new Set(prev).add(row.chat_id));
-
-          const onThatChat = pathnameRef.current === `/chats/${row.chat_id}`;
-          if (!onThatChat && typeof Notification !== "undefined" && Notification.permission === "granted") {
-            const sender = charactersRef.current.get(row.character_id);
-            new Notification(sender?.name ?? "Neue Nachricht", {
-              body: row.content.slice(0, 140),
-            });
-          }
         },
       )
       .on(

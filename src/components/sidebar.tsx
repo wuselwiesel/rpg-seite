@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
 import { getUnreadChatIds } from "@/lib/chat-reads";
+import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
 import type { Profile } from "@/lib/types";
 import { CharacterAvatar } from "./character-avatar";
 import { CharacterSwitcher } from "./character-switcher";
@@ -30,6 +31,11 @@ export async function Sidebar() {
 
   const activeWorld = await getActiveWorld(user.id);
 
+  const [initialNotifications, initialUnreadCount] = await Promise.all([
+    getRecentNotifications(user.id),
+    getUnreadNotificationCount(user.id),
+  ]);
+
   if (!activeWorld) {
     return (
       <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6">
@@ -46,6 +52,11 @@ export async function Sidebar() {
             <Link href="/profile" className="text-sm text-muted hover:text-fg">
               Profil
             </Link>
+            <NotificationBell
+              userId={user.id}
+              initialNotifications={initialNotifications}
+              initialUnreadCount={initialUnreadCount}
+            />
             <ThemeToggle />
           </div>
         </div>
@@ -135,7 +146,11 @@ export async function Sidebar() {
           </button>
         </form>
         <div className="flex items-center gap-1">
-          <NotificationBell />
+          <NotificationBell
+            userId={user.id}
+            initialNotifications={initialNotifications}
+            initialUnreadCount={initialUnreadCount}
+          />
           <ThemeToggle />
         </div>
       </div>

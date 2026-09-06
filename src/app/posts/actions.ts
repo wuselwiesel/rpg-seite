@@ -8,6 +8,7 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
+import { notifyMentionedCharacters } from "@/lib/notifications";
 
 async function getActiveCharacterId(userId: string) {
   const cookieStore = await cookies();
@@ -95,6 +96,14 @@ export async function createComment(
     .insert({ post_id: postId, character_id: characterId, content });
 
   if (error) return error.message;
+
+  await notifyMentionedCharacters(
+    content,
+    user.id,
+    characterId,
+    `/posts/${postId}`,
+    "hat dich in einem Kommentar erwähnt",
+  );
 
   revalidatePath(`/posts/${postId}`);
   return null;

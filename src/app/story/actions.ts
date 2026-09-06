@@ -8,6 +8,7 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
+import { notifyMentionedCharacters } from "@/lib/notifications";
 
 async function getActiveCharacterInWorld(userId: string, worldId: string) {
   const cookieStore = await cookies();
@@ -95,6 +96,14 @@ export async function createStoryEntry(
     .insert({ story_post_id: storyPostId, character_id: characterId, content });
 
   if (error) return error.message;
+
+  await notifyMentionedCharacters(
+    content,
+    user.id,
+    characterId,
+    `/story/${storyPostId}`,
+    "hat dich in der Story erwähnt",
+  );
 
   revalidatePath(`/story/${storyPostId}`);
   return null;
