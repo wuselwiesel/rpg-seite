@@ -100,6 +100,29 @@ export async function createComment(
 
   if (error) return error.message;
 
+  const { data: post } = await supabase
+    .from("posts")
+    .select("character_id, characters(owner_id)")
+    .eq("id", postId)
+    .maybeSingle<{ character_id: string; characters: { owner_id: string } | null }>();
+
+  if (post && post.character_id !== characterId && post.characters?.owner_id) {
+    const { data: actor } = await supabase
+      .from("characters")
+      .select("name, avatar_url")
+      .eq("id", characterId)
+      .maybeSingle();
+
+    await supabase.rpc("create_notification", {
+      p_user_id: post.characters.owner_id,
+      p_type: "comment",
+      p_actor_name: actor?.name ?? "Jemand",
+      p_actor_avatar_url: actor?.avatar_url ?? null,
+      p_link: `/posts/${postId}`,
+      p_message: "hat deinen Beitrag kommentiert",
+    });
+  }
+
   await notifyMentionedCharacters(
     content,
     user.id,
@@ -140,24 +163,27 @@ export async function toggleLike(target: { postId: string } | { commentId: strin
     await supabase.from("likes").insert({ character_id: characterId, [column]: targetId });
 
     let ownerId: string | null = null;
+    let ownerCharacterId: string | null = null;
     if ("postId" in target) {
       const { data: post } = await supabase
         .from("posts")
-        .select("characters(owner_id)")
+        .select("character_id, characters(owner_id)")
         .eq("id", target.postId)
-        .maybeSingle<{ characters: { owner_id: string } | null }>();
+        .maybeSingle<{ character_id: string; characters: { owner_id: string } | null }>();
       ownerId = post?.characters?.owner_id ?? null;
+      ownerCharacterId = post?.character_id ?? null;
     } else {
       const { data: comment } = await supabase
         .from("comments")
-        .select("post_id, characters(owner_id)")
+        .select("post_id, character_id, characters(owner_id)")
         .eq("id", target.commentId)
-        .maybeSingle<{ post_id: string; characters: { owner_id: string } | null }>();
+        .maybeSingle<{ post_id: string; character_id: string; characters: { owner_id: string } | null }>();
       ownerId = comment?.characters?.owner_id ?? null;
+      ownerCharacterId = comment?.character_id ?? null;
       postIdForRevalidate = comment?.post_id ?? null;
     }
 
-    if (ownerId && ownerId !== user.id) {
+    if (ownerId && ownerCharacterId && ownerCharacterId !== characterId) {
       const { data: actor } = await supabase
         .from("characters")
         .select("name, avatar_url")

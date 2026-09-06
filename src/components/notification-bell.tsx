@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Bell, MessageCircle, AtSign, UserPlus } from "lucide-react";
+import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import type { AppNotification } from "@/lib/notifications";
@@ -21,6 +21,8 @@ function getServerPermissionSnapshot(): NotificationPermission | "unsupported" {
 function iconForType(type: string) {
   if (type === "chat_message") return <MessageCircle className="h-4 w-4" strokeWidth={2} />;
   if (type === "mention") return <AtSign className="h-4 w-4" strokeWidth={2} />;
+  if (type === "comment") return <MessageSquare className="h-4 w-4" strokeWidth={2} />;
+  if (type === "like") return <Heart className="h-4 w-4" strokeWidth={2} />;
   return <UserPlus className="h-4 w-4" strokeWidth={2} />;
 }
 
@@ -121,7 +123,7 @@ export function NotificationBell({
       </button>
 
       {open && (
-        <div className="absolute bottom-full right-0 z-50 mb-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface shadow-lg">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <p className="font-serif text-lg text-fg">Benachrichtigungen</p>
             {permission === "default" && (
