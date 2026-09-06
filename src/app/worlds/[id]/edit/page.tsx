@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { World } from "@/lib/types";
 import { EditWorldForm } from "./edit-world-form";
+import { DeleteWorldButton } from "./delete-world-button";
 
 export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/edit">) {
   const { id } = await params;
@@ -29,6 +30,14 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
       </p>
 
       <EditWorldForm world={world} />
+
+      <div className="mt-8 border-t border-line pt-6">
+        <p className="mb-3 text-sm text-muted">
+          Das Löschen entfernt auch alle Charaktere, Beiträge und die Story dieser Welt – für alle
+          Mitglieder, unwiderruflich.
+        </p>
+        <DeleteWorldButton worldId={world.id} worldName={world.name} />
+      </div>
     </div>
   );
 }

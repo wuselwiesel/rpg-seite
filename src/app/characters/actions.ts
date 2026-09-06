@@ -92,6 +92,24 @@ export async function updateCharacter(
   redirect(`/characters/${characterId}`);
 }
 
+export async function deleteCharacter(characterId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("characters").delete().eq("id", characterId).eq("owner_id", user.id);
+
+  const cookieStore = await cookies();
+  if (cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value === characterId) {
+    cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/characters");
+}
+
 export async function setActiveCharacter(characterId: string) {
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_CHARACTER_COOKIE, characterId, {

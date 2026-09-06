@@ -167,6 +167,9 @@ create policy "worlds_insert_own" on public.worlds
 create policy "worlds_update_own" on public.worlds
   for update to authenticated using (created_by = auth.uid());
 
+create policy "worlds_delete_own" on public.worlds
+  for delete to authenticated using (created_by = auth.uid());
+
 -- Welten, denen man folgt, um ihre Feed-Beiträge zu sehen, ohne Mitglied zu sein.
 create table public.world_follows (
   world_id uuid not null references public.worlds (id) on delete cascade,

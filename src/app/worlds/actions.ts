@@ -126,6 +126,25 @@ export async function unfollowWorld(worldId: string) {
   revalidatePath("/");
 }
 
+export async function deleteWorld(worldId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("worlds").delete().eq("id", worldId).eq("created_by", user.id);
+
+  const cookieStore = await cookies();
+  if (cookieStore.get(ACTIVE_WORLD_COOKIE)?.value === worldId) {
+    cookieStore.delete(ACTIVE_WORLD_COOKIE);
+    cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/worlds");
+}
+
 export async function leaveWorld(worldId: string) {
   const supabase = await createClient();
   const {
