@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createPost } from "../actions";
+import { RichTextEditor } from "@/components/rich-text-editor";
 
 export default function NewPostPage() {
   const [error, formAction, pending] = useActionState(createPost, null);
@@ -20,15 +21,10 @@ export default function NewPostPage() {
             className="rounded-md border border-stone-700 bg-stone-900 px-3 py-2 text-stone-100 outline-none focus:border-amber-600"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm text-stone-300">
+        <div className="flex flex-col gap-1 text-sm text-stone-300">
           Inhalt
-          <textarea
-            name="content"
-            required
-            rows={12}
-            className="rounded-md border border-stone-700 bg-stone-900 px-3 py-2 font-serif text-lg leading-relaxed text-stone-100 outline-none focus:border-amber-600"
-          />
-        </label>
+          <RichTextEditor name="content" />
+        </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
 

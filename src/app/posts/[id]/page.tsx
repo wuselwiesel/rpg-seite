@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
+import { sanitizePostHtml } from "@/lib/sanitize";
 import type { Comment, Post } from "@/lib/types";
 import { CommentForm } from "./comment-form";
 
@@ -45,7 +46,10 @@ export default async function PostDetailPage({
           </div>
         </div>
         <h1 className="mb-4 font-serif text-3xl text-stone-100">{post.title}</h1>
-        <p className="whitespace-pre-line text-stone-300">{post.content}</p>
+        <div
+          className="post-content text-stone-300"
+          dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content) }}
+        />
       </article>
 
       <h2 className="mb-4 font-serif text-xl text-stone-200">

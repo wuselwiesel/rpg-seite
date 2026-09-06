@@ -2,8 +2,11 @@ import Link from "next/link";
 import { CharacterAvatar } from "./character-avatar";
 import type { Post } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
+import { stripHtml } from "@/lib/strip-html";
 
 export function PostCard({ post }: { post: Post }) {
+  const preview = stripHtml(post.content);
+
   return (
     <div className="rounded-lg border border-stone-800 bg-stone-900/60 p-5 transition hover:border-amber-700/60">
       <Link
@@ -24,9 +27,7 @@ export function PostCard({ post }: { post: Post }) {
       </Link>
       <Link href={`/posts/${post.id}`} className="block">
         <h2 className="mb-1 font-serif text-2xl text-stone-100">{post.title}</h2>
-        <p className="line-clamp-3 text-sm whitespace-pre-line text-stone-400">
-          {post.content}
-        </p>
+        {preview && <p className="line-clamp-3 text-sm text-stone-400">{preview}</p>}
       </Link>
     </div>
   );

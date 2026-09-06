@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
+import { sanitizePostHtml } from "@/lib/sanitize";
+import { stripHtml } from "@/lib/strip-html";
 
 async function getActiveCharacterId(userId: string) {
   const cookieStore = await cookies();
@@ -35,9 +37,11 @@ async function getActiveCharacterId(userId: string) {
 
 export async function createPost(_prevState: string | null, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
-  const content = String(formData.get("content") ?? "").trim();
+  const rawContent = String(formData.get("content") ?? "").trim();
+  const content = sanitizePostHtml(rawContent);
 
-  if (!title || !content) {
+  const hasContent = stripHtml(content).length > 0 || content.includes("<img");
+  if (!title || !hasContent) {
     return "Titel und Inhalt dürfen nicht leer sein.";
   }
 

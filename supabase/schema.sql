@@ -228,3 +228,19 @@ create policy "chat_reads_own" on public.chat_reads
   with check (user_id = auth.uid());
 
 alter publication supabase_realtime add table public.chat_reads;
+
+-- ---------------------------------------------------------------------------
+-- Bilder/GIFs in Posts (Supabase Storage)
+-- ---------------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('post-images', 'post-images', true, 10485760)
+on conflict (id) do nothing;
+
+create policy "post_images_public_read" on storage.objects
+  for select using (bucket_id = 'post-images');
+
+create policy "post_images_authenticated_insert" on storage.objects
+  for insert to authenticated with check (bucket_id = 'post-images');
+
+create policy "post_images_authenticated_delete" on storage.objects
+  for delete to authenticated using (bucket_id = 'post-images');
