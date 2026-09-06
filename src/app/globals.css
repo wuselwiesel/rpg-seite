@@ -1,25 +1,75 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #0c0a09;
-  --foreground: #f5f5f4;
+  --app: #fbf5f0;
+  --surface: #ffffff;
+  --surface-2: #ece7f0;
+  --surface-3: #fbe8dc;
+  --line: #e8ddd4;
+  --fg: #423f4a;
+  --fg-soft: #5b5666;
+  --muted: #857c91;
+  --accent: #a6646b;
+  --accent-strong: #525871;
+  --on-accent-strong: #fdfbf9;
+  --chip: #f2c1a3;
+  --on-chip: #4a2f22;
+}
+
+.dark {
+  --app: #17151b;
+  --surface: #221f28;
+  --surface-2: #2c2836;
+  --surface-3: #332428;
+  --line: #3a3542;
+  --fg: #f3ece8;
+  --fg-soft: #d8cfca;
+  --muted: #a79cb0;
+  --accent: #e3aeb3;
+  --accent-strong: #f2c1a3;
+  --on-accent-strong: #2b2028;
+  --chip: #cd9fa0;
+  --on-chip: #2b2028;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-app: var(--app);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-on-accent-strong: var(--on-accent-strong);
+  --color-chip: var(--chip);
+  --color-on-chip: var(--on-chip);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-serif);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--app);
+  color: var(--fg);
+  color-scheme: light;
+}
+
+.dark body {
+  color-scheme: dark;
 }
 
 .font-serif {
   font-family: var(--font-serif), Georgia, serif;
+}
+
+::selection {
+  background: var(--chip);
+  color: var(--on-chip);
 }
 
 .post-content {
@@ -34,14 +84,14 @@ body {
   margin: 1em 0 0.5em;
   font-family: var(--font-serif), Georgia, serif;
   font-size: 1.5rem;
-  color: var(--foreground);
+  color: var(--fg);
 }
 
 .post-content h3 {
   margin: 1em 0 0.5em;
   font-family: var(--font-serif), Georgia, serif;
   font-size: 1.25rem;
-  color: var(--foreground);
+  color: var(--fg);
 }
 
 .post-content ul,
@@ -60,24 +110,24 @@ body {
 
 .post-content blockquote {
   margin: 0.75em 0;
-  border-left: 3px solid #b45309;
+  border-left: 3px solid var(--accent);
   padding-left: 1em;
-  color: #a8a29e;
+  color: var(--fg-soft);
   font-style: italic;
 }
 
 .post-content a {
-  color: #f59e0b;
+  color: var(--accent);
   text-decoration: underline;
 }
 
 .post-content img {
   max-width: 100%;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   margin: 0.75em 0;
 }
 
 .post-content hr {
   margin: 1.5em 0;
-  border-color: #44403c;
+  border-color: var(--line);
 }

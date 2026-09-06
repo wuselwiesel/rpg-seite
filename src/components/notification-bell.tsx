@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { Bell } from "lucide-react";
 
 function subscribe() {
   return () => {};
@@ -29,9 +30,9 @@ export function NotificationBell() {
         forceRerender((n) => n + 1);
       }}
       title="Benachrichtigungen bei neuen Nachrichten aktivieren"
-      className="text-sm text-stone-400 hover:text-amber-400"
+      className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
     >
-      🔔
+      <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
     </button>
   );
 }

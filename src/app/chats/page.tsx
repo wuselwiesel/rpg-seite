@@ -35,19 +35,19 @@ export default async function ChatsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-serif text-3xl text-stone-100">Chats</h1>
+        <h1 className="font-serif text-3xl text-fg">Chats</h1>
         <Link
           href="/chats/new"
-          className="rounded-md bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 transition hover:bg-amber-600"
+          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
         >
           + Neuer Chat
         </Link>
       </div>
 
       {!chats?.length && (
-        <p className="text-stone-400">
+        <p className="text-muted">
           Noch keine Chats.{" "}
-          <Link href="/chats/new" className="text-amber-500 hover:underline">
+          <Link href="/chats/new" className="text-accent hover:underline">
             Starte einen.
           </Link>
         </p>
@@ -66,23 +66,23 @@ export default async function ChatsPage() {
             <li key={chat.id}>
               <Link
                 href={`/chats/${chat.id}`}
-                className="flex items-center gap-3 rounded-lg border border-stone-800 bg-stone-900/60 p-4 transition hover:border-amber-700/60"
+                className="flex items-center gap-3 rounded-lg border border-line bg-surface p-4 transition hover:border-accent/60"
               >
                 {chat.is_group ? (
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-700 text-stone-200">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg">
                     #
                   </div>
                 ) : (
                   <CharacterAvatar name={title ?? "?"} avatarUrl={others[0]?.avatar_url} />
                 )}
                 <div className="flex-1">
-                  <p className="font-medium text-stone-200">{title}</p>
-                  <p className="text-xs text-stone-500">
+                  <p className="font-medium text-fg">{title}</p>
+                  <p className="text-xs text-muted">
                     {chat.chat_participants.length} Teilnehmer:innen
                   </p>
                 </div>
                 {unreadChatIds.has(chat.id) && (
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />
                 )}
               </Link>
             </li>

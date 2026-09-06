@@ -20,6 +20,7 @@ export type Post = {
   content: string;
   created_at: string;
   characters: Character | null;
+  comments?: { count: number }[];
 };
 
 export type Comment = {

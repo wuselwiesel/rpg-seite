@@ -10,7 +10,7 @@ export function CharacterAvatar({
   return (
     <div
       style={{ width: size, height: size }}
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-stone-700 font-semibold text-stone-200"
+      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 font-semibold text-fg"
     >
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

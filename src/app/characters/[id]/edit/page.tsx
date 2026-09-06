@@ -25,7 +25,7 @@ export default async function EditCharacterPage({
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
-      <h1 className="mb-6 font-serif text-3xl text-stone-100">Charakter bearbeiten</h1>
+      <h1 className="mb-6 font-serif text-3xl text-fg">Charakter bearbeiten</h1>
       <EditCharacterForm character={character} />
     </div>
   );

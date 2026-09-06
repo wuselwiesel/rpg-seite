@@ -34,25 +34,25 @@ export default async function PostDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <article className="mb-8 rounded-lg border border-stone-800 bg-stone-900/60 p-6">
+      <article className="mb-8 rounded-lg border border-line bg-surface p-6">
         <div className="mb-4 flex items-center gap-3">
           <CharacterAvatar
             name={post.characters?.name ?? "?"}
             avatarUrl={post.characters?.avatar_url}
           />
           <div>
-            <p className="font-medium text-stone-200">{post.characters?.name}</p>
-            <p className="text-xs text-stone-500">{formatDateTime(post.created_at)}</p>
+            <p className="font-medium text-fg">{post.characters?.name}</p>
+            <p className="text-xs text-muted">{formatDateTime(post.created_at)}</p>
           </div>
         </div>
-        <h1 className="mb-4 font-serif text-3xl text-stone-100">{post.title}</h1>
+        <h1 className="mb-4 font-serif text-3xl text-fg">{post.title}</h1>
         <div
-          className="post-content text-stone-300"
+          className="post-content text-fg-soft"
           dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content) }}
         />
       </article>
 
-      <h2 className="mb-4 font-serif text-xl text-stone-200">
+      <h2 className="mb-4 font-serif text-xl text-fg">
         Kommentare {comments?.length ? `(${comments.length})` : ""}
       </h2>
 
@@ -64,16 +64,16 @@ export default async function PostDetailPage({
               avatarUrl={comment.characters?.avatar_url}
               size={32}
             />
-            <div className="flex-1 rounded-lg border border-stone-800 bg-stone-900/40 px-4 py-2">
+            <div className="flex-1 rounded-lg border border-line bg-surface px-4 py-2">
               <div className="mb-1 flex items-baseline gap-2">
-                <p className="text-sm font-medium text-stone-200">
+                <p className="text-sm font-medium text-fg">
                   {comment.characters?.name}
                 </p>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-muted">
                   {formatDateTime(comment.created_at)}
                 </p>
               </div>
-              <p className="whitespace-pre-line text-sm text-stone-300">
+              <p className="whitespace-pre-line text-sm text-fg-soft">
                 {comment.content}
               </p>
             </div>

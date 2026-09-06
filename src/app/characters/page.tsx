@@ -22,19 +22,19 @@ export default async function CharactersPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-serif text-3xl text-stone-100">Deine Charaktere</h1>
+        <h1 className="font-serif text-3xl text-fg">Deine Charaktere</h1>
         <Link
           href="/characters/new"
-          className="rounded-md bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 transition hover:bg-amber-600"
+          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
         >
           + Neuer Charakter
         </Link>
       </div>
 
       {characters.length === 0 && (
-        <p className="text-stone-400">
+        <p className="text-muted">
           Du hast noch keinen Charakter.{" "}
-          <Link href="/characters/new" className="text-amber-500 hover:underline">
+          <Link href="/characters/new" className="text-accent hover:underline">
             Leg jetzt einen an.
           </Link>
         </p>
@@ -44,19 +44,19 @@ export default async function CharactersPage() {
         {characters.map((character) => (
           <li
             key={character.id}
-            className="flex items-center gap-4 rounded-lg border border-stone-800 bg-stone-900/60 p-4"
+            className="flex items-center gap-4 rounded-lg border border-line bg-surface p-4"
           >
             <Link href={`/characters/${character.id}`} className="flex flex-1 items-center gap-4">
               <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={48} />
               <div className="flex-1">
-                <p className="font-medium text-stone-100 hover:text-amber-400">{character.name}</p>
+                <p className="font-medium text-fg hover:text-accent">{character.name}</p>
                 {character.bio && (
-                  <p className="line-clamp-1 text-sm text-stone-400">{character.bio}</p>
+                  <p className="line-clamp-1 text-sm text-muted">{character.bio}</p>
                 )}
               </div>
             </Link>
             {character.id === activeId ? (
-              <span className="rounded-full bg-amber-900/60 px-3 py-1 text-xs font-medium text-amber-300">
+              <span className="rounded-full bg-accent-strong/15 px-3 py-1 text-xs font-medium text-accent">
                 Aktiv
               </span>
             ) : (

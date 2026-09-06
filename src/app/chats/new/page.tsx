@@ -25,9 +25,9 @@ export default async function NewChatPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
-      <h1 className="mb-1 font-serif text-3xl text-stone-100">Neuer Chat</h1>
-      <p className="mb-6 text-sm text-stone-400">
-        Du nimmst als <span className="text-amber-400">{activeCharacter?.name}</span> teil.
+      <h1 className="mb-1 font-serif text-3xl text-fg">Neuer Chat</h1>
+      <p className="mb-6 text-sm text-muted">
+        Du nimmst als <span className="text-accent">{activeCharacter?.name}</span> teil.
       </p>
 
       <NewChatForm characters={otherCharacters} />

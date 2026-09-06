@@ -15,7 +15,7 @@ export function CharacterSwitcher({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  if (characters.length === 0) return null;
+  if (characters.length <= 1) return null;
 
   return (
     <select
@@ -28,7 +28,7 @@ export function CharacterSwitcher({
           router.refresh();
         });
       }}
-      className="rounded-md border border-stone-700 bg-stone-900 px-2 py-1 text-sm text-stone-100 outline-none focus:border-amber-600"
+      className="w-full rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
     >
       {characters.map((c) => (
         <option key={c.id} value={c.id}>

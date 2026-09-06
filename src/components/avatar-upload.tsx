@@ -55,7 +55,7 @@ export function AvatarUpload({
       <input type="hidden" name={name} value={url} />
       <CharacterAvatar name={displayName} avatarUrl={url} size={56} />
       <div className="flex flex-col gap-1">
-        <label className="cursor-pointer text-sm text-amber-500 hover:underline">
+        <label className="cursor-pointer text-sm text-accent hover:underline">
           {uploading ? "Lädt hoch..." : url ? "Bild ändern" : "Bild hochladen"}
           <input
             type="file"
@@ -65,7 +65,7 @@ export function AvatarUpload({
             className="hidden"
           />
         </label>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       </div>
     </div>
   );

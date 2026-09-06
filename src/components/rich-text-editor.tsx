@@ -33,8 +33,8 @@ function ToolbarButton({
       aria-label={label}
       className={`rounded px-2 py-1 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30 ${
         active
-          ? "bg-amber-700 text-stone-50"
-          : "text-stone-300 hover:bg-stone-800 hover:text-stone-100"
+          ? "bg-accent-strong text-on-accent-strong"
+          : "text-fg-soft hover:bg-surface-2 hover:text-fg"
       }`}
     >
       {children}
@@ -91,7 +91,7 @@ function Toolbar({ editor }: { editor: Editor }) {
   }
 
   return (
-    <div className="flex flex-col gap-1 border-b border-stone-700 p-2">
+    <div className="flex flex-col gap-1 border-b border-line p-2">
       <div className="flex flex-wrap items-center gap-1">
         <ToolbarButton
           label="Fett"
@@ -122,7 +122,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           <span className="line-through">S</span>
         </ToolbarButton>
 
-        <span className="mx-1 h-5 w-px bg-stone-700" />
+        <span className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton
           label="Überschrift groß"
@@ -139,7 +139,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           H3
         </ToolbarButton>
 
-        <span className="mx-1 h-5 w-px bg-stone-700" />
+        <span className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton
           label="Aufzählung"
@@ -163,7 +163,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           &ldquo;Zitat&rdquo;
         </ToolbarButton>
 
-        <span className="mx-1 h-5 w-px bg-stone-700" />
+        <span className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton label="Link" active={editor.isActive("link")} onClick={setLink}>
           🔗
@@ -176,7 +176,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           {uploading ? "…" : "🖼️"}
         </ToolbarButton>
 
-        <span className="mx-1 h-5 w-px bg-stone-700" />
+        <span className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton
           label="Rückgängig"
@@ -193,7 +193,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           ↷
         </ToolbarButton>
       </div>
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <input
         ref={fileInputRef}
         type="file"
@@ -229,7 +229,7 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "post-content min-h-[240px] px-3 py-2 text-stone-100 outline-none [&_p]:my-2 first:[&_p]:mt-0",
+          "post-content min-h-[240px] px-3 py-2 text-fg outline-none [&_p]:my-2 first:[&_p]:mt-0",
       },
     },
     onUpdate: ({ editor }) => setHtml(editor.getHTML()),
@@ -240,7 +240,7 @@ export function RichTextEditor({
   }, [editor]);
 
   return (
-    <div className="rounded-md border border-stone-700 bg-stone-900 focus-within:border-amber-600">
+    <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
       {editor && <Toolbar editor={editor} />}
       <EditorContent editor={editor} />

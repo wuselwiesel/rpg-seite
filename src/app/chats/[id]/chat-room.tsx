@@ -83,15 +83,15 @@ export function ChatRoom({
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-57px)] max-w-2xl flex-col px-4">
-      <div className="flex items-center justify-between border-b border-stone-800 py-4">
+    <div className="mx-auto flex h-screen max-w-2xl flex-col px-4">
+      <div className="flex items-center justify-between border-b border-line py-4">
         <div>
-          <Link href="/chats" className="text-xs text-stone-500 hover:text-stone-300">
+          <Link href="/chats" className="text-xs text-muted hover:text-fg-soft">
             ← Alle Chats
           </Link>
-          <h1 className="font-serif text-2xl text-stone-100">{title}</h1>
+          <h1 className="font-serif text-2xl text-fg">{title}</h1>
         </div>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-muted">
           {participants.map((p) => p.name).join(", ")}
         </p>
       </div>
@@ -112,7 +112,7 @@ export function ChatRoom({
                 />
                 <div
                   className={`max-w-[75%] rounded-lg px-3 py-2 ${
-                    isOwn ? "bg-amber-800/70 text-stone-50" : "bg-stone-800 text-stone-100"
+                    isOwn ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg"
                   }`}
                 >
                   <p className="mb-0.5 text-xs opacity-70">
@@ -127,18 +127,18 @@ export function ChatRoom({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2 border-t border-stone-800 py-4">
+      <form onSubmit={handleSubmit} className="flex gap-2 border-t border-line py-4">
         <input
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={`Schreib als ${activeCharacter.name}...`}
-          className="flex-1 rounded-md border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600"
+          className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
         />
         <button
           type="submit"
           disabled={sending || !draft.trim()}
-          className="rounded-md bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 transition hover:bg-amber-600 disabled:opacity-50"
+          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
         >
           Senden
         </button>

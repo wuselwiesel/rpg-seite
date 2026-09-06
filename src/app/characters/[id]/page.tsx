@@ -38,27 +38,27 @@ export default async function CharacterProfilePage({
       <div className="mb-8 flex items-center gap-4">
         <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={72} />
         <div className="flex-1">
-          <h1 className="font-serif text-3xl text-stone-100">{character.name}</h1>
+          <h1 className="font-serif text-3xl text-fg">{character.name}</h1>
           {character.bio && (
-            <p className="mt-1 whitespace-pre-line text-sm text-stone-400">{character.bio}</p>
+            <p className="mt-1 whitespace-pre-line text-sm text-muted">{character.bio}</p>
           )}
         </div>
         {isOwn && (
           <Link
             href={`/characters/${character.id}/edit`}
-            className="rounded-md border border-stone-700 px-3 py-1.5 text-sm text-stone-300 transition hover:border-amber-600 hover:text-amber-400"
+            className="rounded-md border border-line px-3 py-1.5 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
           >
             Bearbeiten
           </Link>
         )}
       </div>
 
-      <h2 className="mb-4 font-serif text-xl text-stone-200">Einträge</h2>
+      <h2 className="mb-4 font-serif text-xl text-fg">Einträge</h2>
       <div className="flex flex-col gap-4">
         {posts?.length ? (
           posts.map((post) => <PostCard key={post.id} post={post} />)
         ) : (
-          <p className="text-stone-400">Noch keine Einträge von {character.name}.</p>
+          <p className="text-muted">Noch keine Einträge von {character.name}.</p>
         )}
       </div>
     </div>
