@@ -2,9 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { MentionText } from "@/components/mention-text";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
-import type { StoryEntry, StoryPost } from "@/lib/types";
+import type { Character, StoryEntry, StoryPost } from "@/lib/types";
 import { StoryEntryForm } from "./story-entry-form";
 
 export default async function StoryPostDetailPage({
@@ -34,6 +35,13 @@ export default async function StoryPostDetailPage({
     .eq("story_post_id", id)
     .order("created_at", { ascending: true })
     .returns<StoryEntry[]>();
+
+  const { data: worldCharacters } = await supabase
+    .from("characters")
+    .select("*")
+    .eq("world_id", storyPost.world_id)
+    .order("name")
+    .returns<Character[]>();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -72,7 +80,7 @@ export default async function StoryPostDetailPage({
                 <p className="text-sm font-medium text-fg">{entry.characters?.name}</p>
                 <p className="text-xs text-muted">{formatDateTime(entry.created_at)}</p>
               </div>
-              <p className="whitespace-pre-line text-sm text-fg-soft">{entry.content}</p>
+              <MentionText text={entry.content} className="whitespace-pre-line text-sm text-fg-soft" />
             </div>
           </div>
         ))}
@@ -82,6 +90,7 @@ export default async function StoryPostDetailPage({
         storyPostId={storyPost.id}
         worldId={storyPost.world_id}
         characterName={activeCharacter?.name ?? "deinem Charakter"}
+        characters={worldCharacters ?? []}
       />
     </div>
   );

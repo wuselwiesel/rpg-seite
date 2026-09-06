@@ -1,9 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { MentionText } from "@/components/mention-text";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
-import type { Comment, Post } from "@/lib/types";
+import type { Character, Comment, Post } from "@/lib/types";
 import { CommentForm } from "./comment-form";
 
 export default async function PostDetailPage({
@@ -31,6 +32,12 @@ export default async function PostDetailPage({
     .eq("post_id", id)
     .order("created_at", { ascending: true })
     .returns<Comment[]>();
+
+  const mentionableCharacters = new Map<string, Character>();
+  if (post.characters) mentionableCharacters.set(post.characters.id, post.characters);
+  for (const comment of comments ?? []) {
+    if (comment.characters) mentionableCharacters.set(comment.characters.id, comment.characters);
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -73,15 +80,13 @@ export default async function PostDetailPage({
                   {formatDateTime(comment.created_at)}
                 </p>
               </div>
-              <p className="whitespace-pre-line text-sm text-fg-soft">
-                {comment.content}
-              </p>
+              <MentionText text={comment.content} className="whitespace-pre-line text-sm text-fg-soft" />
             </div>
           </div>
         ))}
       </div>
 
-      <CommentForm postId={post.id} />
+      <CommentForm postId={post.id} characters={Array.from(mentionableCharacters.values())} />
     </div>
   );
 }
