@@ -11,6 +11,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const name = String(formData.get("name") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
+  const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -38,6 +39,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       name,
       bio: bio || null,
       avatar_url: avatarUrl || null,
+      sheet_url: sheetUrl || null,
     })
     .select("id")
     .single();
@@ -65,6 +67,7 @@ export async function updateCharacter(
   const name = String(formData.get("name") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
+  const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -79,7 +82,7 @@ export async function updateCharacter(
 
   const { error } = await supabase
     .from("characters")
-    .update({ name, bio: bio || null, avatar_url: avatarUrl || null })
+    .update({ name, bio: bio || null, avatar_url: avatarUrl || null, sheet_url: sheetUrl || null })
     .eq("id", characterId)
     .eq("owner_id", user.id);
 

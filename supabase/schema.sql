@@ -210,6 +210,7 @@ create table public.characters (
   name text not null,
   avatar_url text,
   bio text,
+  sheet_url text,
   created_at timestamptz not null default now()
 );
 

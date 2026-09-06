@@ -1,9 +1,9 @@
 import "server-only";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
 export function sanitizePostHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
+  return sanitizeHtml(html, {
+    allowedTags: [
       "p",
       "br",
       "strong",
@@ -20,6 +20,10 @@ export function sanitizePostHtml(html: string): string {
       "img",
       "hr",
     ],
-    ALLOWED_ATTR: ["href", "target", "rel", "src", "alt"],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
   });
 }

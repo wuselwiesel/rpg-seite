@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
 import { EntryCard } from "@/components/entry-card";
 import type { Character, Post } from "@/lib/types";
 
@@ -52,6 +53,12 @@ export default async function CharacterProfilePage({
           </Link>
         )}
       </div>
+
+      {character.sheet_url && (
+        <div className="mb-8">
+          <CharacterSheetEmbed sheetUrl={character.sheet_url} />
+        </div>
+      )}
 
       <h2 className="mb-4 font-serif text-xl text-fg">Einträge</h2>
       <div className="flex flex-col gap-4">

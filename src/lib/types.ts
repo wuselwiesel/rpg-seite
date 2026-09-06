@@ -32,6 +32,7 @@ export type Character = {
   name: string;
   avatar_url: string | null;
   bio: string | null;
+  sheet_url: string | null;
   created_at: string;
   worlds?: { name: string } | null;
 };

@@ -18,11 +18,13 @@
     "@tiptap/pm": "^3.31.3",
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
-    "isomorphic-dompurify": "^4.1.0",
+    "dompurify": "^3.4.15",
+    "firebase": "^12.18.0",
     "lucide-react": "^1.41.0",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sanitize-html": "^2.17.7",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
@@ -30,6 +32,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.1",
+    "@types/trusted-types": "^2.0.7",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
