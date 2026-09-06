@@ -24,7 +24,7 @@ export default async function FeedPage() {
 
   const { data: posts } = await supabase
     .from("posts")
-    .select("*, characters(*), comments(count)")
+    .select("*, characters(*, worlds(name)), comments(count)")
     .order("created_at", { ascending: false })
     .returns<Post[]>();
 
@@ -62,6 +62,11 @@ export default async function FeedPage() {
                 detailHref={`/posts/${post.id}`}
                 replyCount={post.comments?.[0]?.count ?? 0}
                 index={index}
+                worldName={
+                  post.characters && post.characters.world_id !== activeWorld.id
+                    ? post.characters.worlds?.name
+                    : undefined
+                }
               />
             ))
           ) : (

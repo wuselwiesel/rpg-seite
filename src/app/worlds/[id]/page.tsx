@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAcceptedFriends } from "@/lib/friends";
+import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "../enter-world-button";
 import { LeaveWorldButton } from "./leave-world-button";
 import { InviteFriendForm } from "./invite-friend-form";
@@ -39,12 +41,24 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
+      <WorldCover name={world.name} coverUrl={world.cover_image_url} className="mb-6 h-40 w-full" />
+
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl text-fg">{world.name}</h1>
           {world.description && <p className="mt-1 text-sm text-muted">{world.description}</p>}
         </div>
-        <EnterWorldButton worldId={world.id} />
+        <div className="flex shrink-0 items-center gap-2">
+          {isOwner && (
+            <Link
+              href={`/worlds/${world.id}/edit`}
+              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
+            >
+              Bearbeiten
+            </Link>
+          )}
+          <EnterWorldButton worldId={world.id} />
+        </div>
       </div>
 
       <h2 className="mb-3 font-serif text-xl text-fg">Mitglieder</h2>

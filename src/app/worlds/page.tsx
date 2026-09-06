@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserWorlds } from "@/lib/worlds";
+import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "./enter-world-button";
 
 export default async function WorldsPage() {
@@ -21,12 +22,20 @@ export default async function WorldsPage() {
           <h1 className="font-serif text-3xl text-fg">Deine Welten</h1>
           <p className="text-sm text-muted">Wähle eine Welt oder erschaffe eine neue.</p>
         </div>
-        <Link
-          href="/worlds/new"
-          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
-        >
-          + Neue Welt
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/search?tab=worlds"
+            className="rounded-md border border-line px-4 py-2 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
+          >
+            Welten entdecken
+          </Link>
+          <Link
+            href="/worlds/new"
+            className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+          >
+            + Neue Welt
+          </Link>
+        </div>
       </div>
 
       {worlds.length === 0 && (
@@ -44,11 +53,18 @@ export default async function WorldsPage() {
             key={world.id}
             className="flex items-center justify-between gap-4 rounded-lg border border-line bg-surface p-4"
           >
-            <Link href={`/worlds/${world.id}`} className="flex-1">
-              <p className="font-serif text-xl text-fg hover:text-accent">{world.name}</p>
-              {world.description && (
-                <p className="line-clamp-1 text-sm text-muted">{world.description}</p>
-              )}
+            <Link href={`/worlds/${world.id}`} className="flex flex-1 items-center gap-4">
+              <WorldCover
+                name={world.name}
+                coverUrl={world.cover_image_url}
+                className="h-14 w-14 shrink-0 text-base"
+              />
+              <div>
+                <p className="font-serif text-xl text-fg hover:text-accent">{world.name}</p>
+                {world.description && (
+                  <p className="line-clamp-1 text-sm text-muted">{world.description}</p>
+                )}
+              </div>
             </Link>
             <EnterWorldButton worldId={world.id} />
           </li>

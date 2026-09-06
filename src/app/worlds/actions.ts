@@ -67,6 +67,65 @@ export async function addWorldMember(
   return null;
 }
 
+export async function updateWorld(
+  worldId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const coverImageUrl = String(formData.get("cover_image_url") ?? "").trim();
+
+  if (!name) return "Bitte einen Namen für die Welt angeben.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase
+    .from("worlds")
+    .update({
+      name,
+      description: description || null,
+      cover_image_url: coverImageUrl || null,
+    })
+    .eq("id", worldId)
+    .eq("created_by", user.id);
+
+  if (error) return error.message;
+
+  revalidatePath(`/worlds/${worldId}`);
+  revalidatePath("/worlds");
+  revalidatePath("/", "layout");
+  redirect(`/worlds/${worldId}`);
+}
+
+export async function followWorld(worldId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("world_follows").upsert({ world_id: worldId, user_id: user.id });
+  revalidatePath("/search");
+  revalidatePath("/");
+}
+
+export async function unfollowWorld(worldId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("world_follows").delete().eq("world_id", worldId).eq("user_id", user.id);
+  revalidatePath("/search");
+  revalidatePath("/");
+}
+
 export async function leaveWorld(worldId: string) {
   const supabase = await createClient();
   const {

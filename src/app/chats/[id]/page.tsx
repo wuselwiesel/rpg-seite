@@ -44,12 +44,23 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
     ? chat.name
     : (participants.find((p) => p.id !== activeCharacter.id)?.name ?? chat.name ?? "Chat");
 
+  const { data: worldCharacters } = await supabase
+    .from("characters")
+    .select("*")
+    .eq("world_id", activeWorld.id)
+    .order("name")
+    .returns<Character[]>();
+
+  const participantIds = new Set(participants.map((p) => p.id));
+  const availableCharacters = (worldCharacters ?? []).filter((c) => !participantIds.has(c.id));
+
   return (
     <ChatRoom
       chatId={chat.id}
       userId={user.id}
       title={title ?? "Chat"}
       participants={participants}
+      availableCharacters={availableCharacters}
       initialMessages={messages ?? []}
       activeCharacter={activeCharacter}
     />

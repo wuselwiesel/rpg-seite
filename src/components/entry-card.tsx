@@ -19,6 +19,7 @@ export function EntryCard({
   replyLabel = "Kommentare",
   replyCta = "Kommentieren",
   index = 0,
+  worldName,
 }: {
   id: string;
   title: string;
@@ -31,6 +32,7 @@ export function EntryCard({
   replyLabel?: string;
   replyCta?: string;
   index?: number;
+  worldName?: string;
 }) {
   const preview = stripHtml(content);
   const surface = SURFACES[index % SURFACES.length];
@@ -43,7 +45,10 @@ export function EntryCard({
           <p className="text-sm font-medium text-fg hover:text-accent">
             {character?.name ?? "Unbekannt"}
           </p>
-          <p className="text-xs text-muted">{formatDateTime(createdAt)}</p>
+          <p className="text-xs text-muted">
+            {formatDateTime(createdAt)}
+            {worldName && <span> · in {worldName}</span>}
+          </p>
         </div>
       </Link>
       <Link href={detailHref} className="block">

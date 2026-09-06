@@ -13,6 +13,14 @@ export async function signup(_prevState: string | null, formData: FormData) {
   }
 
   const supabase = await createClient();
+
+  const { data: available } = await supabase.rpc("username_available", {
+    p_username: username,
+  });
+  if (available === false) {
+    return "Dieser Benutzername ist bereits vergeben.";
+  }
+
   const { error } = await supabase.auth.signUp({
     email,
     password,

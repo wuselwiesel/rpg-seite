@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "./character-avatar";
+import { WorldCover } from "./world-cover";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 
@@ -10,10 +11,14 @@ export function AvatarUpload({
   name,
   initialUrl,
   displayName,
+  bucket = "avatars",
+  variant = "circle",
 }: {
   name: string;
   initialUrl?: string | null;
   displayName: string;
+  bucket?: string;
+  variant?: "circle" | "cover";
 }) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [uploading, setUploading] = useState(false);
@@ -36,7 +41,7 @@ export function AvatarUpload({
     const path = `${crypto.randomUUID()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("avatars")
+      .from(bucket)
       .upload(path, file);
 
     if (uploadError) {
@@ -45,15 +50,19 @@ export function AvatarUpload({
       return;
     }
 
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     setUrl(data.publicUrl);
     setUploading(false);
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className={variant === "cover" ? "flex flex-col gap-3" : "flex items-center gap-4"}>
       <input type="hidden" name={name} value={url} />
-      <CharacterAvatar name={displayName} avatarUrl={url} size={56} />
+      {variant === "cover" ? (
+        <WorldCover name={displayName} coverUrl={url} className="h-32 w-full" />
+      ) : (
+        <CharacterAvatar name={displayName} avatarUrl={url} size={56} />
+      )}
       <div className="flex flex-col gap-1">
         <label className="cursor-pointer text-sm text-accent hover:underline">
           {uploading ? "Lädt hoch..." : url ? "Bild ändern" : "Bild hochladen"}

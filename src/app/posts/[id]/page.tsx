@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { MentionText } from "@/components/mention-text";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
-import type { Character, Comment, Post } from "@/lib/types";
+import type { Comment, Post } from "@/lib/types";
 import { CommentForm } from "./comment-form";
 
 export default async function PostDetailPage({
@@ -33,11 +34,9 @@ export default async function PostDetailPage({
     .order("created_at", { ascending: true })
     .returns<Comment[]>();
 
-  const mentionableCharacters = new Map<string, Character>();
-  if (post.characters) mentionableCharacters.set(post.characters.id, post.characters);
-  for (const comment of comments ?? []) {
-    if (comment.characters) mentionableCharacters.set(comment.characters.id, comment.characters);
-  }
+  const mentionableCharacters = post.characters
+    ? await getMentionableCharacters(user.id, post.characters.world_id)
+    : [];
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -86,7 +85,7 @@ export default async function PostDetailPage({
         ))}
       </div>
 
-      <CommentForm postId={post.id} characters={Array.from(mentionableCharacters.values())} />
+      <CommentForm postId={post.id} characters={mentionableCharacters} />
     </div>
   );
 }

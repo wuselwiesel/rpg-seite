@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, type Character } from "@/lib/types";
+import { getAcceptedFriends } from "@/lib/friends";
 
 export async function getOwnCharacters(userId: string, worldId: string): Promise<Character[]> {
   const supabase = await createClient();
@@ -23,4 +24,22 @@ export async function getActiveCharacter(userId: string, worldId: string): Promi
   const activeId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value;
 
   return characters.find((c) => c.id === activeId) ?? characters[0];
+}
+
+// Charaktere, die man in einer Welt per @ erwähnen können soll: die eigenen
+// sowie die aller Freund:innen (unabhängig davon, ob sie schon am Thread teilnehmen).
+export async function getMentionableCharacters(userId: string, worldId: string): Promise<Character[]> {
+  const supabase = await createClient();
+  const friends = await getAcceptedFriends(userId);
+  const ownerIds = [userId, ...friends.map((f) => f.id)];
+
+  const { data } = await supabase
+    .from("characters")
+    .select("*")
+    .eq("world_id", worldId)
+    .in("owner_id", ownerIds)
+    .order("name")
+    .returns<Character[]>();
+
+  return data ?? [];
 }

@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ScrollText, Users, PenLine, BookOpen, UserPlus } from "lucide-react";
+import { ScrollText, Users, PenLine, BookOpen, UserPlus, Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
 import { getUnreadChatIds } from "@/lib/chat-reads";
+import type { Profile } from "@/lib/types";
 import { CharacterAvatar } from "./character-avatar";
 import { CharacterSwitcher } from "./character-switcher";
 import { WorldSwitcher } from "./world-switcher";
@@ -21,10 +22,11 @@ export async function Sidebar() {
 
   if (!user) return null;
 
-  const [worlds, profile] = await Promise.all([
+  const [worlds, profileResult] = await Promise.all([
     getUserWorlds(user.id),
-    supabase.from("profiles").select("username").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle<Profile>(),
   ]);
+  const profile = profileResult.data;
 
   const activeWorld = await getActiveWorld(user.id);
 
@@ -40,7 +42,12 @@ export async function Sidebar() {
               Abmelden
             </button>
           </form>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <Link href="/profile" className="text-sm text-muted hover:text-fg">
+              Profil
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
     );
@@ -80,8 +87,10 @@ export async function Sidebar() {
           />
           <div>
             <p className="font-serif text-xl text-fg">{activeCharacter.name}</p>
-            {profile.data?.username && (
-              <p className="text-sm text-muted">@{profile.data.username}</p>
+            {profile?.username && (
+              <Link href="/profile" className="text-sm text-muted hover:text-accent">
+                @{profile.nickname || profile.username}
+              </Link>
             )}
           </div>
           <CharacterSwitcher characters={characters} activeId={activeCharacter.id} />
@@ -105,6 +114,9 @@ export async function Sidebar() {
         </NavLink>
         <NavLink href="/friends" icon={<UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
           Freund:innen
+        </NavLink>
+        <NavLink href="/search" icon={<Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
+          Suche
         </NavLink>
       </nav>
 

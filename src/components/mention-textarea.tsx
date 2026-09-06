@@ -21,6 +21,10 @@ function findMentionQuery(text: string, cursor: number): MentionQuery | null {
   return { start: atIndex, query };
 }
 
+function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] ?? name;
+}
+
 function encodeMentionsInText(text: string, mentions: { name: string; id: string }[]) {
   let result = text;
   for (const mention of mentions) {
@@ -66,11 +70,12 @@ export function MentionTextarea({
     const cursor = textareaRef.current?.selectionStart ?? text.length;
     const before = text.slice(0, query.start);
     const after = text.slice(cursor);
-    const inserted = `@${character.name} `;
+    const name = firstName(character.name);
+    const inserted = `@${name} `;
     const newText = before + inserted + after;
 
     setText(newText);
-    setMentions((prev) => [...prev, { name: character.name, id: character.id }]);
+    setMentions((prev) => [...prev, { name, id: character.id }]);
     setQuery(null);
 
     requestAnimationFrame(() => {

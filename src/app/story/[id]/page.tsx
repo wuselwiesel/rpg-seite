@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { MentionText } from "@/components/mention-text";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
-import type { Character, StoryEntry, StoryPost } from "@/lib/types";
+import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryEntryForm } from "./story-entry-form";
 
 export default async function StoryPostDetailPage({
@@ -36,12 +36,7 @@ export default async function StoryPostDetailPage({
     .order("created_at", { ascending: true })
     .returns<StoryEntry[]>();
 
-  const { data: worldCharacters } = await supabase
-    .from("characters")
-    .select("*")
-    .eq("world_id", storyPost.world_id)
-    .order("name")
-    .returns<Character[]>();
+  const mentionableCharacters = await getMentionableCharacters(user.id, storyPost.world_id);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -90,7 +85,7 @@ export default async function StoryPostDetailPage({
         storyPostId={storyPost.id}
         worldId={storyPost.world_id}
         characterName={activeCharacter?.name ?? "deinem Charakter"}
-        characters={worldCharacters ?? []}
+        characters={mentionableCharacters}
       />
     </div>
   );

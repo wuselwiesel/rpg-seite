@@ -7,8 +7,12 @@
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   username text not null,
+  nickname text,
+  avatar_url text,
   created_at timestamptz not null default now()
 );
+
+create unique index profiles_username_unique_idx on public.profiles (lower(username));
 
 alter table public.profiles enable row level security;
 
@@ -17,6 +21,44 @@ create policy "profiles_select_all" on public.profiles
 
 create policy "profiles_update_own" on public.profiles
   for update to authenticated using (id = auth.uid());
+
+-- Security-definer Helfer: Benutzername frei? (auch pre-auth beim Signup nutzbar)
+create function public.username_available(p_username text, p_exclude_id uuid default null)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select not exists (
+    select 1 from public.profiles
+    where lower(username) = lower(p_username)
+    and (p_exclude_id is null or id <> p_exclude_id)
+  );
+$$;
+
+grant execute on function public.username_available(text, uuid) to anon, authenticated;
+
+-- Security-definer Helfer: E-Mail zu Benutzername auflösen (Login mit Benutzername statt E-Mail)
+create function public.get_email_for_username(p_username text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text;
+begin
+  select u.email into v_email
+  from public.profiles p
+  join auth.users u on u.id = p.id
+  where lower(p.username) = lower(p_username)
+  limit 1;
+  return v_email;
+end;
+$$;
+
+grant execute on function public.get_email_for_username(text) to anon, authenticated;
 
 create function public.handle_new_user()
 returns trigger
@@ -85,6 +127,7 @@ create table public.worlds (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text,
+  cover_image_url text,
   created_by uuid not null references public.profiles (id) on delete cascade,
   created_at timestamptz not null default now()
 );
@@ -113,11 +156,31 @@ $$;
 alter table public.worlds enable row level security;
 alter table public.world_members enable row level security;
 
-create policy "worlds_select_member" on public.worlds
-  for select to authenticated using (public.is_world_member(id) or created_by = auth.uid());
+-- Welten sind für alle angemeldeten Personen durchsuchbar (Name/Beschreibung/Titelbild);
+-- Mitglieder, Charaktere und Story bleiben über die jeweils eigenen Policies geschützt.
+create policy "worlds_select_all" on public.worlds
+  for select to authenticated using (true);
 
 create policy "worlds_insert_own" on public.worlds
   for insert to authenticated with check (created_by = auth.uid());
+
+create policy "worlds_update_own" on public.worlds
+  for update to authenticated using (created_by = auth.uid());
+
+-- Welten, denen man folgt, um ihre Feed-Beiträge zu sehen, ohne Mitglied zu sein.
+create table public.world_follows (
+  world_id uuid not null references public.worlds (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (world_id, user_id)
+);
+
+alter table public.world_follows enable row level security;
+
+create policy "world_follows_own" on public.world_follows
+  for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
 
 create policy "world_members_select_member" on public.world_members
   for select to authenticated using (public.is_world_member(world_id));
@@ -155,6 +218,16 @@ alter table public.characters enable row level security;
 create policy "characters_select_world_member" on public.characters
   for select to authenticated using (public.is_world_member(world_id));
 
+-- Damit der weltübergreifende Feed Name/Avatar von Charakteren aus gefolgten
+-- Welten anzeigen kann (nicht nur die Post-Zeile selbst sichtbar machen).
+create policy "characters_select_followed_world" on public.characters
+  for select to authenticated using (
+    exists (
+      select 1 from public.world_follows wf
+      where wf.world_id = characters.world_id and wf.user_id = auth.uid()
+    )
+  );
+
 create policy "characters_insert_own" on public.characters
   for insert to authenticated with check (owner_id = auth.uid() and public.is_world_member(world_id));
 
@@ -184,6 +257,28 @@ create policy "posts_select_own_or_friends" on public.posts
       where c.id = character_id and (c.owner_id = auth.uid() or public.is_friend_of(c.owner_id))
     )
   );
+
+-- Security-definer Helfer: Post-Charakter in einer gefolgten Welt?
+-- (direkter Join auf `characters` in der Policy würde an dessen eigener
+-- RLS scheitern, siehe is_world_member/is_friend_of für das gleiche Muster.)
+create function public.is_followed_world_character(_character_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.characters c
+    join public.world_follows wf on wf.world_id = c.world_id
+    where c.id = _character_id and wf.user_id = auth.uid()
+  );
+$$;
+
+grant execute on function public.is_followed_world_character(uuid) to authenticated;
+
+create policy "posts_select_followed_world" on public.posts
+  for select to authenticated using (public.is_followed_world_character(character_id));
 
 create policy "posts_insert_own_character" on public.posts
   for insert to authenticated with check (
@@ -218,6 +313,26 @@ create policy "comments_select_if_post_visible" on public.comments
       where p.id = post_id and (pc.owner_id = auth.uid() or public.is_friend_of(pc.owner_id))
     )
   );
+
+create function public.is_followed_world_post(_post_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.posts p
+    join public.characters c on c.id = p.character_id
+    join public.world_follows wf on wf.world_id = c.world_id
+    where p.id = _post_id and wf.user_id = auth.uid()
+  );
+$$;
+
+grant execute on function public.is_followed_world_post(uuid) to authenticated;
+
+create policy "comments_select_followed_world" on public.comments
+  for select to authenticated using (public.is_followed_world_post(post_id));
 
 create policy "comments_insert_own_character" on public.comments
   for insert to authenticated with check (
@@ -335,6 +450,9 @@ create policy "chats_select_participant" on public.chats
 create policy "chats_insert_own" on public.chats
   for insert to authenticated with check (created_by = auth.uid());
 
+create policy "chats_update_participant" on public.chats
+  for update to authenticated using (public.is_chat_participant(id) or created_by = auth.uid());
+
 create policy "chat_participants_select_participant" on public.chat_participants
   for select to authenticated using (public.is_chat_participant(chat_id));
 
@@ -411,3 +529,22 @@ create policy "post_images_authenticated_insert" on storage.objects
 
 create policy "post_images_authenticated_delete" on storage.objects
   for delete to authenticated using (bucket_id = 'post-images');
+
+-- ---------------------------------------------------------------------------
+-- Welt-Titelbilder (Supabase Storage)
+-- ---------------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('world-covers', 'world-covers', true, 10485760)
+on conflict (id) do nothing;
+
+create policy "world_covers_public_read" on storage.objects
+  for select using (bucket_id = 'world-covers');
+
+create policy "world_covers_authenticated_insert" on storage.objects
+  for insert to authenticated with check (bucket_id = 'world-covers');
+
+create policy "world_covers_authenticated_update" on storage.objects
+  for update to authenticated using (bucket_id = 'world-covers');
+
+create policy "world_covers_authenticated_delete" on storage.objects
+  for delete to authenticated using (bucket_id = 'world-covers');

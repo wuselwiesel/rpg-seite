@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
@@ -53,4 +54,25 @@ export async function createChat(_prevState: string | null, formData: FormData) 
   if (participantsError) return participantsError.message;
 
   redirect(`/chats/${chat.id}`);
+}
+
+export async function addChatParticipant(
+  chatId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const characterId = String(formData.get("character_id") ?? "");
+  if (!characterId) return "Bitte einen Charakter auswählen.";
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("chat_participants")
+    .insert({ chat_id: chatId, character_id: characterId });
+
+  if (error) return error.message;
+
+  await supabase.from("chats").update({ is_group: true }).eq("id", chatId);
+
+  revalidatePath(`/chats/${chatId}`);
+  return null;
 }

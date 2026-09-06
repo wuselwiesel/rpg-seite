@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
+import { addChatParticipant } from "../actions";
 import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
@@ -12,6 +14,7 @@ export function ChatRoom({
   userId,
   title,
   participants,
+  availableCharacters,
   initialMessages,
   activeCharacter,
 }: {
@@ -19,14 +22,18 @@ export function ChatRoom({
   userId: string;
   title: string;
   participants: Character[];
+  availableCharacters: Character[];
   initialMessages: Message[];
   activeCharacter: Character;
 }) {
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+  const addAction = addChatParticipant.bind(null, chatId);
+  const [addError, addFormAction, addPending] = useActionState(addAction, null);
 
   function markAsRead() {
     supabase
@@ -64,6 +71,12 @@ export function ChatRoom({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
+  const wasAddPending = useRef(false);
+  useEffect(() => {
+    if (wasAddPending.current && !addPending && !addError) setShowAddForm(false);
+    wasAddPending.current = addPending;
+  }, [addPending, addError]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const content = draft.trim();
@@ -91,10 +104,46 @@ export function ChatRoom({
           </Link>
           <h1 className="font-serif text-2xl text-fg">{title}</h1>
         </div>
-        <p className="text-xs text-muted">
-          {participants.map((p) => p.name).join(", ")}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-right text-xs text-muted">
+            {participants.map((p) => p.name).join(", ")}
+          </p>
+          {availableCharacters.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAddForm((v) => !v)}
+              title="Charakter hinzufügen"
+              className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+            >
+              <UserPlus className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {showAddForm && (
+        <form action={addFormAction} className="flex items-center gap-2 border-b border-line py-3">
+          <select
+            name="character_id"
+            required
+            className="flex-1 rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+          >
+            {availableCharacters.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={addPending}
+            className="shrink-0 rounded-md bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+          >
+            {addPending ? "..." : "Hinzufügen"}
+          </button>
+          {addError && <p className="text-xs text-red-600 dark:text-red-400">{addError}</p>}
+        </form>
+      )}
 
       <div className="flex-1 overflow-y-auto py-4">
         <div className="flex flex-col gap-3">

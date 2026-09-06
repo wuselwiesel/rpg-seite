@@ -1,6 +1,8 @@
 export type Profile = {
   id: string;
   username: string;
+  nickname: string | null;
+  avatar_url: string | null;
   created_at: string;
 };
 
@@ -8,6 +10,7 @@ export type World = {
   id: string;
   name: string;
   description: string | null;
+  cover_image_url: string | null;
   created_by: string;
   created_at: string;
 };
@@ -30,6 +33,7 @@ export type Character = {
   avatar_url: string | null;
   bio: string | null;
   created_at: string;
+  worlds?: { name: string } | null;
 };
 
 export type Post = {
