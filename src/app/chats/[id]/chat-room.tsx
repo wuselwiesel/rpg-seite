@@ -9,12 +9,14 @@ import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
   chatId,
+  userId,
   title,
   participants,
   initialMessages,
   activeCharacter,
 }: {
   chatId: string;
+  userId: string;
   title: string;
   participants: Character[];
   initialMessages: Message[];
@@ -26,7 +28,16 @@ export function ChatRoom({
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
+  function markAsRead() {
+    supabase
+      .from("chat_reads")
+      .upsert({ chat_id: chatId, user_id: userId, last_read_at: new Date().toISOString() })
+      .then();
+  }
+
   useEffect(() => {
+    markAsRead();
+
     const channel = supabase
       .channel(`chat-${chatId}`)
       .on(
@@ -38,6 +49,7 @@ export function ChatRoom({
           setMessages((prev) =>
             prev.some((m) => m.id === row.id) ? prev : [...prev, { ...row, characters: character }],
           );
+          markAsRead();
         },
       )
       .subscribe();

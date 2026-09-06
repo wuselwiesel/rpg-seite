@@ -46,13 +46,15 @@ export default async function CharactersPage() {
             key={character.id}
             className="flex items-center gap-4 rounded-lg border border-stone-800 bg-stone-900/60 p-4"
           >
-            <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={48} />
-            <div className="flex-1">
-              <p className="font-medium text-stone-100">{character.name}</p>
-              {character.bio && (
-                <p className="line-clamp-1 text-sm text-stone-400">{character.bio}</p>
-              )}
-            </div>
+            <Link href={`/characters/${character.id}`} className="flex flex-1 items-center gap-4">
+              <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={48} />
+              <div className="flex-1">
+                <p className="font-medium text-stone-100 hover:text-amber-400">{character.name}</p>
+                {character.bio && (
+                  <p className="line-clamp-1 text-sm text-stone-400">{character.bio}</p>
+                )}
+              </div>
+            </Link>
             {character.id === activeId ? (
               <span className="rounded-full bg-amber-900/60 px-3 py-1 text-xs font-medium text-amber-300">
                 Aktiv

@@ -43,6 +43,7 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
   return (
     <ChatRoom
       chatId={chat.id}
+      userId={user.id}
       title={title ?? "Chat"}
       participants={participants}
       initialMessages={messages ?? []}

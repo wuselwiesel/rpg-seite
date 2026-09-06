@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
+import { getUnreadChatIds } from "@/lib/chat-reads";
 import { CharacterAvatar } from "@/components/character-avatar";
 import type { Character, Chat } from "@/lib/types";
 
@@ -25,6 +26,11 @@ export default async function ChatsPage() {
     .select("*, chat_participants(characters(*))")
     .order("created_at", { ascending: false })
     .returns<ChatWithParticipants[]>();
+
+  const ownCharacters = await getOwnCharacters(user.id);
+  const unreadChatIds = new Set(
+    await getUnreadChatIds(user.id, ownCharacters.map((c) => c.id)),
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -69,12 +75,15 @@ export default async function ChatsPage() {
                 ) : (
                   <CharacterAvatar name={title ?? "?"} avatarUrl={others[0]?.avatar_url} />
                 )}
-                <div>
+                <div className="flex-1">
                   <p className="font-medium text-stone-200">{title}</p>
                   <p className="text-xs text-stone-500">
                     {chat.chat_participants.length} Teilnehmer:innen
                   </p>
                 </div>
+                {unreadChatIds.has(chat.id) && (
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+                )}
               </Link>
             </li>
           );
