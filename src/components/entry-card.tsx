@@ -20,6 +20,9 @@ export function EntryCard({
   replyCta = "Kommentieren",
   index = 0,
   worldName,
+  likeButton,
+  tags,
+  tagHrefBase,
 }: {
   id: string;
   title: string;
@@ -33,6 +36,9 @@ export function EntryCard({
   replyCta?: string;
   index?: number;
   worldName?: string;
+  likeButton?: React.ReactNode;
+  tags?: string[];
+  tagHrefBase?: string;
 }) {
   const preview = stripHtml(content);
   const surface = SURFACES[index % SURFACES.length];
@@ -55,13 +61,29 @@ export function EntryCard({
         <h2 className="mb-1 font-serif text-2xl text-fg">{title}</h2>
         {preview && <p className="line-clamp-3 text-sm text-fg-soft">{preview}</p>}
       </Link>
-      <Link
-        href={detailHref}
-        className="mt-4 flex items-center gap-1.5 text-sm text-muted hover:text-fg"
-      >
-        <MessageCircle className="h-4 w-4" strokeWidth={2} />
-        {replyCount > 0 ? `${replyCount} ${replyLabel}` : replyCta}
-      </Link>
+      {tags && tags.length > 0 && tagHrefBase && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {tags.map((tag) => (
+            <Link
+              key={tag}
+              href={`${tagHrefBase}?tag=${encodeURIComponent(tag)}`}
+              className="rounded-full bg-surface-3 px-2.5 py-0.5 text-xs text-fg-soft transition hover:text-accent"
+            >
+              #{tag}
+            </Link>
+          ))}
+        </div>
+      )}
+      <div className="mt-4 flex items-center gap-4">
+        <Link
+          href={detailHref}
+          className="flex items-center gap-1.5 text-sm text-muted hover:text-fg"
+        >
+          <MessageCircle className="h-4 w-4" strokeWidth={2} />
+          {replyCount > 0 ? `${replyCount} ${replyLabel}` : replyCta}
+        </Link>
+        {likeButton}
+      </div>
     </article>
   );
 }

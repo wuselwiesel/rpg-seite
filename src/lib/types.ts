@@ -42,9 +42,11 @@ export type Post = {
   character_id: string;
   title: string;
   content: string;
+  tags: string[];
   created_at: string;
   characters: Character | null;
   comments?: { count: number }[];
+  likes?: { character_id: string }[];
 };
 
 export type Comment = {
@@ -54,6 +56,7 @@ export type Comment = {
   content: string;
   created_at: string;
   characters: Character | null;
+  likes?: { character_id: string }[];
 };
 
 export type StoryPost = {
@@ -62,6 +65,7 @@ export type StoryPost = {
   character_id: string;
   title: string;
   content: string;
+  tags: string[];
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];

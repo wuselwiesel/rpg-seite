@@ -6,9 +6,17 @@ import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import { EntryCard } from "@/components/entry-card";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { SearchFilterBar } from "@/components/search-filter-bar";
+import { escapePostgrestValue } from "@/lib/postgrest";
 import type { StoryPost } from "@/lib/types";
 
-export default async function StoryPage() {
+export default async function StoryPage({ searchParams }: PageProps<"/story">) {
+  const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q.trim() : "";
+  const from = typeof params.from === "string" ? params.from : "";
+  const to = typeof params.to === "string" ? params.to : "";
+  const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,12 +30,25 @@ export default async function StoryPage() {
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   if (!activeCharacter) redirect("/characters/new");
 
-  const { data: storyPosts } = await supabase
+  let storyQuery = supabase
     .from("story_posts")
     .select("*, characters(*), story_entries(count)")
     .eq("world_id", activeWorld.id)
-    .order("created_at", { ascending: false })
-    .returns<StoryPost[]>();
+    .order("created_at", { ascending: false });
+
+  if (q) {
+    const escaped = escapePostgrestValue(q);
+    storyQuery = storyQuery.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
+  }
+  if (tag) storyQuery = storyQuery.contains("tags", [tag]);
+  if (from) storyQuery = storyQuery.gte("created_at", new Date(from).toISOString());
+  if (to) {
+    const toDate = new Date(to);
+    toDate.setDate(toDate.getDate() + 1);
+    storyQuery = storyQuery.lt("created_at", toDate.toISOString());
+  }
+
+  const { data: storyPosts } = await storyQuery.returns<StoryPost[]>();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -36,6 +57,8 @@ export default async function StoryPage() {
         <h1 className="font-serif text-3xl text-fg">Story</h1>
       </div>
       <p className="mb-6 text-sm text-muted">Die Handlungsstränge von {activeWorld.name}.</p>
+
+      <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} />
 
       <Link
         href="/story/new"
@@ -67,8 +90,12 @@ export default async function StoryPage() {
               replyLabel="Fortsetzungen"
               replyCta="Weiterschreiben"
               index={index}
+              tags={post.tags}
+              tagHrefBase="/story"
             />
           ))
+        ) : q || tag || from || to ? (
+          <p className="text-muted">Keine Einträge gefunden.</p>
         ) : (
           <p className="text-muted">
             Noch keine Szene begonnen.{" "}

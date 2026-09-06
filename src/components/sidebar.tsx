@@ -13,7 +13,6 @@ import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
-import { logout } from "@/lib/actions/auth";
 
 export async function Sidebar() {
   const supabase = await createClient();
@@ -39,19 +38,11 @@ export async function Sidebar() {
   if (!activeWorld) {
     return (
       <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6">
-        <Link href="/worlds" className="mb-8 block px-1">
-          <span className="font-serif text-2xl text-fg">Chronik</span>
-        </Link>
-        <div className="mt-auto flex items-center justify-between pt-6">
-          <form action={logout}>
-            <button type="submit" className="text-sm text-muted hover:text-fg">
-              Abmelden
-            </button>
-          </form>
-          <div className="flex items-center gap-3">
-            <Link href="/profile" className="text-sm text-muted hover:text-fg">
-              Profil
-            </Link>
+        <div className="mb-8 flex items-center justify-between">
+          <Link href="/worlds" className="block">
+            <span className="font-serif text-2xl text-fg">Chronik</span>
+          </Link>
+          <div className="flex items-center gap-1">
             <NotificationBell
               userId={user.id}
               initialNotifications={initialNotifications}
@@ -59,6 +50,11 @@ export async function Sidebar() {
             />
             <ThemeToggle />
           </div>
+        </div>
+        <div className="mt-auto flex items-center justify-between pt-6">
+          <Link href="/profile" className="text-sm text-muted hover:text-fg">
+            Profil
+          </Link>
         </div>
       </aside>
     );
@@ -74,32 +70,33 @@ export async function Sidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6">
-      <Link href="/" className="mb-4 block px-1">
-        <span className="font-serif text-2xl text-fg">Chronik</span>
-      </Link>
-
-      <div className="mb-6 flex items-center gap-2 px-1">
-        <WorldSwitcher worlds={worlds} activeId={activeWorld.id} />
-        <Link
-          href="/worlds"
-          className="shrink-0 text-xs text-muted hover:text-accent"
-          title="Welten verwalten"
-        >
-          {worlds.length <= 1 ? activeWorld.name : "Verwalten"}
-        </Link>
+      <div className="mb-2 flex items-center justify-end gap-1">
+        <NotificationBell
+          userId={user.id}
+          initialNotifications={initialNotifications}
+          initialUnreadCount={initialUnreadCount}
+        />
+        <ThemeToggle />
+      </div>
+      <div className="mb-6">
+        <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={activeWorld.created_by === user.id} />
       </div>
 
       {activeCharacter && (
         <div className="mb-6 flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-4 py-6 text-center">
-          <CharacterAvatar
-            name={activeCharacter.name}
-            avatarUrl={activeCharacter.avatar_url}
-            size={72}
-          />
+          <Link href={`/characters/${activeCharacter.id}`}>
+            <CharacterAvatar
+              name={activeCharacter.name}
+              avatarUrl={activeCharacter.avatar_url}
+              size={72}
+            />
+          </Link>
           <div>
-            <p className="font-serif text-xl text-fg">{activeCharacter.name}</p>
+            <Link href={`/characters/${activeCharacter.id}`} className="font-serif text-xl text-fg hover:text-accent">
+              {activeCharacter.name}
+            </Link>
             {profile?.username && (
-              <Link href="/profile" className="text-sm text-muted hover:text-accent">
+              <Link href="/profile" className="block text-sm text-muted hover:text-accent">
                 @{profile.nickname || profile.username}
               </Link>
             )}
@@ -139,20 +136,10 @@ export async function Sidebar() {
         Neuer Feed-Eintrag
       </Link>
 
-      <div className="mt-auto flex items-center justify-between pt-6">
-        <form action={logout}>
-          <button type="submit" className="text-sm text-muted hover:text-fg">
-            Abmelden
-          </button>
-        </form>
-        <div className="flex items-center gap-1">
-          <NotificationBell
-            userId={user.id}
-            initialNotifications={initialNotifications}
-            initialUnreadCount={initialUnreadCount}
-          />
-          <ThemeToggle />
-        </div>
+      <div className="mt-auto pt-6">
+        <Link href="/profile" className="text-sm text-muted hover:text-fg">
+          Profil &amp; Einstellungen
+        </Link>
       </div>
     </aside>
   );

@@ -8,6 +8,7 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
+import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacters } from "@/lib/notifications";
 
 async function getActiveCharacterInWorld(userId: string, worldId: string) {
@@ -61,9 +62,11 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
   const characterId = await getActiveCharacterInWorld(user.id, activeWorld.id);
   if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
 
+  const tags = extractHashtags(`${title} ${stripHtml(content)}`);
+
   const { data, error } = await supabase
     .from("story_posts")
-    .insert({ world_id: activeWorld.id, character_id: characterId, title, content })
+    .insert({ world_id: activeWorld.id, character_id: characterId, title, content, tags })
     .select("id")
     .single();
 

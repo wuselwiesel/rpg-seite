@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { MentionText } from "@/components/mention-text";
+import { LikeButton } from "@/components/like-button";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import type { Comment, Post } from "@/lib/types";
@@ -21,18 +22,22 @@ export default async function PostDetailPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("*, characters(*)")
+    .select("*, characters(*), likes(character_id)")
     .eq("id", id)
     .maybeSingle<Post>();
 
   if (!post) notFound();
 
-  const { data: comments } = await supabase
-    .from("comments")
-    .select("*, characters(*)")
-    .eq("post_id", id)
-    .order("created_at", { ascending: true })
-    .returns<Comment[]>();
+  const [{ data: comments }, { data: myCharacters }] = await Promise.all([
+    supabase
+      .from("comments")
+      .select("*, characters(*), likes(character_id)")
+      .eq("post_id", id)
+      .order("created_at", { ascending: true })
+      .returns<Comment[]>(),
+    supabase.from("characters").select("id").eq("owner_id", user.id),
+  ]);
+  const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
 
   const mentionableCharacters = post.characters
     ? await getMentionableCharacters(user.id, post.characters.world_id)
@@ -56,6 +61,13 @@ export default async function PostDetailPage({
           className="post-content text-fg-soft"
           dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content) }}
         />
+        <div className="mt-4">
+          <LikeButton
+            target={{ postId: post.id }}
+            initialLiked={(post.likes ?? []).some((l) => myCharacterIds.has(l.character_id))}
+            initialCount={post.likes?.length ?? 0}
+          />
+        </div>
       </article>
 
       <h2 className="mb-4 font-serif text-xl text-fg">
@@ -80,6 +92,13 @@ export default async function PostDetailPage({
                 </p>
               </div>
               <MentionText text={comment.content} className="whitespace-pre-line text-sm text-fg-soft" />
+              <div className="mt-2">
+                <LikeButton
+                  target={{ commentId: comment.id }}
+                  initialLiked={(comment.likes ?? []).some((l) => myCharacterIds.has(l.character_id))}
+                  initialCount={comment.likes?.length ?? 0}
+                />
+              </div>
             </div>
           </div>
         ))}

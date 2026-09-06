@@ -8,6 +8,7 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
+import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacters } from "@/lib/notifications";
 
 async function getActiveCharacterId(userId: string) {
@@ -61,9 +62,11 @@ export async function createPost(_prevState: string | null, formData: FormData) 
   const characterId = await getActiveCharacterId(user.id);
   if (!characterId) return "Du brauchst zuerst einen Charakter.";
 
+  const tags = extractHashtags(`${title} ${stripHtml(content)}`);
+
   const { data, error } = await supabase
     .from("posts")
-    .insert({ character_id: characterId, title, content })
+    .insert({ character_id: characterId, title, content, tags })
     .select("id")
     .single();
 
@@ -107,4 +110,71 @@ export async function createComment(
 
   revalidatePath(`/posts/${postId}`);
   return null;
+}
+
+export async function toggleLike(target: { postId: string } | { commentId: string }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const characterId = await getActiveCharacterId(user.id);
+  if (!characterId) return;
+
+  const column = "postId" in target ? "post_id" : "comment_id";
+  const targetId = "postId" in target ? target.postId : target.commentId;
+
+  const { data: existing } = await supabase
+    .from("likes")
+    .select("id")
+    .eq("character_id", characterId)
+    .eq(column, targetId)
+    .maybeSingle();
+
+  let postIdForRevalidate = "postId" in target ? target.postId : null;
+
+  if (existing) {
+    await supabase.from("likes").delete().eq("id", existing.id);
+  } else {
+    await supabase.from("likes").insert({ character_id: characterId, [column]: targetId });
+
+    let ownerId: string | null = null;
+    if ("postId" in target) {
+      const { data: post } = await supabase
+        .from("posts")
+        .select("characters(owner_id)")
+        .eq("id", target.postId)
+        .maybeSingle<{ characters: { owner_id: string } | null }>();
+      ownerId = post?.characters?.owner_id ?? null;
+    } else {
+      const { data: comment } = await supabase
+        .from("comments")
+        .select("post_id, characters(owner_id)")
+        .eq("id", target.commentId)
+        .maybeSingle<{ post_id: string; characters: { owner_id: string } | null }>();
+      ownerId = comment?.characters?.owner_id ?? null;
+      postIdForRevalidate = comment?.post_id ?? null;
+    }
+
+    if (ownerId && ownerId !== user.id) {
+      const { data: actor } = await supabase
+        .from("characters")
+        .select("name, avatar_url")
+        .eq("id", characterId)
+        .maybeSingle();
+
+      await supabase.rpc("create_notification", {
+        p_user_id: ownerId,
+        p_type: "like",
+        p_actor_name: actor?.name ?? "Jemand",
+        p_actor_avatar_url: actor?.avatar_url ?? null,
+        p_link: `/posts/${postIdForRevalidate}`,
+        p_message: "postId" in target ? "gefällt dein Beitrag" : "gefällt dein Kommentar",
+      });
+    }
+  }
+
+  revalidatePath("/");
+  if (postIdForRevalidate) revalidatePath(`/posts/${postIdForRevalidate}`);
 }
