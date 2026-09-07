@@ -2,12 +2,12 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { MentionText } from "@/components/mention-text";
 import { LikeButton } from "@/components/like-button";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import type { Comment, Post } from "@/lib/types";
 import { CommentForm } from "./comment-form";
+import { CommentItem } from "./comment-item";
 
 export default async function PostDetailPage({
   params,
@@ -76,31 +76,14 @@ export default async function PostDetailPage({
 
       <div className="mb-6 flex flex-col gap-4">
         {comments?.map((comment) => (
-          <div key={comment.id} className="flex gap-3">
-            <CharacterAvatar
-              name={comment.characters?.name ?? "?"}
-              avatarUrl={comment.characters?.avatar_url}
-              size={32}
-            />
-            <div className="flex-1 rounded-lg border border-line bg-surface px-4 py-2">
-              <div className="mb-1 flex items-baseline gap-2">
-                <p className="text-sm font-medium text-fg">
-                  {comment.characters?.name}
-                </p>
-                <p className="text-xs text-muted">
-                  {formatDateTime(comment.created_at)}
-                </p>
-              </div>
-              <MentionText text={comment.content} className="whitespace-pre-line text-sm text-fg-soft" />
-              <div className="mt-2">
-                <LikeButton
-                  target={{ commentId: comment.id }}
-                  initialLiked={(comment.likes ?? []).some((l) => myCharacterIds.has(l.character_id))}
-                  initialCount={comment.likes?.length ?? 0}
-                />
-              </div>
-            </div>
-          </div>
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            postId={post.id}
+            canManage={myCharacterIds.has(comment.character_id)}
+            initialLiked={(comment.likes ?? []).some((l) => myCharacterIds.has(l.character_id))}
+            initialLikeCount={comment.likes?.length ?? 0}
+          />
         ))}
       </div>
 

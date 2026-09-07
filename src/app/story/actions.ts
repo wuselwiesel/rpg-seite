@@ -128,6 +128,51 @@ export async function createStoryEntry(
   return null;
 }
 
+export async function updateStoryEntry(
+  entryId: string,
+  storyPostId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const content = String(formData.get("content") ?? "").trim();
+  if (!content) return "Text darf nicht leer sein.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase
+    .from("story_entries")
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq("id", entryId);
+
+  if (error) return error.message;
+
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
+export async function deleteStoryEntry(entryId: string, storyPostId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("story_entries")
+    .delete({ count: "exact" })
+    .eq("id", entryId);
+
+  if (error) return error.message;
+  if (!count) return "Eintrag konnte nicht gelöscht werden.";
+
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
 const ALLOWED_DICE = [4, 6, 8, 10, 12, 20, 100];
 
 export async function createDiceRoll(

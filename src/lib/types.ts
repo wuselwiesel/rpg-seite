@@ -44,6 +44,7 @@ export type Post = {
   content: string;
   tags: string[];
   created_at: string;
+  updated_at?: string | null;
   characters: Character | null;
   comments?: { count: number }[];
   likes?: { character_id: string }[];
@@ -55,6 +56,7 @@ export type Comment = {
   character_id: string;
   content: string;
   created_at: string;
+  updated_at?: string | null;
   characters: Character | null;
   likes?: { character_id: string }[];
 };
@@ -87,6 +89,7 @@ export type StoryEntry = {
   character_id: string;
   content: string;
   created_at: string;
+  updated_at?: string | null;
   characters: Character | null;
   roll_label?: string | null;
   roll_value?: number | null;
@@ -111,6 +114,7 @@ export type Message = {
   character_id: string;
   content: string;
   created_at: string;
+  updated_at?: string | null;
   characters: Character | null;
 };
 

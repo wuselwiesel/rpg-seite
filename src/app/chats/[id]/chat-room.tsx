@@ -2,11 +2,11 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { Pencil, Trash2, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
-import { addChatParticipant, sendMessage } from "../actions";
+import { addChatParticipant, deleteMessage, sendMessage, updateMessage } from "../actions";
 import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
@@ -30,6 +30,8 @@ export function ChatRoom({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
   const addAction = addChatParticipant.bind(null, chatId);
@@ -57,6 +59,22 @@ export function ChatRoom({
             prev.some((m) => m.id === row.id) ? prev : [...prev, { ...row, characters: character }],
           );
           markAsRead();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `chat_id=eq.${chatId}` },
+        (payload) => {
+          const row = payload.new as Omit<Message, "characters">;
+          setMessages((prev) => prev.map((m) => (m.id === row.id ? { ...m, ...row } : m)));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "messages" },
+        (payload) => {
+          const row = payload.old as { id: string };
+          setMessages((prev) => prev.filter((m) => m.id !== row.id));
         },
       )
       .subscribe();
@@ -91,6 +109,27 @@ export function ChatRoom({
       setDraft(content);
       alert(error);
     }
+  }
+
+  function startEdit(message: Message) {
+    setEditingId(message.id);
+    setEditDraft(message.content);
+  }
+
+  async function handleSaveEdit(messageId: string) {
+    const content = editDraft.trim();
+    if (!content) return;
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content } : m)));
+    setEditingId(null);
+    const error = await updateMessage(messageId, content);
+    if (error) alert(error);
+  }
+
+  async function handleDelete(messageId: string) {
+    if (!confirm("Diese Nachricht wirklich löschen?")) return;
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    const error = await deleteMessage(messageId, chatId);
+    if (error) alert(error);
   }
 
   return (
@@ -158,14 +197,65 @@ export function ChatRoom({
                   size={28}
                 />
                 <div
-                  className={`max-w-[75%] rounded-lg px-3 py-2 ${
+                  className={`group max-w-[75%] rounded-lg px-3 py-2 ${
                     isOwn ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg"
                   }`}
                 >
-                  <p className="mb-0.5 text-xs opacity-70">
-                    {message.characters?.name} · {formatDateTime(message.created_at)}
-                  </p>
-                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  <div className="mb-0.5 flex items-center gap-1.5">
+                    <p className="text-xs opacity-70">
+                      {message.characters?.name} · {formatDateTime(message.created_at)}
+                      {message.updated_at && " · bearbeitet"}
+                    </p>
+                    {isOwn && editingId !== message.id && (
+                      <span className="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(message)}
+                          title="Bearbeiten"
+                          className="rounded p-0.5 hover:bg-black/10"
+                        >
+                          <Pencil className="h-3 w-3" strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(message.id)}
+                          title="Löschen"
+                          className="rounded p-0.5 hover:bg-black/10"
+                        >
+                          <Trash2 className="h-3 w-3" strokeWidth={2} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                  {editingId === message.id ? (
+                    <div className="flex flex-col gap-1.5">
+                      <input
+                        type="text"
+                        value={editDraft}
+                        onChange={(e) => setEditDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveEdit(message.id);
+                          if (e.key === "Escape") setEditingId(null);
+                        }}
+                        autoFocus
+                        className="rounded-md border border-line bg-app px-2 py-1 text-sm text-fg outline-none focus:border-accent"
+                      />
+                      <div className="flex gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEdit(message.id)}
+                          className="opacity-90 hover:underline"
+                        >
+                          Speichern
+                        </button>
+                        <button type="button" onClick={() => setEditingId(null)} className="opacity-70 hover:underline">
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  )}
                 </div>
               </div>
             );

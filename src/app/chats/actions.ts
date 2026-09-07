@@ -100,6 +100,43 @@ export async function sendMessage(
   return null;
 }
 
+export async function updateMessage(messageId: string, content: string): Promise<string | null> {
+  const trimmed = content.trim();
+  if (!trimmed) return "Nachricht darf nicht leer sein.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase
+    .from("messages")
+    .update({ content: trimmed, updated_at: new Date().toISOString() })
+    .eq("id", messageId);
+
+  return error?.message ?? null;
+}
+
+export async function deleteMessage(messageId: string, chatId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("messages")
+    .delete({ count: "exact" })
+    .eq("id", messageId);
+
+  if (error) return error.message;
+  if (!count) return "Nachricht konnte nicht gelöscht werden.";
+
+  revalidatePath(`/chats/${chatId}`);
+  return null;
+}
+
 export async function addChatParticipant(
   chatId: string,
   _prevState: string | null,

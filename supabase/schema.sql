@@ -250,7 +250,8 @@ create table public.posts (
   title text not null,
   content text not null,
   tags text[] not null default '{}',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
 );
 
 create index posts_tags_idx on public.posts using gin (tags);
@@ -307,7 +308,8 @@ create table public.comments (
   post_id uuid not null references public.posts (id) on delete cascade,
   character_id uuid not null references public.characters (id) on delete cascade,
   content text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
 );
 
 alter table public.comments enable row level security;
@@ -353,6 +355,13 @@ create policy "comments_insert_own_character" on public.comments
 
 create policy "comments_delete_own" on public.comments
   for delete to authenticated using (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  );
+
+create policy "comments_update_own" on public.comments
+  for update to authenticated using (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  ) with check (
     exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
   );
 
@@ -414,11 +423,23 @@ create table public.story_posts (
   title text not null,
   content text not null,
   tags text[] not null default '{}',
+  is_private boolean not null default false,
+  pinned boolean not null default false,
+  locked boolean not null default false,
+  archived boolean not null default false,
   created_at timestamptz not null default now()
 );
 
 create index story_posts_tags_idx on public.story_posts using gin (tags);
 create index story_posts_arc_idx on public.story_posts (arc_id);
+
+-- Charaktere, die eine als "geheim" markierte Szene zusätzlich zur Autorin/
+-- zum Autor sehen dürfen (z.B. ein Vier-Augen-Gespräch).
+create table public.story_post_viewers (
+  story_post_id uuid not null references public.story_posts (id) on delete cascade,
+  character_id uuid not null references public.characters (id) on delete cascade,
+  primary key (story_post_id, character_id)
+);
 
 create table public.story_entries (
   id uuid primary key default gen_random_uuid(),
@@ -426,6 +447,7 @@ create table public.story_entries (
   character_id uuid not null references public.characters (id) on delete cascade,
   content text not null,
   created_at timestamptz not null default now(),
+  updated_at timestamptz,
   roll_label text,
   roll_value integer,
   roll_die integer,
@@ -435,17 +457,74 @@ create table public.story_entries (
 );
 
 alter table public.story_posts enable row level security;
+alter table public.story_post_viewers enable row level security;
 alter table public.story_entries enable row level security;
 alter table public.story_arcs enable row level security;
 
+-- Security-definer Helfer: darf die aktuelle Person eine geheime Szene sehen -
+-- entweder als deren Autor:in oder als eine der explizit erlaubten Personen?
+create function public.can_view_private_story_post(_story_post_id uuid, _post_character_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select
+    exists (select 1 from public.characters c where c.id = _post_character_id and c.owner_id = auth.uid())
+    or exists (
+      select 1 from public.story_post_viewers spv
+      join public.characters c on c.id = spv.character_id
+      where spv.story_post_id = _story_post_id and c.owner_id = auth.uid()
+    );
+$$;
+
+grant execute on function public.can_view_private_story_post(uuid, uuid) to authenticated;
+
 create policy "story_posts_select_member" on public.story_posts
-  for select to authenticated using (public.is_world_member(world_id));
+  for select to authenticated using (
+    public.is_world_member(world_id)
+    and (not is_private or public.can_view_private_story_post(id, character_id))
+  );
 
 create policy "story_posts_insert_member" on public.story_posts
   for insert to authenticated with check (
     exists (
       select 1 from public.characters c
       where c.id = character_id and c.owner_id = auth.uid() and c.world_id = story_posts.world_id
+    )
+  );
+
+-- Welt-Owner dürfen Szenen anpinnen/sperren/archivieren (Moderationswerkzeuge).
+create policy "story_posts_update_world_owner" on public.story_posts
+  for update to authenticated using (
+    exists (select 1 from public.worlds w where w.id = world_id and w.created_by = auth.uid())
+  );
+
+create policy "story_post_viewers_select_own_post" on public.story_post_viewers
+  for select to authenticated using (
+    exists (
+      select 1 from public.story_posts sp
+      join public.characters c on c.id = sp.character_id
+      where sp.id = story_post_id and c.owner_id = auth.uid()
+    )
+  );
+
+create policy "story_post_viewers_insert_own_post" on public.story_post_viewers
+  for insert to authenticated with check (
+    exists (
+      select 1 from public.story_posts sp
+      join public.characters c on c.id = sp.character_id
+      where sp.id = story_post_id and c.owner_id = auth.uid()
+    )
+  );
+
+create policy "story_post_viewers_delete_own_post" on public.story_post_viewers
+  for delete to authenticated using (
+    exists (
+      select 1 from public.story_posts sp
+      join public.characters c on c.id = sp.character_id
+      where sp.id = story_post_id and c.owner_id = auth.uid()
     )
   );
 
@@ -462,7 +541,12 @@ create policy "story_arcs_delete_own" on public.story_arcs
 
 create policy "story_entries_select_member" on public.story_entries
   for select to authenticated using (
-    exists (select 1 from public.story_posts sp where sp.id = story_post_id and public.is_world_member(sp.world_id))
+    exists (
+      select 1 from public.story_posts sp
+      where sp.id = story_post_id
+        and public.is_world_member(sp.world_id)
+        and (not sp.is_private or public.can_view_private_story_post(sp.id, sp.character_id))
+    )
   );
 
 create policy "story_entries_insert_member" on public.story_entries
@@ -470,8 +554,78 @@ create policy "story_entries_insert_member" on public.story_entries
     exists (
       select 1 from public.story_posts sp
       join public.characters c on c.id = character_id
-      where sp.id = story_post_id and c.owner_id = auth.uid() and c.world_id = sp.world_id
+      where sp.id = story_post_id
+        and c.owner_id = auth.uid()
+        and c.world_id = sp.world_id
+        and not sp.locked
+        and (not sp.is_private or public.can_view_private_story_post(sp.id, sp.character_id))
     )
+  );
+
+-- Eigene Fortsetzungen dürfen bearbeitet werden - Würfelwürfe (roll_label
+-- gesetzt) sind vom Zufall bestimmt und deshalb nur löschbar, nicht editierbar.
+create policy "story_entries_update_own" on public.story_entries
+  for update to authenticated using (
+    roll_label is null
+    and exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  ) with check (
+    roll_label is null
+    and exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  );
+
+create policy "story_entries_delete_own" on public.story_entries
+  for delete to authenticated using (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  );
+
+-- Lesezeichen für Story-Posts (pro Person, weltübergreifend).
+create table public.story_bookmarks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  story_post_id uuid not null references public.story_posts (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (user_id, story_post_id)
+);
+
+alter table public.story_bookmarks enable row level security;
+
+create policy "story_bookmarks_own" on public.story_bookmarks
+  for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- Welt-Wiki: einfache Nachschlagewerk-Seiten (Orte, NPCs, Fraktionen, ...) pro Welt.
+create table public.wiki_pages (
+  id uuid primary key default gen_random_uuid(),
+  world_id uuid not null references public.worlds (id) on delete cascade,
+  category text not null default 'sonstiges' check (category in ('ort', 'npc', 'fraktion', 'sonstiges')),
+  title text not null,
+  content text not null,
+  created_by uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index wiki_pages_world_idx on public.wiki_pages (world_id);
+
+alter table public.wiki_pages enable row level security;
+
+create policy "wiki_pages_select_member" on public.wiki_pages
+  for select to authenticated using (public.is_world_member(world_id));
+
+create policy "wiki_pages_insert_member" on public.wiki_pages
+  for insert to authenticated with check (created_by = auth.uid() and public.is_world_member(world_id));
+
+create policy "wiki_pages_update_own_or_world_owner" on public.wiki_pages
+  for update to authenticated using (
+    created_by = auth.uid()
+    or exists (select 1 from public.worlds w where w.id = world_id and w.created_by = auth.uid())
+  );
+
+create policy "wiki_pages_delete_own_or_world_owner" on public.wiki_pages
+  for delete to authenticated using (
+    created_by = auth.uid()
+    or exists (select 1 from public.worlds w where w.id = world_id and w.created_by = auth.uid())
   );
 
 -- ---------------------------------------------------------------------------
@@ -496,7 +650,8 @@ create table public.messages (
   chat_id uuid not null references public.chats (id) on delete cascade,
   character_id uuid not null references public.characters (id) on delete cascade,
   content text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
 );
 
 -- Security-definer-Helper, um rekursive RLS-Checks auf chat_participants zu vermeiden.
@@ -546,6 +701,18 @@ create policy "messages_insert_participant" on public.messages
   for insert to authenticated with check (
     public.is_chat_participant(chat_id)
     and exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  );
+
+create policy "messages_update_own" on public.messages
+  for update to authenticated using (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  ) with check (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  );
+
+create policy "messages_delete_own" on public.messages
+  for delete to authenticated using (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
   );
 
 -- ---------------------------------------------------------------------------

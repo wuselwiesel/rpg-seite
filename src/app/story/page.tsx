@@ -33,7 +33,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
   let storyQuery = supabase
     .from("story_posts")
-    .select("*, characters(*), story_entries(count), story_arcs(name)")
+    .select("*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs(name)")
     .eq("world_id", activeWorld.id)
     .order("created_at", { ascending: false });
 

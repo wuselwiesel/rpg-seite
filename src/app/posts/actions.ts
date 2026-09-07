@@ -135,6 +135,51 @@ export async function createComment(
   return null;
 }
 
+export async function updateComment(
+  commentId: string,
+  postId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const content = String(formData.get("content") ?? "").trim();
+  if (!content) return "Kommentar darf nicht leer sein.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase
+    .from("comments")
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq("id", commentId);
+
+  if (error) return error.message;
+
+  revalidatePath(`/posts/${postId}`);
+  return null;
+}
+
+export async function deleteComment(commentId: string, postId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("comments")
+    .delete({ count: "exact" })
+    .eq("id", commentId);
+
+  if (error) return error.message;
+  if (!count) return "Kommentar konnte nicht gelöscht werden.";
+
+  revalidatePath(`/posts/${postId}`);
+  return null;
+}
+
 export async function toggleLike(target: { postId: string } | { commentId: string }) {
   const supabase = await createClient();
   const {
