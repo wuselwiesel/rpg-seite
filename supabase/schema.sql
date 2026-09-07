@@ -528,6 +528,13 @@ create policy "story_post_viewers_delete_own_post" on public.story_post_viewers
     )
   );
 
+-- Auch die gelistete Person selbst darf sehen, dass sie als Viewer
+-- eingetragen ist (nicht nur die Autorin/der Autor der Szene).
+create policy "story_post_viewers_select_own_viewer" on public.story_post_viewers
+  for select to authenticated using (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  );
+
 create policy "story_arcs_select_member" on public.story_arcs
   for select to authenticated using (public.is_world_member(world_id));
 
@@ -549,12 +556,18 @@ create policy "story_entries_select_member" on public.story_entries
     )
   );
 
+-- Wichtig: "character_id" muss hier explizit als story_entries.character_id
+-- qualifiziert werden - story_posts hat selbst eine character_id-Spalte
+-- (die Autor:in des Posts), und ein unqualifizierter Verweis wird von
+-- Postgres auf die NÄHERE Spalte im JOIN (sp.character_id) aufgelöst statt
+-- auf die neue Zeile. Das ließ früher nur die Post-Autorin/den Post-Autor
+-- selbst antworten - jede andere Person bekam eine RLS-Ablehnung.
 create policy "story_entries_insert_member" on public.story_entries
   for insert to authenticated with check (
     exists (
       select 1 from public.story_posts sp
-      join public.characters c on c.id = character_id
-      where sp.id = story_post_id
+      join public.characters c on c.id = story_entries.character_id
+      where sp.id = story_entries.story_post_id
         and c.owner_id = auth.uid()
         and c.world_id = sp.world_id
         and not sp.locked
