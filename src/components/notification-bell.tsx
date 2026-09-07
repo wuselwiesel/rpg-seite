@@ -41,7 +41,7 @@ export function NotificationBell({
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         (payload) => {
           const row = payload.new as AppNotification;
-          setNotifications((prev) => [row, ...prev].slice(0, 20));
+          setNotifications((prev) => (prev.some((n) => n.id === row.id) ? prev : [row, ...prev].slice(0, 20)));
           setUnreadCount((prev) => prev + 1);
         },
       )
@@ -55,7 +55,32 @@ export function NotificationBell({
       )
       .subscribe();
 
+    // Zusätzliches Polling als Fallback: die Realtime-Verbindung liefert INSERTs
+    // nicht immer zuverlässig aus (z.B. nach WLAN-Wechsel oder langer Inaktivität
+    // des Tabs), sodass neue Benachrichtigungen sonst erst nach einem manuellen
+    // Reload auftauchen würden.
+    const pollForNew = async () => {
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20)
+        .returns<AppNotification[]>();
+      if (!data) return;
+      setNotifications((prev) => {
+        const knownIds = new Set(prev.map((n) => n.id));
+        const merged = [...data.filter((n) => !knownIds.has(n.id)), ...prev];
+        return merged
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))
+          .slice(0, 20);
+      });
+      setUnreadCount(data.filter((n) => !n.read_at).length);
+    };
+    const interval = setInterval(pollForNew, 20_000);
+
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [userId, instanceId]);
