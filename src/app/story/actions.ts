@@ -80,13 +80,30 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
     arcId = selectedArcId;
   }
 
+  const isPrivate = formData.get("is_private") === "on";
+  const viewerCharacterIds = formData.getAll("viewer_character_id").map(String).filter(Boolean);
+
   const { data, error } = await supabase
     .from("story_posts")
-    .insert({ world_id: activeWorld.id, character_id: characterId, arc_id: arcId, title, content, tags })
+    .insert({
+      world_id: activeWorld.id,
+      character_id: characterId,
+      arc_id: arcId,
+      title,
+      content,
+      tags,
+      is_private: isPrivate,
+    })
     .select("id")
     .single();
 
   if (error || !data) return error?.message ?? "Szene konnte nicht erstellt werden.";
+
+  if (isPrivate && viewerCharacterIds.length > 0) {
+    await supabase
+      .from("story_post_viewers")
+      .insert(viewerCharacterIds.map((characterId) => ({ story_post_id: data.id, character_id: characterId })));
+  }
 
   revalidatePath("/story");
   redirect(`/story/${data.id}`);
@@ -254,4 +271,60 @@ export async function createDiceRoll(
 
   revalidatePath(`/story/${storyPostId}`);
   return null;
+}
+
+// Moderationswerkzeuge für Welt-Owner: Szenen anpinnen/lösen, sperren/
+// entsperren (keine neuen Fortsetzungen mehr) oder archivieren.
+export async function toggleStoryPostFlag(
+  storyPostId: string,
+  flag: "pinned" | "locked" | "archived",
+  value: boolean,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("story_posts")
+    .update({ [flag]: value }, { count: "exact" })
+    .eq("id", storyPostId);
+
+  if (error) return error.message;
+  if (!count) return "Keine Berechtigung dafür.";
+
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story");
+  return null;
+}
+
+export async function toggleStoryBookmark(storyPostId: string): Promise<{ error: string | null; bookmarked: boolean }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet.", bookmarked: false };
+
+  const { data: existing } = await supabase
+    .from("story_bookmarks")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("story_post_id", storyPostId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from("story_bookmarks").delete().eq("id", existing.id);
+    if (error) return { error: error.message, bookmarked: true };
+    revalidatePath("/story");
+    return { error: null, bookmarked: false };
+  }
+
+  const { error } = await supabase
+    .from("story_bookmarks")
+    .insert({ user_id: user.id, story_post_id: storyPostId });
+  if (error) return { error: error.message, bookmarked: false };
+
+  revalidatePath("/story");
+  return { error: null, bookmarked: true };
 }

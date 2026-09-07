@@ -4,13 +4,20 @@ import { useActionState, useState } from "react";
 import { createStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { useDraft } from "@/lib/use-draft";
-import type { StoryArc } from "@/lib/types";
+import type { Character, StoryArc } from "@/lib/types";
 
 const NEW_ARC_VALUE = "__new__";
 
-export function NewStoryPostForm({ arcs }: { arcs: StoryArc[] }) {
+export function NewStoryPostForm({
+  arcs,
+  otherCharacters,
+}: {
+  arcs: StoryArc[];
+  otherCharacters: Character[];
+}) {
   const [error, formAction, pending] = useActionState(createStoryPost, null);
   const [arcChoice, setArcChoice] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
   const { draft, restored, update, clear } = useDraft("draft:story-new", { title: "", content: "" });
 
   return (
@@ -69,6 +76,37 @@ export function NewStoryPostForm({ arcs }: { arcs: StoryArc[] }) {
         />
       ) : (
         <input type="hidden" name="arc_id" value={arcChoice} />
+      )}
+
+      {otherCharacters.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-md border border-line px-3 py-2.5">
+          <label className="flex items-center gap-2 text-sm text-fg-soft">
+            <input
+              type="checkbox"
+              name="is_private"
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+              className="rounded border-line"
+            />
+            Geheime Szene – nur für bestimmte Charaktere sichtbar
+          </label>
+          {isPrivate && (
+            <div className="ml-6 flex flex-col gap-1.5">
+              <p className="text-xs text-muted">Wer außer dir soll das sehen können?</p>
+              {otherCharacters.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-sm text-fg-soft">
+                  <input
+                    type="checkbox"
+                    name="viewer_character_id"
+                    value={c.id}
+                    className="rounded border-line"
+                  />
+                  {c.name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

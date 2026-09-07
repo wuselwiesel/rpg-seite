@@ -17,6 +17,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const to = typeof params.to === "string" ? params.to : "";
   const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
   const arc = typeof params.arc === "string" ? params.arc.trim() : "";
+  const showArchived = params.archived === "1";
+  const bookmarkedOnly = params.bookmarked === "1";
 
   const supabase = await createClient();
   const {
@@ -35,6 +37,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     .from("story_posts")
     .select("*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs(name)")
     .eq("world_id", activeWorld.id)
+    .eq("archived", showArchived)
+    .order("pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (q) {
@@ -48,6 +52,14 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     const toDate = new Date(to);
     toDate.setDate(toDate.getDate() + 1);
     storyQuery = storyQuery.lt("created_at", toDate.toISOString());
+  }
+  if (bookmarkedOnly) {
+    const { data: bookmarks } = await supabase
+      .from("story_bookmarks")
+      .select("story_post_id")
+      .eq("user_id", user.id);
+    const bookmarkedIds = (bookmarks ?? []).map((b) => b.story_post_id);
+    storyQuery = storyQuery.in("id", bookmarkedIds.length > 0 ? bookmarkedIds : ["00000000-0000-0000-0000-000000000000"]);
   }
 
   const [{ data: storyPosts }, { data: arcs }] = await Promise.all([
@@ -96,6 +108,25 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
       <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} />
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Link
+          href={bookmarkedOnly ? "/story" : "/story?bookmarked=1"}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+            bookmarkedOnly ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+          }`}
+        >
+          Nur Lesezeichen
+        </Link>
+        <Link
+          href={showArchived ? "/story" : "/story?archived=1"}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+            showArchived ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+          }`}
+        >
+          {showArchived ? "Archiv" : "Archiv anzeigen"}
+        </Link>
+      </div>
+
       <Link
         href="/story/new"
         className="mb-6 flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2"
@@ -130,6 +161,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               tagHrefBase="/story"
               arcName={post.story_arcs?.name}
               arcHref={post.arc_id ? `/story?arc=${post.arc_id}` : undefined}
+              isPrivate={post.is_private}
+              pinned={post.pinned}
             />
           ))
         ) : q || tag || from || to || arc ? (

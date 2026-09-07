@@ -77,6 +77,10 @@ export type StoryPost = {
   title: string;
   content: string;
   tags: string[];
+  is_private: boolean;
+  pinned: boolean;
+  locked: boolean;
+  archived: boolean;
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];
@@ -116,6 +120,19 @@ export type Message = {
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;
+};
+
+export type WikiCategory = "ort" | "npc" | "fraktion" | "sonstiges";
+
+export type WikiPage = {
+  id: string;
+  world_id: string;
+  category: WikiCategory;
+  title: string;
+  content: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export const ACTIVE_CHARACTER_COOKIE = "active_character_id";

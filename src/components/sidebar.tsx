@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ScrollText, Users, PenLine, BookOpen, UserPlus, Search, UserRound } from "lucide-react";
+import { ScrollText, Users, PenLine, BookOpen, Library, UserPlus, Search, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
@@ -136,6 +136,9 @@ export async function Sidebar() {
         </NavLink>
         <NavLink href="/story" icon={<BookOpen className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
           Story
+        </NavLink>
+        <NavLink href="/wiki" icon={<Library className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
+          Wiki
         </NavLink>
         <ChatsNavLink
           userId={user.id}

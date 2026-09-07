@@ -8,6 +8,7 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
+import { StoryPostControls } from "./story-post-controls";
 
 export default async function StoryPostDetailPage({
   params,
@@ -48,9 +49,29 @@ export default async function StoryPostDetailPage({
     .eq("owner_id", user.id);
   const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
 
+  const [{ data: world }, { data: bookmark }] = await Promise.all([
+    supabase.from("worlds").select("created_by").eq("id", storyPost.world_id).maybeSingle(),
+    supabase
+      .from("story_bookmarks")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("story_post_id", storyPost.id)
+      .maybeSingle(),
+  ]);
+  const isWorldOwner = world?.created_by === user.id;
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <article className="mb-8 rounded-lg border border-line bg-surface p-6">
+        <StoryPostControls
+          storyPostId={storyPost.id}
+          isPrivate={storyPost.is_private}
+          pinned={storyPost.pinned}
+          locked={storyPost.locked}
+          archived={storyPost.archived}
+          isWorldOwner={isWorldOwner}
+          initialBookmarked={!!bookmark}
+        />
         <div className="mb-4 flex items-center gap-3">
           <CharacterAvatar
             name={storyPost.characters?.name ?? "?"}
@@ -91,13 +112,17 @@ export default async function StoryPostDetailPage({
         ))}
       </div>
 
-      <StoryComposer
-        storyPostId={storyPost.id}
-        worldId={storyPost.world_id}
-        characterName={activeCharacter?.name ?? "deinem Charakter"}
-        characters={rollTargets}
-        sheetUrl={activeCharacter?.sheet_url}
-      />
+      {storyPost.locked ? (
+        <p className="text-sm text-muted">Diese Szene ist gesperrt – keine neuen Fortsetzungen möglich.</p>
+      ) : (
+        <StoryComposer
+          storyPostId={storyPost.id}
+          worldId={storyPost.world_id}
+          characterName={activeCharacter?.name ?? "deinem Charakter"}
+          characters={rollTargets}
+          sheetUrl={activeCharacter?.sheet_url}
+        />
+      )}
     </div>
   );
 }

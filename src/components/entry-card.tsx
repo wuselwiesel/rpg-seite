@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { EyeOff, MessageCircle, Pin } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
@@ -25,6 +25,8 @@ export function EntryCard({
   tagHrefBase,
   arcName,
   arcHref,
+  isPrivate,
+  pinned,
 }: {
   id: string;
   title: string;
@@ -43,6 +45,8 @@ export function EntryCard({
   tagHrefBase?: string;
   arcName?: string;
   arcHref?: string;
+  isPrivate?: boolean;
+  pinned?: boolean;
 }) {
   const preview = stripHtml(content);
   const surface = SURFACES[index % SURFACES.length];
@@ -70,7 +74,11 @@ export function EntryCard({
         </Link>
       )}
       <Link href={detailHref} className="block">
-        <h2 className="mb-1 font-serif text-2xl text-fg">{title}</h2>
+        <h2 className="mb-1 flex items-center gap-2 font-serif text-2xl text-fg">
+          {pinned && <Pin className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
+          {isPrivate && <EyeOff className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />}
+          {title}
+        </h2>
         {preview && <p className="line-clamp-3 text-sm text-fg-soft">{preview}</p>}
       </Link>
       {tags && tags.length > 0 && tagHrefBase && (

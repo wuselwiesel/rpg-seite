@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ScrollText, BookOpen, Users, UserPlus, Search, PenLine, Menu, X } from "lucide-react";
+import { ScrollText, BookOpen, Library, Users, UserPlus, Search, PenLine, Menu, X } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
@@ -141,6 +141,14 @@ export function MobileNav({
           >
             <UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Freund:innen
+          </Link>
+          <Link
+            href="/wiki"
+            onClick={() => setMoreOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            <Library className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Wiki
           </Link>
           <Link
             href="/search"
