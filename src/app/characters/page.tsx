@@ -30,12 +30,20 @@ export default async function CharactersPage() {
           <h1 className="font-serif text-3xl text-fg">Deine Charaktere</h1>
           <p className="truncate text-sm text-muted">in {activeWorld.name}</p>
         </div>
-        <Link
-          href="/characters/new"
-          className="shrink-0 rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
-        >
-          + Neuer Charakter
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/characters/relationships"
+            className="rounded-md border border-line px-4 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            Beziehungsnetz
+          </Link>
+          <Link
+            href="/characters/new"
+            className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+          >
+            + Neuer Charakter
+          </Link>
+        </div>
       </div>
 
       {characters.length === 0 && (

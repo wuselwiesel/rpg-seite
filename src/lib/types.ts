@@ -48,6 +48,7 @@ export type Post = {
   characters: Character | null;
   comments?: { count: number }[];
   likes?: { character_id: string }[];
+  reactions?: { emoji: string; character_id: string }[];
 };
 
 export type Comment = {
@@ -120,6 +121,7 @@ export type Message = {
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;
+  reactions?: { emoji: string; character_id: string }[];
 };
 
 export type WikiCategory = "ort" | "npc" | "fraktion" | "sonstiges";
@@ -133,6 +135,19 @@ export type WikiPage = {
   created_by: string;
   created_at: string;
   updated_at: string;
+};
+
+export type RelationshipType = "verbuendet" | "verfeindet" | "liiert" | "familie" | "sonstiges";
+
+export type CharacterRelationship = {
+  id: string;
+  world_id: string;
+  character_a_id: string;
+  character_b_id: string;
+  type: RelationshipType;
+  label: string | null;
+  created_by: string;
+  created_at: string;
 };
 
 export const ACTIVE_CHARACTER_COOKIE = "active_character_id";

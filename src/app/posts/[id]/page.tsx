@@ -2,9 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { LikeButton } from "@/components/like-button";
+import { ReactionBar } from "@/components/reaction-bar";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
+import { aggregateReactions } from "@/lib/reactions";
 import type { Comment, Post } from "@/lib/types";
 import { CommentForm } from "./comment-form";
 import { CommentItem } from "./comment-item";
@@ -22,7 +23,7 @@ export default async function PostDetailPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("*, characters(*), likes(character_id)")
+    .select("*, characters(*), reactions(emoji, character_id)")
     .eq("id", id)
     .maybeSingle<Post>();
 
@@ -62,10 +63,9 @@ export default async function PostDetailPage({
           dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content) }}
         />
         <div className="mt-4">
-          <LikeButton
+          <ReactionBar
             target={{ postId: post.id }}
-            initialLiked={(post.likes ?? []).some((l) => myCharacterIds.has(l.character_id))}
-            initialCount={post.likes?.length ?? 0}
+            initialReactions={aggregateReactions(post.reactions, myCharacterIds)}
           />
         </div>
       </article>

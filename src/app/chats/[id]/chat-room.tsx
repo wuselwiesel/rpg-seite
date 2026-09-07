@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Pencil, Trash2, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { ReactionBar } from "@/components/reaction-bar";
 import { formatDateTime } from "@/lib/format";
+import { aggregateReactions } from "@/lib/reactions";
 import { addChatParticipant, deleteMessage, sendMessage, updateMessage } from "../actions";
 import type { Character, Message } from "@/lib/types";
 
@@ -17,6 +19,7 @@ export function ChatRoom({
   availableCharacters,
   initialMessages,
   activeCharacter,
+  myCharacterIds,
 }: {
   chatId: string;
   userId: string;
@@ -25,7 +28,9 @@ export function ChatRoom({
   availableCharacters: Character[];
   initialMessages: Message[];
   activeCharacter: Character;
+  myCharacterIds: string[];
 }) {
+  const myCharacterIdSet = new Set(myCharacterIds);
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -255,6 +260,14 @@ export function ChatRoom({
                     </div>
                   ) : (
                     <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  )}
+                  {editingId !== message.id && (
+                    <div className="mt-1.5">
+                      <ReactionBar
+                        target={{ messageId: message.id, characterId: activeCharacter.id }}
+                        initialReactions={aggregateReactions(message.reactions, myCharacterIdSet)}
+                      />
+                    </div>
                   )}
                 </div>
               </div>

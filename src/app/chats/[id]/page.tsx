@@ -32,12 +32,16 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
 
   if (!chat) notFound();
 
-  const { data: messages } = await supabase
-    .from("messages")
-    .select("*, characters(*)")
-    .eq("chat_id", id)
-    .order("created_at", { ascending: true })
-    .returns<Message[]>();
+  const [{ data: messages }, { data: myCharacters }] = await Promise.all([
+    supabase
+      .from("messages")
+      .select("*, characters(*), reactions(emoji, character_id)")
+      .eq("chat_id", id)
+      .order("created_at", { ascending: true })
+      .returns<Message[]>(),
+    supabase.from("characters").select("id").eq("owner_id", user.id),
+  ]);
+  const myCharacterIds = (myCharacters ?? []).map((c) => c.id);
 
   const participants = chat.chat_participants.map((p) => p.characters);
   const title = chat.is_group
@@ -63,6 +67,7 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
       availableCharacters={availableCharacters}
       initialMessages={messages ?? []}
       activeCharacter={activeCharacter}
+      myCharacterIds={myCharacterIds}
     />
   );
 }

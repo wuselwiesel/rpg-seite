@@ -7,9 +7,10 @@ import type { Post } from "@/lib/types";
 import { EntryCard } from "@/components/entry-card";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { LikeButton } from "@/components/like-button";
+import { ReactionBar } from "@/components/reaction-bar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
+import { aggregateReactions } from "@/lib/reactions";
 
 export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -33,7 +34,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
 
   let postsQuery = supabase
     .from("posts")
-    .select("*, characters(*, worlds(name)), comments(count), likes(character_id)")
+    .select("*, characters(*, worlds(name)), comments(count), reactions(emoji, character_id)")
     .order("created_at", { ascending: false });
 
   if (q) {
@@ -96,10 +97,9 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
                     : undefined
                 }
                 likeButton={
-                  <LikeButton
+                  <ReactionBar
                     target={{ postId: post.id }}
-                    initialLiked={(post.likes ?? []).some((l) => myCharacterIds.has(l.character_id))}
-                    initialCount={post.likes?.length ?? 0}
+                    initialReactions={aggregateReactions(post.reactions, myCharacterIds)}
                   />
                 }
                 tags={post.tags}

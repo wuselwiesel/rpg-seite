@@ -126,3 +126,59 @@ export async function setActiveCharacter(characterId: string) {
   });
   revalidatePath("/", "layout");
 }
+
+export async function createRelationship(_prevState: string | null, formData: FormData) {
+  const characterAId = String(formData.get("character_a_id") ?? "");
+  const characterBId = String(formData.get("character_b_id") ?? "");
+  const type = String(formData.get("type") ?? "");
+  const label = String(formData.get("label") ?? "").trim();
+
+  if (!characterAId || !characterBId) return "Bitte zwei Charaktere auswählen.";
+  if (characterAId === characterBId) return "Wähle zwei unterschiedliche Charaktere.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: character } = await supabase
+    .from("characters")
+    .select("world_id")
+    .eq("id", characterAId)
+    .maybeSingle();
+  if (!character) return "Charakter nicht gefunden.";
+
+  const { error } = await supabase.from("character_relationships").insert({
+    world_id: character.world_id,
+    character_a_id: characterAId,
+    character_b_id: characterBId,
+    type,
+    label: label || null,
+    created_by: user.id,
+  });
+
+  if (error) return error.message;
+
+  revalidatePath("/characters/relationships");
+  return null;
+}
+
+export async function deleteRelationship(relationshipId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("character_relationships")
+    .delete({ count: "exact" })
+    .eq("id", relationshipId);
+
+  if (error) return error.message;
+  if (!count) return "Konnte nicht gelöscht werden.";
+
+  revalidatePath("/characters/relationships");
+  return null;
+}
