@@ -6,46 +6,7 @@ import {
   fetchPublicSheet,
   type CharakterbogenCharacter,
 } from "@/lib/charakterbogen";
-
-const ATTR_TABLE = [
-  { code: "MU", name: "Mut" },
-  { code: "IG", name: "Intelligenz" },
-  { code: "GE", name: "Gewandtheit" },
-  { code: "KO", name: "Konstitution" },
-  { code: "IN", name: "Intuition" },
-  { code: "KK", name: "Körperkraft" },
-  { code: "FF", name: "Fingerfertigkeit" },
-  { code: "CH", name: "Charisma" },
-  { code: "SB", name: "Selbstbeherrschung" },
-  { code: "GL", name: "Glück" },
-];
-
-const TALENT_LIST = [
-  "Körperbeherrschung", "Manipulation/Überzeugen", "Betören", "Beruhigen",
-  "Menschenkenntnis", "Willensstärke", "Lügen", "Verbergen/Verheimlichen",
-  "Singen", "Tanzen", "Reflexe", "Schwimmen", "Klettern", "Werfen", "Medizin",
-  "Tierkunde", "Pflanzenkunde", "Mythologie", "Reparieren", "Empathie",
-  "Sinnesschärfe", "Überleben",
-];
-
-function talentSlug(name: string) {
-  return (
-    "talent_" +
-    name
-      .toLowerCase()
-      .replace(/ä/g, "ae")
-      .replace(/ö/g, "oe")
-      .replace(/ü/g, "ue")
-      .replace(/ß/g, "ss")
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-  );
-}
-
-function num(v: string | undefined) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
+import { ATTR_TABLE, TALENT_LIST, talentSlug, num } from "@/lib/charakterbogen-stats";
 
 // Dynamisch importiert (nie statisch), damit dieses clientseitige Modul nicht
 // beim serverseitigen Rendern der Seite mitgeladen wird - DOMPurify braucht

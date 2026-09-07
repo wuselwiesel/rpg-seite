@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { Dices } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -6,7 +7,7 @@ import { MentionText } from "@/components/mention-text";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import type { StoryEntry, StoryPost } from "@/lib/types";
-import { StoryEntryForm } from "./story-entry-form";
+import { StoryComposer } from "./story-composer";
 
 export default async function StoryPostDetailPage({
   params,
@@ -31,12 +32,13 @@ export default async function StoryPostDetailPage({
 
   const { data: entries } = await supabase
     .from("story_entries")
-    .select("*, characters(*)")
+    .select("*, characters(*), roll_target_character:roll_target_character_id(name)")
     .eq("story_post_id", id)
     .order("created_at", { ascending: true })
     .returns<StoryEntry[]>();
 
   const mentionableCharacters = await getMentionableCharacters(user.id, storyPost.world_id);
+  const rollTargets = mentionableCharacters.filter((c) => c.id !== activeCharacter?.id);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -75,17 +77,44 @@ export default async function StoryPostDetailPage({
                 <p className="text-sm font-medium text-fg">{entry.characters?.name}</p>
                 <p className="text-xs text-muted">{formatDateTime(entry.created_at)}</p>
               </div>
-              <MentionText text={entry.content} className="whitespace-pre-line text-sm text-fg-soft" />
+              {entry.roll_label ? (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <Dices className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
+                  <span className="text-fg-soft">
+                    würfelt auf <span className="font-medium text-fg">„{entry.roll_label}“</span>
+                    {entry.roll_target_character?.name && (
+                      <>
+                        {" "}
+                        gegen{" "}
+                        <span className="font-medium text-fg">{entry.roll_target_character.name}</span>
+                      </>
+                    )}
+                    : {entry.roll_result}/{entry.roll_value} (W{entry.roll_die})
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      entry.roll_success
+                        ? "bg-green-500/15 text-green-700 dark:text-green-400"
+                        : "bg-red-500/15 text-red-700 dark:text-red-400"
+                    }`}
+                  >
+                    {entry.roll_success ? "Erfolg" : "Misserfolg"}
+                  </span>
+                </div>
+              ) : (
+                <MentionText text={entry.content} className="whitespace-pre-line text-sm text-fg-soft" />
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      <StoryEntryForm
+      <StoryComposer
         storyPostId={storyPost.id}
         worldId={storyPost.world_id}
         characterName={activeCharacter?.name ?? "deinem Charakter"}
-        characters={mentionableCharacters}
+        characters={rollTargets}
+        sheetUrl={activeCharacter?.sheet_url}
       />
     </div>
   );

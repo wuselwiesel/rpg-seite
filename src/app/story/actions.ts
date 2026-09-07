@@ -111,3 +111,86 @@ export async function createStoryEntry(
   revalidatePath(`/story/${storyPostId}`);
   return null;
 }
+
+const ALLOWED_DICE = [4, 6, 8, 10, 12, 20, 100];
+
+export async function createDiceRoll(
+  storyPostId: string,
+  worldId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const label = String(formData.get("label") ?? "").trim();
+  const value = Number(formData.get("value"));
+  const die = Number(formData.get("die"));
+  const targetCharacterId = String(formData.get("target_character_id") ?? "").trim() || null;
+
+  if (!label) return "Bitte angeben, worauf du würfelst.";
+  if (!Number.isFinite(value) || value < 1 || value > 999) return "Ungültiger Wert.";
+  if (!ALLOWED_DICE.includes(die)) return "Ungültiger Würfel.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const characterId = await getActiveCharacterInWorld(user.id, worldId);
+  if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
+
+  if (targetCharacterId) {
+    const { data: target } = await supabase
+      .from("characters")
+      .select("world_id")
+      .eq("id", targetCharacterId)
+      .maybeSingle();
+    if (!target || target.world_id !== worldId) return "Ungültiges Ziel.";
+  }
+
+  const result = 1 + Math.floor(Math.random() * die);
+  const success = result <= value;
+
+  const { error } = await supabase.from("story_entries").insert({
+    story_post_id: storyPostId,
+    character_id: characterId,
+    content: `würfelt auf „${label}“: ${result}/${value} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`,
+    roll_label: label,
+    roll_value: value,
+    roll_die: die,
+    roll_result: result,
+    roll_success: success,
+    roll_target_character_id: targetCharacterId,
+  });
+
+  if (error) return error.message;
+
+  if (targetCharacterId && targetCharacterId !== characterId) {
+    const { data: target } = await supabase
+      .from("characters")
+      .select("owner_id")
+      .eq("id", targetCharacterId)
+      .maybeSingle();
+
+    if (target?.owner_id) {
+      const { data: actor } = await supabase
+        .from("characters")
+        .select("name, avatar_url")
+        .eq("id", characterId)
+        .maybeSingle();
+
+      await supabase.rpc("create_notification", {
+        p_user_id: target.owner_id,
+        p_type: "roll",
+        p_actor_name: actor?.name ?? "Jemand",
+        p_actor_avatar_url: actor?.avatar_url ?? null,
+        p_link: `/story/${storyPostId}`,
+        p_message: success
+          ? `hat erfolgreich auf „${label}“ gegen dich gewürfelt`
+          : `hat auf „${label}“ gegen dich gewürfelt – ohne Erfolg`,
+      });
+    }
+  }
+
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}

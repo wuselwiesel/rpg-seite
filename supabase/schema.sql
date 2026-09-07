@@ -412,7 +412,13 @@ create table public.story_entries (
   story_post_id uuid not null references public.story_posts (id) on delete cascade,
   character_id uuid not null references public.characters (id) on delete cascade,
   content text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  roll_label text,
+  roll_value integer,
+  roll_die integer,
+  roll_result integer,
+  roll_success boolean,
+  roll_target_character_id uuid references public.characters (id) on delete set null
 );
 
 alter table public.story_posts enable row level security;

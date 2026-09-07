@@ -78,6 +78,13 @@ export type StoryEntry = {
   content: string;
   created_at: string;
   characters: Character | null;
+  roll_label?: string | null;
+  roll_value?: number | null;
+  roll_die?: number | null;
+  roll_result?: number | null;
+  roll_success?: boolean | null;
+  roll_target_character_id?: string | null;
+  roll_target_character?: { name: string } | null;
 };
 
 export type Chat = {
