@@ -33,7 +33,9 @@ export default async function StoryPostDetailPage({
 
   const { data: entries } = await supabase
     .from("story_entries")
-    .select("*, characters(*), roll_target_character:roll_target_character_id(name)")
+    .select(
+      "*, characters!story_entries_character_id_fkey(*), roll_target_character:roll_target_character_id(name)",
+    )
     .eq("story_post_id", id)
     .order("created_at", { ascending: true })
     .returns<StoryEntry[]>();
