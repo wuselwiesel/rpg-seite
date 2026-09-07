@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Chronik",
-    short_name: "Chronik",
+    name: "Wortwinkel",
+    short_name: "Wortwinkel",
     description: "Ein textbasiertes Rollenspiel für Freunde",
     start_url: "/",
     display: "standalone",

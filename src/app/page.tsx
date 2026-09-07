@@ -57,7 +57,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   return (
     <div className="flex gap-8 px-6 py-8 lg:px-10">
       <div className="min-w-0 flex-1">
-        <h1 className="mb-1 font-serif text-3xl text-fg">Die Chronik</h1>
+        <h1 className="mb-1 font-serif text-3xl text-fg">Wortwinkel</h1>
         <p className="mb-6 text-sm text-muted">Die neuesten Beiträge deiner Freunde.</p>
 
         <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} />

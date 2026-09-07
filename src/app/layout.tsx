@@ -22,12 +22,12 @@ const serif = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Chronik",
+  title: "Wortwinkel",
   description: "Ein textbasiertes Rollenspiel für Freunde",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Chronik",
+    title: "Wortwinkel",
   },
 };
 

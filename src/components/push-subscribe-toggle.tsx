@@ -107,7 +107,7 @@ export function PushSubscribeToggle() {
         <div>
           <p className="text-sm font-medium text-fg">Push-Benachrichtigungen</p>
           <p className="text-xs text-muted">
-            Erhalte Benachrichtigungen auch, wenn Chronik nicht offen ist.
+            Erhalte Benachrichtigungen auch, wenn Wortwinkel nicht offen ist.
           </p>
         </div>
         {status === "denied" ? (

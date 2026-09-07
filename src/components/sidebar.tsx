@@ -42,7 +42,7 @@ export async function Sidebar() {
         <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6 lg:sticky lg:top-0 lg:flex">
           <div className="mb-8 flex items-center justify-between">
             <Link href="/worlds" className="block">
-              <span className="font-serif text-2xl text-fg">Chronik</span>
+              <span className="font-serif text-2xl text-fg">Wortwinkel</span>
             </Link>
             <div className="flex items-center gap-1">
               <NotificationBell
@@ -61,7 +61,7 @@ export async function Sidebar() {
         </aside>
         <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-app px-4 py-2.5 lg:hidden">
           <Link href="/worlds" className="block">
-            <span className="font-serif text-xl text-fg">Chronik</span>
+            <span className="font-serif text-xl text-fg">Wortwinkel</span>
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell

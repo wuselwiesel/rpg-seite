@@ -24,7 +24,7 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
     <div className="mx-auto max-w-md px-4 py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Dein Profil</h1>
       <p className="mb-6 text-sm text-muted">
-        So sehen dich andere in der Chronik.
+        So sehen dich andere im Wortwinkel.
       </p>
 
       {params.saved === "1" && (

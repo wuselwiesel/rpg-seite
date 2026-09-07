@@ -11,10 +11,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "Chronik", body: event.data ? event.data.text() : "" };
+    data = { title: "Wortwinkel", body: event.data ? event.data.text() : "" };
   }
 
-  const title = data.title || "Chronik";
+  const title = data.title || "Wortwinkel";
   const options = {
     body: data.body || "",
     icon: "/icon-192",
