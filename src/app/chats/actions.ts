@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
+import { sendPushToUser } from "@/lib/push";
 
 export async function createChat(_prevState: string | null, formData: FormData) {
   const isGroup = formData.get("is_group") === "on";
@@ -54,6 +55,49 @@ export async function createChat(_prevState: string | null, formData: FormData) 
   if (participantsError) return participantsError.message;
 
   redirect(`/chats/${chat.id}`);
+}
+
+export async function sendMessage(
+  chatId: string,
+  characterId: string,
+  content: string,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase
+    .from("messages")
+    .insert({ chat_id: chatId, character_id: characterId, content });
+  if (error) return error.message;
+
+  // Die In-App-Benachrichtigung legt bereits der on_message_notify-Trigger an;
+  // hier zusätzlich noch eine echte Push-Benachrichtigung an die anderen
+  // Teilnehmer:innen (unabhängig davon, ob sie die App gerade offen haben).
+  const [{ data: participants }, { data: sender }] = await Promise.all([
+    supabase.from("chat_participants").select("characters(owner_id)").eq("chat_id", chatId),
+    supabase.from("characters").select("name, owner_id").eq("id", characterId).maybeSingle(),
+  ]);
+
+  const recipientIds = new Set(
+    (participants ?? [])
+      .map((p) => (p as unknown as { characters: { owner_id: string } | null }).characters?.owner_id)
+      .filter((id): id is string => Boolean(id) && id !== sender?.owner_id),
+  );
+
+  await Promise.all(
+    Array.from(recipientIds).map((recipientId) =>
+      sendPushToUser(recipientId, {
+        title: sender?.name ?? "Neue Nachricht",
+        body: content.length > 120 ? `${content.slice(0, 117)}...` : content,
+        url: `/chats/${chatId}`,
+      }),
+    ),
+  );
+
+  return null;
 }
 
 export async function addChatParticipant(

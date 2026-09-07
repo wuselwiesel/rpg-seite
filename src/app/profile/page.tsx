@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
+import { PushSubscribeToggle } from "@/components/push-subscribe-toggle";
 
 export default async function ProfilePage({ searchParams }: PageProps<"/profile">) {
   const params = await searchParams;
@@ -33,6 +34,10 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
       )}
 
       <ProfileForm profile={profile!} />
+
+      <div className="mt-8 border-t border-line pt-6">
+        <PushSubscribeToggle />
+      </div>
 
       <div className="mt-8 border-t border-line pt-6">
         <form action={logout}>

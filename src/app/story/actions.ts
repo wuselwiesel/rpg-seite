@@ -9,7 +9,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
 import { extractHashtags } from "@/lib/hashtags";
-import { notifyMentionedCharacters } from "@/lib/notifications";
+import { notifyMentionedCharacters, createNotification } from "@/lib/notifications";
 
 async function getActiveCharacterInWorld(userId: string, worldId: string) {
   const cookieStore = await cookies();
@@ -64,9 +64,25 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
 
   const tags = extractHashtags(`${title} ${stripHtml(content)}`);
 
+  const newArcName = String(formData.get("new_arc_name") ?? "").trim();
+  const selectedArcId = String(formData.get("arc_id") ?? "").trim();
+  let arcId: string | null = null;
+
+  if (newArcName) {
+    const { data: arc, error: arcError } = await supabase
+      .from("story_arcs")
+      .insert({ world_id: activeWorld.id, name: newArcName, created_by: user.id })
+      .select("id")
+      .single();
+    if (arcError || !arc) return arcError?.message ?? "Handlungsstrang konnte nicht erstellt werden.";
+    arcId = arc.id;
+  } else if (selectedArcId) {
+    arcId = selectedArcId;
+  }
+
   const { data, error } = await supabase
     .from("story_posts")
-    .insert({ world_id: activeWorld.id, character_id: characterId, title, content, tags })
+    .insert({ world_id: activeWorld.id, character_id: characterId, arc_id: arcId, title, content, tags })
     .select("id")
     .single();
 
@@ -178,13 +194,13 @@ export async function createDiceRoll(
         .eq("id", characterId)
         .maybeSingle();
 
-      await supabase.rpc("create_notification", {
-        p_user_id: target.owner_id,
-        p_type: "roll",
-        p_actor_name: actor?.name ?? "Jemand",
-        p_actor_avatar_url: actor?.avatar_url ?? null,
-        p_link: `/story/${storyPostId}`,
-        p_message: success
+      await createNotification(supabase, {
+        userId: target.owner_id,
+        type: "roll",
+        actorName: actor?.name ?? "Jemand",
+        actorAvatarUrl: actor?.avatar_url ?? null,
+        link: `/story/${storyPostId}`,
+        message: success
           ? `hat erfolgreich auf „${label}“ gegen dich gewürfelt`
           : `hat auf „${label}“ gegen dich gewürfelt – ohne Erfolg`,
       });

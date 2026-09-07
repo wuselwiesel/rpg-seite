@@ -1,6 +1,40 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { parseMentions } from "@/lib/mentions";
+import { sendPushToUser } from "@/lib/push";
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+// Legt eine In-App-Benachrichtigung an und schickt - falls die Zielperson ein
+// Push-Abo hat - direkt danach auch eine echte Browser-Push-Benachrichtigung.
+// Zentraler Ort für beides, damit neue Benachrichtigungs-Typen nicht beides
+// separat verdrahten müssen.
+export async function createNotification(
+  supabase: SupabaseServerClient,
+  params: {
+    userId: string;
+    type: string;
+    actorName: string;
+    actorAvatarUrl: string | null;
+    link: string;
+    message: string;
+  },
+) {
+  await supabase.rpc("create_notification", {
+    p_user_id: params.userId,
+    p_type: params.type,
+    p_actor_name: params.actorName,
+    p_actor_avatar_url: params.actorAvatarUrl,
+    p_link: params.link,
+    p_message: params.message,
+  });
+
+  await sendPushToUser(params.userId, {
+    title: params.actorName,
+    body: params.message,
+    url: params.link,
+  });
+}
 
 export type AppNotification = {
   id: string;
@@ -78,13 +112,13 @@ export async function notifyMentionedCharacters(
 
   await Promise.all(
     targetUserIds.map((targetUserId) =>
-      supabase.rpc("create_notification", {
-        p_user_id: targetUserId,
-        p_type: "mention",
-        p_actor_name: actor?.name ?? "Jemand",
-        p_actor_avatar_url: actor?.avatar_url ?? null,
-        p_link: link,
-        p_message: message,
+      createNotification(supabase, {
+        userId: targetUserId,
+        type: "mention",
+        actorName: actor?.name ?? "Jemand",
+        actorAvatarUrl: actor?.avatar_url ?? null,
+        link,
+        message,
       }),
     ),
   );

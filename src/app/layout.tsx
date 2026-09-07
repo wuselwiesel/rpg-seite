@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { MobileMain } from "@/components/mobile-main";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,6 +24,15 @@ const serif = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Chronik",
   description: "Ein textbasiertes Rollenspiel für Freunde",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Chronik",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#a6646b",
 };
 
 const themeInitScript = `
@@ -44,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
+        <ServiceWorkerRegister />
         <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row">
           <Sidebar />
           <MobileMain>{children}</MobileMain>

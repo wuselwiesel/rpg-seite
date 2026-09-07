@@ -59,16 +59,26 @@ export type Comment = {
   likes?: { character_id: string }[];
 };
 
+export type StoryArc = {
+  id: string;
+  world_id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+};
+
 export type StoryPost = {
   id: string;
   world_id: string;
   character_id: string;
+  arc_id: string | null;
   title: string;
   content: string;
   tags: string[];
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];
+  story_arcs?: { name: string } | null;
 };
 
 export type StoryEntry = {

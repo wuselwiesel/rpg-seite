@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/notifications";
 
 export async function sendFriendRequest(_prevState: string | null, formData: FormData) {
   const username = String(formData.get("username") ?? "").trim();
@@ -37,13 +38,13 @@ export async function sendFriendRequest(_prevState: string | null, formData: For
     .eq("id", user.id)
     .maybeSingle();
 
-  await supabase.rpc("create_notification", {
-    p_user_id: target.id,
-    p_type: "friend_request",
-    p_actor_name: own?.nickname || own?.username || "Jemand",
-    p_actor_avatar_url: own?.avatar_url ?? null,
-    p_link: "/friends",
-    p_message: "möchte mit dir befreundet sein",
+  await createNotification(supabase, {
+    userId: target.id,
+    type: "friend_request",
+    actorName: own?.nickname || own?.username || "Jemand",
+    actorAvatarUrl: own?.avatar_url ?? null,
+    link: "/friends",
+    message: "möchte mit dir befreundet sein",
   });
 
   revalidatePath("/friends");
@@ -72,13 +73,13 @@ export async function acceptFriendRequest(friendshipId: string) {
       .eq("id", user.id)
       .maybeSingle();
 
-    await supabase.rpc("create_notification", {
-      p_user_id: friendship.requester_id,
-      p_type: "friend_accept",
-      p_actor_name: own?.nickname || own?.username || "Jemand",
-      p_actor_avatar_url: own?.avatar_url ?? null,
-      p_link: "/friends",
-      p_message: "hat deine Freundschaftsanfrage angenommen",
+    await createNotification(supabase, {
+      userId: friendship.requester_id,
+      type: "friend_accept",
+      actorName: own?.nickname || own?.username || "Jemand",
+      actorAvatarUrl: own?.avatar_url ?? null,
+      link: "/friends",
+      message: "hat deine Freundschaftsanfrage angenommen",
     });
   }
 

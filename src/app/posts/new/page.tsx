@@ -3,27 +3,41 @@
 import { useActionState } from "react";
 import { createPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { useDraft } from "@/lib/use-draft";
 
 export default function NewPostPage() {
   const [error, formAction, pending] = useActionState(createPost, null);
+  const { draft, restored, update, clear } = useDraft("draft:post-new", { title: "", content: "" });
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-6 font-serif text-3xl text-fg">Neuer Eintrag</h1>
 
-      <form action={formAction} className="flex flex-col gap-4">
+      {/* createPost redirect()s on success, which navigates away before any
+          pending/error transition would fire client-side - so the draft is
+          cleared optimistically on submit rather than after confirmation. */}
+      <form action={formAction} onSubmit={() => clear()} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Titel
           <input
             type="text"
             name="title"
+            value={draft.title}
+            onChange={(e) => update({ title: e.target.value })}
             required
             className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
           />
         </label>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
           Inhalt
-          <RichTextEditor name="content" />
+          {restored && (
+            <RichTextEditor
+              key="restored"
+              name="content"
+              initialContent={draft.content}
+              onChange={(html) => update({ content: html })}
+            />
+          )}
         </div>
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

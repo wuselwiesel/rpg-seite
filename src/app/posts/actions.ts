@@ -9,7 +9,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
 import { extractHashtags } from "@/lib/hashtags";
-import { notifyMentionedCharacters } from "@/lib/notifications";
+import { notifyMentionedCharacters, createNotification } from "@/lib/notifications";
 
 async function getActiveCharacterId(userId: string) {
   const cookieStore = await cookies();
@@ -113,13 +113,13 @@ export async function createComment(
       .eq("id", characterId)
       .maybeSingle();
 
-    await supabase.rpc("create_notification", {
-      p_user_id: post.characters.owner_id,
-      p_type: "comment",
-      p_actor_name: actor?.name ?? "Jemand",
-      p_actor_avatar_url: actor?.avatar_url ?? null,
-      p_link: `/posts/${postId}`,
-      p_message: "hat deinen Beitrag kommentiert",
+    await createNotification(supabase, {
+      userId: post.characters.owner_id,
+      type: "comment",
+      actorName: actor?.name ?? "Jemand",
+      actorAvatarUrl: actor?.avatar_url ?? null,
+      link: `/posts/${postId}`,
+      message: "hat deinen Beitrag kommentiert",
     });
   }
 
@@ -190,13 +190,13 @@ export async function toggleLike(target: { postId: string } | { commentId: strin
         .eq("id", characterId)
         .maybeSingle();
 
-      await supabase.rpc("create_notification", {
-        p_user_id: ownerId,
-        p_type: "like",
-        p_actor_name: actor?.name ?? "Jemand",
-        p_actor_avatar_url: actor?.avatar_url ?? null,
-        p_link: `/posts/${postIdForRevalidate}`,
-        p_message: "postId" in target ? "gefällt dein Beitrag" : "gefällt dein Kommentar",
+      await createNotification(supabase, {
+        userId: ownerId,
+        type: "like",
+        actorName: actor?.name ?? "Jemand",
+        actorAvatarUrl: actor?.avatar_url ?? null,
+        link: `/posts/${postIdForRevalidate}`,
+        message: "postId" in target ? "gefällt dein Beitrag" : "gefällt dein Kommentar",
       });
     }
   }

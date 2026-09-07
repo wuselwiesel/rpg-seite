@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { Dices } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
@@ -22,7 +23,7 @@ export default async function StoryPostDetailPage({
 
   const { data: storyPost } = await supabase
     .from("story_posts")
-    .select("*, characters(*)")
+    .select("*, characters(*), story_arcs(name)")
     .eq("id", id)
     .maybeSingle<StoryPost>();
 
@@ -53,6 +54,14 @@ export default async function StoryPostDetailPage({
             <p className="text-xs text-muted">{formatDateTime(storyPost.created_at)}</p>
           </div>
         </div>
+        {storyPost.story_arcs?.name && storyPost.arc_id && (
+          <Link
+            href={`/story?arc=${storyPost.arc_id}`}
+            className="mb-2 inline-flex w-fit items-center rounded-full bg-accent-strong/15 px-2.5 py-0.5 text-xs font-medium text-accent transition hover:bg-accent-strong/25"
+          >
+            {storyPost.story_arcs.name}
+          </Link>
+        )}
         <h1 className="mb-4 font-serif text-3xl text-fg">{storyPost.title}</h1>
         <div
           className="post-content text-fg-soft"

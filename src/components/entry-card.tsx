@@ -23,6 +23,8 @@ export function EntryCard({
   likeButton,
   tags,
   tagHrefBase,
+  arcName,
+  arcHref,
 }: {
   id: string;
   title: string;
@@ -39,6 +41,8 @@ export function EntryCard({
   likeButton?: React.ReactNode;
   tags?: string[];
   tagHrefBase?: string;
+  arcName?: string;
+  arcHref?: string;
 }) {
   const preview = stripHtml(content);
   const surface = SURFACES[index % SURFACES.length];
@@ -57,6 +61,14 @@ export function EntryCard({
           </p>
         </div>
       </Link>
+      {arcName && arcHref && (
+        <Link
+          href={arcHref}
+          className="mb-2 inline-flex w-fit items-center rounded-full bg-accent-strong/15 px-2.5 py-0.5 text-xs font-medium text-accent transition hover:bg-accent-strong/25"
+        >
+          {arcName}
+        </Link>
+      )}
       <Link href={detailHref} className="block">
         <h2 className="mb-1 font-serif text-2xl text-fg">{title}</h2>
         {preview && <p className="line-clamp-3 text-sm text-fg-soft">{preview}</p>}

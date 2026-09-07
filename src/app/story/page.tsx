@@ -8,7 +8,7 @@ import { EntryCard } from "@/components/entry-card";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
-import type { StoryPost } from "@/lib/types";
+import type { StoryArc, StoryPost } from "@/lib/types";
 
 export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const params = await searchParams;
@@ -16,6 +16,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const from = typeof params.from === "string" ? params.from : "";
   const to = typeof params.to === "string" ? params.to : "";
   const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
+  const arc = typeof params.arc === "string" ? params.arc.trim() : "";
 
   const supabase = await createClient();
   const {
@@ -32,7 +33,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
   let storyQuery = supabase
     .from("story_posts")
-    .select("*, characters(*), story_entries(count)")
+    .select("*, characters(*), story_entries(count), story_arcs(name)")
     .eq("world_id", activeWorld.id)
     .order("created_at", { ascending: false });
 
@@ -41,6 +42,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
   }
   if (tag) storyQuery = storyQuery.contains("tags", [tag]);
+  if (arc) storyQuery = storyQuery.eq("arc_id", arc);
   if (from) storyQuery = storyQuery.gte("created_at", new Date(from).toISOString());
   if (to) {
     const toDate = new Date(to);
@@ -48,7 +50,15 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.lt("created_at", toDate.toISOString());
   }
 
-  const { data: storyPosts } = await storyQuery.returns<StoryPost[]>();
+  const [{ data: storyPosts }, { data: arcs }] = await Promise.all([
+    storyQuery.returns<StoryPost[]>(),
+    supabase
+      .from("story_arcs")
+      .select("*, story_posts(count)")
+      .eq("world_id", activeWorld.id)
+      .order("name")
+      .returns<(StoryArc & { story_posts: { count: number }[] })[]>(),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -57,6 +67,32 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         <h1 className="font-serif text-3xl text-fg">Story</h1>
       </div>
       <p className="mb-6 text-sm text-muted">Die Handlungsstränge von {activeWorld.name}.</p>
+
+      {arcs && arcs.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Link
+            href="/story"
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              !arc ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+            }`}
+          >
+            Alle
+          </Link>
+          {arcs.map((a) => (
+            <Link
+              key={a.id}
+              href={`/story?arc=${a.id}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                arc === a.id
+                  ? "bg-accent-strong text-on-accent-strong"
+                  : "bg-surface-2 text-fg-soft hover:text-fg"
+              }`}
+            >
+              {a.name} ({a.story_posts?.[0]?.count ?? 0})
+            </Link>
+          ))}
+        </div>
+      )}
 
       <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} />
 
@@ -92,9 +128,11 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               index={index}
               tags={post.tags}
               tagHrefBase="/story"
+              arcName={post.story_arcs?.name}
+              arcHref={post.arc_id ? `/story?arc=${post.arc_id}` : undefined}
             />
           ))
-        ) : q || tag || from || to ? (
+        ) : q || tag || from || to || arc ? (
           <p className="text-muted">Keine Einträge gefunden.</p>
         ) : (
           <p className="text-muted">

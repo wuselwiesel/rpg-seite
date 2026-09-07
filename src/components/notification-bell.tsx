@@ -1,22 +1,11 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus, Dices } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import type { AppNotification } from "@/lib/notifications";
-
-function subscribePermission() {
-  return () => {};
-}
-function getPermissionSnapshot(): NotificationPermission | "unsupported" {
-  if (typeof Notification === "undefined") return "unsupported";
-  return Notification.permission;
-}
-function getServerPermissionSnapshot(): NotificationPermission | "unsupported" {
-  return "unsupported";
-}
 
 function iconForType(type: string) {
   if (type === "chat_message") return <MessageCircle className="h-4 w-4" strokeWidth={2} />;
@@ -39,15 +28,8 @@ export function NotificationBell({
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
-  const [, forcePermissionRerender] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const instanceId = useId();
-
-  const permission = useSyncExternalStore(
-    subscribePermission,
-    getPermissionSnapshot,
-    getServerPermissionSnapshot,
-  );
 
   useEffect(() => {
     const supabase = createClient();
@@ -61,10 +43,6 @@ export function NotificationBell({
           const row = payload.new as AppNotification;
           setNotifications((prev) => [row, ...prev].slice(0, 20));
           setUnreadCount((prev) => prev + 1);
-
-          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            new Notification(row.actor_name ? `${row.actor_name} ${row.message}` : row.message);
-          }
         },
       )
       .on(
@@ -126,20 +104,8 @@ export function NotificationBell({
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface shadow-lg lg:right-auto lg:left-0">
-          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <div className="border-b border-line px-4 py-3">
             <p className="font-serif text-lg text-fg">Benachrichtigungen</p>
-            {permission === "default" && (
-              <button
-                type="button"
-                onClick={async () => {
-                  await Notification.requestPermission();
-                  forcePermissionRerender((n) => n + 1);
-                }}
-                className="text-xs text-accent hover:underline"
-              >
-                Browser-Push aktivieren
-              </button>
-            )}
           </div>
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (

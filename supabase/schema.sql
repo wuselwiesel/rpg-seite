@@ -395,10 +395,22 @@ create policy "likes_delete_own" on public.likes
 -- ---------------------------------------------------------------------------
 -- Story-Sektion (RPG): mehrere parallele Szenen/Threads pro Welt
 -- ---------------------------------------------------------------------------
+
+-- Benannte Handlungsstränge, die mehrere Story-Posts bündeln (z.B. "Der
+-- Sturm-Arc"), damit sie nicht in der chronologischen Liste untergehen.
+create table public.story_arcs (
+  id uuid primary key default gen_random_uuid(),
+  world_id uuid not null references public.worlds (id) on delete cascade,
+  name text not null,
+  created_by uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
 create table public.story_posts (
   id uuid primary key default gen_random_uuid(),
   world_id uuid not null references public.worlds (id) on delete cascade,
   character_id uuid not null references public.characters (id) on delete cascade,
+  arc_id uuid references public.story_arcs (id) on delete set null,
   title text not null,
   content text not null,
   tags text[] not null default '{}',
@@ -406,6 +418,7 @@ create table public.story_posts (
 );
 
 create index story_posts_tags_idx on public.story_posts using gin (tags);
+create index story_posts_arc_idx on public.story_posts (arc_id);
 
 create table public.story_entries (
   id uuid primary key default gen_random_uuid(),
@@ -423,6 +436,7 @@ create table public.story_entries (
 
 alter table public.story_posts enable row level security;
 alter table public.story_entries enable row level security;
+alter table public.story_arcs enable row level security;
 
 create policy "story_posts_select_member" on public.story_posts
   for select to authenticated using (public.is_world_member(world_id));
@@ -434,6 +448,17 @@ create policy "story_posts_insert_member" on public.story_posts
       where c.id = character_id and c.owner_id = auth.uid() and c.world_id = story_posts.world_id
     )
   );
+
+create policy "story_arcs_select_member" on public.story_arcs
+  for select to authenticated using (public.is_world_member(world_id));
+
+create policy "story_arcs_insert_member" on public.story_arcs
+  for insert to authenticated with check (
+    created_by = auth.uid() and public.is_world_member(world_id)
+  );
+
+create policy "story_arcs_delete_own" on public.story_arcs
+  for delete to authenticated using (created_by = auth.uid());
 
 create policy "story_entries_select_member" on public.story_entries
   for select to authenticated using (
@@ -680,6 +705,52 @@ create trigger on_message_notify
   for each row execute procedure public.notify_new_message();
 
 alter publication supabase_realtime add table public.notifications;
+
+-- ---------------------------------------------------------------------------
+-- Web-Push-Abos für echte Browser-Benachrichtigungen
+-- ---------------------------------------------------------------------------
+create table public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.push_subscriptions enable row level security;
+
+create policy "push_subscriptions_own" on public.push_subscriptions
+  for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- Security-definer Helfer, damit ein Server Action beim Erzeugen einer
+-- Benachrichtigung auch die Push-Abos der Zielperson lesen/aufräumen kann,
+-- obwohl RLS diese sonst auf die jeweils eigene user_id beschränkt - analog
+-- zu create_notification.
+create function public.get_push_subscriptions(p_user_id uuid)
+returns table(endpoint text, p256dh text, auth text)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select endpoint, p256dh, auth from public.push_subscriptions where user_id = p_user_id;
+$$;
+
+grant execute on function public.get_push_subscriptions(uuid) to authenticated;
+
+create function public.delete_stale_push_subscription(p_endpoint text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from public.push_subscriptions where endpoint = p_endpoint;
+$$;
+
+grant execute on function public.delete_stale_push_subscription(text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Welt-Titelbilder (Supabase Storage)

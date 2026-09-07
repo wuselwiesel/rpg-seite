@@ -6,7 +6,7 @@ import { UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
-import { addChatParticipant } from "../actions";
+import { addChatParticipant, sendMessage } from "../actions";
 import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
@@ -84,14 +84,12 @@ export function ChatRoom({
 
     setSending(true);
     setDraft("");
-    const { error } = await supabase
-      .from("messages")
-      .insert({ chat_id: chatId, character_id: activeCharacter.id, content });
+    const error = await sendMessage(chatId, activeCharacter.id, content);
     setSending(false);
 
     if (error) {
       setDraft(content);
-      alert(error.message);
+      alert(error);
     }
   }
 

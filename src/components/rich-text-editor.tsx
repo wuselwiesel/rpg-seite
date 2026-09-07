@@ -209,10 +209,12 @@ export function RichTextEditor({
   name,
   initialContent,
   placeholder,
+  onChange,
 }: {
   name: string;
   initialContent?: string;
   placeholder?: string;
+  onChange?: (html: string) => void;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
 
@@ -232,7 +234,11 @@ export function RichTextEditor({
           "post-content min-h-[240px] px-3 py-2 text-fg outline-none [&_p]:my-2 first:[&_p]:mt-0",
       },
     },
-    onUpdate: ({ editor }) => setHtml(editor.getHTML()),
+    onUpdate: ({ editor }) => {
+      const nextHtml = editor.getHTML();
+      setHtml(nextHtml);
+      onChange?.(nextHtml);
+    },
   });
 
   useEffect(() => {
