@@ -1,11 +1,31 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { SmilePlus } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { createPortal } from "react-dom";
+import { SmilePlus, X } from "lucide-react";
+import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
 import { toggleReaction } from "@/app/reactions/actions";
 import type { ReactionSummary } from "@/lib/reactions";
 
-const EMOJI_CHOICES = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+
+function subscribeToThemeChange(callback: () => void) {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
+
+function getIsDarkSnapshot() {
+  return document.documentElement.classList.contains("dark");
+}
+
+function getIsDarkServerSnapshot() {
+  return false;
+}
+
+function useIsDarkMode() {
+  return useSyncExternalStore(subscribeToThemeChange, getIsDarkSnapshot, getIsDarkServerSnapshot);
+}
 
 export function ReactionBar({
   target,
@@ -17,7 +37,16 @@ export function ReactionBar({
   const [reactions, setReactions] = useState(initialReactions);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [, startTransition] = useTransition();
-  const pickerRef = useRef<HTMLDivElement>(null);
+  const isDark = useIsDarkMode();
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setPickerOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [pickerOpen]);
 
   function handleToggle(emoji: string) {
     setReactions((prev) => {
@@ -53,30 +82,60 @@ export function ReactionBar({
         </button>
       ))}
 
-      <div ref={pickerRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setPickerOpen((v) => !v)}
-          title="Reaktion hinzufügen"
-          className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
-        >
-          <SmilePlus className="h-3.5 w-3.5" strokeWidth={2} />
-        </button>
-        {pickerOpen && (
-          <div className="absolute bottom-full left-0 z-10 mb-1 flex gap-0.5 rounded-full border border-line bg-surface p-1 shadow-lg">
-            {EMOJI_CHOICES.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                onClick={() => handleToggle(emoji)}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-base transition hover:bg-surface-2"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        title="Reaktion hinzufügen"
+        className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
+      >
+        <SmilePlus className="h-3.5 w-3.5" strokeWidth={2} />
+      </button>
+
+      {pickerOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              aria-label="Schließen"
+              className="absolute inset-0"
+            />
+            <div className="relative flex flex-col gap-2 rounded-2xl border border-line bg-surface p-3 shadow-xl">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex gap-0.5">
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handleToggle(emoji)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-lg transition hover:bg-surface-2"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(false)}
+                  title="Schließen"
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
+                >
+                  <X className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
+              <EmojiPicker
+                onEmojiClick={(data: EmojiClickData) => handleToggle(data.emoji)}
+                theme={isDark ? Theme.DARK : Theme.LIGHT}
+                searchPlaceholder="Emoji suchen..."
+                width={320}
+                height={400}
+                previewConfig={{ showPreview: false }}
+                lazyLoadEmojis
+              />
+            </div>
+          </div>,
+          document.body,
         )}
-      </div>
     </div>
   );
 }
