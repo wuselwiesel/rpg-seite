@@ -1,10 +1,13 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, type Character } from "@/lib/types";
 import { getAcceptedFriends } from "@/lib/friends";
 
-export async function getOwnCharacters(userId: string, worldId: string): Promise<Character[]> {
+// cache() dedupliziert mehrfache Aufrufe innerhalb eines Requests (z.B. einmal
+// aus der Sidebar, einmal aus der jeweiligen Seite) zu einer einzigen Abfrage.
+export const getOwnCharacters = cache(async (userId: string, worldId: string): Promise<Character[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("characters")
@@ -14,9 +17,9 @@ export async function getOwnCharacters(userId: string, worldId: string): Promise
     .order("created_at", { ascending: true });
 
   return data ?? [];
-}
+});
 
-export async function getActiveCharacter(userId: string, worldId: string): Promise<Character | null> {
+export const getActiveCharacter = cache(async (userId: string, worldId: string): Promise<Character | null> => {
   const characters = await getOwnCharacters(userId, worldId);
   if (characters.length === 0) return null;
 
@@ -24,11 +27,11 @@ export async function getActiveCharacter(userId: string, worldId: string): Promi
   const activeId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value;
 
   return characters.find((c) => c.id === activeId) ?? characters[0];
-}
+});
 
 // Charaktere, die man in einer Welt per @ erwähnen können soll: die eigenen
 // sowie die aller Freund:innen (unabhängig davon, ob sie schon am Thread teilnehmen).
-export async function getMentionableCharacters(userId: string, worldId: string): Promise<Character[]> {
+export const getMentionableCharacters = cache(async (userId: string, worldId: string): Promise<Character[]> => {
   const supabase = await createClient();
   const friends = await getAcceptedFriends(userId);
   const ownerIds = [userId, ...friends.map((f) => f.id)];
@@ -42,4 +45,4 @@ export async function getMentionableCharacters(userId: string, worldId: string):
     .returns<Character[]>();
 
   return data ?? [];
-}
+});

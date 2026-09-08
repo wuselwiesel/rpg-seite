@@ -1,8 +1,9 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Friendship, Profile } from "@/lib/types";
 
-export async function getAcceptedFriends(userId: string): Promise<Profile[]> {
+export const getAcceptedFriends = cache(async (userId: string): Promise<Profile[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("friendships")
@@ -14,4 +15,4 @@ export async function getAcceptedFriends(userId: string): Promise<Profile[]> {
   return (data ?? []).map((f) =>
     f.requester_id === userId ? (f.addressee as unknown as Profile) : (f.requester as unknown as Profile),
   );
-}
+});
