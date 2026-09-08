@@ -128,7 +128,7 @@ export function MobileNav({
               )}
             </div>
             {characters.length > 1 && (
-              <CharacterSwitcher characters={characters} activeId={activeCharacter.id} />
+              <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="max-w-[7.5rem]" />
             )}
           </div>
         )}

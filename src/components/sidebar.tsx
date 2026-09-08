@@ -126,7 +126,7 @@ export async function Sidebar() {
               </Link>
             )}
           </div>
-          <CharacterSwitcher characters={characters} activeId={activeCharacter.id} />
+          <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="w-full" />
         </div>
       )}
 
@@ -154,6 +154,9 @@ export async function Sidebar() {
         <NavLink href="/search" icon={<Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
           Suche
         </NavLink>
+        <NavLink href="/profile" icon={<UserRound className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
+          Profil &amp; Einstellungen
+        </NavLink>
       </nav>
 
       <Link
@@ -163,12 +166,6 @@ export async function Sidebar() {
         <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
         Neuer Feed-Eintrag
       </Link>
-
-      <div className="mt-auto pt-6">
-        <Link href="/profile" className="text-sm text-muted hover:text-fg">
-          Profil &amp; Einstellungen
-        </Link>
-      </div>
     </aside>
     <MobileNav
       worlds={worlds}
