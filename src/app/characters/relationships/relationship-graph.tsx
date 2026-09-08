@@ -1,23 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Character, CharacterRelationship, RelationshipType } from "@/lib/types";
-
-const TYPE_COLORS: Record<RelationshipType, string> = {
-  verbuendet: "#5b9d6f",
-  verfeindet: "#c0554d",
-  liiert: "#c76ba3",
-  familie: "#5b83c7",
-  sonstiges: "#9a9a9a",
-};
-
-const TYPE_LABELS: Record<RelationshipType, string> = {
-  verbuendet: "Verbündet",
-  verfeindet: "Verfeindet",
-  liiert: "Liiert",
-  familie: "Familie",
-  sonstiges: "Sonstiges",
-};
+import type { Character, CharacterRelationship } from "@/lib/types";
 
 export function RelationshipGraph({
   characters,
@@ -42,6 +26,14 @@ export function RelationshipGraph({
     return map;
   }, [characters, center, radius]);
 
+  const legend = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const rel of relationships) {
+      if (!seen.has(rel.type)) seen.set(rel.type, rel.color);
+    }
+    return Array.from(seen.entries());
+  }, [relationships]);
+
   if (characters.length === 0) {
     return <p className="text-sm text-muted">Noch keine Charaktere in dieser Welt.</p>;
   }
@@ -60,7 +52,7 @@ export function RelationshipGraph({
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke={TYPE_COLORS[rel.type]}
+              stroke={rel.color}
               strokeWidth={2}
               opacity={0.7}
             />
@@ -94,16 +86,16 @@ export function RelationshipGraph({
         })}
       </svg>
 
-      <div className="flex flex-wrap justify-center gap-3">
-        {(Object.keys(TYPE_LABELS) as RelationshipType[]).map((type) => (
-          <span key={type} className="flex items-center gap-1.5 text-xs text-fg-soft">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: TYPE_COLORS[type] }} />
-            {TYPE_LABELS[type]}
-          </span>
-        ))}
-      </div>
+      {legend.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-3">
+          {legend.map(([type, color]) => (
+            <span key={type} className="flex items-center gap-1.5 text-xs text-fg-soft">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+              {type}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
-export { TYPE_LABELS, TYPE_COLORS };

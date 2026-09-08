@@ -793,14 +793,17 @@ create policy "reactions_delete_own" on public.reactions
   );
 
 -- ---------------------------------------------------------------------------
--- Beziehungsnetz: wer ist mit wem verbündet/verfeindet/liiert/verwandt
+-- Beziehungsnetz: wer ist mit wem wie verbunden. "type" ist eine frei
+-- gewählte Bezeichnung (z.B. "Befreundet") statt eines festen Enums, mit
+-- einer selbst gewählten Farbe fürs Netz-Diagramm.
 -- ---------------------------------------------------------------------------
 create table public.character_relationships (
   id uuid primary key default gen_random_uuid(),
   world_id uuid not null references public.worlds (id) on delete cascade,
   character_a_id uuid not null references public.characters (id) on delete cascade,
   character_b_id uuid not null references public.characters (id) on delete cascade,
-  type text not null check (type in ('verbuendet', 'verfeindet', 'liiert', 'familie', 'sonstiges')),
+  type text not null default 'Verbunden',
+  color text not null default '#9a9a9a',
   label text,
   created_by uuid not null references public.profiles (id) on delete cascade,
   created_at timestamptz not null default now(),

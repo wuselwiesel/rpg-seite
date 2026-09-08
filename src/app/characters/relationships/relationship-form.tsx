@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createRelationship } from "../actions";
-import type { Character, RelationshipType } from "@/lib/types";
-import { TYPE_LABELS } from "./relationship-graph";
+import type { Character } from "@/lib/types";
+
+const SUGGESTIONS = ["Befreundet", "Verbündet", "Verfeindet", "Liiert", "Familie", "Rivalen"];
 
 export function RelationshipForm({ characters }: { characters: Character[] }) {
   const [error, formAction, pending] = useActionState(createRelationship, null);
+  const [color, setColor] = useState("#5b9d6f");
 
   if (characters.length < 2) {
     return <p className="text-sm text-muted">Du brauchst mindestens zwei Charaktere in der Welt.</p>;
@@ -30,18 +32,31 @@ export function RelationshipForm({ characters }: { characters: Character[] }) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
-        Beziehung
-        <select
+        Bezeichnung
+        <input
+          type="text"
           name="type"
-          defaultValue="verbuendet"
-          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-        >
-          {(Object.keys(TYPE_LABELS) as RelationshipType[]).map((type) => (
-            <option key={type} value={type}>
-              {TYPE_LABELS[type]}
-            </option>
+          list="relationship-suggestions"
+          required
+          placeholder="z. B. Befreundet"
+          className="w-40 rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+        />
+        <datalist id="relationship-suggestions">
+          {SUGGESTIONS.map((s) => (
+            <option key={s} value={s} />
           ))}
-        </select>
+        </datalist>
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+        Farbe
+        <input
+          type="color"
+          name="color"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          className="h-10 w-14 cursor-pointer rounded-md border border-line bg-surface p-1"
+        />
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">

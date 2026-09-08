@@ -137,14 +137,13 @@ export type WikiPage = {
   updated_at: string;
 };
 
-export type RelationshipType = "verbuendet" | "verfeindet" | "liiert" | "familie" | "sonstiges";
-
 export type CharacterRelationship = {
   id: string;
   world_id: string;
   character_a_id: string;
   character_b_id: string;
-  type: RelationshipType;
+  type: string;
+  color: string;
   label: string | null;
   created_by: string;
   created_at: string;

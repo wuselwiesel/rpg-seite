@@ -130,11 +130,14 @@ export async function setActiveCharacter(characterId: string) {
 export async function createRelationship(_prevState: string | null, formData: FormData) {
   const characterAId = String(formData.get("character_a_id") ?? "");
   const characterBId = String(formData.get("character_b_id") ?? "");
-  const type = String(formData.get("type") ?? "");
+  const type = String(formData.get("type") ?? "").trim();
+  const color = String(formData.get("color") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
 
   if (!characterAId || !characterBId) return "Bitte zwei Charaktere auswählen.";
   if (characterAId === characterBId) return "Wähle zwei unterschiedliche Charaktere.";
+  if (!type) return "Bitte eine Bezeichnung angeben.";
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) return "Ungültige Farbe.";
 
   const supabase = await createClient();
   const {
@@ -154,6 +157,7 @@ export async function createRelationship(_prevState: string | null, formData: Fo
     character_a_id: characterAId,
     character_b_id: characterBId,
     type,
+    color,
     label: label || null,
     created_by: user.id,
   });

@@ -2,7 +2,6 @@
 
 import { Trash2 } from "lucide-react";
 import { deleteRelationship } from "../actions";
-import { TYPE_LABELS } from "./relationship-graph";
 import type { Character, CharacterRelationship } from "@/lib/types";
 
 export function RelationshipList({
@@ -39,10 +38,13 @@ export function RelationshipList({
             key={rel.id}
             className="flex items-center justify-between gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm"
           >
-            <span className="text-fg-soft">
-              <span className="font-medium text-fg">{a?.name ?? "?"}</span> · {TYPE_LABELS[rel.type]} ·{" "}
-              <span className="font-medium text-fg">{b?.name ?? "?"}</span>
-              {rel.label && <span className="text-muted"> – {rel.label}</span>}
+            <span className="flex items-center gap-2 text-fg-soft">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: rel.color }} />
+              <span>
+                <span className="font-medium text-fg">{a?.name ?? "?"}</span> · {rel.type} ·{" "}
+                <span className="font-medium text-fg">{b?.name ?? "?"}</span>
+                {rel.label && <span className="text-muted"> – {rel.label}</span>}
+              </span>
             </span>
             {canManage(rel) && (
               <button
