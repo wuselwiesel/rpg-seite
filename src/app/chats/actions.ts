@@ -144,16 +144,56 @@ export async function addChatParticipant(
 ) {
   const characterId = String(formData.get("character_id") ?? "");
   if (!characterId) return "Bitte einen Charakter auswählen.";
+  const name = String(formData.get("name") ?? "").trim();
 
   const supabase = await createClient();
+  const { data: chat } = await supabase
+    .from("chats")
+    .select("is_group, name")
+    .eq("id", chatId)
+    .maybeSingle();
+  if (!chat) return "Chat nicht gefunden.";
+
+  const becomesGroup = !chat.is_group;
+  if (becomesGroup && !chat.name && !name) {
+    return "Gib der Gruppe einen Namen.";
+  }
+
   const { error } = await supabase
     .from("chat_participants")
     .insert({ chat_id: chatId, character_id: characterId });
 
   if (error) return error.message;
 
-  await supabase.from("chats").update({ is_group: true }).eq("id", chatId);
+  await supabase
+    .from("chats")
+    .update({ is_group: true, ...(name ? { name } : {}) })
+    .eq("id", chatId);
 
   revalidatePath(`/chats/${chatId}`);
+  revalidatePath("/chats");
+  return null;
+}
+
+export async function renameChat(
+  chatId: string,
+  _prevState: string | null,
+  formData: FormData,
+): Promise<string | null> {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return "Gib der Gruppe einen Namen.";
+
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("chats")
+    .update({ name }, { count: "exact" })
+    .eq("id", chatId)
+    .eq("is_group", true);
+
+  if (error) return error.message;
+  if (!count) return "Nur Gruppenchats können umbenannt werden.";
+
+  revalidatePath(`/chats/${chatId}`);
+  revalidatePath("/chats");
   return null;
 }

@@ -2,19 +2,20 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Pencil, Trash2, UserPlus } from "lucide-react";
+import { Check, Pencil, Trash2, UserPlus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ReactionBar } from "@/components/reaction-bar";
 import { formatDateTime } from "@/lib/format";
 import { aggregateReactions } from "@/lib/reactions";
-import { addChatParticipant, deleteMessage, sendMessage, updateMessage } from "../actions";
+import { addChatParticipant, deleteMessage, renameChat, sendMessage, updateMessage } from "../actions";
 import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
   chatId,
   userId,
   title,
+  isGroup,
   participants,
   availableCharacters,
   initialMessages,
@@ -24,6 +25,7 @@ export function ChatRoom({
   chatId: string;
   userId: string;
   title: string;
+  isGroup: boolean;
   participants: Character[];
   availableCharacters: Character[];
   initialMessages: Message[];
@@ -35,12 +37,21 @@ export function ChatRoom({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
   const addAction = addChatParticipant.bind(null, chatId);
   const [addError, addFormAction, addPending] = useActionState(addAction, null);
+  const renameAction = renameChat.bind(null, chatId);
+  const [renameError, renameFormAction, renamePending] = useActionState(renameAction, null);
+  const wasRenamePending = useRef(false);
+
+  useEffect(() => {
+    if (wasRenamePending.current && !renamePending && !renameError) setRenaming(false);
+    wasRenamePending.current = renamePending;
+  }, [renamePending, renameError]);
 
   function markAsRead() {
     supabase
@@ -144,7 +155,48 @@ export function ChatRoom({
           <Link href="/chats" className="text-xs text-muted hover:text-fg-soft">
             ← Alle Chats
           </Link>
-          <h1 className="truncate font-serif text-2xl text-fg">{title}</h1>
+          {renaming ? (
+            <form action={renameFormAction} className="flex items-center gap-1">
+              <input
+                name="name"
+                defaultValue={title}
+                autoFocus
+                required
+                className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 font-serif text-xl text-fg outline-none focus:border-accent"
+              />
+              <button
+                type="submit"
+                disabled={renamePending}
+                title="Speichern"
+                className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setRenaming(false)}
+                title="Abbrechen"
+                className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <h1 className="truncate font-serif text-2xl text-fg">{title}</h1>
+              {isGroup && (
+                <button
+                  type="button"
+                  onClick={() => setRenaming(true)}
+                  title="Gruppe umbenennen"
+                  className="shrink-0 rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                >
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              )}
+            </div>
+          )}
+          {renameError && <p className="text-xs text-red-600 dark:text-red-400">{renameError}</p>}
         </div>
         <div className="flex min-w-0 items-center gap-3">
           <p className="min-w-0 truncate text-right text-xs text-muted">
@@ -164,25 +216,35 @@ export function ChatRoom({
       </div>
 
       {showAddForm && (
-        <form action={addFormAction} className="flex items-center gap-2 border-b border-line py-3">
-          <select
-            name="character_id"
-            required
-            className="flex-1 rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
-          >
-            {availableCharacters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={addPending}
-            className="shrink-0 rounded-md bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
-          >
-            {addPending ? "..." : "Hinzufügen"}
-          </button>
+        <form action={addFormAction} className="flex flex-col gap-2 border-b border-line py-3">
+          <div className="flex items-center gap-2">
+            <select
+              name="character_id"
+              required
+              className="flex-1 rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+            >
+              {availableCharacters.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={addPending}
+              className="shrink-0 rounded-md bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+            >
+              {addPending ? "..." : "Hinzufügen"}
+            </button>
+          </div>
+          {!isGroup && (
+            <input
+              name="name"
+              placeholder="Gruppenname"
+              required
+              className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+            />
+          )}
           {addError && <p className="text-xs text-red-600 dark:text-red-400">{addError}</p>}
         </form>
       )}

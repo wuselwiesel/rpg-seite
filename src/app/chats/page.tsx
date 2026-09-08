@@ -25,12 +25,20 @@ export default async function ChatsPage() {
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   if (!activeCharacter) redirect("/characters/new");
 
-  const { data: chats } = await supabase
-    .from("chats")
-    .select("*, chat_participants!inner(characters!inner(*))")
-    .eq("chat_participants.characters.world_id", activeWorld.id)
-    .order("created_at", { ascending: false })
-    .returns<ChatWithParticipants[]>();
+  const { data: myParticipantRows } = await supabase
+    .from("chat_participants")
+    .select("chat_id")
+    .eq("character_id", activeCharacter.id);
+  const myChatIds = (myParticipantRows ?? []).map((row) => row.chat_id);
+
+  const { data: chats } = myChatIds.length
+    ? await supabase
+        .from("chats")
+        .select("*, chat_participants(characters(*))")
+        .in("id", myChatIds)
+        .order("created_at", { ascending: false })
+        .returns<ChatWithParticipants[]>()
+    : { data: [] as ChatWithParticipants[] };
 
   const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
   const unreadChatIds = new Set(

@@ -31,6 +31,7 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
     .maybeSingle<ChatWithParticipants>();
 
   if (!chat) notFound();
+  if (!chat.chat_participants.some((p) => p.characters.id === activeCharacter.id)) notFound();
 
   const [{ data: messages }, { data: myCharacters }] = await Promise.all([
     supabase
@@ -63,6 +64,7 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
       chatId={chat.id}
       userId={user.id}
       title={title ?? "Chat"}
+      isGroup={chat.is_group}
       participants={participants}
       availableCharacters={availableCharacters}
       initialMessages={messages ?? []}
