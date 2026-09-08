@@ -61,7 +61,7 @@ export function MobileNav({
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
         <MobileTabLink href="/" icon={<ScrollText className="h-5 w-5" strokeWidth={2} />} label="Feed" exact />
         <MobileTabLink href="/story" icon={<BookOpen className="h-5 w-5" strokeWidth={2} />} label="Story" />
         <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadChatIds={unreadChatIds} />
@@ -73,7 +73,7 @@ export function MobileNav({
         <button
           type="button"
           onClick={() => setMoreOpen(true)}
-          className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-muted transition hover:text-fg-soft"
+          className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[11px] font-medium text-muted transition hover:text-fg-soft"
         >
           <Menu className="h-5 w-5" strokeWidth={2} />
           Mehr

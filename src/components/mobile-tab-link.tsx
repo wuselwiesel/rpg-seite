@@ -20,7 +20,7 @@ export function MobileTabLink({
   return (
     <Link
       href={href}
-      className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition ${
+      className={`flex flex-1 flex-col items-center gap-0.5 py-3 text-[11px] font-medium transition ${
         isActive ? "text-accent" : "text-muted"
       }`}
     >

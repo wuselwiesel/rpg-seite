@@ -9,7 +9,7 @@ export function MobileMain({ children }: { children: React.ReactNode }) {
 
   return (
     <main
-      className={`min-w-0 flex-1 ${immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0"}`}
+      className={`min-w-0 flex-1 ${immersive ? "" : "pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0"}`}
     >
       {children}
     </main>

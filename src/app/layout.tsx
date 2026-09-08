@@ -40,6 +40,8 @@ try {
   var stored = localStorage.getItem('theme');
   var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.classList.toggle('dark', dark);
+  var favicon = document.getElementById('favicon');
+  if (favicon) favicon.href = dark ? '/icons/icon-dark-32.png' : '/icon.png';
 } catch (e) {}
 `;
 
@@ -51,6 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
+        <link id="favicon" rel="icon" href="/icon.png" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>

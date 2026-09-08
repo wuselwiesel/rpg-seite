@@ -23,6 +23,8 @@ export function ThemeToggle() {
     const next = !document.documentElement.classList.contains("dark");
     document.documentElement.classList.toggle("dark", next);
     localStorage.setItem("theme", next ? "dark" : "light");
+    const favicon = document.getElementById("favicon") as HTMLLinkElement | null;
+    if (favicon) favicon.href = next ? "/icons/icon-dark-32.png" : "/icon.png";
     forceRerender((n) => n + 1);
   }
 
