@@ -27,3 +27,16 @@ export function parseMentions(text: string): MentionSegment[] {
 
   return segments;
 }
+
+// Für Rich-Text-Inhalte (Tiptap): extrahiert die Charakter-IDs aus
+// <span data-type="mention" data-id="...">-Knoten im HTML.
+export function parseMentionedCharacterIdsFromHtml(html: string): string[] {
+  const ids = new Set<string>();
+  for (const tagMatch of html.matchAll(/<span\b[^>]*>/g)) {
+    const tag = tagMatch[0];
+    if (!/data-type="mention"/.test(tag)) continue;
+    const idMatch = /data-id="([0-9a-f-]{36})"/.exec(tag);
+    if (idMatch) ids.add(idMatch[1]);
+  }
+  return Array.from(ids);
+}

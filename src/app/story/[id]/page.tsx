@@ -108,6 +108,7 @@ export default async function StoryPostDetailPage({
             entry={entry}
             storyPostId={storyPost.id}
             canManage={myCharacterIds.has(entry.character_id)}
+            mentionCharacters={mentionableCharacters}
           />
         ))}
       </div>

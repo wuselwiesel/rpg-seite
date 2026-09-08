@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import Mention from "@tiptap/extension-mention";
 import { createClient } from "@/lib/supabase/client";
+import { createMentionSuggestion } from "@/lib/mention-suggestion";
+import type { Character } from "@/lib/types";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
@@ -210,11 +213,17 @@ export function RichTextEditor({
   initialContent,
   placeholder,
   onChange,
+  mentionCharacters,
+  minHeight = 240,
+  showToolbar = true,
 }: {
   name: string;
   initialContent?: string;
   placeholder?: string;
   onChange?: (html: string) => void;
+  mentionCharacters?: Character[];
+  minHeight?: number;
+  showToolbar?: boolean;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
 
@@ -226,12 +235,20 @@ export function RichTextEditor({
       Link.configure({ openOnClick: false, autolink: true }),
       Image,
       Placeholder.configure({ placeholder: placeholder ?? "Schreib deine Geschichte..." }),
-    ],
+      ...(mentionCharacters
+        ? [
+            Mention.configure({
+              HTMLAttributes: { class: "mention", "data-type": "mention" },
+              suggestion: createMentionSuggestion(mentionCharacters),
+            }),
+          ]
+        : []),
+    ] satisfies Extensions,
     content: initialContent ?? "",
     editorProps: {
       attributes: {
-        class:
-          "post-content min-h-[240px] px-3 py-2 text-fg outline-none [&_p]:my-2 first:[&_p]:mt-0",
+        class: "post-content px-3 py-2 text-fg outline-none [&_p]:my-2 first:[&_p]:mt-0",
+        style: `min-height: ${minHeight}px`,
       },
     },
     onUpdate: ({ editor }) => {
@@ -248,7 +265,7 @@ export function RichTextEditor({
   return (
     <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
-      {editor && <Toolbar editor={editor} />}
+      {editor && showToolbar && <Toolbar editor={editor} />}
       <EditorContent editor={editor} />
     </div>
   );

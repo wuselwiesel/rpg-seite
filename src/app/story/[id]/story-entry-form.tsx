@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createStoryEntry } from "../actions";
-import { MentionTextarea } from "@/components/mention-textarea";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import type { Character } from "@/lib/types";
 
 export function StoryEntryForm({
@@ -10,11 +10,13 @@ export function StoryEntryForm({
   worldId,
   characterName,
   characters,
+  showToolbar,
 }: {
   storyPostId: string;
   worldId: string;
   characterName: string;
   characters: Character[];
+  showToolbar: boolean;
 }) {
   const action = createStoryEntry.bind(null, storyPostId, worldId);
   const [error, formAction, pending] = useActionState(action, null);
@@ -30,12 +32,12 @@ export function StoryEntryForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-2">
-      <MentionTextarea
+      <RichTextEditor
         key={resetKey}
         name="content"
-        characters={characters}
-        required
-        rows={4}
+        mentionCharacters={characters}
+        minHeight={100}
+        showToolbar={showToolbar}
         placeholder={`Schreib die Geschichte weiter als ${characterName}... (@ um Charaktere zu markieren)`}
       />
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

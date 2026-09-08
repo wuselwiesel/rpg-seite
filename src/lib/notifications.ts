@@ -82,20 +82,13 @@ export async function markAllNotificationsRead(userId: string) {
 
 // Benachrichtigt alle per @-Erwähnung markierten Charaktere (außer der
 // schreibenden Person selbst) über einen neuen Kommentar/Story-Eintrag.
-export async function notifyMentionedCharacters(
-  content: string,
+export async function notifyMentionedCharacterIds(
+  mentionedCharacterIds: string[],
   actorUserId: string,
   actorCharacterId: string,
   link: string,
   message: string,
 ) {
-  const mentionedCharacterIds = Array.from(
-    new Set(
-      parseMentions(content)
-        .filter((s) => s.type === "mention")
-        .map((s) => (s as Extract<typeof s, { type: "mention" }>).characterId),
-    ),
-  );
   if (mentionedCharacterIds.length === 0) return;
 
   const supabase = await createClient();
@@ -122,4 +115,22 @@ export async function notifyMentionedCharacters(
       }),
     ),
   );
+}
+
+// Für Plain-Text-Inhalte mit der alten @[Name](id)-Kodierung (Feed-Posts/Kommentare).
+export async function notifyMentionedCharacters(
+  content: string,
+  actorUserId: string,
+  actorCharacterId: string,
+  link: string,
+  message: string,
+) {
+  const mentionedCharacterIds = Array.from(
+    new Set(
+      parseMentions(content)
+        .filter((s) => s.type === "mention")
+        .map((s) => (s as Extract<typeof s, { type: "mention" }>).characterId),
+    ),
+  );
+  return notifyMentionedCharacterIds(mentionedCharacterIds, actorUserId, actorCharacterId, link, message);
 }

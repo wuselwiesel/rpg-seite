@@ -19,10 +19,12 @@ export function sanitizePostHtml(html: string): string {
       "a",
       "img",
       "hr",
+      "span",
     ],
     allowedAttributes: {
       a: ["href", "target", "rel"],
       img: ["src", "alt"],
+      span: ["data-type", "data-id", "class"],
     },
     allowedSchemes: ["http", "https", "mailto"],
   });

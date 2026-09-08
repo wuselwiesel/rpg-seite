@@ -131,3 +131,8 @@ body {
   margin: 1.5em 0;
   border-color: var(--line);
 }
+
+.post-content .mention {
+  color: var(--accent);
+  font-weight: 500;
+}

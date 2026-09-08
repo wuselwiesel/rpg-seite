@@ -9,7 +9,8 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
 import { extractHashtags } from "@/lib/hashtags";
-import { notifyMentionedCharacters, createNotification } from "@/lib/notifications";
+import { notifyMentionedCharacterIds, createNotification } from "@/lib/notifications";
+import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 
 async function getActiveCharacterInWorld(userId: string, worldId: string) {
   const cookieStore = await cookies();
@@ -115,8 +116,9 @@ export async function createStoryEntry(
   _prevState: string | null,
   formData: FormData,
 ) {
-  const content = String(formData.get("content") ?? "").trim();
-  if (!content) return "Text darf nicht leer sein.";
+  const rawContent = String(formData.get("content") ?? "").trim();
+  const content = sanitizePostHtml(rawContent);
+  if (!stripHtml(content)) return "Text darf nicht leer sein.";
 
   const supabase = await createClient();
   const {
@@ -133,8 +135,8 @@ export async function createStoryEntry(
 
   if (error) return error.message;
 
-  await notifyMentionedCharacters(
-    content,
+  await notifyMentionedCharacterIds(
+    parseMentionedCharacterIdsFromHtml(content),
     user.id,
     characterId,
     `/story/${storyPostId}`,
@@ -151,8 +153,9 @@ export async function updateStoryEntry(
   _prevState: string | null,
   formData: FormData,
 ) {
-  const content = String(formData.get("content") ?? "").trim();
-  if (!content) return "Text darf nicht leer sein.";
+  const rawContent = String(formData.get("content") ?? "").trim();
+  const content = sanitizePostHtml(rawContent);
+  if (!stripHtml(content)) return "Text darf nicht leer sein.";
 
   const supabase = await createClient();
   const {

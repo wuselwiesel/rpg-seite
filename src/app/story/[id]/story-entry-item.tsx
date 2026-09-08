@@ -1,25 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState, useActionState } from "react";
-import { Dices, Pencil, Trash2 } from "lucide-react";
+import { Dices, Pencil, Trash2, Type } from "lucide-react";
 import { updateStoryEntry, deleteStoryEntry } from "../actions";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { MentionText } from "@/components/mention-text";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
-import type { StoryEntry } from "@/lib/types";
+import type { Character, StoryEntry } from "@/lib/types";
 
 export function StoryEntryItem({
   entry,
   storyPostId,
   canManage,
+  mentionCharacters,
 }: {
   entry: StoryEntry;
   storyPostId: string;
   canManage: boolean;
+  mentionCharacters: Character[];
 }) {
   const isRoll = !!entry.roll_label;
   const [editing, setEditing] = useState(false);
-  const [content, setContent] = useState(entry.content);
+  const [showToolbar, setShowToolbar] = useState(false);
   const updateAction = updateStoryEntry.bind(null, entry.id, storyPostId);
   const [error, formAction, pending] = useActionState(updateAction, null);
   const wasPending = useRef(false);
@@ -77,15 +79,15 @@ export function StoryEntryItem({
 
         {editing ? (
           <form action={formAction} className="flex flex-col gap-2">
-            <textarea
+            <RichTextEditor
               name="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={3}
-              className="rounded-md border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+              initialContent={entry.content}
+              mentionCharacters={mentionCharacters}
+              minHeight={80}
+              showToolbar={showToolbar}
             />
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
                 type="submit"
                 disabled={pending}
@@ -95,13 +97,20 @@ export function StoryEntryItem({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setEditing(false);
-                  setContent(entry.content);
-                }}
+                onClick={() => setEditing(false)}
                 className="rounded-md px-3 py-1 text-xs text-muted hover:text-fg"
               >
                 Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowToolbar((v) => !v)}
+                title={showToolbar ? "Formatierung ausblenden" : "Formatierung anzeigen"}
+                className={`ml-auto flex h-7 w-7 items-center justify-center rounded-full transition ${
+                  showToolbar ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
+                }`}
+              >
+                <Type className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
             </div>
           </form>
@@ -129,7 +138,9 @@ export function StoryEntryItem({
             </span>
           </div>
         ) : (
-          <MentionText text={entry.content} className="whitespace-pre-line text-sm text-fg-soft" />
+          // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -
+          // Einträge kommen nie ungeprüft vom Client in die Datenbank.
+          <div className="post-content text-sm text-fg-soft" dangerouslySetInnerHTML={{ __html: entry.content }} />
         )}
       </div>
     </div>
