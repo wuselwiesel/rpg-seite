@@ -22,6 +22,9 @@ export function StoryPostControls({
   initialBookmarked: boolean;
 }) {
   const [bookmarked, setBookmarked] = useState(initialBookmarked);
+  const [isPinned, setIsPinned] = useState(pinned);
+  const [isLocked, setIsLocked] = useState(locked);
+  const [isArchived, setIsArchived] = useState(archived);
   const [, startTransition] = useTransition();
 
   function handleBookmark() {
@@ -37,9 +40,14 @@ export function StoryPostControls({
   }
 
   function handleFlag(flag: "pinned" | "locked" | "archived", value: boolean) {
+    const setters = { pinned: setIsPinned, locked: setIsLocked, archived: setIsArchived };
+    setters[flag](value);
     startTransition(async () => {
       const error = await toggleStoryPostFlag(storyPostId, flag, value);
-      if (error) alert(error);
+      if (error) {
+        setters[flag](!value);
+        alert(error);
+      }
     });
   }
 
@@ -51,19 +59,19 @@ export function StoryPostControls({
           Geheim
         </span>
       )}
-      {pinned && (
+      {isPinned && (
         <span className="inline-flex items-center gap-1 rounded-full bg-accent-strong/15 px-2.5 py-0.5 text-xs font-medium text-accent">
           <Pin className="h-3 w-3" strokeWidth={2} />
           Angepinnt
         </span>
       )}
-      {locked && (
+      {isLocked && (
         <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-medium text-fg-soft">
           <Lock className="h-3 w-3" strokeWidth={2} />
           Gesperrt
         </span>
       )}
-      {archived && (
+      {isArchived && (
         <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-medium text-fg-soft">
           <Archive className="h-3 w-3" strokeWidth={2} />
           Archiviert
@@ -86,30 +94,30 @@ export function StoryPostControls({
           <>
             <button
               type="button"
-              onClick={() => handleFlag("pinned", !pinned)}
-              title={pinned ? "Nicht mehr anpinnen" : "Anpinnen"}
+              onClick={() => handleFlag("pinned", !isPinned)}
+              title={isPinned ? "Nicht mehr anpinnen" : "Anpinnen"}
               className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-surface-2 ${
-                pinned ? "text-accent" : "text-muted hover:text-fg"
+                isPinned ? "text-accent" : "text-muted hover:text-fg"
               }`}
             >
               <Pin className="h-4 w-4" strokeWidth={2} />
             </button>
             <button
               type="button"
-              onClick={() => handleFlag("locked", !locked)}
-              title={locked ? "Entsperren" : "Sperren"}
+              onClick={() => handleFlag("locked", !isLocked)}
+              title={isLocked ? "Entsperren" : "Sperren"}
               className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-surface-2 ${
-                locked ? "text-accent" : "text-muted hover:text-fg"
+                isLocked ? "text-accent" : "text-muted hover:text-fg"
               }`}
             >
               <Lock className="h-4 w-4" strokeWidth={2} />
             </button>
             <button
               type="button"
-              onClick={() => handleFlag("archived", !archived)}
-              title={archived ? "Aus Archiv holen" : "Archivieren"}
+              onClick={() => handleFlag("archived", !isArchived)}
+              title={isArchived ? "Aus Archiv holen" : "Archivieren"}
               className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-surface-2 ${
-                archived ? "text-accent" : "text-muted hover:text-fg"
+                isArchived ? "text-accent" : "text-muted hover:text-fg"
               }`}
             >
               <Archive className="h-4 w-4" strokeWidth={2} />
