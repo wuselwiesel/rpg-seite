@@ -34,6 +34,72 @@
   --on-chip: #2b2028;
 }
 
+/*
+ * Farbpaletten: nur --accent/--accent-strong (und Ableitungen) wechseln je
+ * Palette - --app/--surface/--fg usw. bleiben stabil, damit jede Palette
+ * genauso lesbar bleibt wie die bereits kontrastgeprüfte Standardpalette.
+ * "Rosé" (Standard) ist oben in :root/.dark definiert, hier nur die übrigen.
+ */
+[data-palette="amaranth"] {
+  --accent: #933b5b;
+  --accent-strong: #6f7a5c;
+  --on-accent-strong: #fdfbf9;
+  --chip: #d8c9a3;
+  --on-chip: #4a3323;
+}
+[data-palette="amaranth"].dark {
+  --accent: #cf7d97;
+  --accent-strong: #b9c2ab;
+  --on-accent-strong: #2b1620;
+  --chip: #b5a179;
+  --on-chip: #2b1620;
+}
+
+[data-palette="dusk"] {
+  --accent: #8a5f92;
+  --accent-strong: #547089;
+  --on-accent-strong: #fdfbf9;
+  --chip: #c9a9b8;
+  --on-chip: #3a2438;
+}
+[data-palette="dusk"].dark {
+  --accent: #c9a0d1;
+  --accent-strong: #9fbfd6;
+  --on-accent-strong: #241b2b;
+  --chip: #a98fae;
+  --on-chip: #241b2b;
+}
+
+[data-palette="cocoa"] {
+  --accent: #b5677a;
+  --accent-strong: #7f5836;
+  --on-accent-strong: #fdfbf9;
+  --chip: #d9a98f;
+  --on-chip: #3a2416;
+}
+[data-palette="cocoa"].dark {
+  --accent: #f0b3ba;
+  --accent-strong: #c99a6e;
+  --on-accent-strong: #2b1f18;
+  --chip: #c99a6e;
+  --on-chip: #2b1f18;
+}
+
+[data-palette="lagoon"] {
+  --accent: #d1657a;
+  --accent-strong: #3f8f89;
+  --on-accent-strong: #fdfbf9;
+  --chip: #e5a9a9;
+  --on-chip: #3a1f22;
+}
+[data-palette="lagoon"].dark {
+  --accent: #f0a3b5;
+  --accent-strong: #7fc9c3;
+  --on-accent-strong: #17282a;
+  --chip: #d98f8f;
+  --on-chip: #17282a;
+}
+
 @theme inline {
   --color-app: var(--app);
   --color-surface: var(--surface);

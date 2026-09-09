@@ -42,6 +42,8 @@ try {
   document.documentElement.classList.toggle('dark', dark);
   var favicon = document.getElementById('favicon');
   if (favicon) favicon.href = dark ? '/icons/icon-dark-32.png' : '/icon.png';
+  var palette = localStorage.getItem('palette');
+  if (palette) document.documentElement.setAttribute('data-palette', palette);
 } catch (e) {}
 `;
 

@@ -4,6 +4,7 @@ import { logout } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
 import { PushSubscribeToggle } from "@/components/push-subscribe-toggle";
+import { PaletteSwitcher } from "@/components/palette-switcher";
 
 export default async function ProfilePage({ searchParams }: PageProps<"/profile">) {
   const params = await searchParams;
@@ -34,6 +35,11 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
       )}
 
       <ProfileForm profile={profile!} />
+
+      <div className="mt-8 border-t border-line pt-6">
+        <h2 className="mb-3 font-serif text-lg text-fg">Farbpalette</h2>
+        <PaletteSwitcher />
+      </div>
 
       <div className="mt-8 border-t border-line pt-6">
         <PushSubscribeToggle />
