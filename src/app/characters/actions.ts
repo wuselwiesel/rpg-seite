@@ -7,6 +7,23 @@ import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 
+const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
+
+function parseUsername(raw: FormDataEntryValue | null): { value: string | null; error?: string } {
+  const value = String(raw ?? "").trim().replace(/^@/, "").toLowerCase();
+  if (!value) return { value: null };
+  if (!USERNAME_PATTERN.test(value)) {
+    return { value: null, error: "Nutzername: 3-30 Zeichen, nur Buchstaben, Zahlen, Punkt und Unterstrich." };
+  }
+  return { value };
+}
+
+function usernameErrorMessage(message: string): string {
+  if (message.includes("characters_username_unique_idx")) return "Dieser Nutzername ist schon vergeben.";
+  if (message.includes("username")) return "Nutzernamen sind noch nicht eingerichtet (Datenbank-Migration fehlt).";
+  return message;
+}
+
 export async function createCharacter(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
@@ -16,6 +33,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
   }
+  const username = parseUsername(formData.get("username"));
+  if (username.error) return username.error;
 
   const supabase = await createClient();
   const {
@@ -37,6 +56,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       owner_id: user.id,
       world_id: activeWorld.id,
       name,
+      ...(username.value ? { username: username.value } : {}),
       bio: bio || null,
       avatar_url: avatarUrl || null,
       sheet_url: sheetUrl || null,
@@ -45,7 +65,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
     .single();
 
   if (error || !data) {
-    return error?.message ?? "Charakter konnte nicht erstellt werden.";
+    return error ? usernameErrorMessage(error.message) : "Charakter konnte nicht erstellt werden.";
   }
 
   const cookieStore = await cookies();
@@ -72,6 +92,8 @@ export async function updateCharacter(
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
   }
+  const username = parseUsername(formData.get("username"));
+  if (username.error) return username.error;
 
   const supabase = await createClient();
   const {
@@ -82,11 +104,17 @@ export async function updateCharacter(
 
   const { error } = await supabase
     .from("characters")
-    .update({ name, bio: bio || null, avatar_url: avatarUrl || null, sheet_url: sheetUrl || null })
+    .update({
+      name,
+      ...(username.value ? { username: username.value } : {}),
+      bio: bio || null,
+      avatar_url: avatarUrl || null,
+      sheet_url: sheetUrl || null,
+    })
     .eq("id", characterId)
     .eq("owner_id", user.id);
 
-  if (error) return error.message;
+  if (error) return usernameErrorMessage(error.message);
 
   revalidatePath("/", "layout");
   redirect(`/characters/${characterId}`);
@@ -184,5 +212,31 @@ export async function deleteRelationship(relationshipId: string): Promise<string
   if (!count) return "Konnte nicht gelöscht werden.";
 
   revalidatePath("/characters/relationships");
+  return null;
+}
+
+export async function toggleFollowCharacter(
+  followerId: string,
+  followedId: string,
+  follow: boolean,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  if (followerId === followedId) return "Du kannst dir nicht selbst folgen.";
+
+  const { error } = follow
+    ? await supabase.from("character_follows").insert({ follower_id: followerId, followed_id: followedId })
+    : await supabase
+        .from("character_follows")
+        .delete()
+        .eq("follower_id", followerId)
+        .eq("followed_id", followedId);
+
+  if (error && error.code !== "23505") return error.message;
+
+  revalidatePath(`/characters/${followedId}`);
   return null;
 }

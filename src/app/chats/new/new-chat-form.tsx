@@ -4,9 +4,15 @@ import { useActionState, useState } from "react";
 import { createChat } from "../actions";
 import type { Character } from "@/lib/types";
 
-export function NewChatForm({ characters }: { characters: Character[] }) {
+export function NewChatForm({
+  characters,
+  initialSelected = [],
+}: {
+  characters: Character[];
+  initialSelected?: string[];
+}) {
   const [error, formAction, pending] = useActionState(createChat, null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(initialSelected);
   const isGroup = selected.length > 1;
 
   return (

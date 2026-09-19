@@ -30,6 +30,7 @@ export type Character = {
   owner_id: string;
   world_id: string;
   name: string;
+  username?: string | null;
   avatar_url: string | null;
   bio: string | null;
   sheet_url: string | null;

@@ -32,6 +32,22 @@ export default function NewCharacterPage() {
             className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
           />
         </label>
+        <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          Nutzername (optional)
+          <div className="flex items-center rounded-md border border-line bg-surface focus-within:border-accent">
+            <span className="pl-3 text-muted">@</span>
+            <input
+              type="text"
+              name="username"
+              
+              placeholder="mira.test"
+              pattern="[A-Za-z0-9._]{3,30}"
+              title="3-30 Zeichen: Buchstaben, Zahlen, Punkt, Unterstrich"
+              autoCapitalize="none"
+              className="min-w-0 flex-1 bg-transparent px-1 py-2 text-fg outline-none"
+            />
+          </div>
+        </label>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
           Avatar (optional)
           <AvatarUpload name="avatar_url" displayName={name || "?"} />

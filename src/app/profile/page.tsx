@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/lib/actions/auth";
@@ -39,6 +40,12 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
       <div className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-lg text-fg">Farbpalette</h2>
         <PaletteSwitcher />
+      </div>
+
+      <div className="mt-8 border-t border-line pt-6">
+        <Link href="/characters" className="text-sm text-fg-soft transition hover:text-accent">
+          Charaktere verwalten
+        </Link>
       </div>
 
       <div className="mt-8 border-t border-line pt-6">

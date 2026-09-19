@@ -5,7 +5,9 @@ import { getActiveWorld } from "@/lib/worlds";
 import { NewChatForm } from "./new-chat-form";
 import type { Character } from "@/lib/types";
 
-export default async function NewChatPage() {
+export default async function NewChatPage({ searchParams }: PageProps<"/chats/new">) {
+  const params = await searchParams;
+  const withId = typeof params.with === "string" ? params.with : "";
   const supabase = await createClient();
   const {
     data: { user },
@@ -35,7 +37,7 @@ export default async function NewChatPage() {
         Du nimmst als <span className="text-accent">{activeCharacter?.name}</span> teil.
       </p>
 
-      <NewChatForm characters={otherCharacters} />
+      <NewChatForm characters={otherCharacters} initialSelected={otherCharacters.some((c) => c.id === withId) ? [withId] : []} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Library, Users, UserPlus, Search, Plus, Network, Menu, X } from "lucide-react";
+import { House, BookOpen, Library, UserPlus, Search, Plus, Network, Menu, X } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
@@ -73,6 +73,16 @@ export function MobileNav({
           />
           <ThemeToggle />
           <MobileModeButton />
+          {mode === "ingame" && (
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              aria-label="Menü"
+              className="rounded-full p-2 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -96,14 +106,22 @@ export function MobileNav({
             <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadChatIds={unreadChatIds} />
           </>
         )}
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[11px] font-medium text-muted transition hover:text-fg-soft"
-        >
-          <Menu className="h-5 w-5" strokeWidth={2} />
-          Mehr
-        </button>
+        {mode === "ingame" && activeCharacter ? (
+          <MobileTabLink
+            href={`/characters/${activeCharacter.id}`}
+            icon={<CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={22} />}
+            label="Profil"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[11px] font-medium text-muted transition hover:text-fg-soft"
+          >
+            <Menu className="h-5 w-5" strokeWidth={2} />
+            Mehr
+          </button>
+        )}
       </nav>
 
       <div
@@ -160,16 +178,6 @@ export function MobileNav({
         )}
 
         <div className="flex flex-col gap-1">
-          {mode === "ingame" && (
-            <Link
-              href="/characters"
-              onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-            >
-              <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              Charaktere
-            </Link>
-          )}
           <Link
             href="/friends"
             onClick={() => setMoreOpen(false)}
