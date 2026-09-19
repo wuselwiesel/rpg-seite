@@ -179,10 +179,10 @@ export default async function CharacterProfilePage({
               </div>
             </div>
 
-            <div className="mt-4 hidden gap-8 text-base sm:flex">
-              <span><b className="font-semibold">{posts?.length ?? 0}</b> {posts?.length === 1 ? "Beitrag" : "Beiträge"}</span>
-              <Link href={`/characters/${character.id}/follows?tab=followers`} className="hover:opacity-70"><b className="font-semibold">{followerCount ?? 0}</b> Follower</Link>
-              <Link href={`/characters/${character.id}/follows?tab=following`} className="hover:opacity-70"><b className="font-semibold">{followingCount ?? 0}</b> Gefolgt</Link>
+            <div className="mt-3 flex justify-between gap-2 text-center text-sm sm:mt-4 sm:justify-start sm:gap-8 sm:text-left sm:text-base">
+              <span className="flex flex-col sm:block"><b className="font-semibold">{posts?.length ?? 0}</b> <span className="text-fg-soft sm:text-fg">{posts?.length === 1 ? "Beitrag" : "Beiträge"}</span></span>
+              <Link href={`/characters/${character.id}/follows?tab=followers`} className="flex flex-col hover:opacity-70 sm:block"><b className="font-semibold">{followerCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">Follower</span></Link>
+              <Link href={`/characters/${character.id}/follows?tab=following`} className="flex flex-col hover:opacity-70 sm:block"><b className="font-semibold">{followingCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">Gefolgt</span></Link>
             </div>
 
             <div className="mt-4 hidden text-sm sm:block">
@@ -222,12 +222,6 @@ export default async function CharacterProfilePage({
               )}
             </>
           )}
-        </div>
-
-        <div className="mt-4 flex justify-around border-t border-line text-center text-sm sm:hidden">
-          <div className="py-2"><b className="block font-semibold">{posts?.length ?? 0}</b><span className="text-muted">{posts?.length === 1 ? "Beitrag" : "Beiträge"}</span></div>
-          <Link href={`/characters/${character.id}/follows?tab=followers`} className="py-2"><b className="block font-semibold">{followerCount ?? 0}</b><span className="text-muted">Follower</span></Link>
-          <Link href={`/characters/${character.id}/follows?tab=following`} className="py-2"><b className="block font-semibold">{followingCount ?? 0}</b><span className="text-muted">Gefolgt</span></Link>
         </div>
 
         {(highlightGroups.length > 0 || isActiveProfile) && (
