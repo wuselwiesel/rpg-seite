@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Grid3x3, MessageCircle, Pencil } from "lucide-react";
+import { ChevronDown, Grid3x3, MessageCircle, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -125,8 +125,8 @@ export default async function CharacterProfilePage({
 
             <div className="mt-4 hidden gap-8 text-base sm:flex">
               <span><b className="font-semibold">{posts?.length ?? 0}</b> {posts?.length === 1 ? "Beitrag" : "Beiträge"}</span>
-              <span><b className="font-semibold">{followerCount ?? 0}</b> Follower</span>
-              <span><b className="font-semibold">{followingCount ?? 0}</b> Gefolgt</span>
+              <Link href={`/characters/${character.id}/follows?tab=followers`} className="hover:opacity-70"><b className="font-semibold">{followerCount ?? 0}</b> Follower</Link>
+              <Link href={`/characters/${character.id}/follows?tab=following`} className="hover:opacity-70"><b className="font-semibold">{followingCount ?? 0}</b> Gefolgt</Link>
             </div>
 
             <div className="mt-4 hidden text-sm sm:block">
@@ -170,8 +170,8 @@ export default async function CharacterProfilePage({
 
         <div className="mt-4 flex justify-around border-t border-line text-center text-sm sm:hidden">
           <div className="py-2"><b className="block font-semibold">{posts?.length ?? 0}</b><span className="text-muted">{posts?.length === 1 ? "Beitrag" : "Beiträge"}</span></div>
-          <div className="py-2"><b className="block font-semibold">{followerCount ?? 0}</b><span className="text-muted">Follower</span></div>
-          <div className="py-2"><b className="block font-semibold">{followingCount ?? 0}</b><span className="text-muted">Gefolgt</span></div>
+          <Link href={`/characters/${character.id}/follows?tab=followers`} className="py-2"><b className="block font-semibold">{followerCount ?? 0}</b><span className="text-muted">Follower</span></Link>
+          <Link href={`/characters/${character.id}/follows?tab=following`} className="py-2"><b className="block font-semibold">{followingCount ?? 0}</b><span className="text-muted">Gefolgt</span></Link>
         </div>
 
         {isOwn && otherOwn.length > 0 && (
@@ -186,9 +186,15 @@ export default async function CharacterProfilePage({
         )}
 
         {character.sheet_url && (
-          <div className="mt-6">
-            <CharacterSheetEmbed sheetUrl={character.sheet_url} />
-          </div>
+          <details open className="group mt-6 rounded-2xl border border-line">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
+              Charakterbogen
+              <ChevronDown className="h-4 w-4 text-muted transition group-open:rotate-180" strokeWidth={2} />
+            </summary>
+            <div className="px-2 pb-2">
+              <CharacterSheetEmbed sheetUrl={character.sheet_url} />
+            </div>
+          </details>
         )}
 
         <div className="mt-6 flex justify-center border-t border-line">

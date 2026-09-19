@@ -73,3 +73,24 @@ export async function toggleReaction(
   if ("postId" in target) revalidatePath("/");
   return null;
 }
+
+export type Reactor = {
+  emoji: string;
+  character: { id: string; name: string; username: string | null; avatar_url: string | null };
+};
+
+export async function getPostReactors(postId: string): Promise<Reactor[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("reactions")
+    .select("emoji, created_at, characters(id, name, username, avatar_url)")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? [])
+    .map((row) => {
+      const character = (row as unknown as { characters: Reactor["character"] | null }).characters;
+      return character ? { emoji: row.emoji as string, character } : null;
+    })
+    .filter((r): r is Reactor => r !== null);
+}
