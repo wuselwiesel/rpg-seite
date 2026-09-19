@@ -7,7 +7,6 @@ import type { Post } from "@/lib/types";
 import { SocialPostCard } from "@/components/social-post-card";
 import { StoriesStrip } from "@/components/stories-strip";
 import { FeedSidebar } from "@/components/feed-sidebar";
-import { CharacterAvatar } from "@/components/character-avatar";
 import { ReactionBar } from "@/components/reaction-bar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
@@ -57,27 +56,13 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
 
   return (
-    <div className="flex gap-8 px-6 py-8 lg:px-10">
-      <div className="min-w-0 flex-1">
+    <div className="flex gap-8 px-3 py-4 sm:px-6 sm:py-8 lg:px-10">
+      <div className="mx-auto min-w-0 max-w-[470px] flex-1">
         <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
 
         <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} />
 
-        <Link
-          href="/posts/new"
-          className="mb-5 flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
-        >
-          <CharacterAvatar
-            name={activeCharacter.name}
-            avatarUrl={activeCharacter.avatar_url}
-            size={36}
-          />
-          <span className="text-sm text-muted">
-            Was erlebt {activeCharacter.name} gerade?
-          </span>
-        </Link>
-
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           {posts?.length ? (
             posts.map((post) => (
               <SocialPostCard

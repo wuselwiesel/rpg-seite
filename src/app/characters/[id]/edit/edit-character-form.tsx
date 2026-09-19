@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { updateCharacter } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { ProfileThemeFields } from "@/components/profile-theme-fields";
 import type { Character } from "@/lib/types";
 
 export function EditCharacterForm({ character }: { character: Character }) {
@@ -56,6 +57,13 @@ export function EditCharacterForm({ character }: { character: Character }) {
           className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
         />
       </label>
+      <ProfileThemeFields
+        name={name}
+        avatarUrl={character.avatar_url}
+        initialFont={character.theme_font}
+        initialAccent={character.theme_accent}
+        initialBg={character.theme_bg}
+      />
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Charakterbogen-Link (optional)
         <input

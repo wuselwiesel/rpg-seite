@@ -94,6 +94,9 @@ export async function updateCharacter(
   }
   const username = parseUsername(formData.get("username"));
   if (username.error) return username.error;
+  const themeFont = String(formData.get("theme_font") ?? "").trim();
+  const themeAccent = String(formData.get("theme_accent") ?? "").trim();
+  const themeBg = String(formData.get("theme_bg") ?? "").trim();
 
   const supabase = await createClient();
   const {
@@ -107,6 +110,9 @@ export async function updateCharacter(
     .update({
       name,
       ...(username.value ? { username: username.value } : {}),
+      theme_font: themeFont || null,
+      theme_accent: themeAccent || null,
+      theme_bg: themeBg || null,
       bio: bio || null,
       avatar_url: avatarUrl || null,
       sheet_url: sheetUrl || null,

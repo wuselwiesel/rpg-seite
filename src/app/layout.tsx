@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
+import { Geist, Geist_Mono, Cormorant_Garamond, Playfair_Display, Lora, Caveat } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { MobileMain } from "@/components/mobile-main";
@@ -20,6 +20,10 @@ const serif = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
+
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], preload: false });
+const lora = Lora({ variable: "--font-lora", subsets: ["latin"], preload: false });
+const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], preload: false });
 
 export const metadata: Metadata = {
   title: "Wortwinkel",
@@ -51,7 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} ${playfair.variable} ${lora.variable} ${caveat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
