@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ImagePlus, Pencil, Trash2, UserPlus, X } from "lucide-react";
+import { Check, ChevronLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ReactionBar } from "@/components/reaction-bar";
@@ -208,11 +208,16 @@ export function ChatRoom({
 
   return (
     <div className="mx-auto flex h-dvh max-w-2xl flex-col px-4 lg:h-dvh lg:max-w-none lg:px-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line py-4">
-        <div className="min-w-0">
-          <Link href="/chats" className="text-xs text-muted hover:text-fg-soft lg:hidden">
-            ← Alle Chats
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line py-3 lg:py-4">
+        <div className="flex min-w-0 items-center gap-1">
+          <Link
+            href="/chats"
+            aria-label="Zurück zu allen Chats"
+            className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-fg transition hover:bg-surface-2 active:bg-surface-3 lg:hidden"
+          >
+            <ChevronLeft className="h-7 w-7" strokeWidth={2} />
           </Link>
+          <div className="min-w-0">
           {renaming ? (
             <form action={renameFormAction} className="flex flex-col gap-2">
               <AvatarUpload name="avatar_url" displayName={title} initialUrl={avatarUrl} />
@@ -259,6 +264,7 @@ export function ChatRoom({
             </div>
           )}
           {renameError && <p className="text-xs text-red-600 dark:text-red-400">{renameError}</p>}
+          </div>
         </div>
         <div className="flex min-w-0 items-center gap-3">
           <p className="min-w-0 truncate text-right text-xs text-muted">
@@ -274,7 +280,7 @@ export function ChatRoom({
               <Trash2 className="h-4 w-4" strokeWidth={2} />
             </button>
           )}
-          {availableCharacters.length > 0 && (
+          {isGroup && availableCharacters.length > 0 && (
             <button
               type="button"
               onClick={() => setShowAddForm((v) => !v)}
@@ -283,6 +289,19 @@ export function ChatRoom({
             >
               <UserPlus className="h-4 w-4" strokeWidth={2} />
             </button>
+          )}
+          {!isGroup && (
+            <Link
+              href={`/chats/new?with=${participants
+                .filter((p) => p.id !== activeCharacter.id)
+                .map((p) => p.id)
+                .join(",")}`}
+              title="Neuen Gruppenchat erstellen"
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-fg-soft transition hover:bg-surface-3 hover:text-fg"
+            >
+              <Users className="h-4 w-4" strokeWidth={2} />
+              Gruppe erstellen
+            </Link>
           )}
         </div>
       </div>
@@ -309,14 +328,6 @@ export function ChatRoom({
               {addPending ? "..." : "Hinzufügen"}
             </button>
           </div>
-          {!isGroup && (
-            <input
-              name="name"
-              placeholder="Gruppenname"
-              required
-              className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
-            />
-          )}
           {addError && <p className="text-xs text-red-600 dark:text-red-400">{addError}</p>}
         </form>
       )}

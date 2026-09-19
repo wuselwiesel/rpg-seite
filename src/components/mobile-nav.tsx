@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, BookOpen, Library, UserPlus, Search, Plus, Network, Menu, X } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
+import { ActiveCharacterMenu } from "./active-character-menu";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { CharacterAvatar } from "./character-avatar";
-import { CharacterSwitcher } from "./character-switcher";
 import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
 import { MobileModeButton } from "./mode-switch";
@@ -63,7 +63,7 @@ export function MobileNav({
     <>
       <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-app px-4 py-2.5 lg:hidden">
         <div className="min-w-0 flex-1">
-          <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
+          <ActiveCharacterMenu characters={characters} activeCharacter={activeCharacter} />
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <NotificationBell
@@ -73,16 +73,14 @@ export function MobileNav({
           />
           <ThemeToggle />
           <MobileModeButton />
-          {mode === "ingame" && (
-            <button
-              type="button"
-              onClick={() => setMoreOpen(true)}
-              aria-label="Menü"
-              className="rounded-full p-2 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-            >
-              <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            aria-label="Menü"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
+          </button>
         </div>
       </div>
 
@@ -136,13 +134,13 @@ export function MobileNav({
         }`}
       />
       <div
-        className={`fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-line bg-surface p-5 shadow-lg transition-transform duration-200 lg:hidden ${
+        className={`fixed inset-x-0 bottom-0 z-40 max-h-[88dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5 shadow-lg transition-transform duration-200 lg:hidden ${
           moreOpen ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mb-4 flex items-center justify-between">
-          <span className="font-serif text-lg text-fg">Mehr</span>
+          <span className="font-serif text-lg text-fg">Menü</span>
           <button
             type="button"
             onClick={() => setMoreOpen(false)}
@@ -175,11 +173,13 @@ export function MobileNav({
                 </Link>
               )}
             </div>
-            {characters.length > 1 && (
-              <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="max-w-[7.5rem]" />
-            )}
           </div>
         )}
+
+        <div className="mb-4">
+          <p className="mb-1 px-1 text-xs text-muted">Welt</p>
+          <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} inline />
+        </div>
 
         <div className="flex flex-col gap-1">
           <Link

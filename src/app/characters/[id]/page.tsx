@@ -5,11 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
 import { FollowButton } from "@/components/follow-button";
-import { CharacterAvatar } from "@/components/character-avatar";
 import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
-import type { Character, Post } from "@/lib/types";
+import { storyBackground } from "@/lib/stories";
+import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
+import { Plus } from "lucide-react";
+import type { Character, Highlight, Post, Story } from "@/lib/types";
 
 export default async function CharacterProfilePage({
   params,
@@ -30,18 +32,33 @@ export default async function CharacterProfilePage({
 
   if (!character) notFound();
 
-  const [{ data: posts }, { data: myCharacters }, activeWorld] = await Promise.all([
+  const [{ data: posts }, activeWorld] = await Promise.all([
     supabase
       .from("posts")
       .select("*, characters(*), comments(count), reactions(emoji, character_id)")
       .eq("character_id", id)
       .order("created_at", { ascending: false })
       .returns<Post[]>(),
-    supabase.from("characters").select("id, name, avatar_url, world_id").eq("owner_id", user.id),
     getActiveWorld(user.id),
   ]);
 
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
+
+  const [{ data: activeStories }, { data: highlightRows }] = await Promise.all([
+    supabase
+      .from("stories")
+      .select("*")
+      .eq("character_id", id)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: true })
+      .returns<Story[]>(),
+    supabase
+      .from("highlights")
+      .select("*, highlight_stories(position, stories(*))")
+      .eq("character_id", id)
+      .order("created_at", { ascending: true })
+      .returns<Highlight[]>(),
+  ]);
 
   // Follow-Tabelle kann fehlen, solange die Migration nicht eingespielt ist: Fehler = 0 / nicht gefolgt.
   const [{ count: followerCount }, { count: followingCount }, { data: followRow }] = await Promise.all([
@@ -59,8 +76,29 @@ export default async function CharacterProfilePage({
 
   const isOwn = character.owner_id === user.id;
   const isActiveProfile = activeCharacter?.id === character.id;
-  const otherOwn = (myCharacters ?? []).filter((c) => c.id !== id && c.world_id === character.world_id);
   const canMessage = !isActiveProfile && activeWorld?.id === character.world_id;
+
+  const baseGroup = {
+    characterId: character.id,
+    characterName: character.name,
+    avatarUrl: character.avatar_url,
+    canManage: isOwn,
+  };
+  const storyGroups: StoryGroup[] = activeStories?.length
+    ? [{ ...baseGroup, key: "active", stories: activeStories }]
+    : [];
+  const highlightGroups: StoryGroup[] = (highlightRows ?? [])
+    .map((h) => ({
+      ...baseGroup,
+      key: h.id,
+      highlightId: h.id,
+      label: h.title,
+      stories: (h.highlight_stories ?? [])
+        .sort((a, b) => a.position - b.position)
+        .map((hs) => hs.stories)
+        .filter((s): s is Story => Boolean(s)),
+    }))
+    .filter((g) => g.stories.length > 0);
 
   const buttonBase = "flex flex-1 whitespace-nowrap items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition";
 
@@ -71,8 +109,8 @@ export default async function CharacterProfilePage({
       <div className="mx-auto max-w-[935px] px-4 pt-6 sm:pt-10">
         <header className="flex gap-5 sm:gap-20">
           <div className="shrink-0 sm:px-6">
-            <div className="rounded-full bg-gradient-to-tr from-accent to-accent-strong p-[3px]">
-              <div className="rounded-full bg-app p-[3px]">
+            {(() => {
+              const avatar = (
                 <div className="h-[80px] w-[80px] overflow-hidden rounded-full bg-surface-2 sm:h-[150px] sm:w-[150px]">
                   {character.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -83,8 +121,30 @@ export default async function CharacterProfilePage({
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+              );
+              return (
+                <div className="relative">
+                  {storyGroups.length > 0 ? (
+                    <StoryLauncher groups={storyGroups} ringWidth={3} label="Story ansehen">
+                      {avatar}
+                    </StoryLauncher>
+                  ) : (
+                    <div className="rounded-full p-[3px]">
+                      <div className="rounded-full bg-app p-[3px]">{avatar}</div>
+                    </div>
+                  )}
+                  {isActiveProfile && (
+                    <Link
+                      href="/stories/new"
+                      aria-label="Neue Story erstellen"
+                      className="absolute bottom-0.5 right-0.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong sm:bottom-2 sm:right-2 sm:h-8 sm:w-8"
+                    >
+                      <Plus className="h-4 w-4" strokeWidth={3} />
+                    </Link>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           <div className="min-w-0 flex-1">
@@ -170,14 +230,40 @@ export default async function CharacterProfilePage({
           <Link href={`/characters/${character.id}/follows?tab=following`} className="py-2"><b className="block font-semibold">{followingCount ?? 0}</b><span className="text-muted">Gefolgt</span></Link>
         </div>
 
-        {isOwn && otherOwn.length > 0 && (
-          <div className="mt-5 flex gap-4 overflow-x-auto">
-            {otherOwn.map((c) => (
-              <Link key={c.id} href={`/characters/${c.id}`} className="flex w-16 shrink-0 flex-col items-center gap-1" title={c.name}>
-                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={48} />
-                <span className="w-full truncate text-center text-xs text-fg-soft">{c.name.split(" ")[0]}</span>
+        {(highlightGroups.length > 0 || isActiveProfile) && (
+          <div className="mt-5 flex gap-4 overflow-x-auto pb-1">
+            {highlightGroups.map((g, i) => {
+              const cover = g.stories[0];
+              return (
+                <div key={g.key} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
+                  <StoryLauncher groups={highlightGroups} startIndex={i} ringWidth={2} label={`Highlight ${g.label}`}>
+                    <span className="block h-14 w-14 overflow-hidden rounded-full bg-surface-2">
+                      {cover.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={cover.image_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span
+                          className="block h-full w-full"
+                          style={{ background: storyBackground(cover.bg) }}
+                        />
+                      )}
+                    </span>
+                  </StoryLauncher>
+                  <span className="w-full truncate text-center text-xs text-fg">{g.label}</span>
+                </div>
+              );
+            })}
+            {isActiveProfile && (
+              <Link
+                href={`/characters/${character.id}/highlights/new`}
+                className="flex w-[72px] shrink-0 flex-col items-center gap-1.5"
+              >
+                <span className="flex h-[62px] w-[62px] items-center justify-center rounded-full border border-line bg-surface-2 text-fg-soft">
+                  <Plus className="h-6 w-6" strokeWidth={2} />
+                </span>
+                <span className="text-xs text-fg-soft">Neu</span>
               </Link>
-            ))}
+            )}
           </div>
         )}
 
@@ -213,11 +299,17 @@ export default async function CharacterProfilePage({
                 >
                   {image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={post.title} className="h-full w-full object-cover" />
+                    <img src={image} alt={post.title || "Beitrag"} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full flex-col justify-center gap-1 overflow-hidden bg-surface-3 p-2 sm:p-4">
-                      <p className="line-clamp-3 font-serif text-sm leading-tight text-fg sm:text-xl">{post.title}</p>
-                      <p className="line-clamp-3 hidden text-xs text-fg-soft sm:block">{stripHtml(post.content)}</p>
+                      {post.title ? (
+                        <>
+                          <p className="line-clamp-3 font-serif text-sm leading-tight text-fg sm:text-xl">{post.title}</p>
+                          <p className="line-clamp-3 hidden text-xs text-fg-soft sm:block">{stripHtml(post.content)}</p>
+                        </>
+                      ) : (
+                        <p className="line-clamp-5 font-serif text-sm leading-tight text-fg sm:text-lg">{stripHtml(post.content)}</p>
+                      )}
                     </div>
                   )}
                   <div className="absolute inset-0 hidden items-center justify-center gap-4 bg-black/40 text-sm font-semibold text-white opacity-0 transition group-hover:opacity-100 sm:flex">

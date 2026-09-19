@@ -51,11 +51,21 @@ export function SocialPostCard({
       <Link href={detailHref} className="block">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={title} className="max-h-[590px] w-full rounded-sm bg-surface-2 object-cover" />
+          <img src={image} alt={title || "Beitragsbild"} className="max-h-[590px] w-full rounded-sm bg-surface-2 object-cover" />
         ) : (
           <div className="flex aspect-square flex-col justify-center gap-3 rounded-sm bg-surface-3 p-8">
-            <h2 className="font-serif text-3xl leading-tight text-fg">{title}</h2>
-            {preview && <p className="line-clamp-6 text-[15px] leading-relaxed text-fg-soft">{preview}</p>}
+            {title && <h2 className="font-serif text-3xl leading-tight text-fg">{title}</h2>}
+            {preview && (
+              <p
+                className={
+                  title
+                    ? "line-clamp-6 text-[15px] leading-relaxed text-fg-soft"
+                    : "line-clamp-[10] font-serif text-2xl leading-snug text-fg"
+                }
+              >
+                {preview}
+              </p>
+            )}
           </div>
         )}
       </Link>
@@ -70,8 +80,8 @@ export function SocialPostCard({
       {image && (
         <p className="mt-2 px-1 text-sm text-fg">
           <Link href={characterHref} className="font-semibold">{handle}</Link>{" "}
-          <span className="font-serif text-base">{title}</span>
-          {preview && <span className="text-fg-soft"> {preview.length > 140 ? `${preview.slice(0, 137)}...` : preview}</span>}
+          {title && <span className="font-serif text-base">{title} </span>}
+          {preview && <span className="text-fg-soft">{preview.length > 140 ? `${preview.slice(0, 137)}...` : preview}</span>}
         </p>
       )}
 

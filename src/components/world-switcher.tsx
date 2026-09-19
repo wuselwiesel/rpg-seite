@@ -11,10 +11,13 @@ export function WorldSwitcher({
   worlds,
   activeWorld,
   isOwner,
+  inline = false,
 }: {
   worlds: World[];
   activeWorld: World;
   isOwner: boolean;
+  // inline: Liste klappt im Fluss auf (z. B. im Hamburger-Menü) statt als Popover.
+  inline?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -53,7 +56,11 @@ export function WorldSwitcher({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-2xl border border-line bg-surface shadow-lg">
+        <div
+          className={`mt-2 rounded-2xl border border-line bg-surface ${
+            inline ? "" : "absolute left-0 right-0 top-full z-50 shadow-lg"
+          }`}
+        >
           <div className="max-h-72 overflow-y-auto p-2">
             {worlds.map((w) => (
               <button

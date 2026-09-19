@@ -1,45 +1,105 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "./character-avatar";
 import { ScrollRow } from "./scroll-row";
-import type { Character } from "@/lib/types";
+import { StoryLauncher, type StoryGroup } from "./story-viewer";
+import type { Character, Story } from "@/lib/types";
 
-// Instagram-artige Leiste mit den Charakteren der Welt; führt zu den Profilen.
+// Instagram-artige Leiste: Charaktere mit aktiver Story öffnen sie im Viewer,
+// alle anderen führen zum Profil. Der eigene aktive Charakter steht vorn.
 export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: string; activeCharacterId: string }) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("characters")
-    .select("*")
-    .eq("world_id", worldId)
-    .order("created_at", { ascending: false })
-    .limit(20)
-    .returns<Character[]>();
+  const [{ data }, { data: storyRows }] = await Promise.all([
+    supabase
+      .from("characters")
+      .select("*")
+      .eq("world_id", worldId)
+      .order("created_at", { ascending: false })
+      .limit(30)
+      .returns<Character[]>(),
+    supabase
+      .from("stories")
+      .select("*, characters!inner(world_id)")
+      .eq("characters.world_id", worldId)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: true })
+      .returns<(Story & { characters: { world_id: string } })[]>(),
+  ]);
 
-  const characters = [...(data ?? [])].sort(
-    (a, b) => Number(b.id === activeCharacterId) - Number(a.id === activeCharacterId),
-  );
+  const storiesByCharacter = new Map<string, Story[]>();
+  for (const s of storyRows ?? []) {
+    const list = storiesByCharacter.get(s.character_id) ?? [];
+    list.push(s);
+    storiesByCharacter.set(s.character_id, list);
+  }
+
+  // Nur Charaktere mit aktiver Story (wie bei Instagram) – der aktive Charakter steht immer vorn,
+  // damit man selbst eine Story erstellen kann.
+  const characters = (data ?? [])
+    .filter((c) => c.id === activeCharacterId || storiesByCharacter.has(c.id))
+    .sort((a, b) => Number(b.id === activeCharacterId) - Number(a.id === activeCharacterId));
   if (characters.length === 0) return null;
+
+  const withStories = characters.filter((c) => storiesByCharacter.has(c.id));
+  const groups: StoryGroup[] = withStories.map((c) => ({
+    key: c.id,
+    characterId: c.id,
+    characterName: c.name,
+    avatarUrl: c.avatar_url,
+    stories: storiesByCharacter.get(c.id)!,
+    canManage: c.id === activeCharacterId,
+  }));
 
   return (
     <div className="mb-5">
       <ScrollRow className="pb-1">
-      {characters.map((character) => (
-        <Link
-          key={character.id}
-          href={`/characters/${character.id}`}
-          className="flex w-[68px] shrink-0 flex-col items-center gap-1.5"
-          title={character.name}
-        >
-          <span className="rounded-full bg-gradient-to-tr from-accent to-accent-strong p-[2.5px]">
-            <span className="block rounded-full bg-app p-[2px]">
-              <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={56} />
+        {characters.map((character) => {
+          const isActive = character.id === activeCharacterId;
+          const groupIndex = withStories.findIndex((c) => c.id === character.id);
+          const avatar = <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={56} />;
+          const caption = (
+            <span className="w-full truncate text-center text-xs text-fg-soft">
+              {isActive ? "Deine Story" : character.name.split(" ")[0]}
             </span>
-          </span>
-          <span className="w-full truncate text-center text-xs text-fg-soft">
-            {character.id === activeCharacterId ? "Du" : character.name.split(" ")[0]}
-          </span>
-        </Link>
-      ))}
+          );
+
+          return (
+            <div key={character.id} className="relative flex w-[68px] shrink-0 flex-col items-center gap-1.5">
+              {groupIndex >= 0 ? (
+                <StoryLauncher
+                  groups={groups}
+                  startIndex={groupIndex}
+                  ringWidth={2.5}
+                  label={`Story von ${character.name} ansehen`}
+                  className="flex w-full flex-col items-center gap-1.5"
+                >
+                  {avatar}
+                </StoryLauncher>
+              ) : (
+                <Link
+                  href={isActive ? "/stories/new" : `/characters/${character.id}`}
+                  title={character.name}
+                  className="flex flex-col items-center"
+                >
+                  <span className="block rounded-full bg-line p-[2.5px]">
+                    <span className="block rounded-full bg-app p-[2px]">{avatar}</span>
+                  </span>
+                </Link>
+              )}
+              {caption}
+              {isActive && (
+                <Link
+                  href="/stories/new"
+                  aria-label="Neue Story erstellen"
+                  className="absolute right-0 top-[38px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong"
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+                </Link>
+              )}
+            </div>
+          );
+        })}
       </ScrollRow>
     </div>
   );

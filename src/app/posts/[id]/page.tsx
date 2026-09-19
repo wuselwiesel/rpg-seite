@@ -57,7 +57,7 @@ export default async function PostDetailPage({
             <p className="text-xs text-muted">{formatDateTime(post.created_at)}</p>
           </div>
         </div>
-        <h1 className="mb-4 font-serif text-3xl text-fg">{post.title}</h1>
+        {post.title && <h1 className="mb-4 font-serif text-3xl text-fg">{post.title}</h1>}
         <div
           className="post-content text-fg-soft"
           dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content) }}

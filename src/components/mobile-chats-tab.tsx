@@ -28,7 +28,7 @@ export function MobileChatsTab({
       <MessageCircle className="h-5 w-5" strokeWidth={2} />
       Chats
       {unread.total > 0 && (
-        <span className="absolute right-[28%] top-1 h-2 w-2 rounded-full bg-accent-strong" />
+        <span className="absolute right-[28%] top-2 h-2.5 w-2.5 rounded-full border-2 border-surface bg-accent-strong" />
       )}
     </Link>
   );

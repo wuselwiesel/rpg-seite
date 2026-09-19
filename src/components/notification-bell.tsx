@@ -121,9 +121,10 @@ export function NotificationBell({
       >
         <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
         {unreadCount > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-strong px-1 text-[10px] font-semibold text-on-accent-strong">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
+          <span
+            aria-label="Neue Benachrichtigungen"
+            className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-app bg-accent-strong"
+          />
         )}
       </button>
 

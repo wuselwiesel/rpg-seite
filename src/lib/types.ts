@@ -157,3 +157,21 @@ export type CharacterRelationship = {
 
 export const ACTIVE_CHARACTER_COOKIE = "active_character_id";
 export const ACTIVE_WORLD_COOKIE = "active_world_id";
+
+export type Story = {
+  id: string;
+  character_id: string;
+  image_url: string | null;
+  text_content: string | null;
+  bg: string | null;
+  created_at: string;
+  expires_at: string;
+};
+
+export type Highlight = {
+  id: string;
+  character_id: string;
+  title: string;
+  created_at: string;
+  highlight_stories?: { position: number; stories: Story | null }[];
+};

@@ -152,7 +152,6 @@ export async function addChatParticipant(
 ) {
   const characterId = String(formData.get("character_id") ?? "");
   if (!characterId) return "Bitte einen Charakter auswählen.";
-  const name = String(formData.get("name") ?? "").trim();
 
   const supabase = await createClient();
   const { data: chat } = await supabase
@@ -162,9 +161,8 @@ export async function addChatParticipant(
     .maybeSingle();
   if (!chat) return "Chat nicht gefunden.";
 
-  const becomesGroup = !chat.is_group;
-  if (becomesGroup && !chat.name && !name) {
-    return "Gib der Gruppe einen Namen.";
+  if (!chat.is_group) {
+    return "Zu privaten Chats können keine Personen hinzugefügt werden. Erstelle stattdessen einen Gruppenchat.";
   }
 
   const { error } = await supabase
@@ -172,11 +170,6 @@ export async function addChatParticipant(
     .insert({ chat_id: chatId, character_id: characterId });
 
   if (error) return error.message;
-
-  await supabase
-    .from("chats")
-    .update({ is_group: true, ...(name ? { name } : {}) })
-    .eq("id", chatId);
 
   revalidatePath(`/chats/${chatId}`);
   revalidatePath("/chats");

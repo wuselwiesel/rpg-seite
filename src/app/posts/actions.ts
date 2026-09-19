@@ -43,13 +43,12 @@ async function getActiveCharacterId(userId: string) {
 }
 
 export async function createPost(_prevState: string | null, formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim();
   const rawContent = String(formData.get("content") ?? "").trim();
   const content = sanitizePostHtml(rawContent);
 
   const hasContent = stripHtml(content).length > 0 || content.includes("<img");
-  if (!title || !hasContent) {
-    return "Titel und Inhalt dürfen nicht leer sein.";
+  if (!hasContent) {
+    return "Der Beitrag darf nicht leer sein.";
   }
 
   const supabase = await createClient();
@@ -62,11 +61,11 @@ export async function createPost(_prevState: string | null, formData: FormData) 
   const characterId = await getActiveCharacterId(user.id);
   if (!characterId) return "Du brauchst zuerst einen Charakter.";
 
-  const tags = extractHashtags(`${title} ${stripHtml(content)}`);
+  const tags = extractHashtags(stripHtml(content));
 
   const { data, error } = await supabase
     .from("posts")
-    .insert({ character_id: characterId, title, content, tags })
+    .insert({ character_id: characterId, title: "", content, tags })
     .select("id")
     .single();
 
