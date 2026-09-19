@@ -95,7 +95,7 @@ export async function Sidebar() {
 
   return (
     <>
-      <aside className="hidden h-dvh w-72 shrink-0 flex-col overflow-y-auto border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:flex">
+      <aside className="hidden h-dvh w-72 shrink-0 flex-col border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:flex">
         <div className="mb-2 flex items-center justify-end gap-1">
         <NotificationBell
           userId={user.id}
@@ -107,6 +107,7 @@ export async function Sidebar() {
       <div className="mb-3">
         <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
       </div>
+      <div className="-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1">
       <div className="mb-4">
         <ModeSwitch />
       </div>
@@ -138,6 +139,7 @@ export async function Sidebar() {
       )}
 
       <SidebarNav userId={user.id} myCharacterIds={myCharacterIds} unreadChatIds={unreadChatIds} />
+      </div>
     </aside>
     <MobileNav
       worlds={worlds}

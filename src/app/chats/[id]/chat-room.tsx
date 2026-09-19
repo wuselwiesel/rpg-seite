@@ -149,10 +149,10 @@ export function ChatRoom({
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-2xl flex-col px-4 lg:h-screen">
+    <div className="mx-auto flex h-dvh max-w-2xl flex-col px-4 lg:h-dvh lg:max-w-none lg:px-6">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line py-4">
         <div className="min-w-0">
-          <Link href="/chats" className="text-xs text-muted hover:text-fg-soft">
+          <Link href="/chats" className="text-xs text-muted hover:text-fg-soft lg:hidden">
             ← Alle Chats
           </Link>
           {renaming ? (
