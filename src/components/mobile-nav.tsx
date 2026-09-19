@@ -91,7 +91,11 @@ export function MobileNav({
           <>
             <MobileTabLink href="/story" icon={<BookOpen className="h-5 w-5" strokeWidth={2} />} label="Story" />
             <MobileTabLink href="/wiki" icon={<Library className="h-5 w-5" strokeWidth={2} />} label="Wiki" />
-            <MobileCreateTab href="/story/new" label="Neue Story" />
+            {pathname?.startsWith("/wiki") ? (
+              <MobileCreateTab href="/wiki/new" label="Neuer Wiki-Eintrag" />
+            ) : (
+              <MobileCreateTab href="/story/new" label="Neue Story" />
+            )}
             <MobileTabLink
               href="/characters/relationships"
               icon={<Network className="h-5 w-5" strokeWidth={2} />}
