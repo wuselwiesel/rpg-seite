@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, UserPlus, UserRound, BookOpen, Library, Network, PenLine } from "lucide-react";
+import { House, Search, UserPlus, Settings, BookOpen, Library, Network, PenLine } from "lucide-react";
 import { getAppMode } from "@/lib/app-mode";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
+import { CharacterAvatar } from "./character-avatar";
+import type { Character } from "@/lib/types";
 
 const ICON = "h-[18px] w-[18px] shrink-0";
 
@@ -13,10 +15,12 @@ export function SidebarNav({
   userId,
   myCharacterIds,
   unreadChatIds,
+  activeCharacter,
 }: {
   userId: string;
   myCharacterIds: string[];
   unreadChatIds: string[];
+  activeCharacter: Character | null;
 }) {
   const pathname = usePathname();
   const mode = getAppMode(pathname);
@@ -57,11 +61,19 @@ export function SidebarNav({
           Suche
         </NavLink>
         <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadChatIds={unreadChatIds} />
+        {activeCharacter && (
+          <NavLink
+            href={`/characters/${activeCharacter.id}`}
+            icon={<CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={20} />}
+          >
+            Profil
+          </NavLink>
+        )}
         <NavLink href="/friends" icon={<UserPlus className={ICON} strokeWidth={2} />}>
           Freund:innen
         </NavLink>
-        <NavLink href="/profile" icon={<UserRound className={ICON} strokeWidth={2} />}>
-          Profil &amp; Einstellungen
+        <NavLink href="/profile" icon={<Settings className={ICON} strokeWidth={2} />}>
+          Einstellungen
         </NavLink>
       </nav>
       <Link

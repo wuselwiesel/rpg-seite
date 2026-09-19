@@ -77,14 +77,17 @@ export async function sendMessage(
   // hier zusätzlich noch eine echte Push-Benachrichtigung an die anderen
   // Teilnehmer:innen (unabhängig davon, ob sie die App gerade offen haben).
   const [{ data: participants }, { data: sender }] = await Promise.all([
-    supabase.from("chat_participants").select("characters(owner_id)").eq("chat_id", chatId),
+    supabase.from("chat_participants").select("character_id, characters(owner_id)").eq("chat_id", chatId),
     supabase.from("characters").select("name, owner_id").eq("id", characterId).maybeSingle(),
   ]);
 
+  // Auch andere eigene Charaktere im Chat bekommen eine Benachrichtigung
+  // (nur der sendende Charakter selbst nicht).
   const recipientIds = new Set(
     (participants ?? [])
+      .filter((p) => (p as unknown as { character_id: string }).character_id !== characterId)
       .map((p) => (p as unknown as { characters: { owner_id: string } | null }).characters?.owner_id)
-      .filter((id): id is string => Boolean(id) && id !== sender?.owner_id),
+      .filter((id): id is string => Boolean(id)),
   );
 
   await Promise.all(

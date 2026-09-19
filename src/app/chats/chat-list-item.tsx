@@ -34,10 +34,10 @@ export function ChatListItem({
         <CharacterAvatar name={title} avatarUrl={avatarUrl} size={44} />
       )}
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm text-fg ${unread ? "font-semibold" : "font-medium"}`}>{title}</p>
+        <p className={`truncate text-sm text-fg ${unread && !active ? "font-semibold" : "font-medium"}`}>{title}</p>
         <p className="truncate text-xs text-muted">{participantCount} Teilnehmer:innen</p>
       </div>
-      {unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />}
+      {unread && !active && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />}
     </Link>
   );
 }

@@ -74,7 +74,7 @@ export function ChatRoom({
           setMessages((prev) =>
             prev.some((m) => m.id === row.id) ? prev : [...prev, { ...row, characters: character }],
           );
-          markAsRead();
+          if (!myCharacterIds.includes(row.character_id)) markAsRead();
         },
       )
       .on(
@@ -269,7 +269,7 @@ export function ChatRoom({
                   }`}
                 >
                   <div className="mb-0.5 flex items-center gap-1.5">
-                    <p className="text-xs opacity-70">
+                    <p className="text-xs">
                       {message.characters?.name} · {formatDateTime(message.created_at)}
                       {message.updated_at && " · bearbeitet"}
                     </p>
@@ -311,21 +311,22 @@ export function ChatRoom({
                         <button
                           type="button"
                           onClick={() => handleSaveEdit(message.id)}
-                          className="opacity-90 hover:underline"
+                          className="hover:underline"
                         >
                           Speichern
                         </button>
-                        <button type="button" onClick={() => setEditingId(null)} className="opacity-70 hover:underline">
+                        <button type="button" onClick={() => setEditingId(null)} className="opacity-90 hover:underline">
                           Abbrechen
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm whitespace-pre-line">{message.content}</p>
+                    <p className="text-[15px] leading-relaxed whitespace-pre-line">{message.content}</p>
                   )}
                   {editingId !== message.id && (
                     <div className="mt-1.5">
                       <ReactionBar
+                        onBubble
                         target={{ messageId: message.id, characterId: activeCharacter.id }}
                         initialReactions={aggregateReactions(message.reactions, myCharacterIdSet)}
                       />
@@ -354,7 +355,7 @@ export function ChatRoom({
         <button
           type="submit"
           disabled={sending || !draft.trim()}
-          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:bg-surface-2 disabled:text-muted disabled:opacity-100"
         >
           Senden
         </button>

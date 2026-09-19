@@ -30,7 +30,9 @@ function useIsDarkMode() {
 export function ReactionBar({
   target,
   initialReactions,
+  onBubble = false,
 }: {
+  onBubble?: boolean;
   target: { postId: string } | { messageId: string; characterId: string };
   initialReactions: ReactionSummary[];
 }) {
@@ -74,7 +76,13 @@ export function ReactionBar({
           type="button"
           onClick={() => handleToggle(r.emoji)}
           className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition ${
-            r.reactedByMe ? "bg-accent-strong/20 text-accent" : "bg-surface-2 text-fg-soft hover:bg-surface-3"
+            onBubble
+              ? r.reactedByMe
+                ? "bg-current/25 text-current ring-1 ring-current/60"
+                : "bg-current/10 text-current"
+              : r.reactedByMe
+                ? "bg-accent-strong/20 text-accent"
+                : "bg-surface-2 text-fg-soft hover:bg-surface-3"
           }`}
         >
           <span>{r.emoji}</span>
@@ -86,7 +94,9 @@ export function ReactionBar({
         type="button"
         onClick={() => setPickerOpen(true)}
         title="Reaktion hinzufügen"
-        className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
+        className={`flex h-6 w-6 items-center justify-center rounded-full transition ${
+          onBubble ? "text-current opacity-80 hover:bg-current/15" : "text-muted hover:bg-surface-2 hover:text-fg"
+        }`}
       >
         <SmilePlus className="h-3.5 w-3.5" strokeWidth={2} />
       </button>

@@ -95,15 +95,20 @@ export async function Sidebar() {
 
   return (
     <>
-      <aside className="hidden h-dvh w-72 shrink-0 flex-col border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:flex">
-        <div className="mb-2 flex items-center justify-end gap-1">
-        <NotificationBell
-          userId={user.id}
-          initialNotifications={initialNotifications}
-          initialUnreadCount={initialUnreadCount}
-        />
-        <ThemeToggle />
-      </div>
+      <aside className="hidden h-dvh w-72 shrink-0 flex-col border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:z-40 lg:flex">
+        <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
+          <Link href="/" className="block shrink-0" aria-label="Wortwinkel">
+            <Wordmark height={40} />
+          </Link>
+          <div className="flex items-center gap-1">
+            <NotificationBell
+              userId={user.id}
+              initialNotifications={initialNotifications}
+              initialUnreadCount={initialUnreadCount}
+            />
+            <ThemeToggle />
+          </div>
+        </div>
       <div className="mb-3">
         <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
       </div>
@@ -138,7 +143,12 @@ export async function Sidebar() {
         </div>
       )}
 
-      <SidebarNav userId={user.id} myCharacterIds={myCharacterIds} unreadChatIds={unreadChatIds} />
+      <SidebarNav
+        userId={user.id}
+        myCharacterIds={myCharacterIds}
+        unreadChatIds={unreadChatIds}
+        activeCharacter={activeCharacter}
+      />
       </div>
     </aside>
     <MobileNav

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export function useUnreadChatIds(
   userId: string,
-  myCharacterIds: string[],
+  _myCharacterIds: string[],
   initialUnreadChatIds: string[],
 ) {
   const [unread, setUnread] = useState(new Set(initialUnreadChatIds));
@@ -20,8 +20,8 @@ export function useUnreadChatIds(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          const row = payload.new as { chat_id: string; character_id: string };
-          if (myCharacterIds.includes(row.character_id)) return;
+          const row = payload.new as { chat_id: string };
+          if (window.location.pathname === `/chats/${row.chat_id}`) return;
 
           setUnread((prev) => new Set(prev).add(row.chat_id));
         },

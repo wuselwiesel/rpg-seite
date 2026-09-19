@@ -39,7 +39,7 @@ export async function ChatList() {
     : { data: [] as ChatWithParticipants[] };
 
   const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
-  const unreadChatIds = new Set(await getUnreadChatIds(user.id, ownCharacters.map((c) => c.id)));
+  const unreadChatIds = new Set(await getUnreadChatIds(user.id, ownCharacters.map((c) => c.id), activeCharacter.id));
 
   return (
     <div className="flex flex-col">

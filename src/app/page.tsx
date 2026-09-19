@@ -5,6 +5,7 @@ import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import type { Post } from "@/lib/types";
 import { SocialPostCard } from "@/components/social-post-card";
+import { Wordmark } from "@/components/wordmark";
 import { StoriesStrip } from "@/components/stories-strip";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { ReactionBar } from "@/components/reaction-bar";
@@ -58,6 +59,9 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   return (
     <div className="flex gap-8 px-3 py-4 sm:px-6 sm:py-8 lg:px-10">
       <div className="mx-auto min-w-0 max-w-[470px] flex-1">
+        <Link href="/" aria-label="Wortwinkel" className="mb-3 block w-fit lg:hidden">
+          <Wordmark height={34} />
+        </Link>
         <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
 
         <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} />
@@ -103,7 +107,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
         </div>
       </div>
 
-      <aside className="hidden w-64 shrink-0 xl:block">
+      <aside className="hidden w-56 shrink-0 xl:block">
         <FeedSidebar userId={user.id} worldId={activeWorld.id} />
       </aside>
     </div>
