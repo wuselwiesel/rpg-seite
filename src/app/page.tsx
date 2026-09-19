@@ -9,7 +9,6 @@ import { SocialPostCard } from "@/components/social-post-card";
 import { Wordmark } from "@/components/wordmark";
 import { StoriesStrip } from "@/components/stories-strip";
 import { FeedSidebar } from "@/components/feed-sidebar";
-import { ReactionBar } from "@/components/reaction-bar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import { aggregateReactions } from "@/lib/reactions";
@@ -74,6 +73,8 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
             posts.map((post) => (
               <SocialPostCard
                 key={post.id}
+                postId={post.id}
+                reactions={aggregateReactions(post.reactions, activeCharacterSet)}
                 title={post.title}
                 content={post.content}
                 createdAt={post.created_at}
@@ -85,12 +86,6 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
                   post.characters && post.characters.world_id !== activeWorld.id
                     ? post.characters.worlds?.name
                     : undefined
-                }
-                reactionBar={
-                  <ReactionBar
-                    target={{ postId: post.id }}
-                    initialReactions={aggregateReactions(post.reactions, activeCharacterSet)}
-                  />
                 }
                 tags={post.tags}
                 tagHrefBase="/"

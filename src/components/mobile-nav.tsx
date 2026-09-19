@@ -102,8 +102,8 @@ export function MobileNav({
           </>
         ) : (
           <>
-            <MobileTabLink href="/" icon={<House className="h-5 w-5" strokeWidth={2} />} label="Feed" exact />
-            <MobileTabLink href="/search" icon={<Search className="h-5 w-5" strokeWidth={2} />} label="Suche" />
+            <MobileTabLink href="/" icon={<House className="h-[26px] w-[26px]" strokeWidth={2} />} label="Feed" exact showLabel={false} />
+            <MobileTabLink href="/search" icon={<Search className="h-[26px] w-[26px]" strokeWidth={2} />} label="Suche" showLabel={false} />
             <MobileCreateTab href="/posts/new" label="Neuer Beitrag" />
             <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} />
           </>
@@ -111,8 +111,9 @@ export function MobileNav({
         {mode === "ingame" && activeCharacter ? (
           <MobileTabLink
             href={`/characters/${activeCharacter.id}`}
-            icon={<CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={22} />}
+            icon={<CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={28} />}
             label="Profil"
+            showLabel={false}
           />
         ) : (
           <button

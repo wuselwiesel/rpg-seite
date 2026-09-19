@@ -21,14 +21,15 @@ export function MobileChatsTab({
   return (
     <Link
       href="/chats"
-      className={`relative flex flex-1 flex-col items-center gap-0.5 py-3 text-[11px] font-medium transition ${
-        isActive ? "text-accent" : "text-muted"
+      aria-label="Chats"
+      className={`relative flex flex-1 flex-col items-center gap-0.5 py-3.5 text-[11px] font-medium transition ${
+        isActive ? "text-fg" : "text-muted"
       }`}
     >
-      <MessageCircle className="h-5 w-5" strokeWidth={2} />
-      Chats
+      <MessageCircle className="h-[26px] w-[26px]" strokeWidth={isActive ? 2.6 : 2} />
+      <span className="sr-only">Chats</span>
       {unread.total > 0 && (
-        <span className="absolute right-[28%] top-2 h-2.5 w-2.5 rounded-full border-2 border-surface bg-accent-strong" />
+        <span className="absolute right-[30%] top-2.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-accent-strong" />
       )}
     </Link>
   );

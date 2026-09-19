@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { SmilePlus, X } from "lucide-react";
+import { Heart, SmilePlus, X } from "lucide-react";
 import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
 import { toggleReaction, getPostReactors, type Reactor } from "@/app/reactions/actions";
 import { CharacterAvatar } from "./character-avatar";
+import { POST_LIKE_EVENT } from "./double-tap-like";
 import type { ReactionSummary } from "@/lib/reactions";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
@@ -33,8 +34,13 @@ export function ReactionBar({
   target,
   initialReactions,
   onBubble = false,
+  heart = false,
+  commentSlot,
 }: {
   onBubble?: boolean;
+  // Instagram-Stil: Herz-Button (❤️), danach `commentSlot`, dann Emoji-Auswahl; weitere Reaktionen darunter.
+  heart?: boolean;
+  commentSlot?: React.ReactNode;
   target: { postId: string } | { messageId: string; characterId: string };
   initialReactions: ReactionSummary[];
 }) {
@@ -46,6 +52,26 @@ export function ReactionBar({
   const postId = "postId" in target ? target.postId : null;
   const [, startTransition] = useTransition();
   const isDark = useIsDarkMode();
+  const [beat, setBeat] = useState(0);
+  const reactionsRef = useRef(reactions);
+  reactionsRef.current = reactions;
+  const liked = reactions.some((r) => r.emoji === "❤️" && r.reactedByMe);
+  const heartCount = reactions.find((r) => r.emoji === "❤️")?.count ?? 0;
+
+  // Doppeltipp auf das Post-Medium: nur liken, nie zurücknehmen.
+  useEffect(() => {
+    if (!postId) return;
+    function onLike(e: Event) {
+      if ((e as CustomEvent<{ postId: string }>).detail?.postId !== postId) return;
+      const already = reactionsRef.current.some((r) => r.emoji === "❤️" && r.reactedByMe);
+      setBeat((b) => b + 1);
+      if (!already) handleToggle("❤️");
+    }
+    window.addEventListener(POST_LIKE_EVENT, onLike);
+    return () => window.removeEventListener(POST_LIKE_EVENT, onLike);
+    // handleToggle nutzt nur stabile Setter und das (unveränderliche) target.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -81,9 +107,55 @@ export function ReactionBar({
     });
   }
 
+  const chips = heart ? reactions.filter((r) => r.emoji !== "❤️") : reactions;
+
+  const pickerButton = (
+    <button
+      type="button"
+      onClick={() => setPickerOpen(true)}
+      title="Reaktion hinzufügen"
+      aria-label="Reaktion hinzufügen"
+      className={
+        heart
+          ? "flex h-7 w-7 items-center justify-center text-fg transition hover:text-muted"
+          : `flex h-6 w-6 items-center justify-center rounded-full transition ${
+              onBubble ? "text-current opacity-80 hover:bg-current/15" : "text-muted hover:bg-surface-2 hover:text-fg"
+            }`
+      }
+    >
+      <SmilePlus className={heart ? "h-6 w-6" : "h-3.5 w-3.5"} strokeWidth={heart ? 1.75 : 2} />
+    </button>
+  );
+
   return (
-    <div className="flex flex-wrap items-center gap-1">
-      {reactions.map((r) => (
+    <div className={heart ? "flex flex-col gap-2" : "flex flex-wrap items-center gap-1"}>
+      {heart && (
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setBeat((b) => b + 1);
+              handleToggle("❤️");
+            }}
+            aria-pressed={liked}
+            aria-label={liked ? "Gefällt mir nicht mehr" : "Gefällt mir"}
+            className="flex items-center gap-1.5 text-fg transition active:scale-90"
+          >
+            <Heart
+              key={beat}
+              className={`h-7 w-7 ${beat > 0 && liked ? "heart-beat" : ""} ${
+                liked ? "fill-[#ed4956] text-[#ed4956]" : ""
+              }`}
+              strokeWidth={liked ? 0 : 1.75}
+            />
+            {heartCount > 0 && <span className="text-sm font-semibold">{heartCount}</span>}
+          </button>
+          {commentSlot}
+          {pickerButton}
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-1">
+      {chips.map((r) => (
         <button
           key={r.emoji}
           type="button"
@@ -103,16 +175,7 @@ export function ReactionBar({
         </button>
       ))}
 
-      <button
-        type="button"
-        onClick={() => setPickerOpen(true)}
-        title="Reaktion hinzufügen"
-        className={`flex h-6 w-6 items-center justify-center rounded-full transition ${
-          onBubble ? "text-current opacity-80 hover:bg-current/15" : "text-muted hover:bg-surface-2 hover:text-fg"
-        }`}
-      >
-        <SmilePlus className="h-3.5 w-3.5" strokeWidth={2} />
-      </button>
+      {!heart && pickerButton}
 
       {postId && total > 0 && (
         <button
@@ -123,6 +186,8 @@ export function ReactionBar({
           {total === 1 ? "1 Reaktion" : `${total} Reaktionen`}
         </button>
       )}
+
+      </div>
 
       {listOpen &&
         createPortal(

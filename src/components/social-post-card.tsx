@@ -2,11 +2,16 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
-import { formatDateTime } from "@/lib/format";
+import { timeAgoShort } from "@/lib/format";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { PostMedia } from "./post-media";
+import { DoubleTapLike } from "./double-tap-like";
+import { ReactionBar } from "./reaction-bar";
+import type { ReactionSummary } from "@/lib/reactions";
 
 export function SocialPostCard({
+  postId,
+  reactions,
   title,
   content,
   createdAt,
@@ -15,12 +20,13 @@ export function SocialPostCard({
   detailHref,
   replyCount,
   worldName,
-  reactionBar,
   tags,
   tagHrefBase,
   mediaUrl,
   mediaType,
 }: {
+  postId: string;
+  reactions: ReactionSummary[];
   title: string;
   content: string;
   createdAt: string;
@@ -29,7 +35,6 @@ export function SocialPostCard({
   detailHref: string;
   replyCount: number;
   worldName?: string;
-  reactionBar?: React.ReactNode;
   tags?: string[];
   tagHrefBase?: string;
   mediaUrl?: string | null;
@@ -41,8 +46,8 @@ export function SocialPostCard({
   const handle = character?.username ?? character?.name ?? "Unbekannt";
 
   return (
-    <article className="border-b border-line pb-4">
-      <Link href={characterHref} className="flex items-center gap-3 px-1 py-3">
+    <article className="-mx-3 border-b border-line pb-4 sm:mx-0">
+      <Link href={characterHref} className="flex items-center gap-3 px-3 py-3 sm:px-1">
         <div className="rounded-full bg-gradient-to-tr from-accent to-accent-strong p-[2px]">
           <div className="rounded-full bg-app p-[2px]">
             <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={32} />
@@ -52,17 +57,26 @@ export function SocialPostCard({
           <p className="truncate text-sm font-semibold text-fg">{handle}</p>
           {worldName && <p className="truncate text-xs text-muted">in {worldName}</p>}
         </div>
+        <time dateTime={createdAt} title={new Date(createdAt).toLocaleString("de-DE")} className="shrink-0 text-xs text-muted">
+          {timeAgoShort(createdAt)}
+        </time>
       </Link>
 
-      {media?.type === "video" && (
-        <PostMedia url={media.url} type="video" alt="" className="max-h-[590px] w-full rounded-sm bg-black" />
-      )}
-      <Link href={detailHref} className={media?.type === "video" ? "hidden" : "block"}>
-        {image ? (
+      <DoubleTapLike postId={postId}>
+        {media?.type === "video" ? (
+          <PostMedia url={media.url} type="video" alt="" className="max-h-[590px] w-full bg-black sm:rounded-sm" />
+        ) : image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={title || "Beitragsbild"} className="max-h-[590px] w-full rounded-sm bg-surface-2 object-cover" />
+          <img
+            src={image}
+            alt={title || "Beitragsbild"}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="max-h-[590px] w-full bg-surface-2 object-cover sm:rounded-sm"
+          />
         ) : (
-          <div className="flex aspect-square flex-col justify-center gap-3 rounded-sm bg-surface-3 p-8">
+          <div className="flex aspect-square flex-col justify-center gap-3 bg-surface-3 p-8 sm:rounded-sm">
             {title && <h2 className="font-serif text-3xl leading-tight text-fg">{title}</h2>}
             {preview && (
               <p
@@ -77,17 +91,29 @@ export function SocialPostCard({
             )}
           </div>
         )}
-      </Link>
+      </DoubleTapLike>
 
-      <div className="flex items-center gap-4 px-1 pt-3">
-        {reactionBar}
-        <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition hover:text-muted">
-          <MessageCircle className="h-6 w-6" strokeWidth={1.75} />
-        </Link>
+      <div className="px-3 pt-3 sm:px-1">
+        <ReactionBar
+          heart
+          target={{ postId }}
+          initialReactions={reactions}
+          commentSlot={
+            <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition hover:text-muted">
+              <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
+            </Link>
+          }
+        />
       </div>
 
+      {!image && !media && preview.length > 260 && (
+        <Link href={detailHref} className="mt-2 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1">
+          Weiterlesen
+        </Link>
+      )}
+
       {(image || media) && (
-        <p className="mt-2 px-1 text-sm text-fg">
+        <p className="mt-2 px-3 text-sm text-fg sm:px-1">
           <Link href={characterHref} className="font-semibold">{handle}</Link>{" "}
           {title && <span className="font-serif text-base">{title} </span>}
           {preview && <span className="text-fg-soft">{preview.length > 140 ? `${preview.slice(0, 137)}...` : preview}</span>}
@@ -95,7 +121,7 @@ export function SocialPostCard({
       )}
 
       {tags && tags.length > 0 && tagHrefBase && (
-        <p className="mt-1 flex flex-wrap gap-x-2 px-1 text-sm">
+        <p className="mt-1 flex flex-wrap gap-x-2 px-3 text-sm sm:px-1">
           {tags.map((tag) => (
             <Link key={tag} href={`${tagHrefBase}?tag=${encodeURIComponent(tag)}`} className="text-accent hover:underline">
               #{tag}
@@ -105,11 +131,10 @@ export function SocialPostCard({
       )}
 
       {replyCount > 0 && (
-        <Link href={detailHref} className="mt-1 block px-1 text-sm text-muted hover:text-fg-soft">
+        <Link href={detailHref} className="mt-1 block px-3 text-sm text-muted hover:text-fg-soft sm:px-1">
           Alle {replyCount} {replyCount === 1 ? "Kommentar" : "Kommentare"} ansehen
         </Link>
       )}
-      <p className="mt-1 px-1 text-[11px] uppercase tracking-wide text-muted">{formatDateTime(createdAt)}</p>
     </article>
   );
 }
