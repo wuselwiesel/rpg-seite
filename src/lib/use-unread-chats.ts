@@ -3,12 +3,13 @@
 import { useEffect, useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+// Anzahl ungelesener Nachrichten pro Chat, live über Realtime aktualisiert.
 export function useUnreadChatIds(
   userId: string,
   _myCharacterIds: string[],
-  initialUnreadChatIds: string[],
+  initialUnreadCounts: Record<string, number>,
 ) {
-  const [unread, setUnread] = useState(new Set(initialUnreadChatIds));
+  const [counts, setCounts] = useState(initialUnreadCounts);
   const instanceId = useId();
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function useUnreadChatIds(
           const row = payload.new as { chat_id: string };
           if (window.location.pathname === `/chats/${row.chat_id}`) return;
 
-          setUnread((prev) => new Set(prev).add(row.chat_id));
+          setCounts((prev) => ({ ...prev, [row.chat_id]: (prev[row.chat_id] ?? 0) + 1 }));
         },
       )
       .on(
@@ -36,9 +37,10 @@ export function useUnreadChatIds(
         },
         (payload) => {
           const row = payload.new as { chat_id: string };
-          setUnread((prev) => {
-            const next = new Set(prev);
-            next.delete(row.chat_id);
+          setCounts((prev) => {
+            if (!(row.chat_id in prev)) return prev;
+            const next = { ...prev };
+            delete next[row.chat_id];
             return next;
           });
         },
@@ -51,5 +53,5 @@ export function useUnreadChatIds(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  return unread;
+  return { counts, total: Object.values(counts).reduce((sum, n) => sum + n, 0) };
 }

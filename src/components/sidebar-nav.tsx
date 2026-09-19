@@ -12,11 +12,11 @@ const ICON = "h-[18px] w-[18px] shrink-0";
 export function SidebarNav({
   userId,
   myCharacterIds,
-  unreadChatIds,
+  unreadCounts,
 }: {
   userId: string;
   myCharacterIds: string[];
-  unreadChatIds: string[];
+  unreadCounts: Record<string, number>;
 }) {
   const pathname = usePathname();
   const mode = getAppMode(pathname);
@@ -56,7 +56,7 @@ export function SidebarNav({
         <NavLink href="/search" icon={<Search className={ICON} strokeWidth={2} />}>
           Suche
         </NavLink>
-        <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadChatIds={unreadChatIds} />
+        <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} />
         <NavLink href="/friends" icon={<UserPlus className={ICON} strokeWidth={2} />}>
           Freund:innen
         </NavLink>

@@ -3,7 +3,7 @@ import { UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
-import { getUnreadChatIds } from "@/lib/chat-reads";
+import { getUnreadCounts } from "@/lib/chat-reads";
 import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
 import type { Profile } from "@/lib/types";
 import { CharacterSwitcher } from "./character-switcher";
@@ -89,7 +89,7 @@ export async function Sidebar() {
   ]);
 
   const myCharacterIds = characters.map((c) => c.id);
-  const unreadChatIds = await getUnreadChatIds(user.id, myCharacterIds);
+  const unreadCounts = await getUnreadCounts(user.id, myCharacterIds);
   const isOwner = activeWorld.created_by === user.id;
 
   return (
@@ -125,7 +125,7 @@ export async function Sidebar() {
       <SidebarNav
         userId={user.id}
         myCharacterIds={myCharacterIds}
-        unreadChatIds={unreadChatIds}
+        unreadCounts={unreadCounts}
       />
       </div>
     </aside>
@@ -140,7 +140,7 @@ export async function Sidebar() {
       initialNotifications={initialNotifications}
       initialUnreadCount={initialUnreadCount}
       myCharacterIds={myCharacterIds}
-      unreadChatIds={unreadChatIds}
+      unreadCounts={unreadCounts}
     />
     </>
   );

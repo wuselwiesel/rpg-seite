@@ -8,13 +8,13 @@ import { useUnreadChatIds } from "@/lib/use-unread-chats";
 export function ChatsNavLink({
   userId,
   myCharacterIds,
-  initialUnreadChatIds,
+  initialUnreadCounts,
 }: {
   userId: string;
   myCharacterIds: string[];
-  initialUnreadChatIds: string[];
+  initialUnreadCounts: Record<string, number>;
 }) {
-  const unread = useUnreadChatIds(userId, myCharacterIds, initialUnreadChatIds);
+  const unread = useUnreadChatIds(userId, myCharacterIds, initialUnreadCounts);
   const pathname = usePathname();
   const isActive = pathname === "/chats" || pathname?.startsWith("/chats/");
 
@@ -27,13 +27,13 @@ export function ChatsNavLink({
     >
       <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
       Chats
-      {unread.size > 0 && (
+      {unread.total > 0 && (
         <span
           className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold ${
             isActive ? "bg-on-accent-strong text-accent-strong" : "bg-accent-strong text-on-accent-strong"
           }`}
         >
-          {unread.size}
+          {unread.total > 99 ? "99+" : unread.total}
         </span>
       )}
     </Link>

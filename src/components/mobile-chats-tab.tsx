@@ -8,13 +8,13 @@ import { useUnreadChatIds } from "@/lib/use-unread-chats";
 export function MobileChatsTab({
   userId,
   myCharacterIds,
-  initialUnreadChatIds,
+  initialUnreadCounts,
 }: {
   userId: string;
   myCharacterIds: string[];
-  initialUnreadChatIds: string[];
+  initialUnreadCounts: Record<string, number>;
 }) {
-  const unread = useUnreadChatIds(userId, myCharacterIds, initialUnreadChatIds);
+  const unread = useUnreadChatIds(userId, myCharacterIds, initialUnreadCounts);
   const pathname = usePathname();
   const isActive = pathname === "/chats" || pathname?.startsWith("/chats/");
 
@@ -27,7 +27,7 @@ export function MobileChatsTab({
     >
       <MessageCircle className="h-5 w-5" strokeWidth={2} />
       Chats
-      {unread.size > 0 && (
+      {unread.total > 0 && (
         <span className="absolute right-[28%] top-1 h-2 w-2 rounded-full bg-accent-strong" />
       )}
     </Link>

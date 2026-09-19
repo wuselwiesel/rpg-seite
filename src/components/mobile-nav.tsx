@@ -38,7 +38,7 @@ export function MobileNav({
   initialNotifications,
   initialUnreadCount,
   myCharacterIds,
-  unreadChatIds,
+  unreadCounts,
 }: {
   worlds: World[];
   activeWorld: World;
@@ -50,7 +50,7 @@ export function MobileNav({
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
   myCharacterIds: string[];
-  unreadChatIds: string[];
+  unreadCounts: Record<string, number>;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const pathname = usePathname();
@@ -107,7 +107,7 @@ export function MobileNav({
             <MobileTabLink href="/" icon={<House className="h-5 w-5" strokeWidth={2} />} label="Feed" exact />
             <MobileTabLink href="/search" icon={<Search className="h-5 w-5" strokeWidth={2} />} label="Suche" />
             <MobileCreateTab href="/posts/new" label="Neuer Beitrag" />
-            <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadChatIds={unreadChatIds} />
+            <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} />
           </>
         )}
         {mode === "ingame" && activeCharacter ? (
