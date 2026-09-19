@@ -6,7 +6,6 @@ import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
 import { getUnreadChatIds } from "@/lib/chat-reads";
 import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
 import type { Profile } from "@/lib/types";
-import { CharacterAvatar } from "./character-avatar";
 import { CharacterSwitcher } from "./character-switcher";
 import { WorldSwitcher } from "./world-switcher";
 import { ModeSwitch } from "./mode-switch";
@@ -117,29 +116,9 @@ export async function Sidebar() {
         <ModeSwitch />
       </div>
 
-      {activeCharacter && (
-        <div className="mb-5 flex flex-col gap-3 rounded-2xl bg-surface-2 p-3">
-          <div className="flex items-center gap-3">
-            <Link href={`/characters/${activeCharacter.id}`} className="shrink-0">
-              <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={48} />
-            </Link>
-            <div className="min-w-0">
-              <Link
-                href={`/characters/${activeCharacter.id}`}
-                className="block truncate font-serif text-lg leading-tight text-fg hover:text-accent"
-              >
-                {activeCharacter.name}
-              </Link>
-              {(activeCharacter.username || profile?.username) && (
-                <Link href="/profile" className="block truncate text-xs text-muted hover:text-accent">
-                  @{activeCharacter.username ?? profile?.nickname ?? profile?.username}
-                </Link>
-              )}
-            </div>
-          </div>
-          {characters.length > 1 && (
-            <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="w-full" />
-          )}
+      {activeCharacter && characters.length > 1 && (
+        <div className="mb-4">
+          <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="w-full" />
         </div>
       )}
 

@@ -9,8 +9,9 @@ type ChatWithParticipants = Chat & {
   chat_participants: { characters: Character }[];
 };
 
-export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]">) {
+export default async function ChatDetailPage({ params, searchParams }: PageProps<"/chats/[id]">) {
   const { id } = await params;
+  const { as: asCharacterId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,7 +32,24 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
     .maybeSingle<ChatWithParticipants>();
 
   if (!chat) notFound();
-  if (!chat.chat_participants.some((p) => p.characters.id === activeCharacter.id)) notFound();
+
+  // Gehört der Chat einem anderen eigenen Charakter (z.B. über eine Benachrichtigung),
+  // wechseln wir automatisch zu dem angeschriebenen Charakter statt eine 404 zu zeigen.
+  if (!chat.chat_participants.some((p) => p.characters.id === activeCharacter.id)) {
+    const ownParticipants = chat.chat_participants.filter((p) => p.characters.owner_id === user.id);
+    const wanted =
+      ownParticipants.find((p) => p.characters.id === asCharacterId) ?? ownParticipants[0] ?? null;
+    if (!wanted) notFound();
+    redirect(`/switch-character?character=${wanted.characters.id}&next=${encodeURIComponent(`/chats/${id}`)}`);
+  }
+  if (typeof asCharacterId === "string" && asCharacterId !== activeCharacter.id) {
+    const wanted = chat.chat_participants.find(
+      (p) => p.characters.id === asCharacterId && p.characters.owner_id === user.id,
+    );
+    if (wanted) {
+      redirect(`/switch-character?character=${wanted.characters.id}&next=${encodeURIComponent(`/chats/${id}`)}`);
+    }
+  }
 
   const [{ data: messages }, { data: myCharacters }] = await Promise.all([
     supabase

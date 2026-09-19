@@ -103,7 +103,8 @@ export function PushSubscribeToggle() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
+      <h2 className="mb-1 font-serif text-lg text-fg">Benachrichtigungen</h2>
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-fg">Push-Benachrichtigungen</p>
           <p className="text-xs text-muted">
@@ -111,7 +112,7 @@ export function PushSubscribeToggle() {
           </p>
         </div>
         {status === "denied" ? (
-          <span className="shrink-0 text-xs text-muted">In den Browser-Einstellungen blockiert</span>
+          <span className="text-xs text-muted sm:shrink-0">In den Browser-Einstellungen blockiert</span>
         ) : (
           <button
             type="button"

@@ -39,7 +39,44 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-export function profileThemeStyle(theme: ProfileTheme): CSSProperties {
+function toHsl(hex: string): [number, number, number] {
+  const [r, g, b] = toRgb(hex).map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return [0, 0, l];
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h * 60, s, l];
+}
+
+function fromHsl(h: number, s: number, l: number): string {
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return toHex([f(0) * 255, f(8) * 255, f(4) * 255]);
+}
+
+// Im Dunkelmodus werden helle Profilfarben abgedunkelt bzw. dunkle Akzente aufgehellt,
+// damit das Profil zum gewählten Modus passt und lesbar bleibt.
+function adaptForDark(theme: ProfileTheme): ProfileTheme {
+  const result = { ...theme };
+  if (theme.bg && HEX.test(theme.bg) && luminance(theme.bg) >= 0.25) {
+    const [h, s] = toHsl(theme.bg);
+    result.bg = fromHsl(h, Math.min(s, 0.3), 0.1);
+  }
+  if (theme.accent && HEX.test(theme.accent) && luminance(theme.accent) < 0.25) {
+    const [h, s, l] = toHsl(theme.accent);
+    result.accent = fromHsl(h, s, Math.max(l, 0.68));
+  }
+  return result;
+}
+
+export function profileThemeStyle(input: ProfileTheme, dark = false): CSSProperties {
+  const theme = dark ? adaptForDark(input) : input;
   const style: Record<string, string> = {};
 
   const font = PROFILE_FONTS.find((f) => f.id === theme.font);

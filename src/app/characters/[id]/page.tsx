@@ -6,7 +6,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
 import { FollowButton } from "@/components/follow-button";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { profileThemeStyle } from "@/lib/profile-theme";
+import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
 import type { Character, Post } from "@/lib/types";
@@ -62,16 +62,12 @@ export default async function CharacterProfilePage({
   const otherOwn = (myCharacters ?? []).filter((c) => c.id !== id && c.world_id === character.world_id);
   const canMessage = !isActiveProfile && activeWorld?.id === character.world_id;
 
-  const themeStyle = profileThemeStyle({
-    font: character.theme_font,
-    accent: character.theme_accent,
-    bg: character.theme_bg,
-  });
   const buttonBase = "flex flex-1 whitespace-nowrap items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition";
 
   return (
-    <div style={themeStyle} className="min-h-full bg-app text-fg">
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 bg-app" />
+    <ProfileThemeWrapper
+      theme={{ font: character.theme_font, accent: character.theme_accent, bg: character.theme_bg }}
+    >
       <div className="mx-auto max-w-[935px] px-4 pt-6 sm:pt-10">
         <header className="flex gap-5 sm:gap-20">
           <div className="shrink-0 sm:px-6">
@@ -238,6 +234,6 @@ export default async function CharacterProfilePage({
           <p className="py-16 text-center text-muted">Noch keine Beiträge.</p>
         )}
       </div>
-    </div>
+    </ProfileThemeWrapper>
   );
 }

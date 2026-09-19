@@ -85,21 +85,22 @@ export async function sendMessage(
     supabase.from("characters").select("name, owner_id").eq("id", characterId).maybeSingle(),
   ]);
 
-  // Auch andere eigene Charaktere im Chat bekommen eine Benachrichtigung
-  // (nur der sendende Charakter selbst nicht).
-  const recipientIds = new Set(
-    (participants ?? [])
-      .filter((p) => (p as unknown as { character_id: string }).character_id !== characterId)
-      .map((p) => (p as unknown as { characters: { owner_id: string } | null }).characters?.owner_id)
-      .filter((id): id is string => Boolean(id)),
-  );
+  // Nur angeschriebene Charaktere (nicht der Absender) bekommen einen Push; der Link
+  // enthält den Empfänger-Charakter, damit ein Klick zu ihm wechselt.
+  const recipients = new Map<string, string>();
+  for (const p of participants ?? []) {
+    const row = p as unknown as { character_id: string; characters: { owner_id: string } | null };
+    if (row.character_id !== characterId && row.characters?.owner_id) {
+      recipients.set(row.character_id, row.characters.owner_id);
+    }
+  }
 
   await Promise.all(
-    Array.from(recipientIds).map((recipientId) =>
-      sendPushToUser(recipientId, {
+    Array.from(recipients.entries()).map(([recipientCharacterId, ownerId]) =>
+      sendPushToUser(ownerId, {
         title: sender?.name ?? "Neue Nachricht",
-        body: !content ? "📷 Bild" : content.length > 120 ? `${content.slice(0, 117)}...` : content,
-        url: `/chats/${chatId}`,
+        body: "hat dir eine Nachricht geschickt",
+        url: `/chats/${chatId}?as=${recipientCharacterId}`,
       }),
     ),
   );

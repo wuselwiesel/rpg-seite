@@ -43,6 +43,7 @@ export type AppNotification = {
   actor_avatar_url: string | null;
   link: string;
   message: string;
+  recipient_name?: string | null;
   read_at: string | null;
   created_at: string;
 };

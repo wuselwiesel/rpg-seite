@@ -38,14 +38,14 @@ export function PaletteSwitcher() {
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-6">
       {PALETTES.map((palette) => (
         <button
           key={palette.id}
           type="button"
           onClick={() => choose(palette.id)}
           title={palette.name}
-          className="flex flex-col items-center gap-1.5"
+          className="flex min-w-0 flex-col items-center gap-1.5"
         >
           <span
             className={`flex h-11 w-11 items-center justify-center rounded-full border border-line ring-2 ring-offset-2 ring-offset-app transition ${
@@ -62,7 +62,7 @@ export function PaletteSwitcher() {
               <Check className="h-4 w-4 text-white drop-shadow-[0_0_2px_rgba(0,0,0,0.9)]" strokeWidth={3} />
             )}
           </span>
-          <span className="text-xs text-fg-soft">{palette.name}</span>
+          <span className="max-w-full truncate text-xs text-fg-soft">{palette.name}</span>
         </button>
       ))}
     </div>

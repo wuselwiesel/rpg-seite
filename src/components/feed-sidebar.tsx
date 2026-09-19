@@ -34,6 +34,8 @@ export async function FeedSidebar({ userId, worldId }: { userId: string; worldId
   return (
     <div className="flex flex-col gap-6">
       {activeCharacter && (
+        <section>
+          <h2 className="mb-3 px-1 font-serif text-lg text-fg">Profil</h2>
         <Link
           href={`/characters/${activeCharacter.id}`}
           className="flex items-center gap-3 rounded-xl px-1 py-1 transition hover:bg-surface-2"
@@ -46,6 +48,7 @@ export async function FeedSidebar({ userId, worldId }: { userId: string; worldId
             {activeCharacter.username && <p className="truncate text-xs text-muted">{activeCharacter.name}</p>}
           </div>
         </Link>
+        </section>
       )}
     <section>
       <div className="mb-3 flex items-center justify-between px-1">
