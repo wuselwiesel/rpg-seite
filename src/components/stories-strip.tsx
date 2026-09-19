@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "./character-avatar";
+import { ScrollRow } from "./scroll-row";
 import type { Character } from "@/lib/types";
 
 // Instagram-artige Leiste mit den Charakteren der Welt; führt zu den Profilen.
@@ -20,7 +21,8 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
   if (characters.length === 0) return null;
 
   return (
-    <div className="-mx-4 mb-5 flex gap-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+    <div className="mb-5">
+      <ScrollRow className="pb-1">
       {characters.map((character) => (
         <Link
           key={character.id}
@@ -38,6 +40,7 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
           </span>
         </Link>
       ))}
+      </ScrollRow>
     </div>
   );
 }

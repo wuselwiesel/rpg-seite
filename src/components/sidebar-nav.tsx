@@ -36,7 +36,7 @@ export function SidebarNav({
         </nav>
         <Link
           href="/story/new"
-          className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
+          className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
         >
           <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
           Neue Story
@@ -64,7 +64,7 @@ export function SidebarNav({
       </nav>
       <Link
         href="/posts/new"
-        className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
+        className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
       >
         <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
         Neuer Beitrag

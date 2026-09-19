@@ -95,7 +95,7 @@ export async function Sidebar() {
 
   return (
     <>
-      <aside className="hidden h-screen w-72 shrink-0 flex-col border-r border-line px-5 py-6 lg:sticky lg:top-0 lg:flex">
+      <aside className="hidden h-dvh w-72 shrink-0 flex-col overflow-y-auto border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:flex">
         <div className="mb-2 flex items-center justify-end gap-1">
         <NotificationBell
           userId={user.id}
@@ -104,33 +104,36 @@ export async function Sidebar() {
         />
         <ThemeToggle />
       </div>
-      <div className="mb-4">
+      <div className="mb-3">
         <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
       </div>
-      <div className="mb-6">
+      <div className="mb-4">
         <ModeSwitch />
       </div>
 
       {activeCharacter && (
-        <div className="mb-6 flex flex-col items-center gap-3 rounded-2xl bg-surface-2 px-4 py-6 text-center">
-          <Link href={`/characters/${activeCharacter.id}`}>
-            <CharacterAvatar
-              name={activeCharacter.name}
-              avatarUrl={activeCharacter.avatar_url}
-              size={72}
-            />
-          </Link>
-          <div>
-            <Link href={`/characters/${activeCharacter.id}`} className="font-serif text-xl text-fg hover:text-accent">
-              {activeCharacter.name}
+        <div className="mb-5 flex flex-col gap-3 rounded-2xl bg-surface-2 p-3">
+          <div className="flex items-center gap-3">
+            <Link href={`/characters/${activeCharacter.id}`} className="shrink-0">
+              <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={48} />
             </Link>
-            {profile?.username && (
-              <Link href="/profile" className="block text-sm text-muted hover:text-accent">
-                @{profile.nickname || profile.username}
+            <div className="min-w-0">
+              <Link
+                href={`/characters/${activeCharacter.id}`}
+                className="block truncate font-serif text-lg leading-tight text-fg hover:text-accent"
+              >
+                {activeCharacter.name}
               </Link>
-            )}
+              {(activeCharacter.username || profile?.username) && (
+                <Link href="/profile" className="block truncate text-xs text-muted hover:text-accent">
+                  @{activeCharacter.username ?? profile?.nickname ?? profile?.username}
+                </Link>
+              )}
+            </div>
           </div>
-          <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="w-full" />
+          {characters.length > 1 && (
+            <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="w-full" />
+          )}
         </div>
       )}
 

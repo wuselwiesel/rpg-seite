@@ -58,18 +58,20 @@ export default async function CharacterProfilePage({
   ]);
 
   const isOwn = character.owner_id === user.id;
+  const isActiveProfile = activeCharacter?.id === character.id;
   const otherOwn = (myCharacters ?? []).filter((c) => c.id !== id && c.world_id === character.world_id);
-  const canMessage = !isOwn && activeWorld?.id === character.world_id;
+  const canMessage = !isActiveProfile && activeWorld?.id === character.world_id;
 
   const themeStyle = profileThemeStyle({
     font: character.theme_font,
     accent: character.theme_accent,
     bg: character.theme_bg,
   });
-  const buttonBase = "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition";
+  const buttonBase = "flex flex-1 whitespace-nowrap items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition";
 
   return (
     <div style={themeStyle} className="min-h-full bg-app text-fg">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 bg-app" />
       <div className="mx-auto max-w-[935px] px-4 pt-6 sm:pt-10">
         <header className="flex gap-5 sm:gap-20">
           <div className="shrink-0 sm:px-6">
@@ -95,7 +97,7 @@ export default async function CharacterProfilePage({
                 {character.username ?? (isOwn ? "kein.nutzername" : character.name)}
               </h1>
               <div className="hidden w-full gap-2 sm:flex sm:w-auto">
-                {isOwn ? (
+                {isActiveProfile ? (
                   <Link href={`/characters/${character.id}/edit`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                     <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                     Profil bearbeiten
@@ -109,6 +111,11 @@ export default async function CharacterProfilePage({
                       <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                         <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
                         Nachricht
+                      </Link>
+                    )}
+                    {isOwn && (
+                      <Link href={`/characters/${character.id}/edit`} aria-label="Bearbeiten" className={`${buttonBase} flex-none bg-surface-2 text-fg hover:bg-surface-3`}>
+                        <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                       </Link>
                     )}
                   </>
@@ -138,7 +145,7 @@ export default async function CharacterProfilePage({
         </div>
 
         <div className="mt-4 flex gap-2 sm:hidden">
-          {isOwn ? (
+          {isActiveProfile ? (
             <Link href={`/characters/${character.id}/edit`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
               Profil bearbeiten
             </Link>
@@ -150,6 +157,11 @@ export default async function CharacterProfilePage({
               {canMessage && (
                 <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                   Nachricht
+                </Link>
+              )}
+              {isOwn && (
+                <Link href={`/characters/${character.id}/edit`} aria-label="Bearbeiten" className={`${buttonBase} flex-none bg-surface-2 text-fg hover:bg-surface-3`}>
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                 </Link>
               )}
             </>
