@@ -107,7 +107,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
         </div>
       </div>
 
-      <aside className="hidden w-56 shrink-0 xl:block">
+      <aside className="hidden w-48 shrink-0 xl:block">
         <FeedSidebar userId={user.id} worldId={activeWorld.id} />
       </aside>
     </div>

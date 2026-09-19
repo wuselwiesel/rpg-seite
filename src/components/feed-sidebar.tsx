@@ -32,6 +32,21 @@ export async function FeedSidebar({ userId, worldId }: { userId: string; worldId
   }
 
   return (
+    <div className="flex flex-col gap-6">
+      {activeCharacter && (
+        <Link
+          href={`/characters/${activeCharacter.id}`}
+          className="flex items-center gap-3 rounded-xl px-1 py-1 transition hover:bg-surface-2"
+        >
+          <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={44} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-fg">
+              {activeCharacter.username ?? activeCharacter.name}
+            </p>
+            {activeCharacter.username && <p className="truncate text-xs text-muted">{activeCharacter.name}</p>}
+          </div>
+        </Link>
+      )}
     <section>
       <div className="mb-3 flex items-center justify-between px-1">
         <h2 className="font-serif text-lg text-fg">Deine Chats</h2>
@@ -39,7 +54,7 @@ export async function FeedSidebar({ userId, worldId }: { userId: string; worldId
           Alle
         </Link>
       </div>
-      <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-3">
+      <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-2">
         {chats.length ? (
           chats.map((chat) => {
             const others = chat.chat_participants
@@ -51,12 +66,12 @@ export async function FeedSidebar({ userId, worldId }: { userId: string; worldId
               <Link
                 key={chat.id}
                 href={`/chats/${chat.id}`}
-                className="flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-surface-2"
+                className="flex items-center gap-2 rounded-xl px-1.5 py-1.5 transition hover:bg-surface-2"
               >
                 <CharacterAvatar
                   name={title ?? "?"}
                   avatarUrl={chat.is_group ? undefined : others[0]?.avatar_url}
-                  size={36}
+                  size={32}
                 />
                 <span className="truncate text-sm text-fg-soft">{title}</span>
               </Link>
@@ -67,5 +82,6 @@ export async function FeedSidebar({ userId, worldId }: { userId: string; worldId
         )}
       </div>
     </section>
+    </div>
   );
 }
