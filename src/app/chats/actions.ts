@@ -11,6 +11,7 @@ export async function createChat(_prevState: string | null, formData: FormData) 
   const isGroup = formData.get("is_group") === "on";
   const name = String(formData.get("name") ?? "").trim();
   const participantIds = formData.getAll("participants").map(String);
+  const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
 
   if (isGroup && !name) {
     return "Gruppenchats brauchen einen Namen.";
@@ -40,6 +41,7 @@ export async function createChat(_prevState: string | null, formData: FormData) 
     .from("chats")
     .insert({
       name: name || null,
+      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
       is_group: isGroup || allParticipantIds.length > 2,
       created_by: user.id,
     })
@@ -61,7 +63,9 @@ export async function sendMessage(
   chatId: string,
   characterId: string,
   content: string,
+  imageUrl?: string | null,
 ): Promise<string | null> {
+  if (!content.trim() && !imageUrl) return "Nachricht darf nicht leer sein.";
   const supabase = await createClient();
   const {
     data: { user },
@@ -70,7 +74,7 @@ export async function sendMessage(
 
   const { error } = await supabase
     .from("messages")
-    .insert({ chat_id: chatId, character_id: characterId, content });
+    .insert({ chat_id: chatId, character_id: characterId, content, ...(imageUrl ? { image_url: imageUrl } : {}) });
   if (error) return error.message;
 
   // Die In-App-Benachrichtigung legt bereits der on_message_notify-Trigger an;
@@ -94,7 +98,7 @@ export async function sendMessage(
     Array.from(recipientIds).map((recipientId) =>
       sendPushToUser(recipientId, {
         title: sender?.name ?? "Neue Nachricht",
-        body: content.length > 120 ? `${content.slice(0, 117)}...` : content,
+        body: !content ? "📷 Bild" : content.length > 120 ? `${content.slice(0, 117)}...` : content,
         url: `/chats/${chatId}`,
       }),
     ),
@@ -185,11 +189,12 @@ export async function renameChat(
 ): Promise<string | null> {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return "Gib der Gruppe einen Namen.";
+  const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
 
   const supabase = await createClient();
   const { error, count } = await supabase
     .from("chats")
-    .update({ name }, { count: "exact" })
+    .update({ name, avatar_url: avatarUrl || null }, { count: "exact" })
     .eq("id", chatId)
     .eq("is_group", true);
 
@@ -199,4 +204,19 @@ export async function renameChat(
   revalidatePath(`/chats/${chatId}`);
   revalidatePath("/chats");
   return null;
+}
+
+export async function deleteChat(chatId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase.from("chats").delete({ count: "exact" }).eq("id", chatId);
+  if (error) return error.message;
+  if (!count) return "Nur wer den Gruppenchat erstellt hat, kann ihn löschen.";
+
+  revalidatePath("/chats");
+  redirect("/chats");
 }

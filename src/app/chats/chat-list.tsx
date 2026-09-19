@@ -76,8 +76,7 @@ export async function ChatList() {
               <ChatListItem
                 id={chat.id}
                 title={title}
-                avatarUrl={others[0]?.avatar_url}
-                isGroup={chat.is_group}
+                avatarUrl={chat.is_group ? chat.avatar_url : others[0]?.avatar_url}
                 participantCount={chat.chat_participants.length}
                 unread={unreadChatIds.has(chat.id)}
               />

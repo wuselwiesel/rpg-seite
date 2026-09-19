@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createChat } from "../actions";
+import { AvatarUpload } from "@/components/avatar-upload";
 import type { Character } from "@/lib/types";
 
 export function NewChatForm({
@@ -57,6 +58,12 @@ export function NewChatForm({
             className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
           />
         </label>
+      )}
+      {isGroup && (
+        <div className="flex flex-col gap-1 text-sm text-fg-soft">
+          Gruppenbild (optional)
+          <AvatarUpload name="avatar_url" displayName="#" />
+        </div>
       )}
       {isGroup && <input type="hidden" name="is_group" value="on" />}
 

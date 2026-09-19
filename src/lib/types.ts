@@ -113,6 +113,7 @@ export type Chat = {
   id: string;
   name: string | null;
   is_group: boolean;
+  avatar_url?: string | null;
   created_by: string;
   created_at: string;
 };
@@ -122,6 +123,7 @@ export type Message = {
   chat_id: string;
   character_id: string;
   content: string;
+  image_url?: string | null;
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;

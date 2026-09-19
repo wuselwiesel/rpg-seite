@@ -2,13 +2,14 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Pencil, Trash2, UserPlus, X } from "lucide-react";
+import { Check, ImagePlus, Pencil, Trash2, UserPlus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ReactionBar } from "@/components/reaction-bar";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { formatDateTime } from "@/lib/format";
 import { aggregateReactions } from "@/lib/reactions";
-import { addChatParticipant, deleteMessage, renameChat, sendMessage, updateMessage } from "../actions";
+import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, updateMessage } from "../actions";
 import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
@@ -16,6 +17,8 @@ export function ChatRoom({
   userId,
   title,
   isGroup,
+  avatarUrl,
+  canDelete,
   participants,
   availableCharacters,
   initialMessages,
@@ -26,6 +29,8 @@ export function ChatRoom({
   userId: string;
   title: string;
   isGroup: boolean;
+  avatarUrl: string | null;
+  canDelete: boolean;
   participants: Character[];
   availableCharacters: Character[];
   initialMessages: Message[];
@@ -36,6 +41,8 @@ export function ChatRoom({
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -111,20 +118,71 @@ export function ChatRoom({
     wasAddPending.current = addPending;
   }, [addPending, addError]);
 
+  function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setImageError("Nur Bilder können gesendet werden.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("Bild ist zu groß (max. 5 MB).");
+      return;
+    }
+    setImageError(null);
+    if (pendingImage) URL.revokeObjectURL(pendingImage.previewUrl);
+    setPendingImage({ file, previewUrl: URL.createObjectURL(file) });
+  }
+
+  function clearImage() {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.previewUrl);
+    setPendingImage(null);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const content = draft.trim();
-    if (!content || sending) return;
+    if ((!content && !pendingImage) || sending) return;
 
     setSending(true);
+    setImageError(null);
+    let imageUrl: string | null = null;
+
+    if (pendingImage) {
+      const ext = pendingImage.file.name.split(".").pop() || "jpg";
+      const path = `${chatId}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("chat-media").upload(path, pendingImage.file);
+      if (uploadError) {
+        setImageError(uploadError.message);
+        setSending(false);
+        return;
+      }
+      imageUrl = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
+    }
+
+    const previousImage = pendingImage;
     setDraft("");
-    const error = await sendMessage(chatId, activeCharacter.id, content);
+    setPendingImage(null);
+    const error = await sendMessage(chatId, activeCharacter.id, content, imageUrl);
     setSending(false);
 
     if (error) {
       setDraft(content);
+      setPendingImage(previousImage);
       alert(error);
+    } else if (previousImage) {
+      URL.revokeObjectURL(previousImage.previewUrl);
     }
+  }
+
+  async function handleDeleteChat() {
+    const text = isGroup
+      ? "Diesen Gruppenchat mit allen Nachrichten für alle löschen? Das kann nicht rückgängig gemacht werden."
+      : "Diesen Chat mit allen Nachrichten löschen? Das kann nicht rückgängig gemacht werden.";
+    if (!confirm(text)) return;
+    const error = await deleteChat(chatId);
+    if (error) alert(error);
   }
 
   function startEdit(message: Message) {
@@ -156,39 +214,43 @@ export function ChatRoom({
             ← Alle Chats
           </Link>
           {renaming ? (
-            <form action={renameFormAction} className="flex items-center gap-1">
-              <input
-                name="name"
-                defaultValue={title}
-                autoFocus
-                required
-                className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 font-serif text-xl text-fg outline-none focus:border-accent"
-              />
-              <button
-                type="submit"
-                disabled={renamePending}
-                title="Speichern"
-                className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
-              >
-                <Check className="h-4 w-4" strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setRenaming(false)}
-                title="Abbrechen"
-                className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
-              >
-                <X className="h-4 w-4" strokeWidth={2} />
-              </button>
+            <form action={renameFormAction} className="flex flex-col gap-2">
+              <AvatarUpload name="avatar_url" displayName={title} initialUrl={avatarUrl} />
+              <div className="flex items-center gap-1">
+                <input
+                  name="name"
+                  defaultValue={title}
+                  autoFocus
+                  required
+                  className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 font-serif text-xl text-fg outline-none focus:border-accent"
+                />
+                <button
+                  type="submit"
+                  disabled={renamePending}
+                  title="Speichern"
+                  className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
+                >
+                  <Check className="h-4 w-4" strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRenaming(false)}
+                  title="Abbrechen"
+                  className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+                >
+                  <X className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
             </form>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              {isGroup && <CharacterAvatar name={title} avatarUrl={avatarUrl} size={36} />}
               <h1 className="truncate font-serif text-2xl text-fg">{title}</h1>
               {isGroup && (
                 <button
                   type="button"
                   onClick={() => setRenaming(true)}
-                  title="Gruppe umbenennen"
+                  title="Gruppenname und Bild ändern"
                   className="shrink-0 rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
                 >
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
@@ -202,6 +264,16 @@ export function ChatRoom({
           <p className="min-w-0 truncate text-right text-xs text-muted">
             {participants.map((p) => p.name).join(", ")}
           </p>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={handleDeleteChat}
+              title="Chat löschen"
+              className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
           {availableCharacters.length > 0 && (
             <button
               type="button"
@@ -321,7 +393,21 @@ export function ChatRoom({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-[15px] leading-relaxed whitespace-pre-line">{message.content}</p>
+                    <>
+                      {message.image_url && (
+                        <a href={message.image_url} target="_blank" rel="noreferrer" className="mb-1 block">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={message.image_url}
+                            alt="Gesendetes Bild"
+                            className="max-h-72 max-w-full rounded-md object-cover"
+                          />
+                        </a>
+                      )}
+                      {message.content && (
+                        <p className="text-[15px] leading-relaxed whitespace-pre-line">{message.content}</p>
+                      )}
+                    </>
                   )}
                   {editingId !== message.id && (
                     <div className="mt-1.5">
@@ -342,23 +428,47 @@ export function ChatRoom({
 
       <form
         onSubmit={handleSubmit}
-        className="flex gap-2 border-t border-line pt-4"
+        className="flex flex-col gap-2 border-t border-line pt-4"
         style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
-        <input
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={`Schreib als ${activeCharacter.name}...`}
-          className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
-        />
-        <button
-          type="submit"
-          disabled={sending || !draft.trim()}
-          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:bg-surface-2 disabled:text-muted disabled:opacity-100"
-        >
-          Senden
-        </button>
+        {pendingImage && (
+          <div className="relative w-fit">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={pendingImage.previewUrl} alt="Vorschau" className="max-h-32 rounded-md object-cover" />
+            <button
+              type="button"
+              onClick={clearImage}
+              title="Bild entfernen"
+              className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-fg text-app shadow"
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
+        {imageError && <p className="text-xs text-red-600 dark:text-red-400">{imageError}</p>}
+        <div className="flex gap-2">
+          <label
+            title="Bild senden"
+            className="flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-line px-2.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
+            <input type="file" accept="image/*" onChange={pickImage} className="hidden" />
+          </label>
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={`Schreib als ${activeCharacter.name}...`}
+            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+          />
+          <button
+            type="submit"
+            disabled={sending || (!draft.trim() && !pendingImage)}
+            className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:bg-surface-2 disabled:text-muted disabled:opacity-100"
+          >
+            Senden
+          </button>
+        </div>
       </form>
     </div>
   );

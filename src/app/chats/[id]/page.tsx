@@ -65,6 +65,8 @@ export default async function ChatDetailPage({ params }: PageProps<"/chats/[id]"
       userId={user.id}
       title={title ?? "Chat"}
       isGroup={chat.is_group}
+      avatarUrl={chat.avatar_url ?? null}
+      canDelete={!chat.is_group || chat.created_by === user.id}
       participants={participants}
       availableCharacters={availableCharacters}
       initialMessages={messages ?? []}

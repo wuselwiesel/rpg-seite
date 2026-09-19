@@ -70,7 +70,7 @@ export async function FeedSidebar({ userId, worldId }: { userId: string; worldId
               >
                 <CharacterAvatar
                   name={title ?? "?"}
-                  avatarUrl={chat.is_group ? undefined : others[0]?.avatar_url}
+                  avatarUrl={chat.is_group ? chat.avatar_url : others[0]?.avatar_url}
                   size={32}
                 />
                 <span className="truncate text-sm text-fg-soft">{title}</span>
