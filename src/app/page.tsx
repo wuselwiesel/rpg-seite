@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -20,6 +21,8 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const to = typeof params.to === "string" ? params.to : "";
   const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
 
+  const limit = Math.min(Math.max(Number(params.limit) || 20, 20), 200);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,7 +39,8 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   let postsQuery = supabase
     .from("posts")
     .select("*, characters(*, worlds(name)), comments(count), reactions(emoji, character_id)")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (q) {
     const escaped = escapePostgrestValue(q);
@@ -50,11 +54,8 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
     postsQuery = postsQuery.lt("created_at", toDate.toISOString());
   }
 
-  const [{ data: posts }, { data: myCharacters }] = await Promise.all([
-    postsQuery.returns<Post[]>(),
-    supabase.from("characters").select("id").eq("owner_id", user.id),
-  ]);
-  const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
+  const { data: posts } = await postsQuery.returns<Post[]>();
+  const activeCharacterSet = new Set([activeCharacter.id]);
 
   return (
     <div className="flex gap-8 px-3 py-4 sm:px-6 sm:py-8 lg:px-10">
@@ -62,7 +63,9 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
         <Link href="/" aria-label="Wortwinkel" className="mb-3 block w-fit lg:hidden">
           <Wordmark height={34} />
         </Link>
-        <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
+        <Suspense fallback={<div className="mb-5 h-[92px]" />}>
+          <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
+        </Suspense>
 
         <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} />
 
@@ -86,11 +89,13 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
                 reactionBar={
                   <ReactionBar
                     target={{ postId: post.id }}
-                    initialReactions={aggregateReactions(post.reactions, myCharacterIds)}
+                    initialReactions={aggregateReactions(post.reactions, activeCharacterSet)}
                   />
                 }
                 tags={post.tags}
                 tagHrefBase="/"
+                mediaUrl={post.media_url}
+                mediaType={post.media_type}
               />
             ))
           ) : q || tag || from || to ? (
@@ -105,10 +110,21 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
             </p>
           )}
         </div>
+        {posts && posts.length >= limit && (
+          <Link
+            href={`/?${new URLSearchParams({ ...(q && { q }), ...(tag && { tag }), ...(from && { from }), ...(to && { to }), limit: String(limit + 20) })}`}
+            scroll={false}
+            className="mt-4 block rounded-xl bg-surface-2 py-3 text-center text-sm font-medium text-fg-soft transition hover:bg-surface-3"
+          >
+            Ältere Beiträge laden
+          </Link>
+        )}
       </div>
 
       <aside className="hidden w-48 shrink-0 xl:block">
-        <FeedSidebar userId={user.id} worldId={activeWorld.id} />
+        <Suspense fallback={null}>
+          <FeedSidebar userId={user.id} worldId={activeWorld.id} />
+        </Suspense>
       </aside>
     </div>
   );

@@ -5,7 +5,8 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
 import { JoinWorldButton } from "@/app/worlds/join-world-button";
-import type { Friendship, Profile, World } from "@/lib/types";
+import { escapePostgrestValue } from "@/lib/postgrest";
+import type { Character, Friendship, Profile, World } from "@/lib/types";
 import { AddFriendButton } from "./add-friend-button";
 import { FollowWorldButton } from "./follow-world-button";
 
@@ -14,7 +15,7 @@ type WorldWithCreator = World & { creator: Pick<Profile, "username" | "nickname"
 export default async function SearchPage({ searchParams }: PageProps<"/search">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";
-  const tab = params.tab === "worlds" ? "worlds" : "users";
+  const tab = params.tab === "worlds" ? "worlds" : params.tab === "users" ? "users" : "characters";
   const isWelcome = params.welcome === "1";
 
   const supabase = await createClient();
@@ -24,6 +25,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   if (!user) redirect("/login");
 
+  let characterResults: (Character & { worlds: { name: string } | null })[] = [];
   let userResults: Profile[] = [];
   const friendStatus = new Map<string, { status: "accepted" | "pending"; direction: "incoming" | "outgoing" }>();
 
@@ -31,7 +33,19 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const memberWorldIds = new Set<string>();
   const followedWorldIds = new Set<string>();
 
-  if (tab === "users") {
+  if (tab === "characters") {
+    if (q) {
+      const term = escapePostgrestValue(q.replace(/^@/, ""));
+      const { data } = await supabase
+        .from("characters")
+        .select("*, worlds(name)")
+        .or(`username.ilike.%${term}%,name.ilike.%${term}%`)
+        .order("name")
+        .limit(30)
+        .returns<(Character & { worlds: { name: string } | null })[]>();
+      characterResults = data ?? [];
+    }
+  } else if (tab === "users") {
     const [{ data: friendships }, { data: profiles }] = await Promise.all([
       supabase
         .from("friendships")
@@ -82,7 +96,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       <p className="mb-6 text-sm text-muted">
         {isWelcome
           ? "Tritt einer bestehenden Welt bei, um direkt mit einem Charakter loszulegen."
-          : "Finde Freund:innen über ihren Benutzernamen oder entdecke neue Welten zum Folgen."}
+          : "Finde Charaktere über Namen oder @Nutzernamen, Freund:innen über ihren Benutzernamen oder entdecke neue Welten."}
       </p>
       {isWelcome && (
         <p className="mb-6 text-sm text-muted">
@@ -94,6 +108,14 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       )}
 
       <div className="mb-4 flex gap-1 rounded-lg bg-surface-2 p-1">
+        <Link
+          href={`/search?tab=characters${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
+          className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
+            tab === "characters" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
+          }`}
+        >
+          Charaktere
+        </Link>
         <Link
           href={`/search?tab=users${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
           className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
@@ -119,7 +141,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           type="text"
           name="q"
           defaultValue={q}
-          placeholder={tab === "users" ? "Benutzername..." : "Weltname..."}
+          placeholder={tab === "characters" ? "Name oder @nutzername..." : tab === "users" ? "Benutzername..." : "Weltname..."}
           className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
         />
         <button
@@ -131,6 +153,29 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       </form>
 
       {!q && <p className="text-sm text-muted">Gib einen Suchbegriff ein.</p>}
+
+      {q && tab === "characters" && (
+        <ul className="flex flex-col gap-2">
+          {characterResults.length === 0 && <p className="text-sm text-muted">Kein Charakter gefunden.</p>}
+          {characterResults.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/characters/${c.id}`}
+                className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
+              >
+                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={44} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-fg">{c.username ?? c.name}</p>
+                  <p className="truncate text-xs text-muted">
+                    {c.username ? `${c.name} · ` : ""}
+                    {c.worlds?.name}
+                  </p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {q && tab === "users" && (
         <ul className="flex flex-col gap-2">

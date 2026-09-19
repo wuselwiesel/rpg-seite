@@ -1317,3 +1317,30 @@ create policy "highlight_stories_delete_own" on public.highlight_stories
       where h.id = highlight_id and c.owner_id = auth.uid()
     )
   );
+
+-- Frei platzierbare Texte auf Storys
+alter table public.stories add column if not exists overlays jsonb;
+
+-- Musik auf Storys
+alter table public.stories add column if not exists audio_url text;
+alter table public.stories add column if not exists audio_name text;
+
+-- Fotos und Videos in Beiträgen, Videos in Storys
+alter table public.posts add column if not exists media_url text;
+alter table public.posts add column if not exists media_type text;
+alter table public.stories add column if not exists video_url text;
+alter table public.stories drop constraint if exists stories_has_content;
+alter table public.stories add constraint stories_has_content
+  check (image_url is not null or video_url is not null or coalesce(text_content, '') <> '');
+
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('post-media', 'post-media', true, 52428800)
+on conflict (id) do update set file_size_limit = 52428800;
+
+drop policy if exists "post_media_public_read" on storage.objects;
+create policy "post_media_public_read" on storage.objects
+  for select using (bucket_id = 'post-media');
+
+drop policy if exists "post_media_authenticated_insert" on storage.objects;
+create policy "post_media_authenticated_insert" on storage.objects
+  for insert to authenticated with check (bucket_id = 'post-media');

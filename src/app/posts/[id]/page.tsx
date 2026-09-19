@@ -1,7 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getMentionableCharacters } from "@/lib/active-character";
+import { getMentionableCharacters, getActiveCharacter } from "@/lib/active-character";
+import { getActiveWorld } from "@/lib/worlds";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { PostMedia } from "@/components/post-media";
 import { ReactionBar } from "@/components/reaction-bar";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -39,6 +41,10 @@ export default async function PostDetailPage({
     supabase.from("characters").select("id").eq("owner_id", user.id),
   ]);
   const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
+  // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
+  const activeWorld = await getActiveWorld(user.id);
+  const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
+  const activeCharacterSet = new Set(activeCharacter ? [activeCharacter.id] : []);
 
   const mentionableCharacters = post.characters
     ? await getMentionableCharacters(user.id, post.characters.world_id)
@@ -58,6 +64,14 @@ export default async function PostDetailPage({
           </div>
         </div>
         {post.title && <h1 className="mb-4 font-serif text-3xl text-fg">{post.title}</h1>}
+        {post.media_url && post.media_type && (
+          <PostMedia
+            url={post.media_url}
+            type={post.media_type}
+            alt="Beitragsbild"
+            className="mb-4 max-h-[75vh] w-full rounded-lg bg-black object-contain"
+          />
+        )}
         <div
           className="post-content text-fg-soft"
           dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content) }}
@@ -65,7 +79,7 @@ export default async function PostDetailPage({
         <div className="mt-4">
           <ReactionBar
             target={{ postId: post.id }}
-            initialReactions={aggregateReactions(post.reactions, myCharacterIds)}
+            initialReactions={aggregateReactions(post.reactions, activeCharacterSet)}
           />
         </div>
       </article>

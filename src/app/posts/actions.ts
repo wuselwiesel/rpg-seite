@@ -11,6 +11,10 @@ import { stripHtml } from "@/lib/strip-html";
 import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacters, createNotification } from "@/lib/notifications";
 
+function escapeHtml(text: string) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 async function getActiveCharacterId(userId: string) {
   const cookieStore = await cookies();
   const cookieId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value;
@@ -43,10 +47,21 @@ async function getActiveCharacterId(userId: string) {
 }
 
 export async function createPost(_prevState: string | null, formData: FormData) {
-  const rawContent = String(formData.get("content") ?? "").trim();
-  const content = sanitizePostHtml(rawContent);
+  const kind = String(formData.get("kind") ?? "text");
+  const mediaUrl = String(formData.get("media_url") ?? "").trim();
+  const mediaType = kind === "image" || kind === "video" ? kind : null;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  if (mediaType && !(mediaUrl && supabaseUrl && mediaUrl.startsWith(`${supabaseUrl}/storage/`))) {
+    return mediaType === "video" ? "Bitte wähle ein Video aus." : "Bitte wähle ein Foto aus.";
+  }
 
-  const hasContent = stripHtml(content).length > 0 || content.includes("<img");
+  const rawContent = String(formData.get("content") ?? "").trim();
+  // Bei Foto/Video ist der Inhalt nur die Bildunterschrift (Klartext).
+  const content = mediaType
+    ? sanitizePostHtml(rawContent ? `<p>${escapeHtml(rawContent).replace(/\n/g, "<br>")}</p>` : "")
+    : sanitizePostHtml(rawContent);
+
+  const hasContent = Boolean(mediaType) || stripHtml(content).length > 0 || content.includes("<img");
   if (!hasContent) {
     return "Der Beitrag darf nicht leer sein.";
   }
@@ -65,7 +80,14 @@ export async function createPost(_prevState: string | null, formData: FormData) 
 
   const { data, error } = await supabase
     .from("posts")
-    .insert({ character_id: characterId, title: "", content, tags })
+    .insert({
+      character_id: characterId,
+      title: "",
+      content,
+      tags,
+      media_url: mediaType ? mediaUrl : null,
+      media_type: mediaType,
+    })
     .select("id")
     .single();
 

@@ -51,7 +51,9 @@ export function NewHighlightForm({ characterId, stories }: { characterId: string
                   onChange={() => setSelected((prev) => (on ? prev.filter((x) => x !== s.id) : [...prev, s.id]))}
                   className="sr-only"
                 />
-                {s.image_url ? (
+                {s.video_url ? (
+                  <video src={`${s.video_url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
+                ) : s.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={s.image_url} alt="" className="h-full w-full object-cover" />
                 ) : (

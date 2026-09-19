@@ -9,6 +9,7 @@ import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
 import { storyBackground } from "@/lib/stories";
+import { PostMedia } from "@/components/post-media";
 import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
 import { Plus } from "lucide-react";
 import type { Character, Highlight, Post, Story } from "@/lib/types";
@@ -232,7 +233,9 @@ export default async function CharacterProfilePage({
                 <div key={g.key} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
                   <StoryLauncher groups={highlightGroups} startIndex={i} ringWidth={2} label={`Highlight ${g.label}`}>
                     <span className="block h-14 w-14 overflow-hidden rounded-full bg-surface-2">
-                      {cover.image_url ? (
+                      {cover.video_url ? (
+                        <video src={`${cover.video_url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
+                      ) : cover.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={cover.image_url} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -283,7 +286,7 @@ export default async function CharacterProfilePage({
         {posts?.length ? (
           <div className="grid grid-cols-3 gap-[3px] pb-24 sm:gap-1 lg:pb-10">
             {posts.map((post) => {
-              const image = firstImageSrc(post.content);
+              const image = post.media_type === "image" ? post.media_url : post.media_type ? null : firstImageSrc(post.content);
               const replies = post.comments?.[0]?.count ?? 0;
               return (
                 <Link
@@ -291,7 +294,9 @@ export default async function CharacterProfilePage({
                   href={`/posts/${post.id}`}
                   className="group relative block aspect-square overflow-hidden bg-surface-2"
                 >
-                  {image ? (
+                  {post.media_type === "video" && post.media_url ? (
+                    <PostMedia url={post.media_url} type="video" alt="" thumb className="h-full w-full object-cover" />
+                  ) : image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={image} alt={post.title || "Beitrag"} className="h-full w-full object-cover" />
                   ) : (

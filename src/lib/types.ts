@@ -47,6 +47,8 @@ export type Post = {
   title: string;
   content: string;
   tags: string[];
+  media_url?: string | null;
+  media_type?: "image" | "video" | null;
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;
@@ -162,11 +164,18 @@ export type Story = {
   id: string;
   character_id: string;
   image_url: string | null;
+  video_url: string | null;
   text_content: string | null;
   bg: string | null;
+  overlays: StoryOverlay[] | null;
+  audio_url: string | null;
+  audio_name: string | null;
   created_at: string;
   expires_at: string;
 };
+
+// Frei platzierbarer Text auf einer Story; x/y = Mittelpunkt in % der Bühne, size in % der Breite.
+export type StoryOverlay = { id: string; t: string; x: number; y: number; size: number; color: string };
 
 export type Highlight = {
   id: string;

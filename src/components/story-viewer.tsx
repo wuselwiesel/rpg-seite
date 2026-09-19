@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Trash2, X } from "lucide-react";
+import { Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import { deleteHighlight, deleteStory } from "@/app/stories/actions";
-import { storyBackground, timeAgo } from "@/lib/stories";
+import { timeAgo } from "@/lib/stories";
+import { StoryStage } from "./story-stage";
 import type { Story } from "@/lib/types";
 
 export type StoryGroup = {
@@ -120,9 +121,15 @@ function StoryViewer({
   const [paused, setPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const holdRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(false);
+  // Videos bestimmen ihre eigene Laufzeit (max. 60 s), Bilder und Text laufen SLIDE_MS.
+  const [videoMs, setVideoMs] = useState<{ id: string; ms: number } | null>(null);
 
   const group = groups[gi];
   const story = group?.stories[si];
+  const slideMs = story && videoMs?.id === story.id ? videoMs.ms : SLIDE_MS;
 
   const next = useCallback(() => {
     setProgress(0);
@@ -148,17 +155,36 @@ function StoryViewer({
   }, [story]);
 
   useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (paused) el.pause();
+    else
+      el.play().catch(() => {
+        el.muted = true;
+        el.play().catch(() => {});
+      });
+  }, [paused, story?.id]);
+
+  // Musik der Story: startet mit der Story, pausiert mit ihr.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (paused) el.pause();
+    else el.play().catch(() => {});
+  }, [paused, story?.id, story?.audio_url]);
+
+  useEffect(() => {
     if (paused || !story) return;
-    const started = Date.now() - progress * SLIDE_MS;
+    const started = Date.now() - progress * slideMs;
     const timer = setInterval(() => {
-      const p = (Date.now() - started) / SLIDE_MS;
+      const p = (Date.now() - started) / slideMs;
       if (p >= 1) next();
       else setProgress(p);
     }, 50);
     return () => clearInterval(timer);
     // progress bewusst nicht als Abhängigkeit: Start-Offset nur beim (Wieder-)Starten lesen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, story, next]);
+  }, [paused, story, next, slideMs]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -225,31 +251,22 @@ function StoryViewer({
           setPaused(false);
         }}
       >
-        {story.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={story.image_url} alt="" className="absolute inset-0 h-full w-full object-contain" draggable={false} />
-        ) : (
-          <div className="absolute inset-0" style={{ background: storyBackground(story.bg) }} />
-        )}
-        {story.text_content && (
-          <div
-            className={`absolute inset-x-0 flex justify-center px-6 ${
-              story.image_url ? "bottom-20" : "inset-y-0 items-center"
-            }`}
-          >
-            <p
-              className={`whitespace-pre-line break-words text-center font-serif text-2xl leading-snug ${
-                story.image_url
-                  ? "rounded-xl bg-black/55 px-4 py-2 text-white"
-                  : story.bg === "night" || story.bg === "ocean" || story.bg === "forest"
-                    ? "text-white"
-                    : "text-neutral-900"
-              }`}
-            >
-              {story.text_content}
-            </p>
-          </div>
-        )}
+        <div className="absolute inset-0 flex items-center justify-center" style={{ containerType: "size" }}>
+          <StoryStage
+            story={story}
+            videoProps={{
+              ref: videoRef,
+              autoPlay: true,
+              muted,
+              onLoadedMetadata: (e) => {
+                const d = e.currentTarget.duration;
+                if (Number.isFinite(d) && d > 0) setVideoMs({ id: story.id, ms: Math.min(d * 1000, 60_000) });
+              },
+            }}
+          />
+        </div>
+
+        {story.audio_url && <audio key={story.id} ref={audioRef} src={story.audio_url} autoPlay loop muted={muted} />}
 
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent" />
 
@@ -277,6 +294,16 @@ function StoryViewer({
               </p>
               <p className="text-xs text-white/70">{timeAgo(story.created_at)}</p>
             </div>
+            {(story.audio_url || story.video_url) && (
+              <button
+                type="button"
+                onClick={() => setMuted((m) => !m)}
+                aria-label={muted ? "Ton an" : "Ton aus"}
+                className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full text-white hover:bg-white/15"
+              >
+                {muted ? <VolumeX className="h-5 w-5" strokeWidth={2} /> : <Volume2 className="h-5 w-5" strokeWidth={2} />}
+              </button>
+            )}
             {group.canManage && (
               <button
                 type="button"

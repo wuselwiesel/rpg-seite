@@ -5,15 +5,22 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
-import { STORY_BACKGROUNDS, STORY_DURATIONS } from "@/lib/stories";
+import { STORY_DURATIONS, isValidStoryBg, parseOverlays } from "@/lib/stories";
 
 export async function createStory(_prev: string | null, formData: FormData) {
-  const imageUrl = String(formData.get("image_url") ?? "").trim();
-  const text = String(formData.get("text_content") ?? "").trim().slice(0, 500);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const ownStorage = (url: string) => (url.startsWith(`${supabaseUrl}/storage/`) ? url : "");
+  const imageUrl = ownStorage(String(formData.get("image_url") ?? "").trim());
+  const videoUrl = ownStorage(String(formData.get("video_url") ?? "").trim());
+  const overlays = parseOverlays(String(formData.get("overlays") ?? "[]"));
+  const text = overlays.map((o) => o.t.trim()).join("\n");
   const bg = String(formData.get("bg") ?? "");
+  const rawAudioUrl = String(formData.get("audio_url") ?? "").trim();
+  const audioUrl = rawAudioUrl.startsWith("https://") ? rawAudioUrl : "";
+  const audioName = String(formData.get("audio_name") ?? "").trim();
   const hours = Number(formData.get("hours"));
 
-  if (!imageUrl && !text) return "Füge ein Bild oder einen Text hinzu.";
+  if (!imageUrl && !videoUrl && !text) return "Füge ein Bild oder einen Text hinzu.";
   const duration = STORY_DURATIONS.find((d) => d.hours === hours)?.hours ?? 24;
 
   const supabase = await createClient();
@@ -28,8 +35,12 @@ export async function createStory(_prev: string | null, formData: FormData) {
   const { error } = await supabase.from("stories").insert({
     character_id: character.id,
     image_url: imageUrl || null,
+    video_url: videoUrl || null,
     text_content: text || null,
-    bg: STORY_BACKGROUNDS.some((b) => b.id === bg) ? bg : null,
+    overlays: overlays.length ? overlays : null,
+    bg: isValidStoryBg(bg) ? bg : null,
+    audio_url: audioUrl && !videoUrl ? audioUrl : null,
+    audio_name: audioUrl && !videoUrl ? audioName.slice(0, 80) : null,
     expires_at: new Date(Date.now() + duration * 3600_000).toISOString(),
   });
   if (error) return error.message;

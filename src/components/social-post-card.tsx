@@ -4,6 +4,7 @@ import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
+import { PostMedia } from "./post-media";
 
 export function SocialPostCard({
   title,
@@ -17,6 +18,8 @@ export function SocialPostCard({
   reactionBar,
   tags,
   tagHrefBase,
+  mediaUrl,
+  mediaType,
 }: {
   title: string;
   content: string;
@@ -29,9 +32,12 @@ export function SocialPostCard({
   reactionBar?: React.ReactNode;
   tags?: string[];
   tagHrefBase?: string;
+  mediaUrl?: string | null;
+  mediaType?: "image" | "video" | null;
 }) {
   const preview = stripHtml(content);
-  const image = firstImageSrc(content);
+  const media = mediaUrl && mediaType ? { url: mediaUrl, type: mediaType } : null;
+  const image = media?.type === "image" ? media.url : media ? null : firstImageSrc(content);
   const handle = character?.username ?? character?.name ?? "Unbekannt";
 
   return (
@@ -48,7 +54,10 @@ export function SocialPostCard({
         </div>
       </Link>
 
-      <Link href={detailHref} className="block">
+      {media?.type === "video" && (
+        <PostMedia url={media.url} type="video" alt="" className="max-h-[590px] w-full rounded-sm bg-black" />
+      )}
+      <Link href={detailHref} className={media?.type === "video" ? "hidden" : "block"}>
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={image} alt={title || "Beitragsbild"} className="max-h-[590px] w-full rounded-sm bg-surface-2 object-cover" />
@@ -77,7 +86,7 @@ export function SocialPostCard({
         </Link>
       </div>
 
-      {image && (
+      {(image || media) && (
         <p className="mt-2 px-1 text-sm text-fg">
           <Link href={characterHref} className="font-semibold">{handle}</Link>{" "}
           {title && <span className="font-serif text-base">{title} </span>}

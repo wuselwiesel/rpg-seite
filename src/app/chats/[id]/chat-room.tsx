@@ -37,7 +37,8 @@ export function ChatRoom({
   activeCharacter: Character;
   myCharacterIds: string[];
 }) {
-  const myCharacterIdSet = new Set(myCharacterIds);
+  // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
+  const myCharacterIdSet = new Set([activeCharacter.id]);
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
