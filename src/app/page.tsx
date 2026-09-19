@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import type { Post } from "@/lib/types";
-import { EntryCard } from "@/components/entry-card";
+import { SocialPostCard } from "@/components/social-post-card";
+import { StoriesStrip } from "@/components/stories-strip";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ReactionBar } from "@/components/reaction-bar";
@@ -58,14 +59,13 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   return (
     <div className="flex gap-8 px-6 py-8 lg:px-10">
       <div className="min-w-0 flex-1">
-        <h1 className="mb-1 font-serif text-3xl text-fg">Wortwinkel</h1>
-        <p className="mb-6 text-sm text-muted">Die neuesten Beiträge deiner Freunde.</p>
+        <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
 
         <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} />
 
         <Link
           href="/posts/new"
-          className="mb-6 flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2"
+          className="mb-5 flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
         >
           <CharacterAvatar
             name={activeCharacter.name}
@@ -79,10 +79,9 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
 
         <div className="flex flex-col gap-4">
           {posts?.length ? (
-            posts.map((post, index) => (
-              <EntryCard
+            posts.map((post) => (
+              <SocialPostCard
                 key={post.id}
-                id={post.id}
                 title={post.title}
                 content={post.content}
                 createdAt={post.created_at}
@@ -90,13 +89,12 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
                 characterHref={`/characters/${post.character_id}`}
                 detailHref={`/posts/${post.id}`}
                 replyCount={post.comments?.[0]?.count ?? 0}
-                index={index}
                 worldName={
                   post.characters && post.characters.world_id !== activeWorld.id
                     ? post.characters.worlds?.name
                     : undefined
                 }
-                likeButton={
+                reactionBar={
                   <ReactionBar
                     target={{ postId: post.id }}
                     initialReactions={aggregateReactions(post.reactions, myCharacterIds)}
@@ -121,7 +119,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
       </div>
 
       <aside className="hidden w-72 shrink-0 lg:block">
-        <FeedSidebar userId={user.id} worldId={activeWorld.id} worldName={activeWorld.name} />
+        <FeedSidebar userId={user.id} worldId={activeWorld.id} />
       </aside>
     </div>
   );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ScrollText, Users, PenLine, BookOpen, Library, UserPlus, Search, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
@@ -9,8 +9,8 @@ import type { Profile } from "@/lib/types";
 import { CharacterAvatar } from "./character-avatar";
 import { CharacterSwitcher } from "./character-switcher";
 import { WorldSwitcher } from "./world-switcher";
-import { NavLink } from "./nav-link";
-import { ChatsNavLink } from "./chats-nav-link";
+import { ModeSwitch } from "./mode-switch";
+import { SidebarNav } from "./sidebar-nav";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { MobileNav } from "./mobile-nav";
@@ -104,8 +104,11 @@ export async function Sidebar() {
         />
         <ThemeToggle />
       </div>
-      <div className="mb-6">
+      <div className="mb-4">
         <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
+      </div>
+      <div className="mb-6">
+        <ModeSwitch />
       </div>
 
       {activeCharacter && (
@@ -131,42 +134,7 @@ export async function Sidebar() {
         </div>
       )}
 
-      <nav className="flex flex-col gap-1">
-        <NavLink href="/" icon={<ScrollText className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />} exact>
-          Feed
-        </NavLink>
-        <NavLink href="/story" icon={<BookOpen className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
-          Story
-        </NavLink>
-        <NavLink href="/wiki" icon={<Library className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
-          Wiki
-        </NavLink>
-        <ChatsNavLink
-          userId={user.id}
-          myCharacterIds={myCharacterIds}
-          initialUnreadChatIds={unreadChatIds}
-        />
-        <NavLink href="/characters" icon={<Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
-          Charaktere
-        </NavLink>
-        <NavLink href="/friends" icon={<UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
-          Freund:innen
-        </NavLink>
-        <NavLink href="/search" icon={<Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
-          Suche
-        </NavLink>
-        <NavLink href="/profile" icon={<UserRound className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />}>
-          Profil &amp; Einstellungen
-        </NavLink>
-      </nav>
-
-      <Link
-        href="/posts/new"
-        className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
-      >
-        <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
-        Neuer Feed-Eintrag
-      </Link>
+      <SidebarNav userId={user.id} myCharacterIds={myCharacterIds} unreadChatIds={unreadChatIds} />
     </aside>
     <MobileNav
       worlds={worlds}

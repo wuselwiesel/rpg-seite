@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ScrollText, BookOpen, Library, Users, UserPlus, Search, PenLine, Menu, X } from "lucide-react";
+import { House, BookOpen, Library, Users, UserPlus, Search, Plus, Network, Menu, X } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
@@ -11,9 +11,21 @@ import { CharacterAvatar } from "./character-avatar";
 import { CharacterSwitcher } from "./character-switcher";
 import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
+import { MobileModeButton } from "./mode-switch";
+import { getAppMode } from "@/lib/app-mode";
 import { isImmersiveChatPath } from "@/lib/immersive-routes";
 import type { AppNotification } from "@/lib/notifications";
 import type { Character, Profile, World } from "@/lib/types";
+
+function MobileCreateTab({ href, label }: { href: string; label: string }) {
+  return (
+    <Link href={href} aria-label={label} className="flex flex-1 items-center justify-center py-2">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-strong text-on-accent-strong transition hover:opacity-90">
+        <Plus className="h-5 w-5" strokeWidth={2.5} />
+      </span>
+    </Link>
+  );
+}
 
 export function MobileNav({
   worlds,
@@ -45,6 +57,8 @@ export function MobileNav({
 
   if (isImmersiveChatPath(pathname)) return null;
 
+  const mode = getAppMode(pathname);
+
   return (
     <>
       <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-app px-4 py-2.5 lg:hidden">
@@ -58,18 +72,30 @@ export function MobileNav({
             initialUnreadCount={initialUnreadCount}
           />
           <ThemeToggle />
+          <MobileModeButton />
         </div>
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
-        <MobileTabLink href="/" icon={<ScrollText className="h-5 w-5" strokeWidth={2} />} label="Feed" exact />
-        <MobileTabLink href="/story" icon={<BookOpen className="h-5 w-5" strokeWidth={2} />} label="Story" />
-        <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadChatIds={unreadChatIds} />
-        <MobileTabLink
-          href="/characters"
-          icon={<Users className="h-5 w-5" strokeWidth={2} />}
-          label="Charaktere"
-        />
+        {mode === "story" ? (
+          <>
+            <MobileTabLink href="/story" icon={<BookOpen className="h-5 w-5" strokeWidth={2} />} label="Story" />
+            <MobileTabLink href="/wiki" icon={<Library className="h-5 w-5" strokeWidth={2} />} label="Wiki" />
+            <MobileCreateTab href="/story/new" label="Neue Story" />
+            <MobileTabLink
+              href="/characters/relationships"
+              icon={<Network className="h-5 w-5" strokeWidth={2} />}
+              label="Beziehungen"
+            />
+          </>
+        ) : (
+          <>
+            <MobileTabLink href="/" icon={<House className="h-5 w-5" strokeWidth={2} />} label="Feed" exact />
+            <MobileTabLink href="/search" icon={<Search className="h-5 w-5" strokeWidth={2} />} label="Suche" />
+            <MobileCreateTab href="/posts/new" label="Neuer Beitrag" />
+            <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadChatIds={unreadChatIds} />
+          </>
+        )}
         <button
           type="button"
           onClick={() => setMoreOpen(true)}
@@ -134,6 +160,16 @@ export function MobileNav({
         )}
 
         <div className="flex flex-col gap-1">
+          {mode === "ingame" && (
+            <Link
+              href="/characters"
+              onClick={() => setMoreOpen(false)}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              Charaktere
+            </Link>
+          )}
           <Link
             href="/friends"
             onClick={() => setMoreOpen(false)}
@@ -143,22 +179,6 @@ export function MobileNav({
             Freund:innen
           </Link>
           <Link
-            href="/wiki"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Library className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Wiki
-          </Link>
-          <Link
-            href="/search"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Suche
-          </Link>
-          <Link
             href="/profile"
             onClick={() => setMoreOpen(false)}
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
@@ -166,15 +186,6 @@ export function MobileNav({
             Profil &amp; Einstellungen
           </Link>
         </div>
-
-        <Link
-          href="/posts/new"
-          onClick={() => setMoreOpen(false)}
-          className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
-        >
-          <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
-          Neuer Feed-Eintrag
-        </Link>
       </div>
     </>
   );
