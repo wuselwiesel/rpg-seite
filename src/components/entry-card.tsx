@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EyeOff, MessageCircle, Pin } from "lucide-react";
+import { Clock, EyeOff, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
@@ -27,6 +27,10 @@ export function EntryCard({
   arcHref,
   isPrivate,
   pinned,
+  location,
+  inWorldTime,
+  locationHrefBase,
+  yourTurn,
 }: {
   id: string;
   title: string;
@@ -47,6 +51,10 @@ export function EntryCard({
   arcHref?: string;
   isPrivate?: boolean;
   pinned?: boolean;
+  location?: string | null;
+  inWorldTime?: string | null;
+  locationHrefBase?: string;
+  yourTurn?: boolean;
 }) {
   const preview = stripHtml(content);
   const surface = SURFACES[index % SURFACES.length];
@@ -72,6 +80,37 @@ export function EntryCard({
         >
           {arcName}
         </Link>
+      )}
+      {(location || inWorldTime || yourTurn) && (
+        <div className="mb-2 flex flex-wrap gap-1.5 text-xs text-fg-soft">
+          {yourTurn && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent-strong px-2.5 py-0.5 font-medium text-on-accent-strong">
+              <Pen className="h-3 w-3" strokeWidth={2} />
+              Du bist dran
+            </span>
+          )}
+          {location &&
+            (locationHrefBase ? (
+              <Link
+                href={`${locationHrefBase}?ort=${encodeURIComponent(location)}`}
+                className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 transition hover:text-accent"
+              >
+                <MapPin className="h-3 w-3" strokeWidth={2} />
+                {location}
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5">
+                <MapPin className="h-3 w-3" strokeWidth={2} />
+                {location}
+              </span>
+            ))}
+          {inWorldTime && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5">
+              <Clock className="h-3 w-3" strokeWidth={2} />
+              {inWorldTime}
+            </span>
+          )}
+        </div>
       )}
       <Link href={detailHref} className="block">
         <h2 className="mb-1 flex items-center gap-2 font-serif text-2xl text-fg">

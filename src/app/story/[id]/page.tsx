@@ -10,11 +10,16 @@ import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { StoryPostControls } from "./story-post-controls";
+import { SceneMeta } from "./scene-meta";
+import { TurnBanner } from "./turn-banner";
+import { SceneRecap } from "./scene-recap";
 
 export default async function StoryPostDetailPage({
   params,
+  searchParams,
 }: PageProps<"/story/[id]">) {
   const { id } = await params;
+  const { as: asCharacterId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,6 +36,19 @@ export default async function StoryPostDetailPage({
   if (!storyPost) notFound();
 
   const activeCharacter = await getActiveCharacter(user.id, storyPost.world_id);
+
+  // Aus einer Benachrichtigung ("… wartet auf dich"): zum angesprochenen Charakter wechseln.
+  if (typeof asCharacterId === "string" && asCharacterId !== activeCharacter?.id) {
+    const { data: wanted } = await supabase
+      .from("characters")
+      .select("id")
+      .eq("id", asCharacterId)
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    if (wanted) {
+      redirect(`/switch-character?character=${wanted.id}&next=${encodeURIComponent(`/story/${id}`)}`);
+    }
+  }
 
   const { data: entries } = await supabase
     .from("story_entries")
@@ -60,6 +78,25 @@ export default async function StoryPostDetailPage({
       .maybeSingle(),
   ]);
   const isWorldOwner = world?.created_by === user.id;
+
+  const chapters = (entries ?? []).filter((e) => e.kind === "chapter");
+  const lastChapter = chapters[chapters.length - 1] ?? null;
+  const continuations = (entries ?? []).filter((e) => e.kind !== "chapter");
+  const writing = continuations.filter((e) => !e.roll_label);
+  const lastWriter = (entries ?? []).length ? entries![entries!.length - 1].characters : storyPost.characters;
+  const participantIds = Array.from(
+    new Set([storyPost.character_id, ...(entries ?? []).map((e) => e.character_id)]),
+  );
+  const turnCharacter = storyPost.turn_character_id
+    ? mentionableCharacters.find((c) => c.id === storyPost.turn_character_id) ?? null
+    : null;
+  const turnIsMine = !!turnCharacter && myCharacterIds.has(turnCharacter.id);
+  const recapItems = writing.map((e) => ({
+    id: e.id,
+    name: e.characters?.name ?? "?",
+    text: stripHtml(e.content),
+    at: e.created_at,
+  }));
 
   // Ingame-Beiträge, die mit dieser Story-Szene verknüpft sind ("Aus der Story").
   const { data: linkedPosts } = await supabase
@@ -110,27 +147,67 @@ export default async function StoryPostDetailPage({
             {storyPost.story_arcs.name}
           </Link>
         )}
-        <h1 className="mb-4 font-serif text-3xl text-fg">{storyPost.title}</h1>
+        <h1 className="mb-3 font-serif text-3xl text-fg">{storyPost.title}</h1>
+        <SceneMeta
+          storyPostId={storyPost.id}
+          location={storyPost.location}
+          inWorldTime={storyPost.in_world_time}
+          canEdit={myCharacterIds.has(storyPost.character_id)}
+        />
         <div
           className="post-content text-fg-soft"
           dangerouslySetInnerHTML={{ __html: sanitizePostHtml(storyPost.content) }}
         />
       </article>
 
+      {turnCharacter && !storyPost.locked && (
+        <TurnBanner
+          storyPostId={storyPost.id}
+          turnName={turnCharacter.name}
+          waitingName={lastWriter && lastWriter.id !== turnCharacter.id ? lastWriter.name : null}
+          isMine={turnIsMine}
+        />
+      )}
+
+      <SceneRecap
+        storyPostId={storyPost.id}
+        chapterTitle={lastChapter?.chapter_title ?? null}
+        chapterSummary={lastChapter?.chapter_summary ?? null}
+        items={recapItems}
+      />
+
+      {chapters.length > 0 && (
+        <nav aria-label="Kapitel" className="mb-4 flex flex-wrap gap-2">
+          {chapters.map((c, i) => (
+            <a
+              key={c.id}
+              href={`#kapitel-${i + 1}`}
+              className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-accent"
+            >
+              {i + 1} · {c.chapter_title}
+            </a>
+          ))}
+        </nav>
+      )}
+
       <h2 className="mb-4 font-serif text-xl text-fg">
-        Fortsetzungen {entries?.length ? `(${entries.length})` : ""}
+        Fortsetzungen {continuations.length ? `(${continuations.length})` : ""}
       </h2>
 
       <div className="mb-6 flex flex-col gap-4">
-        {entries?.map((entry) => (
-          <StoryEntryItem
-            key={entry.id}
-            entry={entry}
-            storyPostId={storyPost.id}
-            canManage={myCharacterIds.has(entry.character_id)}
-            mentionCharacters={mentionableCharacters}
-          />
-        ))}
+        {(() => {
+          let chapterCounter = 0;
+          return entries?.map((entry) => (
+            <StoryEntryItem
+              key={entry.id}
+              entry={entry}
+              storyPostId={storyPost.id}
+              canManage={myCharacterIds.has(entry.character_id)}
+              mentionCharacters={mentionableCharacters}
+              chapterNumber={entry.kind === "chapter" ? ++chapterCounter : undefined}
+            />
+          ));
+        })()}
       </div>
 
       {linkedPosts && linkedPosts.length > 0 && (
@@ -167,6 +244,7 @@ export default async function StoryPostDetailPage({
           worldId={storyPost.world_id}
           characterName={activeCharacter?.name ?? "deinem Charakter"}
           characters={rollTargets}
+          participantIds={participantIds}
           sheetUrl={activeCharacter?.sheet_url}
         />
       )}

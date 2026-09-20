@@ -13,13 +13,16 @@ export function StoryEntryItem({
   storyPostId,
   canManage,
   mentionCharacters,
+  chapterNumber,
 }: {
   entry: StoryEntry;
   storyPostId: string;
   canManage: boolean;
   mentionCharacters: Character[];
+  chapterNumber?: number;
 }) {
   const isRoll = !!entry.roll_label;
+  const isNarrator = entry.kind === "narrator";
   const [editing, setEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
   const updateAction = updateStoryEntry.bind(null, entry.id, storyPostId);
@@ -35,6 +38,65 @@ export function StoryEntryItem({
     if (!confirm("Diesen Eintrag wirklich löschen?")) return;
     const err = await deleteStoryEntry(entry.id, storyPostId);
     if (err) alert(err);
+  }
+
+  if (entry.kind === "chapter") {
+    return (
+      <div id={`kapitel-${chapterNumber}`} className="group my-4 scroll-mt-20 text-center">
+        <div className="flex items-center gap-3 text-muted">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-xs">Kapitel {chapterNumber}</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+        <h3 className="mt-2 font-serif text-2xl text-fg">{entry.chapter_title ?? entry.content}</h3>
+        {entry.chapter_summary && (
+          <p className="mx-auto mt-1 max-w-md text-sm italic text-muted">{entry.chapter_summary}</p>
+        )}
+        {canManage && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="mt-1 text-xs text-muted opacity-0 transition hover:text-red-500 group-hover:opacity-100 focus:opacity-100"
+          >
+            Kapitel entfernen
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (isNarrator && !editing) {
+    return (
+      <div className="group relative px-2 py-1 sm:px-6">
+        <div
+          className="post-content font-serif text-base italic leading-relaxed text-fg-soft"
+          dangerouslySetInnerHTML={{ __html: entry.content }}
+        />
+        <p className="mt-1 flex items-center justify-end gap-2 text-xs text-muted">
+          Erzähler:in · {entry.characters?.name}
+          {canManage && (
+            <span className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                title="Bearbeiten"
+                className="rounded p-1 hover:bg-surface-2 hover:text-fg"
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                title="Löschen"
+                className="rounded p-1 hover:bg-surface-2 hover:text-red-500"
+              >
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            </span>
+          )}
+        </p>
+      </div>
+    );
   }
 
   return (

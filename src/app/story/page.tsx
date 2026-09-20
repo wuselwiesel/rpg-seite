@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PenLine } from "lucide-react";
+import { MapPin, PenLine } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -17,6 +17,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const to = typeof params.to === "string" ? params.to : "";
   const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
   const arc = typeof params.arc === "string" ? params.arc.trim() : "";
+  const ort = typeof params.ort === "string" ? params.ort.trim() : "";
+  const onlyMyTurn = params.dran === "1";
   const showArchived = params.archived === "1";
   const bookmarkedOnly = params.bookmarked === "1";
 
@@ -47,6 +49,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   }
   if (tag) storyQuery = storyQuery.contains("tags", [tag]);
   if (arc) storyQuery = storyQuery.eq("arc_id", arc);
+  if (ort) storyQuery = storyQuery.eq("location", ort);
   if (from) storyQuery = storyQuery.gte("created_at", new Date(from).toISOString());
   if (to) {
     const toDate = new Date(to);
@@ -62,7 +65,17 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.in("id", bookmarkedIds.length > 0 ? bookmarkedIds : ["00000000-0000-0000-0000-000000000000"]);
   }
 
-  const [{ data: storyPosts }, { data: arcs }] = await Promise.all([
+  const { data: myChars } = await supabase
+    .from("characters")
+    .select("id")
+    .eq("owner_id", user.id)
+    .eq("world_id", activeWorld.id);
+  const myCharIds = (myChars ?? []).map((c) => c.id);
+  if (onlyMyTurn) {
+    storyQuery = storyQuery.in("turn_character_id", myCharIds.length ? myCharIds : ["00000000-0000-0000-0000-000000000000"]);
+  }
+
+  const [{ data: storyPosts }, { data: arcs }, { data: locationRows }, { count: myTurnCount }] = await Promise.all([
     storyQuery.returns<StoryPost[]>(),
     supabase
       .from("story_arcs")
@@ -70,7 +83,20 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       .eq("world_id", activeWorld.id)
       .order("name")
       .returns<(StoryArc & { story_posts: { count: number }[] })[]>(),
+    supabase
+      .from("story_posts")
+      .select("location")
+      .eq("world_id", activeWorld.id)
+      .eq("archived", false)
+      .not("location", "is", null),
+    supabase
+      .from("story_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("world_id", activeWorld.id)
+      .eq("archived", false)
+      .in("turn_character_id", myCharIds.length ? myCharIds : ["00000000-0000-0000-0000-000000000000"]),
   ]);
+  const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -106,9 +132,44 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         </div>
       )}
 
+      {locations.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <MapPin className="h-4 w-4 text-muted" strokeWidth={2} />
+          <Link
+            href="/story"
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              !ort ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+            }`}
+          >
+            Alle Orte
+          </Link>
+          {locations.map((l) => (
+            <Link
+              key={l}
+              href={`/story?ort=${encodeURIComponent(l)}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                ort === l ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+              }`}
+            >
+              {l}
+            </Link>
+          ))}
+        </div>
+      )}
+
       <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} />
 
       <div className="mb-4 flex flex-wrap gap-2">
+        {(myTurnCount ?? 0) > 0 && (
+          <Link
+            href={onlyMyTurn ? "/story" : "/story?dran=1"}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              onlyMyTurn ? "bg-accent-strong text-on-accent-strong" : "bg-accent-strong/15 text-accent hover:bg-accent-strong/25"
+            }`}
+          >
+            Du bist dran ({myTurnCount})
+          </Link>
+        )}
         <Link
           href={bookmarkedOnly ? "/story" : "/story?bookmarked=1"}
           className={`rounded-full px-3 py-1 text-xs font-medium transition ${
@@ -163,9 +224,13 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               arcHref={post.arc_id ? `/story?arc=${post.arc_id}` : undefined}
               isPrivate={post.is_private}
               pinned={post.pinned}
+              location={post.location}
+              inWorldTime={post.in_world_time}
+              locationHrefBase="/story"
+              yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
             />
           ))
-        ) : q || tag || from || to || arc ? (
+        ) : q || tag || from || to || arc || ort || onlyMyTurn ? (
           <p className="text-muted">Keine Einträge gefunden.</p>
         ) : (
           <p className="text-muted">

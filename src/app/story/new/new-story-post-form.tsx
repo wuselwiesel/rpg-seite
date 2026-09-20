@@ -11,14 +11,16 @@ const NEW_ARC_VALUE = "__new__";
 export function NewStoryPostForm({
   arcs,
   otherCharacters,
+  locations,
 }: {
   arcs: StoryArc[];
   otherCharacters: Character[];
+  locations: string[];
 }) {
   const [error, formAction, pending] = useActionState(createStoryPost, null);
   const [arcChoice, setArcChoice] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
-  const { draft, restored, update, clear } = useDraft("draft:story-new", { title: "", content: "" });
+  const { draft, restored, update, clear } = useDraft("draft:story-new", { title: "", content: "", location: "", in_world_time: "" });
 
   return (
     // createStoryPost redirect()s on success, which navigates away before any
@@ -47,6 +49,39 @@ export function NewStoryPostForm({
             onChange={(html) => update({ content: html })}
           />
         )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          Ort (optional)
+          <input
+            type="text"
+            name="location"
+            list="story-locations"
+            maxLength={80}
+            value={draft.location}
+            onChange={(e) => update({ location: e.target.value })}
+            placeholder="z. B. Schattenbibliothek"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+          />
+          <datalist id="story-locations">
+            {locations.map((l) => (
+              <option key={l} value={l} />
+            ))}
+          </datalist>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          Zeitpunkt in der Welt (optional)
+          <input
+            type="text"
+            name="in_world_time"
+            maxLength={80}
+            value={draft.in_world_time}
+            onChange={(e) => update({ in_world_time: e.target.value })}
+            placeholder="z. B. Tag 3, Abenddämmerung"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+          />
+        </label>
       </div>
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">

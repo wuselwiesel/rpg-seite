@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus, Dices } from "lucide-react";
+import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus, Dices, Hourglass } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import type { AppNotification } from "@/lib/notifications";
@@ -13,6 +13,7 @@ function iconForType(type: string) {
   if (type === "comment") return <MessageSquare className="h-4 w-4" strokeWidth={2} />;
   if (type === "like") return <Heart className="h-4 w-4" strokeWidth={2} />;
   if (type === "roll") return <Dices className="h-4 w-4" strokeWidth={2} />;
+  if (type === "turn") return <Hourglass className="h-4 w-4" strokeWidth={2} />;
   return <UserPlus className="h-4 w-4" strokeWidth={2} />;
 }
 

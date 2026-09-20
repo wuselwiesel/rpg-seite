@@ -95,6 +95,10 @@ export type StoryPost = {
   pinned: boolean;
   locked: boolean;
   archived: boolean;
+  location: string | null;
+  in_world_time: string | null;
+  turn_character_id: string | null;
+  turn_set_at: string | null;
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];
@@ -116,6 +120,9 @@ export type StoryEntry = {
   roll_success?: boolean | null;
   roll_target_character_id?: string | null;
   roll_target_character?: { name: string } | null;
+  kind?: "entry" | "narrator" | "chapter";
+  chapter_title?: string | null;
+  chapter_summary?: string | null;
 };
 
 export type Chat = {

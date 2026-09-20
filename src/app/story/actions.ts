@@ -81,6 +81,9 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
     arcId = selectedArcId;
   }
 
+  const location = String(formData.get("location") ?? "").trim().slice(0, 80) || null;
+  const inWorldTime = String(formData.get("in_world_time") ?? "").trim().slice(0, 80) || null;
+
   const isPrivate = formData.get("is_private") === "on";
   const viewerCharacterIds = formData.getAll("viewer_character_id").map(String).filter(Boolean);
 
@@ -94,6 +97,8 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
       content,
       tags,
       is_private: isPrivate,
+      location,
+      in_world_time: inWorldTime,
     })
     .select("id")
     .single();
@@ -110,6 +115,72 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
   redirect(`/story/${data.id}`);
 }
 
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+// Wer ist als Nächstes dran? Explizit gewählt oder automatisch: unter den bisher
+// Beteiligten (außer der Schreibenden) die Person, die am längsten nicht dran war.
+async function assignNextTurn(
+  supabase: SupabaseClient,
+  storyPostId: string,
+  writerCharacterId: string,
+  choice: string,
+): Promise<string | null> {
+  if (choice === "__none__") {
+    await supabase.rpc("set_story_turn", { p_story_post_id: storyPostId, p_character_id: null });
+    return null;
+  }
+  let nextId: string | null = null;
+  if (choice && choice !== writerCharacterId) {
+    nextId = choice;
+  } else {
+    const [{ data: post }, { data: entries }] = await Promise.all([
+      supabase.from("story_posts").select("character_id, created_at").eq("id", storyPostId).maybeSingle(),
+      supabase.from("story_entries").select("character_id, created_at").eq("story_post_id", storyPostId),
+    ]);
+    const lastActive = new Map<string, number>();
+    if (post) lastActive.set(post.character_id, new Date(post.created_at).getTime());
+    for (const e of entries ?? []) {
+      const t = new Date(e.created_at).getTime();
+      if (t > (lastActive.get(e.character_id) ?? 0)) lastActive.set(e.character_id, t);
+    }
+    lastActive.delete(writerCharacterId);
+    let oldest = Infinity;
+    for (const [id, t] of lastActive) {
+      if (t < oldest) {
+        oldest = t;
+        nextId = id;
+      }
+    }
+  }
+  await supabase.rpc("set_story_turn", { p_story_post_id: storyPostId, p_character_id: nextId });
+  return nextId;
+}
+
+// Benachrichtigt die Person, die als Nächstes dran ist ("<Schreibende> wartet auf dich").
+async function notifyTurn(
+  supabase: SupabaseClient,
+  storyPostId: string,
+  title: string,
+  writerUserId: string,
+  writerCharacterId: string,
+  turnCharacterId: string,
+) {
+  const [{ data: target }, { data: writer }] = await Promise.all([
+    supabase.from("characters").select("owner_id, name").eq("id", turnCharacterId).maybeSingle(),
+    supabase.from("characters").select("name, avatar_url").eq("id", writerCharacterId).maybeSingle(),
+  ]);
+  if (!target || target.owner_id === writerUserId) return;
+  await createNotification(supabase, {
+    userId: target.owner_id,
+    type: "turn",
+    actorName: writer?.name ?? "Jemand",
+    actorAvatarUrl: writer?.avatar_url ?? null,
+    link: `/story/${storyPostId}?as=${turnCharacterId}`,
+    message: `wartet in „${title}“ auf dich`,
+    recipientName: target.name,
+  });
+}
+
 export async function createStoryEntry(
   storyPostId: string,
   worldId: string,
@@ -119,6 +190,8 @@ export async function createStoryEntry(
   const rawContent = String(formData.get("content") ?? "").trim();
   const content = sanitizePostHtml(rawContent);
   if (!stripHtml(content)) return "Text darf nicht leer sein.";
+  const narrator = formData.get("narrator") === "on";
+  const nextChoice = String(formData.get("next_character_id") ?? "").trim();
 
   const supabase = await createClient();
   const {
@@ -131,7 +204,7 @@ export async function createStoryEntry(
 
   const { error } = await supabase
     .from("story_entries")
-    .insert({ story_post_id: storyPostId, character_id: characterId, content });
+    .insert({ story_post_id: storyPostId, character_id: characterId, content, kind: narrator ? "narrator" : "entry" });
 
   if (error) return error.message;
 
@@ -143,7 +216,138 @@ export async function createStoryEntry(
     "hat dich in der Story erwähnt",
   );
 
+  await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice);
+
   revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story");
+  return null;
+}
+
+// Nach jedem Beitrag (Fortsetzung, Wurf, Kapitel): Zug weitergeben und Bescheid sagen.
+async function afterWriting(
+  supabase: SupabaseClient,
+  storyPostId: string,
+  userId: string,
+  characterId: string,
+  nextChoice: string,
+  notify = true,
+) {
+  const { data: before } = await supabase
+    .from("story_posts")
+    .select("title, turn_character_id")
+    .eq("id", storyPostId)
+    .maybeSingle();
+  const next = await assignNextTurn(supabase, storyPostId, characterId, nextChoice);
+  if (notify && next && next !== before?.turn_character_id && before) {
+    await notifyTurn(supabase, storyPostId, before.title, userId, characterId, next);
+  }
+}
+
+export async function createChapter(
+  storyPostId: string,
+  worldId: string,
+  title: string,
+  summary: string,
+): Promise<string | null> {
+  const chapterTitle = title.trim().slice(0, 100);
+  const chapterSummary = summary.trim().slice(0, 1500);
+  if (!chapterTitle) return "Gib dem Kapitel einen Titel.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const characterId = await getActiveCharacterInWorld(user.id, worldId);
+  if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
+
+  const { error } = await supabase.from("story_entries").insert({
+    story_post_id: storyPostId,
+    character_id: characterId,
+    content: chapterTitle,
+    kind: "chapter",
+    chapter_title: chapterTitle,
+    chapter_summary: chapterSummary || null,
+  });
+  if (error) return error.message;
+
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
+// Zug manuell setzen ("Als Nächstes: …") oder freigeben (null).
+export async function setStoryTurn(storyPostId: string, characterId: string | null): Promise<string | null> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_story_turn", {
+    p_story_post_id: storyPostId,
+    p_character_id: characterId,
+  });
+  if (error) return error.message;
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story");
+  return null;
+}
+
+// Push-Erinnerung an die Person, die dran ist (höchstens alle 30 Minuten pro Szene).
+export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Nicht angemeldet." };
+
+  const { data: post } = await supabase
+    .from("story_posts")
+    .select("title, world_id, turn_character_id")
+    .eq("id", storyPostId)
+    .maybeSingle();
+  if (!post?.turn_character_id) return { ok: false, message: "Gerade ist niemand dran." };
+
+  const { data: target } = await supabase
+    .from("characters")
+    .select("owner_id, name")
+    .eq("id", post.turn_character_id)
+    .maybeSingle();
+  if (!target) return { ok: false, message: "Charakter nicht gefunden." };
+  if (target.owner_id === user.id) return { ok: false, message: "Du bist selbst dran." };
+
+  const { data: allowed } = await supabase.rpc("touch_turn_reminder", { p_story_post_id: storyPostId });
+  if (!allowed) return { ok: false, message: "Du hast vor Kurzem schon erinnert. Warte ein bisschen." };
+
+  const actor = await getActiveCharacterInWorld(user.id, post.world_id);
+  const { data: writer } = actor
+    ? await supabase.from("characters").select("name, avatar_url").eq("id", actor).maybeSingle()
+    : { data: null };
+
+  await createNotification(supabase, {
+    userId: target.owner_id,
+    type: "turn",
+    actorName: writer?.name ?? "Jemand",
+    actorAvatarUrl: writer?.avatar_url ?? null,
+    link: `/story/${storyPostId}?as=${post.turn_character_id}`,
+    message: `wartet in „${post.title}“ auf dich`,
+    recipientName: target.name,
+  });
+  return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
+}
+
+export async function updateStoryMeta(
+  storyPostId: string,
+  location: string,
+  inWorldTime: string,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("story_posts")
+    .update(
+      { location: location.trim().slice(0, 80) || null, in_world_time: inWorldTime.trim().slice(0, 80) || null },
+      { count: "exact" },
+    )
+    .eq("id", storyPostId);
+  if (error) return error.message;
+  if (!count) return "Nur die Autor:in der Szene kann Ort und Zeit ändern.";
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story");
   return null;
 }
 
@@ -244,6 +448,9 @@ export async function createDiceRoll(
   });
 
   if (error) return error.message;
+
+  // Bei einem Wurf auf jemanden gibt es schon die Wurf-Benachrichtigung.
+  await afterWriting(supabase, storyPostId, user.id, characterId, targetCharacterId ?? "", !targetCharacterId);
 
   if (targetCharacterId && targetCharacterId !== characterId) {
     const { data: target } = await supabase
