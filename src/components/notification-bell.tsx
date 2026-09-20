@@ -131,11 +131,11 @@ export function NotificationBell({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface shadow-lg lg:right-auto lg:left-0">
+        <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+3.75rem)] z-50 rounded-2xl border border-line bg-surface shadow-lg lg:absolute lg:inset-x-auto lg:left-0 lg:top-full lg:mt-2 lg:w-80">
           <div className="border-b border-line px-4 py-3">
             <p className="font-serif text-lg text-fg">Benachrichtigungen</p>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[70dvh] overflow-y-auto lg:max-h-96">
             {notifications.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-muted">Noch keine Benachrichtigungen.</p>
             ) : (
