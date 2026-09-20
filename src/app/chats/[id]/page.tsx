@@ -51,14 +51,17 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
     }
   }
 
-  const [{ data: messages }, { data: myCharacters }] = await Promise.all([
+  const [{ data: messages }, { data: myCharacters }, { data: reads }] = await Promise.all([
     supabase
       .from("messages")
-      .select("*, characters(*), reactions(emoji, character_id)")
+      .select(
+        "*, characters(*), reactions(emoji, character_id), shared_post:shared_post_id(id, content, media_url, media_type, media_urls, characters(name, username, avatar_url)), story:story_id(id, image_url, video_url, bg, text_content, expires_at)",
+      )
       .eq("chat_id", id)
       .order("created_at", { ascending: true })
       .returns<Message[]>(),
     supabase.from("characters").select("id").eq("owner_id", user.id),
+    supabase.from("chat_reads").select("user_id, last_read_at").eq("chat_id", id).neq("user_id", user.id),
   ]);
   const myCharacterIds = (myCharacters ?? []).map((c) => c.id);
 
@@ -90,6 +93,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       initialMessages={messages ?? []}
       activeCharacter={activeCharacter}
       myCharacterIds={myCharacterIds}
+      initialReads={reads ?? []}
     />
   );
 }

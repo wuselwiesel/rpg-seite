@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { Heart, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
-import { deleteHighlight, deleteStory } from "@/app/stories/actions";
+import { deleteHighlight, deleteStory, replyToStory, toggleStoryLike } from "@/app/stories/actions";
+import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/stories";
 import { StoryStage } from "./story-stage";
 import type { Story } from "@/lib/types";
@@ -69,7 +70,10 @@ export function StoryLauncher({
   className = "",
   children,
   label,
+  viewerCharacterId,
 }: {
+  // Aktiver Charakter der betrachtenden Person: darf liken und antworten (außer bei eigenen Storys).
+  viewerCharacterId?: string;
   groups: StoryGroup[];
   startIndex?: number;
   // Ring im Instagram-Stil (Farbverlauf = ungesehen, grau = gesehen); ohne Angabe kein Ring.
@@ -99,7 +103,14 @@ export function StoryLauncher({
           children
         )}
       </button>
-      {open && <StoryViewer groups={groups} startIndex={startIndex} onClose={() => setOpen(false)} />}
+      {open && (
+        <StoryViewer
+          groups={groups}
+          startIndex={startIndex}
+          viewerCharacterId={viewerCharacterId}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -107,10 +118,12 @@ export function StoryLauncher({
 function StoryViewer({
   groups: initialGroups,
   startIndex,
+  viewerCharacterId,
   onClose,
 }: {
   groups: StoryGroup[];
   startIndex: number;
+  viewerCharacterId?: string;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -118,15 +131,25 @@ function StoryViewer({
   const [gi, setGi] = useState(startIndex);
   const [si, setSi] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [holdPaused, setPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const holdRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(false);
+  const [likes, setLikes] = useState<string[]>([]);
+  const [replyText, setReplyText] = useState("");
+  const [replyFocus, setReplyFocus] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [showHeart, setShowHeart] = useState(false);
+  const flash = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2200);
+  };
   // Videos bestimmen ihre eigene Laufzeit (max. 60 s), Bilder und Text laufen SLIDE_MS.
   const [videoMs, setVideoMs] = useState<{ id: string; ms: number } | null>(null);
 
+  const paused = holdPaused || replyFocus;
   const group = groups[gi];
   const story = group?.stories[si];
   const slideMs = story && videoMs?.id === story.id ? videoMs.ms : SLIDE_MS;
@@ -153,6 +176,23 @@ function StoryViewer({
   useEffect(() => {
     if (story) markSeen(story.id);
   }, [story]);
+
+  // Herzen der aktuellen Story laden (Anzahl für die Besitzerin, "geliked" für alle anderen).
+  const storyId = story?.id;
+  useEffect(() => {
+    if (!storyId) return;
+    let cancelled = false;
+    createClient()
+      .from("story_likes")
+      .select("character_id")
+      .eq("story_id", storyId)
+      .then(({ data }) => {
+        if (!cancelled) setLikes((data ?? []).map((r) => r.character_id as string));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [storyId]);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -188,6 +228,7 @@ function StoryViewer({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement | null)?.tagName === "INPUT") return;
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") prev();
@@ -231,6 +272,37 @@ function StoryViewer({
     }
     setProgress(0);
     setPaused(false);
+  }
+
+  const iLiked = Boolean(viewerCharacterId && likes.includes(viewerCharacterId));
+  const canInteract = Boolean(viewerCharacterId && group && story && group.characterId !== viewerCharacterId);
+
+  async function handleLike() {
+    if (!story || !viewerCharacterId) return;
+    const wasLiked = iLiked;
+    setLikes((prev) => (wasLiked ? prev.filter((id) => id !== viewerCharacterId) : [...prev, viewerCharacterId]));
+    if (!wasLiked) {
+      setShowHeart(true);
+      setTimeout(() => setShowHeart(false), 900);
+    }
+    const result = await toggleStoryLike(story.id);
+    if ("error" in result) {
+      setLikes((prev) => (wasLiked ? [...prev, viewerCharacterId] : prev.filter((id) => id !== viewerCharacterId)));
+      flash(result.error);
+    }
+  }
+
+  async function handleReply(e: React.FormEvent) {
+    e.preventDefault();
+    if (!story || !replyText.trim()) return;
+    const text = replyText;
+    setReplyText("");
+    (document.activeElement as HTMLElement | null)?.blur();
+    const err = await replyToStory(story.id, text);
+    if (err) {
+      setReplyText(text);
+      flash(err);
+    } else flash("Antwort gesendet");
   }
 
   if (!group || !story) return null;
@@ -325,6 +397,61 @@ function StoryViewer({
           </div>
           {error && <p className="mt-2 rounded-md bg-red-600/80 px-3 py-1.5 text-xs text-white">{error}</p>}
         </div>
+
+        {showHeart && (
+          <Heart
+            aria-hidden
+            className="heart-pop pointer-events-none absolute left-1/2 top-1/2 z-10 h-28 w-28 fill-white text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
+            strokeWidth={0}
+          />
+        )}
+        {toast && (
+          <p className="pointer-events-none absolute inset-x-0 bottom-20 z-10 mx-auto w-fit rounded-full bg-black/70 px-4 py-2 text-sm text-white">
+            {toast}
+          </p>
+        )}
+
+        {canInteract ? (
+          <form
+            onSubmit={handleReply}
+            className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 bg-gradient-to-t from-black/60 to-transparent px-3 pt-8"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          >
+            <input
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onFocus={() => setReplyFocus(true)}
+              onBlur={() => setReplyFocus(false)}
+              maxLength={1000}
+              placeholder={`Antworten an ${group.characterName}...`}
+              aria-label="Auf die Story antworten"
+              className="min-w-0 flex-1 rounded-full border border-white/60 bg-black/20 px-4 py-2.5 text-base text-white outline-none placeholder:text-white/75 focus:border-white"
+            />
+            {replyText.trim() ? (
+              <button type="submit" aria-label="Antwort senden" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white">
+                <Send className="h-6 w-6" strokeWidth={2} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLike}
+                aria-pressed={iLiked}
+                aria-label={iLiked ? "Gefällt mir nicht mehr" : "Gefällt mir"}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition active:scale-90"
+              >
+                <Heart className={`h-7 w-7 ${iLiked ? "fill-[#ed4956] text-[#ed4956]" : ""}`} strokeWidth={iLiked ? 0 : 2} />
+              </button>
+            )}
+          </form>
+        ) : group.canManage && likes.length > 0 ? (
+          <p
+            className="absolute bottom-0 left-0 z-10 flex items-center gap-1.5 px-4 text-sm font-medium text-white"
+            style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+          >
+            <Heart className="h-4 w-4 fill-white" strokeWidth={0} />
+            {likes.length}
+          </p>
+        ) : null}
       </div>
     </div>,
     document.body,

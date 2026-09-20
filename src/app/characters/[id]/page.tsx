@@ -146,7 +146,7 @@ export default async function CharacterProfilePage({
               return (
                 <div className="relative">
                   {storyGroups.length > 0 ? (
-                    <StoryLauncher groups={storyGroups} ringWidth={3} label="Story ansehen">
+                    <StoryLauncher groups={storyGroups} ringWidth={3} label="Story ansehen" viewerCharacterId={activeCharacter?.id}>
                       {avatar}
                     </StoryLauncher>
                   ) : (
@@ -251,7 +251,7 @@ export default async function CharacterProfilePage({
               const cover = g.stories[0];
               return (
                 <div key={g.key} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
-                  <StoryLauncher groups={highlightGroups} startIndex={i} ringWidth={2} label={`Highlight ${g.label}`}>
+                  <StoryLauncher groups={highlightGroups} startIndex={i} ringWidth={2} label={`Highlight ${g.label}`} viewerCharacterId={activeCharacter?.id}>
                     <span className="block h-14 w-14 overflow-hidden rounded-full bg-surface-2">
                       {cover.video_url ? (
                         <video src={`${cover.video_url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />

@@ -20,7 +20,7 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
       .returns<Character[]>(),
     supabase
       .from("stories")
-      .select("*, characters!inner(world_id)")
+      .select("*, characters!stories_character_id_fkey!inner(world_id)")
       .eq("characters.world_id", worldId)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: true })
@@ -71,6 +71,7 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
                   groups={groups}
                   startIndex={groupIndex}
                   ringWidth={2.5}
+                  viewerCharacterId={activeCharacterId}
                   label={`Story von ${character.name} ansehen`}
                   className="flex w-full flex-col items-center gap-1.5"
                 >

@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
+import { createNotification } from "@/lib/notifications";
+import { sendMessage } from "@/app/chats/actions";
 import { STORY_DURATIONS, isValidStoryBg, parseOverlays } from "@/lib/stories";
 
 export async function createStory(_prev: string | null, formData: FormData) {
@@ -91,4 +93,109 @@ export async function deleteHighlight(highlightId: string, characterId: string):
   if (!count) return "Highlight konnte nicht gelöscht werden.";
   revalidatePath(`/characters/${characterId}`);
   return null;
+}
+
+type StoryOwner = { id: string; character_id: string; characters: { owner_id: string; name: string } | null };
+
+async function activeViewer() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const world = await getActiveWorld(user.id);
+  const character = world ? await getActiveCharacter(user.id, world.id) : null;
+  return character ? { supabase, user, character } : null;
+}
+
+// Herz auf eine Story (an/aus) im Namen des aktiven Charakters.
+export async function toggleStoryLike(storyId: string): Promise<{ liked: boolean } | { error: string }> {
+  const viewer = await activeViewer();
+  if (!viewer) return { error: "Du brauchst einen aktiven Charakter." };
+  const { supabase, character } = viewer;
+
+  const { data: existing } = await supabase
+    .from("story_likes")
+    .select("story_id")
+    .eq("story_id", storyId)
+    .eq("character_id", character.id)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from("story_likes").delete().eq("story_id", storyId).eq("character_id", character.id);
+    return error ? { error: error.message } : { liked: false };
+  }
+
+  const { error } = await supabase.from("story_likes").insert({ story_id: storyId, character_id: character.id });
+  if (error) return { error: error.message };
+
+  const { data: story } = await supabase
+    .from("stories")
+    .select("id, character_id, characters!stories_character_id_fkey(owner_id, name)")
+    .eq("id", storyId)
+    .maybeSingle<StoryOwner>();
+  if (story?.characters && story.characters.owner_id !== viewer.user.id) {
+    await createNotification(supabase, {
+      userId: story.characters.owner_id,
+      type: "story_like",
+      actorName: character.name,
+      actorAvatarUrl: character.avatar_url,
+      link: `/characters/${story.character_id}`,
+      message: "gefällt deine Story",
+    });
+  }
+  return { liked: true };
+}
+
+// Antwort auf eine Story: landet als Nachricht (mit Story-Vorschau) im 1:1-Chat der beiden Charaktere.
+export async function replyToStory(storyId: string, text: string): Promise<string | null> {
+  const content = text.trim().slice(0, 1000);
+  if (!content) return "Schreib eine Antwort.";
+  const viewer = await activeViewer();
+  if (!viewer) return "Du brauchst einen aktiven Charakter.";
+  const { supabase, user, character } = viewer;
+
+  const { data: story } = await supabase
+    .from("stories")
+    .select("id, character_id, characters!stories_character_id_fkey(owner_id, name)")
+    .eq("id", storyId)
+    .maybeSingle<StoryOwner>();
+  if (!story?.characters) return "Story nicht gefunden.";
+  if (story.character_id === character.id) return "Du kannst nicht auf deine eigene Story antworten.";
+
+  // Bestehenden 1:1-Chat suchen …
+  const { data: mine } = await supabase
+    .from("chat_participants")
+    .select("chat_id, chats!inner(is_group)")
+    .eq("character_id", character.id)
+    .eq("chats.is_group", false);
+  const myChatIds = (mine ?? []).map((r) => r.chat_id as string);
+  let chatId: string | null = null;
+  if (myChatIds.length) {
+    const { data: match } = await supabase
+      .from("chat_participants")
+      .select("chat_id")
+      .eq("character_id", story.character_id)
+      .in("chat_id", myChatIds)
+      .limit(1);
+    chatId = match?.[0]?.chat_id ?? null;
+  }
+
+  // … sonst neu anlegen.
+  if (!chatId) {
+    const { data: chat, error: chatError } = await supabase
+      .from("chats")
+      .insert({ is_group: false, created_by: user.id })
+      .select("id")
+      .single();
+    if (chatError || !chat) return chatError?.message ?? "Chat konnte nicht erstellt werden.";
+    const { error: partError } = await supabase.from("chat_participants").insert([
+      { chat_id: chat.id, character_id: character.id },
+      { chat_id: chat.id, character_id: story.character_id },
+    ]);
+    if (partError) return partError.message;
+    chatId = chat.id;
+  }
+
+  return sendMessage(chatId!, character.id, content, null, { storyId });
 }

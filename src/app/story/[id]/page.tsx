@@ -3,7 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, timeAgoShort } from "@/lib/format";
+import { stripHtml } from "@/lib/strip-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
@@ -60,6 +61,25 @@ export default async function StoryPostDetailPage({
   ]);
   const isWorldOwner = world?.created_by === user.id;
 
+  // Ingame-Beiträge, die mit dieser Story-Szene verknüpft sind ("Aus der Story").
+  const { data: linkedPosts } = await supabase
+    .from("posts")
+    .select("id, content, media_url, media_type, created_at, characters(name, username)")
+    .eq("story_post_id", id)
+    .lte("publish_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(10)
+    .returns<
+      {
+        id: string;
+        content: string;
+        media_url: string | null;
+        media_type: string | null;
+        created_at: string;
+        characters: { name: string; username: string | null } | null;
+      }[]
+    >();
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <article className="mb-8 rounded-lg border border-line bg-surface p-6">
@@ -112,6 +132,32 @@ export default async function StoryPostDetailPage({
           />
         ))}
       </div>
+
+      {linkedPosts && linkedPosts.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-3 font-serif text-xl text-fg">Im Ingame-Feed dazu</h2>
+          <ul className="flex flex-col gap-2">
+            {linkedPosts.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/posts/${p.id}`}
+                  className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-fg">
+                      {p.characters?.username ?? p.characters?.name}
+                    </p>
+                    <p className="truncate text-xs text-muted">
+                      {stripHtml(p.content) || (p.media_type === "video" ? "Video" : "Foto")}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs text-muted">{timeAgoShort(p.created_at)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {storyPost.locked ? (
         <p className="text-sm text-muted">Diese Szene ist gesperrt – keine neuen Fortsetzungen möglich.</p>

@@ -2,14 +2,14 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { ReactionBar } from "@/components/reaction-bar";
 import { AvatarUpload } from "@/components/avatar-upload";
-import { formatDateTime } from "@/lib/format";
+import { resizeImage } from "@/lib/image-resize";
 import { aggregateReactions } from "@/lib/reactions";
 import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, updateMessage } from "../actions";
+import { MessageBubble } from "./message-bubble";
 import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
@@ -24,6 +24,7 @@ export function ChatRoom({
   initialMessages,
   activeCharacter,
   myCharacterIds,
+  initialReads,
 }: {
   chatId: string;
   userId: string;
@@ -36,6 +37,8 @@ export function ChatRoom({
   initialMessages: Message[];
   activeCharacter: Character;
   myCharacterIds: string[];
+  // Lesezeitpunkte der anderen Teilnehmer:innen (für "Gelesen")
+  initialReads: { user_id: string; last_read_at: string }[];
 }) {
   // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
   const myCharacterIdSet = new Set([activeCharacter.id]);
@@ -48,6 +51,11 @@ export function ChatRoom({
   const [renaming, setRenaming] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [reads, setReads] = useState(initialReads);
+  const [typing, setTyping] = useState<Record<string, { name: string; until: number }>>({});
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const lastTypingSent = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
   const addAction = addChatParticipant.bind(null, chatId);
@@ -68,6 +76,30 @@ export function ChatRoom({
       .then();
   }
 
+  // Zusatzdaten (geteilter Beitrag / Story) einer neu eingetroffenen Nachricht nachladen.
+  async function loadExtras(row: Omit<Message, "characters">) {
+    const patch: Partial<Message> = {};
+    if (row.shared_post_id) {
+      const { data } = await supabase
+        .from("posts")
+        .select("id, content, media_url, media_type, media_urls, characters(name, username, avatar_url)")
+        .eq("id", row.shared_post_id)
+        .maybeSingle();
+      if (data) patch.shared_post = data as unknown as Message["shared_post"];
+    }
+    if (row.story_id) {
+      const { data } = await supabase
+        .from("stories")
+        .select("id, image_url, video_url, bg, text_content, expires_at")
+        .eq("id", row.story_id)
+        .maybeSingle();
+      if (data) patch.story = data as Message["story"];
+    }
+    if (Object.keys(patch).length) {
+      setMessages((prev) => prev.map((m) => (m.id === row.id ? { ...m, ...patch } : m)));
+    }
+  }
+
   useEffect(() => {
     markAsRead();
 
@@ -80,9 +112,20 @@ export function ChatRoom({
           const row = payload.new as Omit<Message, "characters">;
           const character = participants.find((p) => p.id === row.character_id) ?? null;
           setMessages((prev) =>
-            prev.some((m) => m.id === row.id) ? prev : [...prev, { ...row, characters: character }],
+            prev.some((m) => m.id === row.id)
+              ? // bereits optimistisch angezeigt: als zugestellt markieren
+                prev.map((m) => (m.id === row.id ? { ...m, ...row, characters: m.characters ?? character, pending: false } : m))
+              : [...prev, { ...row, characters: character }],
           );
-          if (!myCharacterIds.includes(row.character_id)) markAsRead();
+          if (row.shared_post_id || row.story_id) loadExtras(row);
+          if (!myCharacterIds.includes(row.character_id)) {
+            markAsRead();
+            setTyping((prev) => {
+              const next = { ...prev };
+              delete next[row.character_id];
+              return next;
+            });
+          }
         },
       )
       .on(
@@ -101,13 +144,52 @@ export function ChatRoom({
           setMessages((prev) => prev.filter((m) => m.id !== row.id));
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "chat_reads", filter: `chat_id=eq.${chatId}` },
+        (payload) => {
+          const row = payload.new as { user_id?: string; last_read_at?: string };
+          if (!row.user_id || row.user_id === userId || !row.last_read_at) return;
+          setReads((prev) => [...prev.filter((r) => r.user_id !== row.user_id), { user_id: row.user_id!, last_read_at: row.last_read_at! }]);
+        },
+      )
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        const { characterId, name } = payload as { characterId: string; name: string };
+        setTyping((prev) => ({ ...prev, [characterId]: { name, until: Date.now() + 4000 } }));
+      })
       .subscribe();
+    channelRef.current = channel;
 
     return () => {
+      channelRef.current = null;
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
+
+  // "schreibt gerade..." verschwindet nach ein paar Sekunden ohne neues Signal.
+  useEffect(() => {
+    if (Object.keys(typing).length === 0) return;
+    const timer = setInterval(() => {
+      setTyping((prev) => {
+        const now = Date.now();
+        const next = Object.fromEntries(Object.entries(prev).filter(([, v]) => v.until > now));
+        return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [typing]);
+
+  function announceTyping() {
+    const now = Date.now();
+    if (now - lastTypingSent.current < 2500) return;
+    lastTypingSent.current = now;
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { characterId: activeCharacter.id, name: activeCharacter.name },
+    });
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -127,8 +209,8 @@ export function ChatRoom({
       setImageError("Nur Bilder können gesendet werden.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setImageError("Bild ist zu groß (max. 5 MB).");
+    if (file.size > 25 * 1024 * 1024) {
+      setImageError("Bild ist zu groß (max. 25 MB).");
       return;
     }
     setImageError(null);
@@ -146,35 +228,70 @@ export function ChatRoom({
     const content = draft.trim();
     if ((!content && !pendingImage) || sending) return;
 
-    setSending(true);
+    const id = crypto.randomUUID();
+    const reply = replyTo;
+    const previousImage = pendingImage;
     setImageError(null);
-    let imageUrl: string | null = null;
 
-    if (pendingImage) {
-      const ext = pendingImage.file.name.split(".").pop() || "jpg";
+    // Sofort anzeigen (optimistisch), Bild-Upload und Server laufen im Hintergrund.
+    setMessages((prev) => [
+      ...prev,
+      {
+        id,
+        chat_id: chatId,
+        character_id: activeCharacter.id,
+        content,
+        image_url: previousImage?.previewUrl ?? null,
+        reply_to_id: reply?.id ?? null,
+        created_at: new Date().toISOString(),
+        characters: activeCharacter,
+        reactions: [],
+        pending: true,
+      },
+    ]);
+    setDraft("");
+    setReplyTo(null);
+    setPendingImage(null);
+
+    function fail(message: string) {
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      setDraft(content);
+      setReplyTo(reply);
+      setPendingImage(previousImage);
+      setImageError(message);
+    }
+
+    let imageUrl: string | null = null;
+    if (previousImage) {
+      setSending(true);
+      const file = await resizeImage(previousImage.file);
+      const ext = file.name.split(".").pop() || "jpg";
       const path = `${chatId}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("chat-media").upload(path, pendingImage.file);
-      if (uploadError) {
-        setImageError(uploadError.message);
-        setSending(false);
-        return;
-      }
+      const { error: uploadError } = await supabase.storage.from("chat-media").upload(path, file);
+      setSending(false);
+      if (uploadError) return fail(uploadError.message);
       imageUrl = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
     }
 
-    const previousImage = pendingImage;
-    setDraft("");
-    setPendingImage(null);
-    const error = await sendMessage(chatId, activeCharacter.id, content, imageUrl);
-    setSending(false);
+    const error = await sendMessage(chatId, activeCharacter.id, content, imageUrl, {
+      id,
+      replyToId: reply?.id ?? null,
+    });
+    if (error) return fail(error);
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pending: false, image_url: imageUrl ?? m.image_url } : m)));
+    if (previousImage) URL.revokeObjectURL(previousImage.previewUrl);
+  }
 
-    if (error) {
-      setDraft(content);
-      setPendingImage(previousImage);
-      alert(error);
-    } else if (previousImage) {
-      URL.revokeObjectURL(previousImage.previewUrl);
-    }
+  // "Gelesen" unter der letzten eigenen Nachricht (1:1) bzw. "Gelesen von N" (Gruppen).
+  function receiptLabel(message: Message) {
+    if (message.pending) return "Wird gesendet…";
+    const otherOwners = new Set(participants.map((p) => p.owner_id).filter((o) => o !== userId));
+    if (otherOwners.size === 0) return "Gesendet";
+    const readers = reads.filter(
+      (r) => otherOwners.has(r.user_id) && new Date(r.last_read_at) >= new Date(message.created_at),
+    ).length;
+    if (readers === 0) return "Gesendet";
+    return otherOwners.size === 1 ? "Gelesen" : `Gelesen von ${readers}`;
   }
 
   async function handleDeleteChat() {
@@ -335,105 +452,42 @@ export function ChatRoom({
 
       <div className="flex-1 overflow-y-auto py-4">
         <div className="flex flex-col gap-3">
-          {messages.map((message) => {
+          {messages.map((message, index) => {
             const isOwn = message.character_id === activeCharacter.id;
+            const isLast = index === messages.length - 1;
             return (
-              <div
-                key={message.id}
-                className={`flex gap-2 ${isOwn ? "flex-row-reverse" : ""}`}
-              >
-                <CharacterAvatar
-                  name={message.characters?.name ?? "?"}
-                  avatarUrl={message.characters?.avatar_url}
-                  size={28}
+              <div key={message.id} className="flex flex-col">
+                <MessageBubble
+                  message={message}
+                  isOwn={isOwn}
+                  activeCharacter={activeCharacter}
+                  replyTarget={message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : undefined}
+                  reactions={aggregateReactions(message.reactions, myCharacterIdSet)}
+                  editing={editingId === message.id}
+                  editDraft={editDraft}
+                  onEditDraft={setEditDraft}
+                  onStartEdit={() => startEdit(message)}
+                  onSaveEdit={() => handleSaveEdit(message.id)}
+                  onCancelEdit={() => setEditingId(null)}
+                  onDelete={() => handleDelete(message.id)}
+                  onReply={() => setReplyTo(message)}
                 />
-                <div
-                  className={`group max-w-[75%] rounded-lg px-3 py-2 ${
-                    isOwn ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg"
-                  }`}
-                >
-                  <div className="mb-0.5 flex items-center gap-1.5">
-                    <p className="text-xs">
-                      {message.characters?.name} · {formatDateTime(message.created_at)}
-                      {message.updated_at && " · bearbeitet"}
-                    </p>
-                    {isOwn && editingId !== message.id && (
-                      <span className="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(message)}
-                          title="Bearbeiten"
-                          className="rounded p-0.5 hover:bg-black/10"
-                        >
-                          <Pencil className="h-3 w-3" strokeWidth={2} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(message.id)}
-                          title="Löschen"
-                          className="rounded p-0.5 hover:bg-black/10"
-                        >
-                          <Trash2 className="h-3 w-3" strokeWidth={2} />
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                  {editingId === message.id ? (
-                    <div className="flex flex-col gap-1.5">
-                      <input
-                        type="text"
-                        value={editDraft}
-                        onChange={(e) => setEditDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleSaveEdit(message.id);
-                          if (e.key === "Escape") setEditingId(null);
-                        }}
-                        autoFocus
-                        className="rounded-md border border-line bg-app px-2 py-1 text-sm text-fg outline-none focus:border-accent"
-                      />
-                      <div className="flex gap-2 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEdit(message.id)}
-                          className="hover:underline"
-                        >
-                          Speichern
-                        </button>
-                        <button type="button" onClick={() => setEditingId(null)} className="opacity-90 hover:underline">
-                          Abbrechen
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {message.image_url && (
-                        <a href={message.image_url} target="_blank" rel="noreferrer" className="mb-1 block">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={message.image_url}
-                            alt="Gesendetes Bild"
-                            className="max-h-72 max-w-full rounded-md object-cover"
-                          />
-                        </a>
-                      )}
-                      {message.content && (
-                        <p className="text-[15px] leading-relaxed whitespace-pre-line">{message.content}</p>
-                      )}
-                    </>
-                  )}
-                  {editingId !== message.id && (
-                    <div className="mt-1.5">
-                      <ReactionBar
-                        onBubble
-                        target={{ messageId: message.id, characterId: activeCharacter.id }}
-                        initialReactions={aggregateReactions(message.reactions, myCharacterIdSet)}
-                      />
-                    </div>
-                  )}
-                </div>
+                {isLast && myCharacterIds.includes(message.character_id) && (
+                  <p className="mt-1 text-right text-[11px] text-muted">{receiptLabel(message)}</p>
+                )}
               </div>
             );
           })}
+          {Object.keys(typing).length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted" role="status">
+              <span className="flex gap-0.5">
+                <span className="typing-dot" />
+                <span className="typing-dot [animation-delay:150ms]" />
+                <span className="typing-dot [animation-delay:300ms]" />
+              </span>
+              {Object.values(typing).map((t) => t.name).join(", ")} schreibt…
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
       </div>
@@ -443,6 +497,17 @@ export function ChatRoom({
         className="flex flex-col gap-2 border-t border-line pt-4"
         style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
+        {replyTo && (
+          <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
+            <CornerUpLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            <span className="min-w-0 flex-1 truncate">
+              Antwort an <b className="font-semibold">{replyTo.characters?.name}</b>: {replyTo.content || "Foto"}
+            </span>
+            <button type="button" onClick={() => setReplyTo(null)} aria-label="Antwort abbrechen" className="shrink-0 text-muted hover:text-fg">
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
+        )}
         {pendingImage && (
           <div className="relative w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -469,9 +534,12 @@ export function ChatRoom({
           <input
             type="text"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (e.target.value) announceTyping();
+            }}
             placeholder={`Schreib als ${activeCharacter.name}...`}
-            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
           />
           <button
             type="submit"
