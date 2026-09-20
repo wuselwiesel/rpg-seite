@@ -8,7 +8,7 @@ import type { Character, Chat } from "@/lib/types";
 import { ChatListItem } from "./chat-list-item";
 
 type ChatWithParticipants = Chat & {
-  chat_participants: { characters: Character }[];
+  chat_participants: { muted: boolean; characters: Character }[];
 };
 
 export async function ChatList() {
@@ -32,7 +32,7 @@ export async function ChatList() {
   const { data: chats } = myChatIds.length
     ? await supabase
         .from("chats")
-        .select("*, chat_participants(characters(*))")
+        .select("*, chat_participants(muted, characters(*))")
         .in("id", myChatIds)
         .order("created_at", { ascending: false })
         .returns<ChatWithParticipants[]>()
@@ -79,6 +79,7 @@ export async function ChatList() {
                 avatarUrl={chat.is_group ? chat.avatar_url : others[0]?.avatar_url}
                 participantCount={chat.chat_participants.length}
                 unread={unreadChatIds.has(chat.id)}
+                muted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
               />
             </li>
           );

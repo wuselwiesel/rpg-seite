@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BellOff } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 
 export function ChatListItem({
@@ -10,12 +11,14 @@ export function ChatListItem({
   avatarUrl,
   participantCount,
   unread,
+  muted = false,
 }: {
   id: string;
   title: string;
   avatarUrl: string | null | undefined;
   participantCount: number;
   unread: boolean;
+  muted?: boolean;
 }) {
   const active = usePathname() === `/chats/${id}`;
 
@@ -31,6 +34,7 @@ export function ChatListItem({
         <p className={`truncate text-sm text-fg ${unread && !active ? "font-semibold" : "font-medium"}`}>{title}</p>
         <p className="truncate text-xs text-muted">{participantCount} Teilnehmer:innen</p>
       </div>
+      {muted && <BellOff className="h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={2} aria-label="Stumm geschaltet" />}
       {unread && !active && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />}
     </Link>
   );

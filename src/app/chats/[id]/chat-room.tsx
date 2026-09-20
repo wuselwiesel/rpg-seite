@@ -2,13 +2,16 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Bell, BellOff, Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { resizeImage } from "@/lib/image-resize";
 import { aggregateReactions } from "@/lib/reactions";
-import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, updateMessage } from "../actions";
+import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, setChatMuted, updateMessage } from "../actions";
+import { GifPicker } from "@/components/gif-picker";
+import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
+import { MENTION_REGEX, plainMentions } from "@/lib/mentions";
 import { MessageBubble } from "./message-bubble";
 import type { Character, Message } from "@/lib/types";
 
@@ -25,6 +28,7 @@ export function ChatRoom({
   activeCharacter,
   myCharacterIds,
   initialReads,
+  initialMuted,
 }: {
   chatId: string;
   userId: string;
@@ -39,6 +43,7 @@ export function ChatRoom({
   myCharacterIds: string[];
   // Lesezeitpunkte der anderen Teilnehmer:innen (für "Gelesen")
   initialReads: { user_id: string; last_read_at: string }[];
+  initialMuted: boolean;
 }) {
   // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
   const myCharacterIdSet = new Set([activeCharacter.id]);
@@ -53,6 +58,13 @@ export function ChatRoom({
   const [editDraft, setEditDraft] = useState("");
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [reads, setReads] = useState(initialReads);
+  const [muted, setMuted] = useState(initialMuted);
+  const [gifOpen, setGifOpen] = useState(false);
+  const [mentions, setMentions] = useState<{ name: string; id: string }[]>([]);
+  const [editMentions, setEditMentions] = useState<{ name: string; id: string }[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [typing, setTyping] = useState<Record<string, { name: string; until: number }>>({});
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const lastTypingSent = useRef(0);
@@ -225,7 +237,7 @@ export function ChatRoom({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const content = draft.trim();
+    const content = encodeMentionsInText(draft.trim(), mentions);
     if ((!content && !pendingImage) || sending) return;
 
     const id = crypto.randomUUID();
@@ -250,12 +262,14 @@ export function ChatRoom({
       },
     ]);
     setDraft("");
+    setMentions([]);
+    setMentionQuery(null);
     setReplyTo(null);
     setPendingImage(null);
 
     function fail(message: string) {
       setMessages((prev) => prev.filter((m) => m.id !== id));
-      setDraft(content);
+      setDraft(plainMentions(content));
       setReplyTo(reply);
       setPendingImage(previousImage);
       setImageError(message);
@@ -294,6 +308,64 @@ export function ChatRoom({
     return otherOwners.size === 1 ? "Gelesen" : `Gelesen von ${readers}`;
   }
 
+  async function sendGif(url: string) {
+    setGifOpen(false);
+    const id = crypto.randomUUID();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id,
+        chat_id: chatId,
+        character_id: activeCharacter.id,
+        content: "",
+        image_url: url,
+        created_at: new Date().toISOString(),
+        characters: activeCharacter,
+        reactions: [],
+        pending: true,
+      },
+    ]);
+    const error = await sendMessage(chatId, activeCharacter.id, "", url, { id });
+    if (error) {
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      setImageError(error);
+      return;
+    }
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pending: false } : m)));
+  }
+
+  async function toggleMute() {
+    const next = !muted;
+    setMuted(next);
+    const error = await setChatMuted(chatId, next);
+    if (error) {
+      setMuted(!next);
+      alert(error);
+    }
+  }
+
+  // @-Vorschläge: die anderen Teilnehmer:innen dieses Chats.
+  const mentionCandidates = participants.filter((p) => p.id !== activeCharacter.id);
+  const mentionMatches = mentionQuery
+    ? mentionCandidates.filter((c) => c.name.toLowerCase().includes(mentionQuery.query.toLowerCase())).slice(0, 6)
+    : [];
+
+  function pickMention(character: Character) {
+    if (!mentionQuery) return;
+    const cursor = inputRef.current?.selectionStart ?? draft.length;
+    const name = firstName(character.name);
+    const inserted = `@${name} `;
+    const next = draft.slice(0, mentionQuery.start) + inserted + draft.slice(cursor);
+    setDraft(next);
+    setMentions((prev) => [...prev, { name, id: character.id }]);
+    setMentionQuery(null);
+    requestAnimationFrame(() => {
+      const pos = mentionQuery.start + inserted.length;
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(pos, pos);
+    });
+  }
+
   async function handleDeleteChat() {
     const text = isGroup
       ? "Diesen Gruppenchat mit allen Nachrichten für alle löschen? Das kann nicht rückgängig gemacht werden."
@@ -305,11 +377,12 @@ export function ChatRoom({
 
   function startEdit(message: Message) {
     setEditingId(message.id);
-    setEditDraft(message.content);
+    setEditDraft(plainMentions(message.content));
+    setEditMentions(Array.from(message.content.matchAll(MENTION_REGEX), (m) => ({ name: m[1], id: m[2] })));
   }
 
   async function handleSaveEdit(messageId: string) {
-    const content = editDraft.trim();
+    const content = encodeMentionsInText(editDraft.trim(), editMentions);
     if (!content) return;
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content } : m)));
     setEditingId(null);
@@ -388,6 +461,15 @@ export function ChatRoom({
           <p className="min-w-0 truncate text-right text-xs text-muted">
             {participants.map((p) => p.name).join(", ")}
           </p>
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-pressed={muted}
+            title={muted ? "Stumm: nur @-Erwähnungen melden sich. Tippen zum Aufheben" : "Stumm schalten (nur @-Erwähnungen melden sich)"}
+            className={`shrink-0 rounded-full p-1.5 transition hover:bg-surface-2 ${muted ? "text-accent" : "text-muted hover:text-fg"}`}
+          >
+            {muted ? <BellOff className="h-4 w-4" strokeWidth={2} /> : <Bell className="h-4 w-4" strokeWidth={2} />}
+          </button>
           {canDelete && (
             <button
               type="button"
@@ -501,7 +583,7 @@ export function ChatRoom({
           <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
             <CornerUpLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             <span className="min-w-0 flex-1 truncate">
-              Antwort an <b className="font-semibold">{replyTo.characters?.name}</b>: {replyTo.content || "Foto"}
+              Antwort an <b className="font-semibold">{replyTo.characters?.name}</b>: {plainMentions(replyTo.content) || "Foto"}
             </span>
             <button type="button" onClick={() => setReplyTo(null)} aria-label="Antwort abbrechen" className="shrink-0 text-muted hover:text-fg">
               <X className="h-4 w-4" strokeWidth={2} />
@@ -523,7 +605,32 @@ export function ChatRoom({
           </div>
         )}
         {imageError && <p className="text-xs text-red-600 dark:text-red-400">{imageError}</p>}
-        <div className="flex gap-2">
+        <div className="relative flex gap-2">
+          {gifOpen && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 sm:right-auto">
+              <GifPicker onPick={sendGif} onClose={() => setGifOpen(false)} />
+            </div>
+          )}
+          {mentionQuery && mentionMatches.length > 0 && (
+            <div className="absolute bottom-full left-10 z-10 mb-2 w-64 max-w-[calc(100%-2.5rem)] overflow-hidden rounded-md border border-line bg-surface shadow-lg">
+              {mentionMatches.map((c, i) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    pickMention(c);
+                  }}
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+                    i === mentionIndex ? "bg-surface-2 text-fg" : "text-fg-soft hover:bg-surface-2"
+                  }`}
+                >
+                  <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={24} />
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
           <label
             title="Bild senden"
             className="flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-line px-2.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
@@ -531,14 +638,38 @@ export function ChatRoom({
             <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
             <input type="file" accept="image/*" onChange={pickImage} className="hidden" />
           </label>
+          <button
+            type="button"
+            onClick={() => setGifOpen((v) => !v)}
+            aria-expanded={gifOpen}
+            title="GIF senden"
+            className="shrink-0 rounded-md border border-line px-2.5 text-xs font-bold tracking-wide text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            GIF
+          </button>
           <input
+            ref={inputRef}
             type="text"
             value={draft}
             onChange={(e) => {
               setDraft(e.target.value);
+              setMentionQuery(findMentionQuery(e.target.value, e.target.selectionStart ?? e.target.value.length));
+              setMentionIndex(0);
               if (e.target.value) announceTyping();
             }}
-            placeholder={`Schreib als ${activeCharacter.name}...`}
+            onKeyDown={(e) => {
+              if (!mentionQuery || mentionMatches.length === 0) return;
+              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
+                setMentionIndex((i) => (i + (e.key === "ArrowDown" ? 1 : mentionMatches.length - 1)) % mentionMatches.length);
+              } else if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                pickMention(mentionMatches[mentionIndex]);
+              } else if (e.key === "Escape") {
+                setMentionQuery(null);
+              }
+            }}
+            placeholder={`Schreib als ${activeCharacter.name}... (@ zum Erwähnen)`}
             className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
           />
           <button

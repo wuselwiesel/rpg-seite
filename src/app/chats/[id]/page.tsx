@@ -6,7 +6,7 @@ import type { Character, Chat, Message } from "@/lib/types";
 import { ChatRoom } from "./chat-room";
 
 type ChatWithParticipants = Chat & {
-  chat_participants: { characters: Character }[];
+  chat_participants: { muted: boolean; characters: Character }[];
 };
 
 export default async function ChatDetailPage({ params, searchParams }: PageProps<"/chats/[id]">) {
@@ -27,7 +27,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
 
   const { data: chat } = await supabase
     .from("chats")
-    .select("*, chat_participants(characters(*))")
+    .select("*, chat_participants(muted, characters(*))")
     .eq("id", id)
     .maybeSingle<ChatWithParticipants>();
 
@@ -94,6 +94,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       activeCharacter={activeCharacter}
       myCharacterIds={myCharacterIds}
       initialReads={reads ?? []}
+      initialMuted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
     />
   );
 }

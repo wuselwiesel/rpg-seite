@@ -9,6 +9,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
 import { extractHashtags } from "@/lib/hashtags";
+import { isAllowedGifUrl } from "@/lib/gif";
 import { notifyMentionedCharacters, createNotification } from "@/lib/notifications";
 
 function escapeHtml(text: string) {
@@ -51,13 +52,14 @@ export async function createPost(_prevState: string | null, formData: FormData) 
   const mediaType = kind === "image" || kind === "video" ? kind : null;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const ownStorage = (url: string) => Boolean(supabaseUrl) && url.startsWith(`${supabaseUrl}/storage/`);
+  const allowedImage = (url: string) => ownStorage(url) || isAllowedGifUrl(url);
 
   // Fotos (bis 10) kommen als JSON-Liste, ein Video als einzelne URL.
   let mediaUrls: string[] = [];
   if (mediaType === "image") {
     try {
       const parsed = JSON.parse(String(formData.get("media_urls") ?? "[]"));
-      if (Array.isArray(parsed)) mediaUrls = parsed.map(String).filter(ownStorage).slice(0, 10);
+      if (Array.isArray(parsed)) mediaUrls = parsed.map(String).filter(allowedImage).slice(0, 10);
     } catch {
       /* ungültige Liste ignorieren */
     }

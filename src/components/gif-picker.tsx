@@ -49,8 +49,7 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
     };
   }, [onClose]);
 
-  function submitLink(e: React.FormEvent) {
-    e.preventDefault();
+  function submitLink() {
     const url = normalizeGifUrl(link);
     if (!url) {
       setLinkError("Bitte einen Link von giphy.com oder tenor.com einfügen (direkter GIF-Link).");
@@ -105,7 +104,7 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
         </p>
       )}
 
-      <form onSubmit={submitLink} className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <div className="flex gap-2">
           <input
             type="url"
@@ -115,15 +114,21 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
               setLinkError(null);
             }}
             placeholder="GIF-Link einfügen"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submitLink();
+              }
+            }}
             className="min-w-0 flex-1 rounded-md border border-line bg-app px-3 py-1.5 text-base text-fg outline-none focus:border-accent sm:text-sm"
           />
-          <button type="submit" disabled={!link} className="rounded-md bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong disabled:opacity-50">
+          <button type="button" onClick={submitLink} disabled={!link} className="rounded-md bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong disabled:opacity-50">
             Nehmen
           </button>
         </div>
         {linkError && <p className="text-xs text-red-600 dark:text-red-400">{linkError}</p>}
         {configured === true && <p className="text-[11px] text-muted">GIFs von GIPHY / Tenor</p>}
-      </form>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { createPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { useDraft } from "@/lib/use-draft";
 import { uploadPostMedia } from "@/lib/upload-media";
+import { GifPicker } from "@/components/gif-picker";
 import { TagPeople } from "@/components/tag-people";
 import { ASPECTS, ImageCropper, canCrop } from "@/components/image-cropper";
 import type { Character } from "@/lib/types";
@@ -42,6 +43,7 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
 
   // Fotos werden nacheinander im Zuschneide-Fenster angezeigt; Videos und GIFs gehen direkt hoch.
   const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [gifOpen, setGifOpen] = useState(false);
 
   async function uploadFiles(files: File[]) {
     setUploading(true);
@@ -190,6 +192,29 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
                   className="hidden"
                 />
               </label>
+            )}
+            {kind === "image" && mediaUrls.length < MAX_PHOTOS && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setGifOpen((v) => !v)}
+                  aria-expanded={gifOpen}
+                  className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-bold tracking-wide text-fg-soft transition hover:text-fg"
+                >
+                  GIF hinzufügen
+                </button>
+                {gifOpen && (
+                  <div className="absolute left-0 top-full z-30 mt-2 w-full sm:w-auto">
+                    <GifPicker
+                      onPick={(url) => {
+                        setMediaUrls((prev) => [...prev, url].slice(0, MAX_PHOTOS));
+                        setGifOpen(false);
+                      }}
+                      onClose={() => setGifOpen(false)}
+                    />
+                  </div>
+                )}
+              </div>
             )}
             {uploadError && <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>}
             <label className="flex flex-col gap-1 text-sm text-fg-soft">
