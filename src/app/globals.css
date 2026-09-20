@@ -843,6 +843,21 @@ body {
   text-decoration: underline;
 }
 
+.post-content a.wiki-link {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+.post-content a.hashtag {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.post-content a.hashtag:hover {
+  text-decoration: underline;
+}
+
 .post-content img {
   max-width: 100%;
   border-radius: 0.75rem;

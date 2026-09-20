@@ -14,12 +14,15 @@ export function StoryEntryItem({
   canManage,
   mentionCharacters,
   chapterNumber,
+  displayHtml,
 }: {
   entry: StoryEntry;
   storyPostId: string;
   canManage: boolean;
   mentionCharacters: Character[];
   chapterNumber?: number;
+  // Mit Wiki-Links und Hashtag-Links angereicherte Fassung von entry.content.
+  displayHtml?: string;
 }) {
   const isRoll = !!entry.roll_label;
   const isNarrator = entry.kind === "narrator";
@@ -70,7 +73,7 @@ export function StoryEntryItem({
       <div className="group relative px-2 py-1 sm:px-6">
         <div
           className="post-content font-serif text-base italic leading-relaxed text-fg-soft"
-          dangerouslySetInnerHTML={{ __html: entry.content }}
+          dangerouslySetInnerHTML={{ __html: displayHtml ?? entry.content }}
         />
         <p className="mt-1 flex items-center justify-end gap-2 text-xs text-muted">
           Erzähler:in · {entry.characters?.name}
@@ -202,7 +205,7 @@ export function StoryEntryItem({
         ) : (
           // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -
           // Einträge kommen nie ungeprüft vom Client in die Datenbank.
-          <div className="post-content text-sm text-fg-soft" dangerouslySetInnerHTML={{ __html: entry.content }} />
+          <div className="post-content text-sm text-fg-soft" dangerouslySetInnerHTML={{ __html: displayHtml ?? entry.content }} />
         )}
       </div>
     </div>

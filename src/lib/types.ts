@@ -179,6 +179,7 @@ export type WikiPage = {
   category: WikiCategory;
   title: string;
   content: string;
+  aliases?: string[];
   created_by: string;
   created_at: string;
   updated_at: string;

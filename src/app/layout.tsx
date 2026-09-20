@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Cormorant_Garamond, Playfair_Display, Lora, Caveat }
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { MobileMain } from "@/components/mobile-main";
+import { WikiPreviewLayer } from "@/components/wiki-preview-layer";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 
 const geistSans = Geist({
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
         <ServiceWorkerRegister />
+        <WikiPreviewLayer />
         <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row">
           <Sidebar />
           <MobileMain>{children}</MobileMain>

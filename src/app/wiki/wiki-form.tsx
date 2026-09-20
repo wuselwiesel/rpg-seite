@@ -44,6 +44,21 @@ export function WikiForm({ page }: { page?: WikiPage }) {
         </select>
       </label>
 
+      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+        Alternative Namen (optional)
+        <input
+          type="text"
+          name="aliases"
+          defaultValue={page?.aliases?.join(", ")}
+          placeholder="z. B. Kapelle, alte Kapelle"
+          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+        />
+        <span className="text-xs text-muted">
+          Wenn diese Wörter in einem Beitrag oder einer Szene vorkommen, werden sie automatisch mit diesem Eintrag
+          verlinkt (mit Kommas trennen).
+        </span>
+      </label>
+
       <div className="flex flex-col gap-1 text-sm text-fg-soft">
         Inhalt
         <RichTextEditor name="content" initialContent={page?.content} placeholder="Beschreibung, Details, Geheimnisse..." />

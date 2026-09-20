@@ -9,6 +9,17 @@ import type { WikiCategory } from "@/lib/types";
 
 const CATEGORIES: WikiCategory[] = ["ort", "npc", "fraktion", "sonstiges"];
 
+function parseAliases(raw: FormDataEntryValue | null): string[] {
+  return Array.from(
+    new Set(
+      String(raw ?? "")
+        .split(",")
+        .map((a) => a.trim().slice(0, 60))
+        .filter((a) => a.length >= 2),
+    ),
+  ).slice(0, 12);
+}
+
 export async function createWikiPage(_prevState: string | null, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const category = String(formData.get("category") ?? "sonstiges");
@@ -29,7 +40,7 @@ export async function createWikiPage(_prevState: string | null, formData: FormDa
 
   const { data, error } = await supabase
     .from("wiki_pages")
-    .insert({ world_id: activeWorld.id, category, title, content, created_by: user.id })
+    .insert({ world_id: activeWorld.id, category, title, content, aliases: parseAliases(formData.get("aliases")), created_by: user.id })
     .select("id")
     .single();
 
@@ -60,7 +71,7 @@ export async function updateWikiPage(
 
   const { error } = await supabase
     .from("wiki_pages")
-    .update({ title, category, content, updated_at: new Date().toISOString() })
+    .update({ title, category, content, aliases: parseAliases(formData.get("aliases")), updated_at: new Date().toISOString() })
     .eq("id", wikiPageId);
 
   if (error) return error.message;

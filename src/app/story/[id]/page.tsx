@@ -6,6 +6,8 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime, timeAgoShort } from "@/lib/format";
 import { stripHtml } from "@/lib/strip-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
+import { autolinkHtml } from "@/lib/autolink";
+import { getWikiTerms } from "@/lib/wiki-terms";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
@@ -67,6 +69,9 @@ export default async function StoryPostDetailPage({
     .select("id")
     .eq("owner_id", user.id);
   const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
+
+  const wikiTerms = await getWikiTerms(storyPost.world_id);
+  const link = (html: string) => autolinkHtml(html, { wiki: wikiTerms, tagHref: "/story" });
 
   const [{ data: world }, { data: bookmark }] = await Promise.all([
     supabase.from("worlds").select("created_by").eq("id", storyPost.world_id).maybeSingle(),
@@ -156,7 +161,7 @@ export default async function StoryPostDetailPage({
         />
         <div
           className="post-content text-fg-soft"
-          dangerouslySetInnerHTML={{ __html: sanitizePostHtml(storyPost.content) }}
+          dangerouslySetInnerHTML={{ __html: link(sanitizePostHtml(storyPost.content)) }}
         />
       </article>
 
@@ -205,6 +210,7 @@ export default async function StoryPostDetailPage({
               canManage={myCharacterIds.has(entry.character_id)}
               mentionCharacters={mentionableCharacters}
               chapterNumber={entry.kind === "chapter" ? ++chapterCounter : undefined}
+              displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
             />
           ));
         })()}

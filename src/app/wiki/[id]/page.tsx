@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizePostHtml } from "@/lib/sanitize";
+import { autolinkHtml } from "@/lib/autolink";
+import { getWikiTerms } from "@/lib/wiki-terms";
 import { formatDateTime } from "@/lib/format";
 import type { WikiCategory, WikiPage } from "@/lib/types";
 import { DeleteWikiPageButton } from "./delete-wiki-page-button";
@@ -35,6 +37,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     .select("created_by")
     .eq("id", page.world_id)
     .maybeSingle();
+  const wikiTerms = await getWikiTerms(page.world_id);
   const canManage = page.created_by === user.id || world?.created_by === user.id;
 
   return (
@@ -66,7 +69,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
 
       <div
         className="post-content text-fg-soft"
-        dangerouslySetInnerHTML={{ __html: sanitizePostHtml(page.content) }}
+        dangerouslySetInnerHTML={{ __html: autolinkHtml(sanitizePostHtml(page.content), { wiki: wikiTerms, excludeWikiId: page.id }) }}
       />
     </div>
   );

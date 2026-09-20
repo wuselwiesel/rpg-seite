@@ -7,6 +7,8 @@ import { PostMedia } from "@/components/post-media";
 import { ReactionBar } from "@/components/reaction-bar";
 import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
+import { autolinkHtml } from "@/lib/autolink";
+import { getWikiTerms } from "@/lib/wiki-terms";
 import { aggregateReactions } from "@/lib/reactions";
 import type { Comment, Post } from "@/lib/types";
 import { CommentThread } from "./comment-thread";
@@ -59,6 +61,9 @@ export default async function PostDetailPage({
     ? await getMentionableCharacters(user.id, post.characters.world_id)
     : [];
 
+  const wikiTerms = post.characters ? await getWikiTerms(post.characters.world_id) : [];
+  const contentHtml = autolinkHtml(sanitizePostHtml(post.content), { wiki: wikiTerms, tagHref: "/" });
+
   return (
     <CharacterThemed character={post.characters}>
     <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
@@ -109,7 +114,7 @@ export default async function PostDetailPage({
         )}
         <div
           className="post-content text-fg-soft"
-          dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content) }}
+          dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
         <div className="mt-4">
           <ReactionBar

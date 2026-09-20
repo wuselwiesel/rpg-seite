@@ -90,6 +90,22 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
     worldResults = worlds ?? [];
   }
 
+  // Beliebte Hashtags der letzten Beiträge (nur ohne Suchbegriff).
+  let trendingTags: [string, number][] = [];
+  if (!q) {
+    const { data: recent } = await supabase
+      .from("posts")
+      .select("tags")
+      .lte("publish_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(300);
+    const counts = new Map<string, number>();
+    for (const row of recent ?? []) for (const tag of (row.tags as string[] | null) ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    trendingTags = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 12);
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Suche</h1>
@@ -105,6 +121,23 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
             Welt erschaffen
           </Link>
         </p>
+      )}
+
+      {trendingTags.length > 0 && (
+        <div className="mb-5">
+          <p className="mb-2 text-sm font-medium text-fg">Beliebte Hashtags</p>
+          <div className="flex flex-wrap gap-2">
+            {trendingTags.map(([tag, count]) => (
+              <Link
+                key={tag}
+                href={`/?tag=${encodeURIComponent(tag)}`}
+                className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-accent"
+              >
+                #{tag} <span className="text-muted">{count}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="mb-4 flex gap-1 rounded-lg bg-surface-2 p-1">
