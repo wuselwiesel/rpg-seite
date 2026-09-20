@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Menu, UserPlus } from "lucide-react";
+import { Menu, Settings, UserPlus, Users } from "lucide-react";
 import { InstallAppButton } from "./install-app-button";
 
-// Hamburger-Menü in der Desktop-Seitenleiste: seltener genutzte Bereiche wie Freund:innen.
+// Hamburger-Menü in der Desktop-Seitenleiste: seltener genutzte Bereiche: Freund:innen, Charaktere, Konto.
 export function SidebarMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,6 +37,14 @@ export function SidebarMenu() {
           <Link href="/friends" onClick={() => setOpen(false)} className={item}>
             <UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Freund:innen
+          </Link>
+          <Link href="/characters" onClick={() => setOpen(false)} className={item}>
+            <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Charaktere verwalten
+          </Link>
+          <Link href="/profile" onClick={() => setOpen(false)} className={item}>
+            <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Konto &amp; Einstellungen
           </Link>
           <InstallAppButton className={item} onDone={() => setOpen(false)} />
         </div>
