@@ -249,7 +249,7 @@ export function CommentThread({
               autoFocus={Boolean(replyTo)}
               initialText={replyTo ? `@${replyTo.name.split(/\s+/)[0]} ` : ""}
               initialMentions={replyTo ? [{ name: replyTo.name.split(/\s+/)[0], id: replyTo.characterId }] : []}
-              placeholder={`Kommentieren als ${activeCharacter?.name ?? "..."}`}
+              placeholder="Kommentieren..."
             />
           </div>
           <button

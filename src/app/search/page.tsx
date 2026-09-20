@@ -140,6 +140,10 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         <input
           type="text"
           name="q"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="search"
           defaultValue={q}
           placeholder={tab === "characters" ? "Name oder @nutzername..." : tab === "users" ? "Benutzername..." : "Weltname..."}
           className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"

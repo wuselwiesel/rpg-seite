@@ -909,3 +909,14 @@ body {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
   30% { transform: translateY(-3px); opacity: 1; }
 }
+
+/* iPhone-Safari zoomt beim Fokussieren von Feldern mit weniger als 16 px Schrift in die Seite hinein
+   (und verschiebt sie seitlich). Auf Handys/Tablets deshalb überall mindestens 16 px. */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  textarea,
+  select,
+  .ProseMirror {
+    font-size: 16px !important;
+  }
+}
