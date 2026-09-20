@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
+// Läuft ohne Anmeldung, prüft aber selbst das Cron-Geheimnis.
+const SELF_AUTHED_PATHS = ["/api/cron/"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -30,6 +32,8 @@ export async function updateSession(request: NextRequest) {
   // Lokale JWT-Prüfung (erneuert bei Bedarf die Sitzung) statt Netzwerk-Roundtrip pro Seitenaufruf.
   const { data: claimsData } = await supabase.auth.getClaims();
   const user = claimsData?.claims ?? null;
+
+  if (SELF_AUTHED_PATHS.some((path) => request.nextUrl.pathname.startsWith(path))) return supabaseResponse;
 
   const isPublicPath = PUBLIC_PATHS.some((path) =>
     request.nextUrl.pathname.startsWith(path),

@@ -135,7 +135,7 @@ async function pushToRecipients(chatId: string, characterId: string, content: st
           ? "hat dich in einer Nachricht erwähnt"
           : "hat dir eine Nachricht geschickt",
         url: `/chats/${chatId}?as=${recipientCharacterId}`,
-      }),
+      }, { recipientCharacterId }),
     ),
   );
 }

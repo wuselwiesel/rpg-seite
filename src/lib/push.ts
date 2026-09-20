@@ -1,6 +1,7 @@
 import "server-only";
 import webpush from "web-push";
 import { createClient } from "@/lib/supabase/server";
+import { shouldSuppressPush } from "@/lib/notification-prefs";
 
 let vapidConfigured = false;
 
@@ -19,8 +20,10 @@ function ensureVapidConfigured() {
 export async function sendPushToUser(
   userId: string,
   payload: { title: string; body: string; url: string },
+  target: { recipientName?: string | null; recipientCharacterId?: string | null } = {},
 ) {
   if (!ensureVapidConfigured()) return;
+  if (await shouldSuppressPush(userId, target)) return;
 
   const supabase = await createClient();
   const { data } = await supabase.rpc("get_push_subscriptions", { p_user_id: userId });

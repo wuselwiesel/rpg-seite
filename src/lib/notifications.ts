@@ -36,7 +36,7 @@ export async function createNotification(
     title: params.actorName,
     body: params.recipientName ? `${params.recipientName}: ${params.message}` : params.message,
     url: params.link,
-  });
+  }, { recipientName: params.recipientName });
 }
 
 export type AppNotification = {

@@ -41,3 +41,46 @@ export async function updateProfile(_prevState: string | null, formData: FormDat
   revalidatePath("/", "layout");
   redirect("/profile?saved=1");
 }
+
+// Benachrichtigungs-Einstellungen speichern (Nicht stören, Zusammenfassung, stumme Welten/Charaktere).
+export async function saveNotificationPrefs(input: {
+  dndEnabled: boolean;
+  dndStart: string;
+  dndEnd: string;
+  timezone: string;
+  digestEnabled: boolean;
+  digestOnly: boolean;
+  mutedWorldIds: string[];
+  mutedCharacterIds: string[];
+}): Promise<string | null> {
+  const time = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if (!time.test(input.dndStart) || !time.test(input.dndEnd)) return "Bitte gültige Uhrzeiten angeben.";
+  const uuid = /^[0-9a-f-]{36}$/;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  let timezone = "Europe/Berlin";
+  try {
+    new Intl.DateTimeFormat("de-DE", { timeZone: input.timezone });
+    timezone = input.timezone;
+  } catch {
+    /* Standard behalten */
+  }
+  const { error } = await supabase.from("notification_prefs").upsert({
+    user_id: user.id,
+    dnd_enabled: input.dndEnabled,
+    dnd_start: input.dndStart,
+    dnd_end: input.dndEnd,
+    timezone,
+    digest_enabled: input.digestEnabled,
+    digest_only: input.digestEnabled && input.digestOnly,
+    muted_world_ids: input.mutedWorldIds.filter((id) => uuid.test(id)),
+    muted_character_ids: input.mutedCharacterIds.filter((id) => uuid.test(id)),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) return error.message;
+  revalidatePath("/profile");
+  return null;
+}
