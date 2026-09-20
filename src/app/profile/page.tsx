@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { logout } from "@/lib/actions/auth";
+import { LogoutForm } from "@/components/logout-form";
 import type { Profile } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
 import { PushSubscribeToggle } from "@/components/push-subscribe-toggle";
@@ -82,14 +82,7 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
       </div>
 
       <div className="mt-8 border-t border-line pt-6">
-        <form action={logout}>
-          <button
-            type="submit"
-            className="text-sm text-muted transition hover:text-red-600 dark:hover:text-red-400"
-          >
-            Abmelden
-          </button>
-        </form>
+        <LogoutForm />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Cormorant_Garamond, Playfair_Display, Lora, Caveat }
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { MobileMain } from "@/components/mobile-main";
+import { OfflineBanner } from "@/components/offline-banner";
 import { KeyboardFix } from "@/components/keyboard-fix";
 import { WikiPreviewLayer } from "@/components/wiki-preview-layer";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
@@ -62,12 +63,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <link id="favicon" rel="icon" href="/icon.png" />
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
         <ServiceWorkerRegister />
         <WikiPreviewLayer />
         <KeyboardFix />
+        <OfflineBanner />
         <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row">
           <Sidebar />
           <MobileMain>{children}</MobileMain>
