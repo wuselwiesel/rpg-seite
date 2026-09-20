@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, UserPlus, Settings, BookOpen, Library, Network, PenLine } from "lucide-react";
+import { House, Search, Settings, BookOpen, Library, Network, PenLine } from "lucide-react";
 import { getAppMode } from "@/lib/app-mode";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -57,9 +57,6 @@ export function SidebarNav({
           Suche
         </NavLink>
         <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} />
-        <NavLink href="/friends" icon={<UserPlus className={ICON} strokeWidth={2} />}>
-          Freund:innen
-        </NavLink>
         <NavLink href="/profile" icon={<Settings className={ICON} strokeWidth={2} />}>
           Einstellungen
         </NavLink>

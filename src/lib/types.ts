@@ -49,6 +49,11 @@ export type Post = {
   tags: string[];
   media_url?: string | null;
   media_type?: "image" | "video" | null;
+  media_urls?: string[] | null;
+  pinned?: boolean;
+  publish_at?: string;
+  story_post_id?: string | null;
+  story_post?: { id: string; title: string } | null;
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;
@@ -62,10 +67,12 @@ export type Comment = {
   post_id: string;
   character_id: string;
   content: string;
+  parent_id?: string | null;
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;
   likes?: { character_id: string }[];
+  pending?: boolean;
 };
 
 export type StoryArc = {
@@ -126,10 +133,35 @@ export type Message = {
   character_id: string;
   content: string;
   image_url?: string | null;
+  reply_to_id?: string | null;
+  shared_post_id?: string | null;
+  story_id?: string | null;
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;
   reactions?: { emoji: string; character_id: string }[];
+  // Nachgeladen bzw. per Embed: Antwort-Ziel, geteilter Beitrag, Story
+  shared_post?: SharedPostPreview | null;
+  story?: StoryPreview | null;
+  pending?: boolean;
+};
+
+export type SharedPostPreview = {
+  id: string;
+  content: string;
+  media_url: string | null;
+  media_type: "image" | "video" | null;
+  media_urls: string[] | null;
+  characters: { name: string; username: string | null; avatar_url: string | null } | null;
+};
+
+export type StoryPreview = {
+  id: string;
+  image_url: string | null;
+  video_url: string | null;
+  bg: string | null;
+  text_content: string | null;
+  expires_at: string;
 };
 
 export type WikiCategory = "ort" | "npc" | "fraktion" | "sonstiges";

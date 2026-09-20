@@ -46,15 +46,23 @@ export function MentionTextarea({
   placeholder,
   rows = 3,
   required,
+  initialText = "",
+  initialMentions = [],
+  autoFocus = false,
+  className = "",
 }: {
   name: string;
   characters: Character[];
   placeholder?: string;
   rows?: number;
   required?: boolean;
+  initialText?: string;
+  initialMentions?: { name: string; id: string }[];
+  autoFocus?: boolean;
+  className?: string;
 }) {
-  const [text, setText] = useState("");
-  const [mentions, setMentions] = useState<{ name: string; id: string }[]>([]);
+  const [text, setText] = useState(initialText);
+  const [mentions, setMentions] = useState<{ name: string; id: string }[]>(initialMentions);
   const [query, setQuery] = useState<MentionQuery | null>(null);
   const [highlighted, setHighlighted] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -122,7 +130,8 @@ export function MentionTextarea({
         rows={rows}
         required={required}
         placeholder={placeholder}
-        className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+        autoFocus={autoFocus}
+        className={`w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm ${className}`}
       />
       {query && matches.length > 0 && (
         <div className="absolute z-10 mt-1 w-64 max-w-full overflow-hidden rounded-md border border-line bg-surface shadow-lg">

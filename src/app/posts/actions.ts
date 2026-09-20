@@ -48,12 +48,36 @@ async function getActiveCharacterId(userId: string) {
 
 export async function createPost(_prevState: string | null, formData: FormData) {
   const kind = String(formData.get("kind") ?? "text");
-  const mediaUrl = String(formData.get("media_url") ?? "").trim();
   const mediaType = kind === "image" || kind === "video" ? kind : null;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  if (mediaType && !(mediaUrl && supabaseUrl && mediaUrl.startsWith(`${supabaseUrl}/storage/`))) {
-    return mediaType === "video" ? "Bitte wähle ein Video aus." : "Bitte wähle ein Foto aus.";
+  const ownStorage = (url: string) => Boolean(supabaseUrl) && url.startsWith(`${supabaseUrl}/storage/`);
+
+  // Fotos (bis 10) kommen als JSON-Liste, ein Video als einzelne URL.
+  let mediaUrls: string[] = [];
+  if (mediaType === "image") {
+    try {
+      const parsed = JSON.parse(String(formData.get("media_urls") ?? "[]"));
+      if (Array.isArray(parsed)) mediaUrls = parsed.map(String).filter(ownStorage).slice(0, 10);
+    } catch {
+      /* ungültige Liste ignorieren */
+    }
+  } else if (mediaType === "video") {
+    const single = String(formData.get("media_url") ?? "").trim();
+    if (ownStorage(single)) mediaUrls = [single];
   }
+  if (mediaType && mediaUrls.length === 0) {
+    return mediaType === "video" ? "Bitte wähle ein Video aus." : "Bitte wähle mindestens ein Foto aus.";
+  }
+  const mediaUrl = mediaUrls[0] ?? "";
+
+  const publishRaw = String(formData.get("publish_at") ?? "");
+  const publishDate = publishRaw ? new Date(publishRaw) : null;
+  const publishAt =
+    publishDate && !Number.isNaN(publishDate.getTime()) && publishDate.getTime() > Date.now() + 15_000
+      ? publishDate.toISOString()
+      : new Date().toISOString();
+  const isScheduled = new Date(publishAt).getTime() > Date.now() + 15_000;
+  const storyPostId = String(formData.get("story_post_id") ?? "").trim() || null;
 
   const rawContent = String(formData.get("content") ?? "").trim();
   // Bei Foto/Video ist der Inhalt nur die Bildunterschrift (Klartext).
@@ -87,6 +111,9 @@ export async function createPost(_prevState: string | null, formData: FormData) 
       tags,
       media_url: mediaType ? mediaUrl : null,
       media_type: mediaType,
+      media_urls: mediaType === "image" && mediaUrls.length > 1 ? mediaUrls : null,
+      publish_at: publishAt,
+      story_post_id: storyPostId,
     })
     .select("id")
     .single();
@@ -94,7 +121,7 @@ export async function createPost(_prevState: string | null, formData: FormData) 
   if (error || !data) return error?.message ?? "Post konnte nicht erstellt werden.";
 
   revalidatePath("/");
-  redirect(`/posts/${data.id}`);
+  redirect(isScheduled ? `/characters/${characterId}?tab=scheduled` : `/posts/${data.id}`);
 }
 
 export async function createComment(
@@ -115,11 +142,36 @@ export async function createComment(
   const characterId = await getActiveCharacterId(user.id);
   if (!characterId) return "Du brauchst zuerst einen Charakter.";
 
+  const parentId = String(formData.get("parent_id") ?? "").trim() || null;
   const { error } = await supabase
     .from("comments")
-    .insert({ post_id: postId, character_id: characterId, content });
+    .insert({ post_id: postId, character_id: characterId, content, parent_id: parentId });
 
   if (error) return error.message;
+
+  // Antwort auf einen Kommentar: Besitzer:in des Kommentars benachrichtigen.
+  if (parentId) {
+    const { data: parent } = await supabase
+      .from("comments")
+      .select("character_id, characters(owner_id)")
+      .eq("id", parentId)
+      .maybeSingle<{ character_id: string; characters: { owner_id: string } | null }>();
+    if (parent && parent.character_id !== characterId && parent.characters?.owner_id) {
+      const { data: actor } = await supabase
+        .from("characters")
+        .select("name, avatar_url")
+        .eq("id", characterId)
+        .maybeSingle();
+      await createNotification(supabase, {
+        userId: parent.characters.owner_id,
+        type: "comment",
+        actorName: actor?.name ?? "Jemand",
+        actorAvatarUrl: actor?.avatar_url ?? null,
+        link: `/posts/${postId}`,
+        message: "hat auf deinen Kommentar geantwortet",
+      });
+    }
+  }
 
   const { data: post } = await supabase
     .from("posts")
@@ -269,4 +321,39 @@ export async function toggleLike(target: { postId: string } | { commentId: strin
 
   revalidatePath("/");
   if (postIdForRevalidate) revalidatePath(`/posts/${postIdForRevalidate}`);
+}
+
+export async function togglePinPost(postId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: post } = await supabase
+    .from("posts")
+    .select("id, pinned, character_id")
+    .eq("id", postId)
+    .maybeSingle<{ id: string; pinned: boolean; character_id: string }>();
+  if (!post) return "Beitrag nicht gefunden.";
+
+  if (!post.pinned) {
+    const { count } = await supabase
+      .from("posts")
+      .select("*", { count: "exact", head: true })
+      .eq("character_id", post.character_id)
+      .eq("pinned", true);
+    if ((count ?? 0) >= 3) return "Du kannst höchstens 3 Beiträge anpinnen.";
+  }
+
+  const { error, count } = await supabase
+    .from("posts")
+    .update({ pinned: !post.pinned }, { count: "exact" })
+    .eq("id", postId);
+  if (error) return error.message;
+  if (!count) return "Nur eigene Beiträge können angepinnt werden.";
+
+  revalidatePath(`/posts/${postId}`);
+  revalidatePath(`/characters/${post.character_id}`);
+  return null;
 }

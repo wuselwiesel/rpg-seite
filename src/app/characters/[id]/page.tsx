@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronDown, Grid3x3, MessageCircle, Pencil } from "lucide-react";
+import { AtSign, ChevronDown, Clock, Grid3x3, Images, MessageCircle, Pencil, Pin } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -16,8 +16,10 @@ import type { Character, Highlight, Post, Story } from "@/lib/types";
 
 export default async function CharacterProfilePage({
   params,
+  searchParams,
 }: PageProps<"/characters/[id]">) {
   const { id } = await params;
+  const { tab: tabParam } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,13 +35,31 @@ export default async function CharacterProfilePage({
 
   if (!character) notFound();
 
-  const [{ data: posts }, activeWorld] = await Promise.all([
+  const isOwnerView = character.owner_id === user.id;
+  const tab = tabParam === "tagged" ? "tagged" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
+  const nowIso = new Date().toISOString();
+
+  let postsQuery = supabase
+    .from("posts")
+    .select("*, characters(*), comments(count), reactions(emoji, character_id)")
+    .order("pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (tab === "tagged") {
+    // Erwähnungen (@) im Beitragstext: <span data-type="mention" data-id="...">
+    postsQuery = postsQuery.ilike("content", `%data-id="${id}"%`).lte("publish_at", nowIso).neq("character_id", id);
+  } else if (tab === "scheduled") {
+    postsQuery = postsQuery.eq("character_id", id).gt("publish_at", nowIso);
+  } else {
+    postsQuery = postsQuery.eq("character_id", id).lte("publish_at", nowIso);
+  }
+
+  const [{ data: posts }, { count: publishedCount }, activeWorld] = await Promise.all([
+    postsQuery.returns<Post[]>(),
     supabase
       .from("posts")
-      .select("*, characters(*), comments(count), reactions(emoji, character_id)")
+      .select("*", { count: "exact", head: true })
       .eq("character_id", id)
-      .order("created_at", { ascending: false })
-      .returns<Post[]>(),
+      .lte("publish_at", nowIso),
     getActiveWorld(user.id),
   ]);
 
@@ -181,7 +201,7 @@ export default async function CharacterProfilePage({
             </div>
 
             <div className="mt-3 flex justify-between gap-2 text-center text-sm sm:mt-4 sm:justify-start sm:gap-8 sm:text-left sm:text-base">
-              <span className="flex flex-col sm:block"><b className="font-semibold">{posts?.length ?? 0}</b> <span className="text-fg-soft sm:text-fg">{posts?.length === 1 ? "Beitrag" : "Beiträge"}</span></span>
+              <span className="flex flex-col sm:block"><b className="font-semibold">{publishedCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">{publishedCount === 1 ? "Beitrag" : "Beiträge"}</span></span>
               <Link href={`/characters/${character.id}/follows?tab=followers`} className="flex flex-col hover:opacity-70 sm:block"><b className="font-semibold">{followerCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">Follower</span></Link>
               <Link href={`/characters/${character.id}/follows?tab=following`} className="flex flex-col hover:opacity-70 sm:block"><b className="font-semibold">{followingCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">Gefolgt</span></Link>
             </div>
@@ -276,17 +296,35 @@ export default async function CharacterProfilePage({
           </details>
         )}
 
-        <div className="mt-6 flex justify-center border-t border-line">
-          <span className="-mt-px flex items-center gap-1.5 border-t border-fg px-4 py-3 text-xs font-semibold uppercase tracking-widest text-fg">
-            <Grid3x3 className="h-3.5 w-3.5" strokeWidth={2} />
-            Beiträge
-          </span>
+        <div className="mt-6 flex justify-center gap-2 border-t border-line sm:gap-6">
+          {[
+            { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
+            { id: "tagged", label: "Getaggt", icon: AtSign, show: true },
+            { id: "scheduled", label: "Geplant", icon: Clock, show: isOwnerView },
+          ]
+            .filter((t) => t.show)
+            .map(({ id: tabId, label, icon: Icon }) => (
+              <Link
+                key={tabId}
+                href={tabId === "posts" ? `/characters/${id}` : `/characters/${id}?tab=${tabId}`}
+                replace
+                scroll={false}
+                aria-current={tab === tabId ? "page" : undefined}
+                className={`-mt-px flex items-center gap-1.5 border-t px-4 py-3 text-xs font-semibold uppercase tracking-widest transition ${
+                  tab === tabId ? "border-fg text-fg" : "border-transparent text-muted hover:text-fg-soft"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                {label}
+              </Link>
+            ))}
         </div>
 
         {posts?.length ? (
           <div className="grid grid-cols-3 gap-[3px] pb-24 sm:gap-1 lg:pb-10">
             {posts.map((post) => {
               const image = post.media_type === "image" ? post.media_url : post.media_type ? null : firstImageSrc(post.content);
+              const multi = (post.media_urls?.length ?? 0) > 1;
               const replies = post.comments?.[0]?.count ?? 0;
               return (
                 <Link
@@ -311,6 +349,17 @@ export default async function CharacterProfilePage({
                       )}
                     </div>
                   )}
+                  {(post.pinned || multi) && (
+                    <span className="absolute right-1.5 top-1.5 flex gap-1 text-white drop-shadow">
+                      {post.pinned && <Pin className="h-4 w-4 fill-white" strokeWidth={1.5} aria-label="Angepinnt" />}
+                      {multi && <Images className="h-4 w-4" strokeWidth={2} aria-label="Mehrere Fotos" />}
+                    </span>
+                  )}
+                  {tab === "scheduled" && post.publish_at && (
+                    <span className="absolute inset-x-0 bottom-0 bg-black/60 px-1.5 py-1 text-center text-[10px] font-medium text-white">
+                      {new Date(post.publish_at).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
                   <div className="absolute inset-0 hidden items-center justify-center gap-4 bg-black/40 text-sm font-semibold text-white opacity-0 transition group-hover:opacity-100 sm:flex">
                     <span className="flex items-center gap-1.5">
                       <MessageCircle className="h-5 w-5 fill-white" strokeWidth={0} />
@@ -322,7 +371,9 @@ export default async function CharacterProfilePage({
             })}
           </div>
         ) : (
-          <p className="py-16 text-center text-muted">Noch keine Beiträge.</p>
+          <p className="py-16 text-center text-muted">
+            {tab === "tagged" ? "Noch nicht in Beiträgen markiert." : tab === "scheduled" ? "Keine geplanten Beiträge." : "Noch keine Beiträge."}
+          </p>
         )}
       </div>
     </ProfileThemeWrapper>

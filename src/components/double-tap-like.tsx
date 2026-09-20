@@ -8,12 +8,15 @@ export const POST_LIKE_EVENT = "wortwinkel:post-like";
 // Doppeltipp (Handy) bzw. Doppelklick (Desktop) auf ein Post-Medium = "Gefällt mir" mit Herz-Animation.
 // Liken passiert nur, nie unliken – wie bei Instagram. Die ReactionBar hört auf das Event.
 export function DoubleTapLike({
-  postId,
+  likeKey,
   className = "",
+  heartClassName = "h-24 w-24",
   children,
 }: {
-  postId: string;
+  // Post- oder Nachrichten-ID; die passende ReactionBar hört auf dieses Event.
+  likeKey: string;
   className?: string;
+  heartClassName?: string;
   children: React.ReactNode;
 }) {
   const last = useRef<{ t: number; x: number; y: number } | null>(null);
@@ -21,7 +24,7 @@ export function DoubleTapLike({
   const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
 
   function like(e: React.PointerEvent<HTMLDivElement>) {
-    window.dispatchEvent(new CustomEvent(POST_LIKE_EVENT, { detail: { postId } }));
+    window.dispatchEvent(new CustomEvent(POST_LIKE_EVENT, { detail: { key: likeKey } }));
     const rect = e.currentTarget.getBoundingClientRect();
     const id = nextId.current++;
     setHearts((h) => [...h, { id, x: e.clientX - rect.left, y: e.clientY - rect.top }]);
@@ -50,7 +53,7 @@ export function DoubleTapLike({
         <Heart
           key={h.id}
           aria-hidden
-          className="heart-pop pointer-events-none absolute h-24 w-24 fill-white text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
+          className={`heart-pop pointer-events-none absolute ${heartClassName} fill-white text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]`}
           strokeWidth={0}
           style={{ left: h.x, top: h.y }}
         />

@@ -1,5 +1,6 @@
 "use client";
 
+import { ViewTransition } from "react";
 import { usePathname } from "next/navigation";
 import { isImmersiveChatPath } from "@/lib/immersive-routes";
 
@@ -11,7 +12,8 @@ export function MobileMain({ children }: { children: React.ReactNode }) {
     <main
       className={`min-w-0 flex-1 ${immersive ? "" : "pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0"}`}
     >
-      {children}
+      {/* Weicher Übergang zwischen Seiten (View Transitions API; ohne Browser-Support einfach ohne Animation). */}
+      <ViewTransition default="page-fade">{children}</ViewTransition>
     </main>
   );
 }

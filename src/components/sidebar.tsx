@@ -12,6 +12,7 @@ import { ModeSwitch } from "./mode-switch";
 import { SidebarNav } from "./sidebar-nav";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
+import { SidebarMenu } from "./sidebar-menu";
 import { MobileNav } from "./mobile-nav";
 import { Wordmark } from "./wordmark";
 
@@ -106,6 +107,7 @@ export async function Sidebar() {
               initialUnreadCount={initialUnreadCount}
             />
             <ThemeToggle />
+            <SidebarMenu />
           </div>
         </div>
       <div className="mb-3">

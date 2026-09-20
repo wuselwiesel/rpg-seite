@@ -9,6 +9,7 @@ import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import Mention from "@tiptap/extension-mention";
 import { createClient } from "@/lib/supabase/client";
+import { resizeImage } from "@/lib/image-resize";
 import { createMentionSuggestion } from "@/lib/mention-suggestion";
 import type { Character } from "@/lib/types";
 
@@ -51,9 +52,10 @@ function Toolbar({ editor }: { editor: Editor }) {
   const [error, setError] = useState<string | null>(null);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const original = e.target.files?.[0];
     e.target.value = "";
-    if (!file) return;
+    if (!original) return;
+    const file = await resizeImage(original);
 
     if (file.size > MAX_IMAGE_SIZE) {
       setError("Datei ist zu groß (max. 10 MB).");

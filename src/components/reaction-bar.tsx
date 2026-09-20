@@ -59,10 +59,10 @@ export function ReactionBar({
   const heartCount = reactions.find((r) => r.emoji === "❤️")?.count ?? 0;
 
   // Doppeltipp auf das Post-Medium: nur liken, nie zurücknehmen.
+  const likeKey = "postId" in target ? target.postId : target.messageId;
   useEffect(() => {
-    if (!postId) return;
     function onLike(e: Event) {
-      if ((e as CustomEvent<{ postId: string }>).detail?.postId !== postId) return;
+      if ((e as CustomEvent<{ key: string }>).detail?.key !== likeKey) return;
       const already = reactionsRef.current.some((r) => r.emoji === "❤️" && r.reactedByMe);
       setBeat((b) => b + 1);
       if (!already) handleToggle("❤️");
@@ -71,7 +71,7 @@ export function ReactionBar({
     return () => window.removeEventListener(POST_LIKE_EVENT, onLike);
     // handleToggle nutzt nur stabile Setter und das (unveränderliche) target.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postId]);
+  }, [likeKey]);
 
   useEffect(() => {
     if (!pickerOpen) return;

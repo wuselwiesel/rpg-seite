@@ -108,3 +108,10 @@ export function profileThemeStyle(input: ProfileTheme, dark = false): CSSPropert
 
   return style as CSSProperties;
 }
+
+// Farben für die Text-Kachel eines Beitrags im Profilstil des Charakters (Hintergrund + passende Schriftfarbe).
+export function themeTileColors(input: ProfileTheme, dark = false): { bg?: string; fg?: string } {
+  const theme = dark ? adaptForDark(input) : input;
+  if (!theme.bg || !HEX.test(theme.bg)) return {};
+  return { bg: theme.bg, fg: luminance(theme.bg) < 0.25 ? "#f3ece8" : "#2a2630" };
+}

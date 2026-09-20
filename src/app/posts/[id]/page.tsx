@@ -9,8 +9,13 @@ import { formatDateTime } from "@/lib/format";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { aggregateReactions } from "@/lib/reactions";
 import type { Comment, Post } from "@/lib/types";
-import { CommentForm } from "./comment-form";
-import { CommentItem } from "./comment-item";
+import { CommentThread } from "./comment-thread";
+import { MediaCarousel } from "@/components/media-carousel";
+import { PinPostButton } from "@/components/pin-post-button";
+import { SharePostButton } from "@/components/share-post-button";
+import { CharacterThemed } from "@/components/character-themed";
+import Link from "next/link";
+import { BookOpen } from "lucide-react";
 
 export default async function PostDetailPage({
   params,
@@ -25,11 +30,14 @@ export default async function PostDetailPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("*, characters(*), reactions(emoji, character_id)")
+    .select("*, characters(*), reactions(emoji, character_id), story_post:story_post_id(id, title)")
     .eq("id", id)
     .maybeSingle<Post>();
 
   if (!post) notFound();
+  // Geplante Beiträge sieht nur die Besitzerin/der Besitzer.
+  const isOwnPost = post.characters?.owner_id === user.id;
+  if (post.publish_at && new Date(post.publish_at) > new Date() && !isOwnPost) notFound();
 
   const [{ data: comments }, { data: myCharacters }] = await Promise.all([
     supabase
@@ -51,26 +59,47 @@ export default async function PostDetailPage({
     : [];
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <article className="mb-8 rounded-lg border border-line bg-surface p-6">
+    <CharacterThemed character={post.characters}>
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+      <article className="mb-8 rounded-lg border border-line bg-surface p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-3">
-          <CharacterAvatar
-            name={post.characters?.name ?? "?"}
-            avatarUrl={post.characters?.avatar_url}
-          />
-          <div>
-            <p className="font-medium text-fg">{post.characters?.name}</p>
-            <p className="text-xs text-muted">{formatDateTime(post.created_at)}</p>
+          <Link href={`/characters/${post.character_id}`}>
+            <CharacterAvatar name={post.characters?.name ?? "?"} avatarUrl={post.characters?.avatar_url} />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <Link href={`/characters/${post.character_id}`} className="block truncate font-medium text-fg">
+              {post.characters?.name}
+            </Link>
+            <p className="text-xs text-muted">
+              {post.publish_at && new Date(post.publish_at) > new Date()
+                ? `Geplant für ${formatDateTime(post.publish_at)}`
+                : formatDateTime(post.created_at)}
+            </p>
           </div>
+          {isOwnPost && <PinPostButton postId={post.id} initialPinned={post.pinned ?? false} />}
         </div>
+        {post.story_post && (
+          <Link
+            href={`/story/${post.story_post.id}`}
+            className="mb-4 flex w-fit max-w-full items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-xs text-fg-soft transition hover:bg-surface-3 hover:text-fg"
+          >
+            <BookOpen className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            <span className="truncate">Aus der Story: {post.story_post.title}</span>
+          </Link>
+        )}
         {post.title && <h1 className="mb-4 font-serif text-3xl text-fg">{post.title}</h1>}
-        {post.media_url && post.media_type && (
-          <PostMedia
-            url={post.media_url}
-            type={post.media_type}
-            alt="Beitragsbild"
-            className="mb-4 max-h-[75vh] w-full rounded-lg bg-black object-contain"
-          />
+        {post.media_urls && post.media_urls.length > 1 ? (
+          <MediaCarousel urls={post.media_urls} alt="Beitragsbild" className="mb-4 overflow-hidden rounded-lg" />
+        ) : (
+          post.media_url &&
+          post.media_type && (
+            <PostMedia
+              url={post.media_url}
+              type={post.media_type}
+              alt="Beitragsbild"
+              className="mb-4 max-h-[75vh] w-full rounded-lg bg-black object-contain"
+            />
+          )
         )}
         <div
           className="post-content text-fg-soft"
@@ -78,30 +107,22 @@ export default async function PostDetailPage({
         />
         <div className="mt-4">
           <ReactionBar
+            heart
             target={{ postId: post.id }}
             initialReactions={aggregateReactions(post.reactions, activeCharacterSet)}
+            commentSlot={activeCharacter ? <SharePostButton postId={post.id} characterId={activeCharacter.id} /> : null}
           />
         </div>
       </article>
 
-      <h2 className="mb-4 font-serif text-xl text-fg">
-        Kommentare {comments?.length ? `(${comments.length})` : ""}
-      </h2>
-
-      <div className="mb-6 flex flex-col gap-4">
-        {comments?.map((comment) => (
-          <CommentItem
-            key={comment.id}
-            comment={comment}
-            postId={post.id}
-            canManage={myCharacterIds.has(comment.character_id)}
-            initialLiked={(comment.likes ?? []).some((l) => myCharacterIds.has(l.character_id))}
-            initialLikeCount={comment.likes?.length ?? 0}
-          />
-        ))}
-      </div>
-
-      <CommentForm postId={post.id} characters={mentionableCharacters} />
+      <CommentThread
+        postId={post.id}
+        comments={comments ?? []}
+        activeCharacter={activeCharacter}
+        myCharacterIds={Array.from(myCharacterIds)}
+        mentionable={mentionableCharacters}
+      />
     </div>
+    </CharacterThemed>
   );
 }

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { House, BookOpen, Library, UserPlus, Search, Plus, Network, Menu, X } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { ActiveCharacterMenu } from "./active-character-menu";
+import { InstallAppButton } from "./install-app-button";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { CharacterAvatar } from "./character-avatar";
@@ -198,6 +199,10 @@ export function MobileNav({
           >
             Profil &amp; Einstellungen
           </Link>
+          <InstallAppButton
+            onDone={() => setMoreOpen(false)}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          />
         </div>
       </div>
     </>

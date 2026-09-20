@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -59,27 +60,49 @@ export async function createChat(_prevState: string | null, formData: FormData) 
   redirect(`/chats/${chat.id}`);
 }
 
+export type SendMessageOptions = {
+  // Vom Client vorab erzeugte ID, damit die Nachricht sofort (optimistisch) angezeigt werden kann.
+  id?: string;
+  replyToId?: string | null;
+  sharedPostId?: string | null;
+  storyId?: string | null;
+};
+
 export async function sendMessage(
   chatId: string,
   characterId: string,
   content: string,
   imageUrl?: string | null,
+  options: SendMessageOptions = {},
 ): Promise<string | null> {
-  if (!content.trim() && !imageUrl) return "Nachricht darf nicht leer sein.";
+  if (!content.trim() && !imageUrl && !options.sharedPostId) return "Nachricht darf nicht leer sein.";
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const { error } = await supabase
-    .from("messages")
-    .insert({ chat_id: chatId, character_id: characterId, content, ...(imageUrl ? { image_url: imageUrl } : {}) });
+  const { error } = await supabase.from("messages").insert({
+    ...(options.id ? { id: options.id } : {}),
+    chat_id: chatId,
+    character_id: characterId,
+    content,
+    ...(imageUrl ? { image_url: imageUrl } : {}),
+    ...(options.replyToId ? { reply_to_id: options.replyToId } : {}),
+    ...(options.sharedPostId ? { shared_post_id: options.sharedPostId } : {}),
+    ...(options.storyId ? { story_id: options.storyId } : {}),
+  });
   if (error) return error.message;
 
-  // Die In-App-Benachrichtigung legt bereits der on_message_notify-Trigger an;
-  // hier zusätzlich noch eine echte Push-Benachrichtigung an die anderen
-  // Teilnehmer:innen (unabhängig davon, ob sie die App gerade offen haben).
+  // Die In-App-Benachrichtigung legt bereits der on_message_notify-Trigger an. Die echten
+  // Push-Nachrichten gehen nach der Antwort raus, damit das Senden sich sofort anfühlt.
+  after(() => pushToRecipients(chatId, characterId));
+
+  return null;
+}
+
+async function pushToRecipients(chatId: string, characterId: string) {
+  const supabase = await createClient();
   const [{ data: participants }, { data: sender }] = await Promise.all([
     supabase.from("chat_participants").select("character_id, characters(owner_id)").eq("chat_id", chatId),
     supabase.from("characters").select("name, owner_id").eq("id", characterId).maybeSingle(),
@@ -104,8 +127,40 @@ export async function sendMessage(
       }),
     ),
   );
+}
 
-  return null;
+export type ShareTarget = { id: string; title: string; avatarUrl: string | null };
+
+// Chats des Charakters, in die ein Beitrag geteilt werden kann.
+export async function getShareTargets(characterId: string): Promise<ShareTarget[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("chat_participants")
+    .select("chats(id, name, is_group, avatar_url, chat_participants(characters(id, name, avatar_url)))")
+    .eq("character_id", characterId);
+
+  type Row = {
+    chats: {
+      id: string;
+      name: string | null;
+      is_group: boolean;
+      avatar_url: string | null;
+      chat_participants: { characters: { id: string; name: string; avatar_url: string | null } | null }[];
+    } | null;
+  };
+  return ((data ?? []) as unknown as Row[])
+    .map((r) => r.chats)
+    .filter((c): c is NonNullable<Row["chats"]> => Boolean(c))
+    .map((c) => {
+      const others = c.chat_participants.map((p) => p.characters).filter((x) => x && x.id !== characterId);
+      return c.is_group
+        ? { id: c.id, title: c.name ?? "Gruppe", avatarUrl: c.avatar_url }
+        : { id: c.id, title: others[0]?.name ?? c.name ?? "Chat", avatarUrl: others[0]?.avatar_url ?? null };
+    });
+}
+
+export async function sharePostToChat(chatId: string, characterId: string, postId: string): Promise<string | null> {
+  return sendMessage(chatId, characterId, "", null, { sharedPostId: postId });
 }
 
 export async function updateMessage(messageId: string, content: string): Promise<string | null> {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { resizeImage } from "@/lib/image-resize";
 import { CharacterAvatar } from "./character-avatar";
 import { WorldCover } from "./world-cover";
 
@@ -25,8 +26,9 @@ export function AvatarUpload({
   const [error, setError] = useState<string | null>(null);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const original = e.target.files?.[0];
+    if (!original) return;
+    const file = await resizeImage(original, 1200);
 
     if (file.size > MAX_SIZE) {
       setError("Bild ist zu groß (max. 5 MB).");
