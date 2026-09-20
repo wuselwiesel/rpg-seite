@@ -6,6 +6,7 @@ import { MusicTrimmer } from "@/components/music-trimmer";
 import { ChevronLeft, ImagePlus, Music, Pause, Play, Search, Trash2, Type, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadPostMedia } from "@/lib/upload-media";
+import { ASPECTS, ImageCropper, canCrop } from "@/components/image-cropper";
 import { createStory } from "../actions";
 import { OVERLAY_COLORS, STORY_BACKGROUNDS, STORY_DURATIONS, isDarkStoryBg, overlayColor } from "@/lib/stories";
 import { OVERLAY_TEXT_STYLE, StoryStage } from "@/components/story-stage";
@@ -226,10 +227,17 @@ export default function NewStoryPage() {
   const selected = overlays.find((o) => o.id === selectedId) ?? null;
   const hasText = overlays.some((o) => o.t.trim());
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  const [cropFile, setCropFile] = useState<File | null>(null);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    if (canCrop(file)) setCropFile(file);
+    else void uploadMedia(file);
+  }
+
+  async function uploadMedia(file: File) {
     setUploading(true);
     setUploadError(null);
     const result = await uploadPostMedia(file);
@@ -280,6 +288,18 @@ export default function NewStoryPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-4 sm:py-10">
+      {cropFile && (
+        <ImageCropper
+          file={cropFile}
+          aspects={[ASPECTS.story, ASPECTS.square, ASPECTS.portrait]}
+          title="Story-Bild zuschneiden"
+          onCancel={() => setCropFile(null)}
+          onDone={(cropped) => {
+            setCropFile(null);
+            void uploadMedia(cropped);
+          }}
+        />
+      )}
       <div className="mb-4 flex items-center gap-1">
         <Link
           href="/"

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { CharacterAvatar } from "./character-avatar";
+import { ASPECTS, ImageCropper, canCrop } from "./image-cropper";
 import { WorldCover } from "./world-cover";
 
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -25,9 +26,17 @@ export function AvatarUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const [cropFile, setCropFile] = useState<File | null>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const original = e.target.files?.[0];
+    e.target.value = "";
     if (!original) return;
+    if (canCrop(original)) setCropFile(original);
+    else void upload(original);
+  }
+
+  async function upload(original: File) {
     const file = await resizeImage(original, 1200);
 
     if (file.size > MAX_SIZE) {
@@ -59,6 +68,19 @@ export function AvatarUpload({
 
   return (
     <div className={variant === "cover" ? "flex flex-col gap-3" : "flex items-center gap-4"}>
+      {cropFile && (
+        <ImageCropper
+          file={cropFile}
+          aspects={variant === "cover" ? [ASPECTS.cover, ASPECTS.landscape] : [ASPECTS.square]}
+          round={variant !== "cover"}
+          title={variant === "cover" ? "Titelbild zuschneiden" : "Profilbild zuschneiden"}
+          onCancel={() => setCropFile(null)}
+          onDone={(cropped) => {
+            setCropFile(null);
+            void upload(cropped);
+          }}
+        />
+      )}
       <input type="hidden" name={name} value={url} />
       {variant === "cover" ? (
         <WorldCover name={displayName} coverUrl={url} className="h-32 w-full" />

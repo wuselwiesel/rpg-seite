@@ -7,6 +7,7 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { useDraft } from "@/lib/use-draft";
 import { uploadPostMedia } from "@/lib/upload-media";
 import { TagPeople } from "@/components/tag-people";
+import { ASPECTS, ImageCropper, canCrop } from "@/components/image-cropper";
 import type { Character } from "@/lib/types";
 
 type Kind = "text" | "image" | "video";
@@ -39,10 +40,10 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
     setUploadError(null);
   }
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS - (kind === "image" ? mediaUrls.length : 0));
-    e.target.value = "";
-    if (files.length === 0) return;
+  // Fotos werden nacheinander im Zuschneide-Fenster angezeigt; Videos und GIFs gehen direkt hoch.
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
+
+  async function uploadFiles(files: File[]) {
     setUploading(true);
     setUploadError(null);
     const added: string[] = [];
@@ -56,6 +57,19 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
     }
     if (added.length) setMediaUrls((prev) => (kind === "image" ? [...prev, ...added] : added));
     setUploading(false);
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS - (kind === "image" ? mediaUrls.length : 0));
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (kind === "image") {
+      const direct = files.filter((f) => !canCrop(f));
+      setCropQueue(files.filter(canCrop));
+      if (direct.length) void uploadFiles(direct);
+    } else {
+      void uploadFiles(files);
+    }
   }
 
   const publishIso = scheduled && publishLocal ? new Date(publishLocal).toISOString() : "";
@@ -87,6 +101,20 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
       {/* createPost redirect()s on success, which navigates away before any
           pending/error transition would fire client-side - so the draft is
           cleared optimistically on submit rather than after confirmation. */}
+      {cropQueue.length > 0 && (
+        <ImageCropper
+          key={cropQueue[0].name + cropQueue.length}
+          file={cropQueue[0]}
+          aspects={[ASPECTS.square, ASPECTS.portrait, ASPECTS.landscape]}
+          title={cropQueue.length > 1 ? `Foto zuschneiden (${cropQueue.length} übrig)` : "Foto zuschneiden"}
+          onCancel={() => setCropQueue([])}
+          onDone={(cropped) => {
+            setCropQueue((q) => q.slice(1));
+            void uploadFiles([cropped]);
+          }}
+        />
+      )}
+
       <form action={formAction} onSubmit={() => clear()} className="flex flex-col gap-4">
         <input type="hidden" name="kind" value={kind} />
         <input type="hidden" name="media_url" value={mediaUrl} />
