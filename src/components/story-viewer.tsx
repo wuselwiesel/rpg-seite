@@ -338,7 +338,28 @@ function StoryViewer({
           />
         </div>
 
-        {story.audio_url && <audio key={story.id} ref={audioRef} src={story.audio_url} autoPlay loop muted={muted} />}
+        {story.audio_url && (
+          <audio
+            key={story.id}
+            ref={audioRef}
+            src={story.audio_url}
+            autoPlay
+            muted={muted}
+            onLoadedMetadata={(e) => {
+              // Nur den gewählten Ausschnitt des Songs abspielen.
+              e.currentTarget.currentTime = story.audio_start ?? 0;
+            }}
+            onTimeUpdate={(e) => {
+              const a = e.currentTarget;
+              const s = story.audio_start ?? 0;
+              if (story.audio_length && a.currentTime >= s + story.audio_length) a.currentTime = s;
+            }}
+            onEnded={(e) => {
+              e.currentTarget.currentTime = story.audio_start ?? 0;
+              e.currentTarget.play().catch(() => {});
+            }}
+          />
+        )}
 
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent" />
 

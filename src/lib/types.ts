@@ -202,6 +202,8 @@ export type Story = {
   overlays: StoryOverlay[] | null;
   audio_url: string | null;
   audio_name: string | null;
+  audio_start: number | null;
+  audio_length: number | null;
   created_at: string;
   expires_at: string;
 };

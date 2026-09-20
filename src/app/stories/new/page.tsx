@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { MusicTrimmer } from "@/components/music-trimmer";
 import { ChevronLeft, ImagePlus, Music, Pause, Play, Search, Trash2, Type, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadPostMedia } from "@/lib/upload-media";
@@ -213,7 +214,7 @@ export default function NewStoryPage() {
   const [videoUrl, setVideoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [audio, setAudio] = useState<{ url: string; name: string } | null>(null);
+  const [audio, setAudio] = useState<{ url: string; name: string; start: number; length: number } | null>(null);
   const [audioUploading, setAudioUploading] = useState(false);
   const [musicOpen, setMusicOpen] = useState(false);
   const [bg, setBg] = useState(STORY_BACKGROUNDS[0].id);
@@ -258,7 +259,7 @@ export default function NewStoryPage() {
     const path = `stories/${crypto.randomUUID()}.${file.name.split(".").pop()}`;
     const { error: err } = await supabase.storage.from("chat-media").upload(path, file);
     if (err) setUploadError(err.message);
-    else setAudio({ url: supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl, name: file.name });
+    else setAudio({ url: supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl, name: file.name, start: 0, length: 30 });
     setAudioUploading(false);
   }
 
@@ -296,6 +297,8 @@ export default function NewStoryPage() {
         <input type="hidden" name="bg" value={bg} />
         <input type="hidden" name="audio_url" value={audio?.url ?? ""} />
         <input type="hidden" name="audio_name" value={audio?.name ?? ""} />
+        <input type="hidden" name="audio_start" value={audio?.start ?? 0} />
+        <input type="hidden" name="audio_length" value={audio?.length ?? ""} />
         <input
           type="hidden"
           name="overlays"
@@ -392,11 +395,18 @@ export default function NewStoryPage() {
               </>
             )}
           </div>
-          {audio && <audio src={audio.url} controls className="h-9 w-full" />}
+          {audio && (
+            <MusicTrimmer
+              url={audio.url}
+              start={audio.start}
+              length={audio.length}
+              onChange={({ start, length }) => setAudio((a) => (a ? { ...a, start, length } : a))}
+            />
+          )}
           {!audio && musicOpen && (
             <MusicSearch
               onPick={(song) => {
-                setAudio({ url: song.preview, name: `${song.name} – ${song.artist}` });
+                setAudio({ url: song.preview, name: `${song.name} – ${song.artist}`, start: 0, length: 30 });
                 setMusicOpen(false);
               }}
             />

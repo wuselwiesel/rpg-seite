@@ -20,6 +20,10 @@ export async function createStory(_prev: string | null, formData: FormData) {
   const rawAudioUrl = String(formData.get("audio_url") ?? "").trim();
   const audioUrl = rawAudioUrl.startsWith("https://") ? rawAudioUrl : "";
   const audioName = String(formData.get("audio_name") ?? "").trim();
+  const rawStart = Number(formData.get("audio_start"));
+  const rawLength = Number(formData.get("audio_length"));
+  const audioStart = Number.isFinite(rawStart) ? Math.min(Math.max(rawStart, 0), 3600) : 0;
+  const audioLength = Number.isFinite(rawLength) && rawLength >= 1 ? Math.min(rawLength, 30) : null;
   const hours = Number(formData.get("hours"));
 
   if (!imageUrl && !videoUrl && !text) return "Füge ein Bild oder einen Text hinzu.";
@@ -43,6 +47,8 @@ export async function createStory(_prev: string | null, formData: FormData) {
     bg: isValidStoryBg(bg) ? bg : null,
     audio_url: audioUrl && !videoUrl ? audioUrl : null,
     audio_name: audioUrl && !videoUrl ? audioName.slice(0, 80) : null,
+    audio_start: audioUrl && !videoUrl ? audioStart : 0,
+    audio_length: audioUrl && !videoUrl ? audioLength : null,
     expires_at: new Date(Date.now() + duration * 3600_000).toISOString(),
   });
   if (error) return error.message;

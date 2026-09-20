@@ -34,7 +34,7 @@ export async function createNotification(
 
   await sendPushToUser(params.userId, {
     title: params.actorName,
-    body: params.recipientName ? `Für ${params.recipientName}: ${params.message}` : params.message,
+    body: params.recipientName ? `${params.recipientName}: ${params.message}` : params.message,
     url: params.link,
   });
 }

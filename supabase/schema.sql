@@ -1386,3 +1386,7 @@ create policy "story_likes_delete_own" on public.story_likes
   for delete to authenticated using (
     exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
   );
+
+-- Musik-Ausschnitt einer Story: Startzeit und Länge (Sekunden) innerhalb des Songs.
+alter table public.stories add column if not exists audio_start real not null default 0;
+alter table public.stories add column if not exists audio_length real;
