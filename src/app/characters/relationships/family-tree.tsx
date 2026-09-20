@@ -141,7 +141,7 @@ export function FamilyTree({
     const pp = ps.map((p) => pos.get(p)).filter((p): p is { x: number; y: number } => !!p);
     if (!c || pp.length === 0) return [];
     const px = pp.reduce((s, p) => s + p.x, 0) / pp.length;
-    const py = pp[0].y + R + 4;
+    const py = pp[0].y + R + 36;
     const midY = (py + (c.y - R - 4)) / 2;
     return [{ key: child, d: `M ${px} ${py} V ${midY} H ${c.x} V ${c.y - R - 4}` }];
   });

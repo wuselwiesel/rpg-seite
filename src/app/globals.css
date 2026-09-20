@@ -935,3 +935,8 @@ body {
     font-size: 16px !important;
   }
 }
+
+/* Tastatur offen: untere Navigation ausblenden (siehe KeyboardFix). */
+html.kb-open .mobile-bottom-nav {
+  display: none;
+}

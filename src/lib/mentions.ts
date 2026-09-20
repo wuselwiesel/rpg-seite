@@ -40,3 +40,12 @@ export function parseMentionedCharacterIdsFromHtml(html: string): string[] {
   }
   return Array.from(ids);
 }
+
+// Klartext einer Chat-Nachricht: @[Name](id) wird zu @Name (für Vorschauen und Push-Texte).
+export function plainMentions(text: string): string {
+  return text.replace(MENTION_REGEX, "@$1");
+}
+
+export function mentionedCharacterIds(text: string): string[] {
+  return Array.from(new Set(Array.from(text.matchAll(MENTION_REGEX), (m) => m[2])));
+}

@@ -5,9 +5,9 @@ import { encodeMention } from "@/lib/mentions";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
 
-type MentionQuery = { start: number; query: string };
+export type MentionQuery = { start: number; query: string };
 
-function findMentionQuery(text: string, cursor: number): MentionQuery | null {
+export function findMentionQuery(text: string, cursor: number): MentionQuery | null {
   const uptoCursor = text.slice(0, cursor);
   const atIndex = uptoCursor.lastIndexOf("@");
   if (atIndex === -1) return null;
@@ -21,11 +21,11 @@ function findMentionQuery(text: string, cursor: number): MentionQuery | null {
   return { start: atIndex, query };
 }
 
-function firstName(name: string) {
+export function firstName(name: string) {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
-function encodeMentionsInText(text: string, mentions: { name: string; id: string }[]) {
+export function encodeMentionsInText(text: string, mentions: { name: string; id: string }[]) {
   let result = text;
   for (const mention of mentions) {
     const token = `@${mention.name}`;

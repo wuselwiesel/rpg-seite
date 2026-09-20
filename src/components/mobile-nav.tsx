@@ -84,7 +84,7 @@ export function MobileNav({
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
+      <nav className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
         {mode === "story" ? (
           <>
             <MobileTabLink href="/story" icon={<BookOpen className="h-5 w-5" strokeWidth={2} />} label="Story" />
@@ -135,8 +135,8 @@ export function MobileNav({
         }`}
       />
       <div
-        className={`fixed inset-x-0 bottom-0 z-40 max-h-[88dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5 shadow-lg transition-transform duration-200 lg:hidden ${
-          moreOpen ? "translate-y-0" : "translate-y-full"
+        className={`fixed inset-x-0 bottom-0 z-40 max-h-[88dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5 shadow-lg transition-[transform,visibility] duration-200 lg:hidden ${
+          moreOpen ? "translate-y-0" : "invisible translate-y-full"
         }`}
         style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
       >
