@@ -153,9 +153,9 @@ export async function createComment(
   if (parentId) {
     const { data: parent } = await supabase
       .from("comments")
-      .select("character_id, characters(owner_id)")
+      .select("character_id, characters(owner_id, name)")
       .eq("id", parentId)
-      .maybeSingle<{ character_id: string; characters: { owner_id: string } | null }>();
+      .maybeSingle<{ character_id: string; characters: { owner_id: string; name: string } | null }>();
     if (parent && parent.character_id !== characterId && parent.characters?.owner_id) {
       const { data: actor } = await supabase
         .from("characters")
@@ -169,15 +169,16 @@ export async function createComment(
         actorAvatarUrl: actor?.avatar_url ?? null,
         link: `/posts/${postId}`,
         message: "hat auf deinen Kommentar geantwortet",
+        recipientName: parent.characters.name,
       });
     }
   }
 
   const { data: post } = await supabase
     .from("posts")
-    .select("character_id, characters(owner_id)")
+    .select("character_id, characters(owner_id, name)")
     .eq("id", postId)
-    .maybeSingle<{ character_id: string; characters: { owner_id: string } | null }>();
+    .maybeSingle<{ character_id: string; characters: { owner_id: string; name: string } | null }>();
 
   if (post && post.character_id !== characterId && post.characters?.owner_id) {
     const { data: actor } = await supabase
@@ -193,6 +194,7 @@ export async function createComment(
       actorAvatarUrl: actor?.avatar_url ?? null,
       link: `/posts/${postId}`,
       message: "hat deinen Beitrag kommentiert",
+      recipientName: post.characters.name,
     });
   }
 
@@ -282,20 +284,23 @@ export async function toggleLike(target: { postId: string } | { commentId: strin
 
     let ownerId: string | null = null;
     let ownerCharacterId: string | null = null;
+    let ownerName: string | null = null;
     if ("postId" in target) {
       const { data: post } = await supabase
         .from("posts")
-        .select("character_id, characters(owner_id)")
+        .select("character_id, characters(owner_id, name)")
         .eq("id", target.postId)
-        .maybeSingle<{ character_id: string; characters: { owner_id: string } | null }>();
+        .maybeSingle<{ character_id: string; characters: { owner_id: string; name: string } | null }>();
+      ownerName = post?.characters?.name ?? null;
       ownerId = post?.characters?.owner_id ?? null;
       ownerCharacterId = post?.character_id ?? null;
     } else {
       const { data: comment } = await supabase
         .from("comments")
-        .select("post_id, character_id, characters(owner_id)")
+        .select("post_id, character_id, characters(owner_id, name)")
         .eq("id", target.commentId)
-        .maybeSingle<{ post_id: string; character_id: string; characters: { owner_id: string } | null }>();
+        .maybeSingle<{ post_id: string; character_id: string; characters: { owner_id: string; name: string } | null }>();
+      ownerName = comment?.characters?.name ?? null;
       ownerId = comment?.characters?.owner_id ?? null;
       ownerCharacterId = comment?.character_id ?? null;
       postIdForRevalidate = comment?.post_id ?? null;
@@ -315,6 +320,7 @@ export async function toggleLike(target: { postId: string } | { commentId: strin
         actorAvatarUrl: actor?.avatar_url ?? null,
         link: `/posts/${postIdForRevalidate}`,
         message: "postId" in target ? "gefällt dein Beitrag" : "gefällt dein Kommentar",
+        recipientName: ownerName,
       });
     }
   }

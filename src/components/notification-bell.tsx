@@ -155,8 +155,10 @@ export function NotificationBell({
                     <span className="text-fg-soft">
                       <span className="font-medium text-fg">{n.actor_name ?? "Jemand"}</span> {n.message}
                     </span>
-                    {n.type === "chat_message" && n.recipient_name && (
-                      <span className="mt-0.5 block text-xs text-fg-soft">als {n.recipient_name}</span>
+                    {n.recipient_name && (
+                      <span className="mt-0.5 block text-xs text-fg-soft">
+                        {n.type === "chat_message" ? "als" : "für"} {n.recipient_name}
+                      </span>
                     )}
                     <span className="mt-0.5 block text-xs text-muted">{formatDateTime(n.created_at)}</span>
                   </span>

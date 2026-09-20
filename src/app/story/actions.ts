@@ -248,7 +248,7 @@ export async function createDiceRoll(
   if (targetCharacterId && targetCharacterId !== characterId) {
     const { data: target } = await supabase
       .from("characters")
-      .select("owner_id")
+      .select("owner_id, name")
       .eq("id", targetCharacterId)
       .maybeSingle();
 
@@ -265,6 +265,7 @@ export async function createDiceRoll(
         actorName: actor?.name ?? "Jemand",
         actorAvatarUrl: actor?.avatar_url ?? null,
         link: `/story/${storyPostId}`,
+        recipientName: target.name,
         message: success
           ? `hat erfolgreich auf „${label}“ gegen dich gewürfelt`
           : `hat auf „${label}“ gegen dich gewürfelt – ohne Erfolg`,

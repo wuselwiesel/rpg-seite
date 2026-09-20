@@ -142,6 +142,7 @@ export async function toggleStoryLike(storyId: string): Promise<{ liked: boolean
       actorAvatarUrl: character.avatar_url,
       link: `/characters/${story.character_id}`,
       message: "gefällt deine Story",
+      recipientName: story.characters.name,
     });
   }
   return { liked: true };

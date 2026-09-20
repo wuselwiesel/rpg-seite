@@ -923,7 +923,8 @@ create function public.create_notification(
   p_actor_name text,
   p_actor_avatar_url text,
   p_link text,
-  p_message text
+  p_message text,
+  p_recipient_name text default null
 )
 returns void
 language plpgsql
@@ -931,12 +932,12 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.notifications (user_id, type, actor_name, actor_avatar_url, link, message)
-  values (p_user_id, p_type, p_actor_name, p_actor_avatar_url, p_link, p_message);
+  insert into public.notifications (user_id, type, actor_name, actor_avatar_url, link, message, recipient_name)
+  values (p_user_id, p_type, p_actor_name, p_actor_avatar_url, p_link, p_message, p_recipient_name);
 end;
 $$;
 
-grant execute on function public.create_notification(uuid, text, text, text, text, text) to authenticated;
+grant execute on function public.create_notification(uuid, text, text, text, text, text, text) to authenticated;
 
 -- Neue Chat-Nachrichten lösen automatisch eine Benachrichtigung für alle
 -- anderen Teilnehmer:innen aus - unabhängig davon, ob die Nachricht über eine

@@ -18,6 +18,8 @@ export async function createNotification(
     actorAvatarUrl: string | null;
     link: string;
     message: string;
+    // Charakter der Empfänger:in, für den die Benachrichtigung gedacht ist.
+    recipientName?: string | null;
   },
 ) {
   await supabase.rpc("create_notification", {
@@ -27,11 +29,12 @@ export async function createNotification(
     p_actor_avatar_url: params.actorAvatarUrl,
     p_link: params.link,
     p_message: params.message,
+    p_recipient_name: params.recipientName ?? null,
   });
 
   await sendPushToUser(params.userId, {
     title: params.actorName,
-    body: params.message,
+    body: params.recipientName ? `Für ${params.recipientName}: ${params.message}` : params.message,
     url: params.link,
   });
 }
@@ -95,7 +98,7 @@ export async function notifyMentionedCharacterIds(
   const supabase = await createClient();
 
   const [{ data: owners }, { data: actor }] = await Promise.all([
-    supabase.from("characters").select("owner_id").in("id", mentionedCharacterIds),
+    supabase.from("characters").select("id, owner_id, name").in("id", mentionedCharacterIds),
     supabase.from("characters").select("name, avatar_url").eq("id", actorCharacterId).maybeSingle(),
   ]);
 
@@ -113,6 +116,10 @@ export async function notifyMentionedCharacterIds(
         actorAvatarUrl: actor?.avatar_url ?? null,
         link,
         message,
+        recipientName: (owners ?? [])
+          .filter((o) => o.owner_id === targetUserId)
+          .map((o) => o.name)
+          .join(", "),
       }),
     ),
   );
