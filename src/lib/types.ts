@@ -55,6 +55,7 @@ export type Post = {
   publish_at?: string;
   story_post_id?: string | null;
   story_post?: { id: string; title: string } | null;
+  post_tags?: { characters: { id: string; name: string; username: string | null } | null }[];
   created_at: string;
   updated_at?: string | null;
   characters: Character | null;

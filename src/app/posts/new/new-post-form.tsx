@@ -6,6 +6,8 @@ import { createPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { useDraft } from "@/lib/use-draft";
 import { uploadPostMedia } from "@/lib/upload-media";
+import { TagPeople } from "@/components/tag-people";
+import type { Character } from "@/lib/types";
 
 type Kind = "text" | "image" | "video";
 
@@ -17,7 +19,7 @@ const KINDS: { id: Kind; label: string; icon: typeof Type }[] = [
   { id: "video", label: "Video", icon: Film },
 ];
 
-export function NewPostForm({ storyPosts }: { storyPosts: { id: string; title: string }[] }) {
+export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; title: string }[]; people: Character[] }) {
   const [error, formAction, pending] = useActionState(createPost, null);
   const { draft, restored, update, clear } = useDraft("draft:post-new", { content: "" });
   const [kind, setKind] = useState<Kind>("text");
@@ -175,6 +177,8 @@ export function NewPostForm({ storyPosts }: { storyPosts: { id: string; title: s
             </label>
           </>
         )}
+
+        <TagPeople people={people} />
 
         {storyPosts.length > 0 && (
           <label className="flex flex-col gap-1 text-sm text-fg-soft">

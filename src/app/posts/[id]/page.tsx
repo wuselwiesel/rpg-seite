@@ -33,7 +33,7 @@ export default async function PostDetailPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("*, characters(*), reactions(emoji, character_id), story_post:story_post_id(id, title)")
+    .select("*, characters!posts_character_id_fkey(*), reactions(emoji, character_id), story_post:story_post_id(id, title), post_tags(characters(id, name, username))")
     .eq("id", id)
     .maybeSingle<Post>();
 
@@ -97,6 +97,18 @@ export default async function PostDetailPage({
             <BookOpen className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             <span className="truncate">Aus der Story: {post.story_post.title}</span>
           </Link>
+        )}
+        {post.post_tags && post.post_tags.length > 0 && (
+          <p className="mb-3 flex flex-wrap items-center gap-x-1.5 text-sm text-fg-soft">
+            <span className="text-muted">Mit</span>
+            {post.post_tags.map((t) =>
+              t.characters ? (
+                <Link key={t.characters.id} href={`/characters/${t.characters.id}`} className="font-medium text-accent hover:underline">
+                  {t.characters.username ? `@${t.characters.username}` : t.characters.name}
+                </Link>
+              ) : null,
+            )}
+          </p>
         )}
         {post.title && <h1 className="mb-4 font-serif text-3xl text-fg">{post.title}</h1>}
         {post.media_urls && post.media_urls.length > 1 ? (

@@ -42,6 +42,11 @@ export function SocialPostCard({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-fg">{handle}</p>
             {post.worldName && <p className="truncate text-xs text-muted">in {post.worldName}</p>}
+            {post.tagged.length > 0 && (
+              <p className="truncate text-xs text-muted">
+                mit {post.tagged.map((t) => t.username ?? t.name).join(", ")}
+              </p>
+            )}
           </div>
           {post.pinned && <Pin className="h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={2} aria-label="Angepinnt" />}
           <time

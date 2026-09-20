@@ -120,6 +120,34 @@ export async function createPost(_prevState: string | null, formData: FormData) 
 
   if (error || !data) return error?.message ?? "Post konnte nicht erstellt werden.";
 
+  // Markierte Charaktere (wie bei Instagram): speichern und benachrichtigen.
+  const taggedIds = Array.from(new Set(formData.getAll("tagged_character_id").map(String))).filter((id) => id !== characterId).slice(0, 20);
+  if (taggedIds.length > 0) {
+    const { data: taggedChars } = await supabase.from("characters").select("id, owner_id, name").in("id", taggedIds);
+    const valid = taggedChars ?? [];
+    if (valid.length > 0) {
+      await supabase.from("post_tags").insert(valid.map((c) => ({ post_id: data.id, character_id: c.id })));
+      if (!isScheduled) {
+        const { data: actor } = await supabase.from("characters").select("name, avatar_url").eq("id", characterId).maybeSingle();
+        await Promise.all(
+          valid
+            .filter((c) => c.owner_id !== user.id)
+            .map((c) =>
+              createNotification(supabase, {
+                userId: c.owner_id,
+                type: "mention",
+                actorName: actor?.name ?? "Jemand",
+                actorAvatarUrl: actor?.avatar_url ?? null,
+                link: `/posts/${data.id}`,
+                message: "hat dich in einem Beitrag markiert",
+                recipientName: c.name,
+              }),
+            ),
+        );
+      }
+    }
+  }
+
   revalidatePath("/");
   redirect(isScheduled ? `/characters/${characterId}?tab=scheduled` : `/posts/${data.id}`);
 }

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
 import { NewPostForm } from "./new-post-form";
 
 export default async function NewPostPage() {
@@ -25,5 +25,7 @@ export default async function NewPostPage() {
         .returns<{ id: string; title: string }[]>()
     : { data: [] as { id: string; title: string }[] };
 
-  return <NewPostForm storyPosts={storyPosts ?? []} />;
+  const people = world ? (await getMentionableCharacters(user.id, world.id)).filter((c) => c.id !== character?.id) : [];
+
+  return <NewPostForm storyPosts={storyPosts ?? []} people={people} />;
 }

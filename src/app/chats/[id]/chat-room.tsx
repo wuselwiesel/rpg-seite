@@ -82,7 +82,7 @@ export function ChatRoom({
     if (row.shared_post_id) {
       const { data } = await supabase
         .from("posts")
-        .select("id, content, media_url, media_type, media_urls, characters(name, username, avatar_url)")
+        .select("id, content, media_url, media_type, media_urls, characters!posts_character_id_fkey(name, username, avatar_url)")
         .eq("id", row.shared_post_id)
         .maybeSingle();
       if (data) patch.shared_post = data as unknown as Message["shared_post"];

@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import { sendPushToUser } from "@/lib/push";
+import { isAllowedGifUrl } from "@/lib/gif";
+import { mentionedCharacterIds } from "@/lib/mentions";
 
 export async function createChat(_prevState: string | null, formData: FormData) {
   const isGroup = formData.get("is_group") === "on";
@@ -76,6 +78,10 @@ export async function sendMessage(
   options: SendMessageOptions = {},
 ): Promise<string | null> {
   if (!content.trim() && !imageUrl && !options.sharedPostId) return "Nachricht darf nicht leer sein.";
+  if (imageUrl) {
+    const storage = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`;
+    if (!imageUrl.startsWith(storage) && !isAllowedGifUrl(imageUrl)) return "Dieses Bild kann nicht gesendet werden.";
+  }
   const supabase = await createClient();
   const {
     data: { user },
@@ -96,15 +102,16 @@ export async function sendMessage(
 
   // Die In-App-Benachrichtigung legt bereits der on_message_notify-Trigger an. Die echten
   // Push-Nachrichten gehen nach der Antwort raus, damit das Senden sich sofort anfühlt.
-  after(() => pushToRecipients(chatId, characterId));
+  after(() => pushToRecipients(chatId, characterId, content));
 
   return null;
 }
 
-async function pushToRecipients(chatId: string, characterId: string) {
+async function pushToRecipients(chatId: string, characterId: string, content: string) {
   const supabase = await createClient();
+  const mentioned = new Set(mentionedCharacterIds(content));
   const [{ data: participants }, { data: sender }] = await Promise.all([
-    supabase.from("chat_participants").select("character_id, characters(owner_id)").eq("chat_id", chatId),
+    supabase.from("chat_participants").select("character_id, muted, characters(owner_id)").eq("chat_id", chatId),
     supabase.from("characters").select("name, owner_id").eq("id", characterId).maybeSingle(),
   ]);
 
@@ -112,7 +119,9 @@ async function pushToRecipients(chatId: string, characterId: string) {
   // enthält den Empfänger-Charakter, damit ein Klick zu ihm wechselt.
   const recipients = new Map<string, string>();
   for (const p of participants ?? []) {
-    const row = p as unknown as { character_id: string; characters: { owner_id: string } | null };
+    const row = p as unknown as { character_id: string; muted: boolean; characters: { owner_id: string } | null };
+    // Stumme Chats melden sich nur bei @-Erwähnung.
+    if (row.muted && !mentioned.has(row.character_id)) continue;
     if (row.character_id !== characterId && row.characters?.owner_id) {
       recipients.set(row.character_id, row.characters.owner_id);
     }
@@ -122,7 +131,9 @@ async function pushToRecipients(chatId: string, characterId: string) {
     Array.from(recipients.entries()).map(([recipientCharacterId, ownerId]) =>
       sendPushToUser(ownerId, {
         title: sender?.name ?? "Neue Nachricht",
-        body: "hat dir eine Nachricht geschickt",
+        body: mentioned.has(recipientCharacterId)
+          ? "hat dich in einer Nachricht erwähnt"
+          : "hat dir eine Nachricht geschickt",
         url: `/chats/${chatId}?as=${recipientCharacterId}`,
       }),
     ),
@@ -268,4 +279,20 @@ export async function deleteChat(chatId: string): Promise<string | null> {
 
   revalidatePath("/chats");
   redirect("/chats");
+}
+
+// Chat stumm schalten: Benachrichtigungen kommen dann nur noch bei @-Erwähnung. Gilt für alle eigenen Charaktere im Chat.
+export async function setChatMuted(chatId: string, muted: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: mine } = await supabase.from("characters").select("id").eq("owner_id", user.id);
+  const ids = (mine ?? []).map((c) => c.id);
+  if (ids.length === 0) return null;
+  const { error } = await supabase.from("chat_participants").update({ muted }).eq("chat_id", chatId).in("character_id", ids);
+  if (error) return error.message;
+  revalidatePath("/chats");
+  return null;
 }

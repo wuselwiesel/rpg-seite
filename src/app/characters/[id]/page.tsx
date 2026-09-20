@@ -41,12 +41,17 @@ export default async function CharacterProfilePage({
 
   let postsQuery = supabase
     .from("posts")
-    .select("*, characters(*), comments(count), reactions(emoji, character_id)")
+    .select("*, characters!posts_character_id_fkey(*), comments(count), reactions(emoji, character_id)")
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false });
   if (tab === "tagged") {
     // Erwähnungen (@) im Beitragstext: <span data-type="mention" data-id="...">
-    postsQuery = postsQuery.ilike("content", `%data-id="${id}"%`).lte("publish_at", nowIso).neq("character_id", id);
+    const { data: tagRows } = await supabase.from("post_tags").select("post_id").eq("character_id", id);
+    const taggedIds = (tagRows ?? []).map((r) => r.post_id as string);
+    postsQuery = postsQuery
+      .or(`content.ilike.%data-id="${id}"%${taggedIds.length ? `,id.in.(${taggedIds.join(",")})` : ""}`)
+      .lte("publish_at", nowIso)
+      .neq("character_id", id);
   } else if (tab === "scheduled") {
     postsQuery = postsQuery.eq("character_id", id).gt("publish_at", nowIso);
   } else {

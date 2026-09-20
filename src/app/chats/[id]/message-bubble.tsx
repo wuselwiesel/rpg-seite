@@ -9,6 +9,7 @@ import { ReactionBar } from "@/components/reaction-bar";
 import { PROFILE_FONTS } from "@/lib/profile-theme";
 import { formatDateTime } from "@/lib/format";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
+import { parseMentions, plainMentions } from "@/lib/mentions";
 import { storyBackground } from "@/lib/stories";
 import type { ReactionSummary } from "@/lib/reactions";
 import type { Character, Message } from "@/lib/types";
@@ -176,7 +177,7 @@ export function MessageBubble({
           {replyTarget && (
             <div className={`mb-1 rounded-md border-l-2 px-2 py-1 text-xs ${isOwn ? "border-white/60 bg-black/10" : "border-accent bg-black/5"}`}>
               <p className="font-semibold">{replyTarget.characters?.name}</p>
-              <p className="line-clamp-2 opacity-90">{replyTarget.content || (replyTarget.image_url ? "Foto" : "Beitrag")}</p>
+              <p className="line-clamp-2 opacity-90">{plainMentions(replyTarget.content) || (replyTarget.image_url ? "Foto" : "Beitrag")}</p>
             </div>
           )}
           {message.story && <StoryReplyPreview story={message.story} onDark={isOwn} />}
@@ -209,10 +210,22 @@ export function MessageBubble({
               {message.image_url && (
                 <a href={message.image_url} target="_blank" rel="noreferrer" className="mb-1 block">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={message.image_url} alt="Gesendetes Bild" className="max-h-72 max-w-full rounded-md object-cover" />
+                  <img src={message.image_url} alt="Gesendetes Bild oder GIF" className="max-h-72 max-w-full rounded-md object-cover" />
                 </a>
               )}
-              {message.content && <p className="whitespace-pre-line text-[15px] leading-relaxed">{message.content}</p>}
+              {message.content && (
+                <p className="whitespace-pre-line text-[15px] leading-relaxed">
+                  {parseMentions(message.content).map((seg, i) =>
+                    seg.type === "mention" ? (
+                      <span key={i} className="rounded bg-black/10 px-1 font-semibold">
+                        @{seg.name}
+                      </span>
+                    ) : (
+                      <span key={i}>{seg.value}</span>
+                    ),
+                  )}
+                </p>
+              )}
             </>
           )}
           {!editing && !message.pending && (

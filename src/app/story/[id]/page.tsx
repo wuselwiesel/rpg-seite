@@ -106,7 +106,7 @@ export default async function StoryPostDetailPage({
   // Ingame-Beiträge, die mit dieser Story-Szene verknüpft sind ("Aus der Story").
   const { data: linkedPosts } = await supabase
     .from("posts")
-    .select("id, content, media_url, media_type, created_at, characters(name, username)")
+    .select("id, content, media_url, media_type, created_at, characters!posts_character_id_fkey(name, username)")
     .eq("story_post_id", id)
     .lte("publish_at", new Date().toISOString())
     .order("created_at", { ascending: false })

@@ -22,4 +22,5 @@ export type FeedPost = {
   mediaUrls: string[] | null;
   storyPost: { id: string; title: string } | null;
   pinned: boolean;
+  tagged: { id: string; name: string; username: string | null }[];
 };
