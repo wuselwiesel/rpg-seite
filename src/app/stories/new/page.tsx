@@ -32,21 +32,10 @@ function MusicSearch({ onPick }: { onPick: (song: Song) => void }) {
     setLoading(true);
     setFailed(false);
     try {
-      const res = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=12&country=DE`,
-      );
-      const json = await res.json();
-      setSongs(
-        (json.results as Record<string, string | number>[])
-          .filter((r) => r.previewUrl)
-          .map((r) => ({
-            id: Number(r.trackId),
-            name: String(r.trackName),
-            artist: String(r.artistName),
-            art: String(r.artworkUrl60 ?? ""),
-            preview: String(r.previewUrl),
-          })),
-      );
+      const res = await fetch(`/api/music-search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error("Suche fehlgeschlagen");
+      const json = (await res.json()) as { songs: Song[] };
+      setSongs(json.songs);
     } catch {
       setFailed(true);
     }
