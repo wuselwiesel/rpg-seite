@@ -157,6 +157,14 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         </div>
       )}
 
+      {arc && (
+        <p className="mb-4 text-sm">
+          <Link href={`/story/arc/${arc}/buch`} className="text-accent hover:underline">
+            Diesen Handlungsstrang als Buch (PDF / E-Book)
+          </Link>
+        </p>
+      )}
+
       <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} />
 
       <div className="mb-4 flex flex-wrap gap-2">

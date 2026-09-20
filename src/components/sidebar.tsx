@@ -60,7 +60,7 @@ export async function Sidebar() {
             </Link>
           </div>
         </aside>
-        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-app px-4 py-2.5 lg:hidden">
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-app px-4 py-2.5 print:hidden lg:hidden">
           <Link href="/worlds" className="block">
             <Wordmark height={34} />
           </Link>

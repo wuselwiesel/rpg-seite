@@ -940,3 +940,23 @@ body {
 html.kb-open .mobile-bottom-nav {
   display: none;
 }
+
+/* Druckansicht (Buch als PDF): Navigation ausblenden, weißes Blatt. */
+@media print {
+  aside,
+  .mobile-bottom-nav,
+  .no-print {
+    display: none !important;
+  }
+  body,
+  main {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .book-break {
+    break-before: page;
+  }
+  .book-avoid {
+    break-inside: avoid;
+  }
+}
