@@ -29,6 +29,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const bio = String(formData.get("bio") ?? "").trim();
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
   const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
+  const house = String(formData.get("house") ?? "").trim().slice(0, 60);
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -58,6 +59,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       name,
       ...(username.value ? { username: username.value } : {}),
       bio: bio || null,
+      house: house || null,
       avatar_url: avatarUrl || null,
       sheet_url: sheetUrl || null,
     })
@@ -88,6 +90,7 @@ export async function updateCharacter(
   const bio = String(formData.get("bio") ?? "").trim();
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
   const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
+  const house = String(formData.get("house") ?? "").trim().slice(0, 60);
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -114,6 +117,7 @@ export async function updateCharacter(
       theme_accent: themeAccent || null,
       theme_bg: themeBg || null,
       bio: bio || null,
+      house: house || null,
       avatar_url: avatarUrl || null,
       sheet_url: sheetUrl || null,
     })
@@ -161,12 +165,62 @@ export async function setActiveCharacter(characterId: string) {
   revalidatePath("/", "layout");
 }
 
+const CATEGORIES = ["familie", "liebe", "freundschaft", "buendnis", "rivalitaet", "sonstiges"] as const;
+const FAMILY_ROLES = ["eltern", "partner", "geschwister", "verwandt"] as const;
+
+function parseCategory(raw: FormDataEntryValue | null): (typeof CATEGORIES)[number] {
+  const value = String(raw ?? "");
+  return (CATEGORIES as readonly string[]).includes(value) ? (value as (typeof CATEGORIES)[number]) : "sonstiges";
+}
+
+function parseFamilyRole(raw: FormDataEntryValue | null): (typeof FAMILY_ROLES)[number] {
+  const value = String(raw ?? "");
+  return (FAMILY_ROLES as readonly string[]).includes(value) ? (value as (typeof FAMILY_ROLES)[number]) : "verwandt";
+}
+
+// Beziehung entwickelt sich weiter ("Feinde -> Verbündete"): der Verlauf entsteht automatisch per Trigger.
+export async function updateRelationship(
+  relationshipId: string,
+  _prevState: string | null,
+  formData: FormData,
+): Promise<string | null> {
+  const type = String(formData.get("type") ?? "").trim().slice(0, 60);
+  const color = String(formData.get("color") ?? "").trim();
+  const label = String(formData.get("label") ?? "").trim().slice(0, 200);
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+  const category = parseCategory(formData.get("category"));
+  const familyRole = category === "familie" ? parseFamilyRole(formData.get("family_role")) : null;
+  if (!type) return "Bitte eine Bezeichnung angeben.";
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) return "Ungültige Farbe.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("character_relationships")
+    .update(
+      { type, color, label: label || null, category, family_role: familyRole, change_note: note || null },
+      { count: "exact" },
+    )
+    .eq("id", relationshipId);
+  if (error) return error.message;
+  if (!count) return "Keine Berechtigung, diese Beziehung zu ändern.";
+
+  revalidatePath("/characters/relationships");
+  return null;
+}
+
 export async function createRelationship(_prevState: string | null, formData: FormData) {
   const characterAId = String(formData.get("character_a_id") ?? "");
   const characterBId = String(formData.get("character_b_id") ?? "");
   const type = String(formData.get("type") ?? "").trim();
   const color = String(formData.get("color") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
+  const category = parseCategory(formData.get("category"));
+  const familyRole = category === "familie" ? parseFamilyRole(formData.get("family_role")) : null;
 
   if (!characterAId || !characterBId) return "Bitte zwei Charaktere auswählen.";
   if (characterAId === characterBId) return "Wähle zwei unterschiedliche Charaktere.";
@@ -193,6 +247,8 @@ export async function createRelationship(_prevState: string | null, formData: Fo
     type,
     color,
     label: label || null,
+    category,
+    family_role: familyRole,
     created_by: user.id,
   });
 

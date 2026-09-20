@@ -34,6 +34,7 @@ export type Character = {
   theme_font?: string | null;
   theme_accent?: string | null;
   theme_bg?: string | null;
+  house?: string | null;
   avatar_url: string | null;
   bio: string | null;
   sheet_url: string | null;
@@ -193,7 +194,24 @@ export type CharacterRelationship = {
   type: string;
   color: string;
   label: string | null;
+  category: RelationshipCategory;
+  family_role: FamilyRole | null;
   created_by: string;
+  created_at: string;
+  updated_at?: string;
+};
+
+export type RelationshipCategory = "familie" | "liebe" | "freundschaft" | "buendnis" | "rivalitaet" | "sonstiges";
+export type FamilyRole = "eltern" | "partner" | "geschwister" | "verwandt";
+
+export type RelationshipHistoryEntry = {
+  id: string;
+  relationship_id: string;
+  type: string;
+  category: RelationshipCategory;
+  color: string;
+  label: string | null;
+  note: string | null;
   created_at: string;
 };
 

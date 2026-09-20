@@ -65,6 +65,18 @@ export function EditCharacterForm({ character }: { character: Character }) {
         initialBg={character.theme_bg}
       />
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
+        Haus / Familie (optional)
+        <input
+          type="text"
+          name="house"
+          defaultValue={character.house ?? ""}
+          maxLength={60}
+          placeholder="z. B. Haus Blackwood"
+          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+        />
+        <span className="text-xs text-muted">Für den Stammbaum: Charaktere mit demselben Namen werden gruppiert.</span>
+      </label>
+      <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Charakterbogen-Link (optional)
         <input
           type="url"
