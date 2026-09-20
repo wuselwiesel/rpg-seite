@@ -357,3 +357,19 @@ export async function togglePinPost(postId: string): Promise<string | null> {
   revalidatePath(`/characters/${post.character_id}`);
   return null;
 }
+
+export async function deletePost(postId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  // RLS (posts_delete_own) lässt nur eigene Beiträge zu; count zeigt, ob wirklich etwas gelöscht wurde.
+  const { error, count } = await supabase.from("posts").delete({ count: "exact" }).eq("id", postId);
+  if (error) return "Löschen fehlgeschlagen.";
+  if (!count) return "Beitrag nicht gefunden.";
+
+  revalidatePath("/");
+  return null;
+}
