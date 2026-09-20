@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createStoryEntry } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { useDraft } from "@/lib/use-draft";
 import type { Character } from "@/lib/types";
 
 export function StoryEntryForm({
@@ -28,20 +29,27 @@ export function StoryEntryForm({
   const [error, formAction, pending] = useActionState(action, null);
   const [resetKey, setResetKey] = useState(0);
   const wasPending = useRef(false);
+  const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
 
   useEffect(() => {
     if (wasPending.current && !pending && !error) {
+      clear();
+      update({ content: "" });
       setResetKey((k) => k + 1);
     }
     wasPending.current = pending;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending, error]);
 
   return (
     <form action={formAction} className="flex flex-col gap-2">
       {narrator && <input type="hidden" name="narrator" value="on" />}
+      {restored && (
       <RichTextEditor
         key={resetKey}
         name="content"
+        initialContent={draft.content}
+        onChange={(html) => update({ content: html })}
         mentionCharacters={characters}
         minHeight={100}
         showToolbar={showToolbar}
@@ -51,6 +59,7 @@ export function StoryEntryForm({
             : `Schreib die Geschichte weiter als ${characterName}... (@ um Charaktere zu markieren)`
         }
       />
+      )}
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button

@@ -7,6 +7,9 @@ import { ChevronLeft, ImagePlus, Music, Pause, Play, Search, Trash2, Type, X } f
 import { createClient } from "@/lib/supabase/client";
 import { uploadPostMedia } from "@/lib/upload-media";
 import { ASPECTS, ImageCropper, canCrop } from "@/components/image-cropper";
+import { StoryStickerEditor } from "@/components/story-sticker-editor";
+import { StoryStickerLayer } from "@/components/story-stickers";
+import { parseStickers, type StorySticker } from "@/lib/story-stickers";
 import { createStory } from "../actions";
 import { OVERLAY_COLORS, STORY_BACKGROUNDS, STORY_DURATIONS, isDarkStoryBg, overlayColor } from "@/lib/stories";
 import { OVERLAY_TEXT_STYLE, StoryStage } from "@/components/story-stage";
@@ -220,6 +223,8 @@ export default function NewStoryPage() {
   const [musicOpen, setMusicOpen] = useState(false);
   const [bg, setBg] = useState(STORY_BACKGROUNDS[0].id);
   const [overlays, setOverlays] = useState<StoryOverlay[]>([]);
+  const [stickers, setStickers] = useState<StorySticker[]>([]);
+  const validStickers = parseStickers(JSON.stringify(stickers));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [freshId, setFreshId] = useState<string | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -319,6 +324,7 @@ export default function NewStoryPage() {
         <input type="hidden" name="audio_name" value={audio?.name ?? ""} />
         <input type="hidden" name="audio_start" value={audio?.start ?? 0} />
         <input type="hidden" name="audio_length" value={audio?.length ?? ""} />
+        <input type="hidden" name="stickers" value={JSON.stringify(validStickers)} />
         <input
           type="hidden"
           name="overlays"
@@ -346,7 +352,8 @@ export default function NewStoryPage() {
                   onChange={(p) => patch(o.id, p)}
                 />
               ))}
-              {!imageUrl && !videoUrl && overlays.length === 0 && (
+              <StoryStickerLayer story={{ id: "preview", stickers: null }} isOwner preview stickers={validStickers} />
+              {!imageUrl && !videoUrl && overlays.length === 0 && validStickers.length === 0 && (
                 <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-neutral-800/70">
                   Füge ein Bild oder einen Text hinzu
                 </p>
@@ -383,6 +390,7 @@ export default function NewStoryPage() {
             Text
           </button>
         </div>
+        <StoryStickerEditor stickers={stickers} onChange={setStickers} />
         {!videoUrl && (
         <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3">
           <div className="flex items-center gap-2">
@@ -533,7 +541,7 @@ export default function NewStoryPage() {
 
         <button
           type="submit"
-          disabled={pending || uploading || (!imageUrl && !videoUrl && !hasText)}
+          disabled={pending || uploading || (!imageUrl && !videoUrl && !hasText && validStickers.length === 0)}
           className="rounded-md bg-accent-strong px-5 py-2.5 font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
         >
           {pending ? "Veröffentliche..." : "Story teilen"}

@@ -65,6 +65,28 @@ export function ChatRoom({
   const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Entwurf pro Chat im Browser merken (übersteht Tab-Wechsel und Neuladen).
+  const draftKey = `draft:chat:${chatId}`;
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) Promise.resolve().then(() => setDraft((d) => d || saved));
+    } catch {
+      // ignore
+    }
+  }, [draftKey]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        if (draft.trim()) localStorage.setItem(draftKey, draft);
+        else localStorage.removeItem(draftKey);
+      } catch {
+        // ignore
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [draft, draftKey]);
   const [typing, setTyping] = useState<Record<string, { name: string; until: number }>>({});
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const lastTypingSent = useRef(0);

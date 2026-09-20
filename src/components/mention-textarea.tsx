@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { encodeMention } from "@/lib/mentions";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
@@ -50,6 +50,7 @@ export function MentionTextarea({
   initialMentions = [],
   autoFocus = false,
   className = "",
+  draftKey,
 }: {
   name: string;
   characters: Character[];
@@ -60,12 +61,44 @@ export function MentionTextarea({
   initialMentions?: { name: string; id: string }[];
   autoFocus?: boolean;
   className?: string;
+  // Wenn gesetzt, wird der Text als Entwurf im Browser gemerkt (nur bei leerem Startwert).
+  draftKey?: string;
 }) {
   const [text, setText] = useState(initialText);
   const [mentions, setMentions] = useState<{ name: string; id: string }[]>(initialMentions);
   const [query, setQuery] = useState<MentionQuery | null>(null);
   const [highlighted, setHighlighted] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!draftKey || initialText) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { text?: string; mentions?: { name: string; id: string }[] };
+      Promise.resolve().then(() => {
+        if (saved.text) setText(saved.text);
+        if (saved.mentions) setMentions(saved.mentions);
+      });
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || initialText) return;
+    const timer = setTimeout(() => {
+      try {
+        if (text.trim()) localStorage.setItem(draftKey, JSON.stringify({ text, mentions }));
+        else localStorage.removeItem(draftKey);
+      } catch {
+        // ignore
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, mentions, draftKey]);
 
   const matches = useMemo(() => {
     if (!query) return [];

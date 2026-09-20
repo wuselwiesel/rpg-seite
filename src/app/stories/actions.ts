@@ -8,6 +8,7 @@ import { getActiveCharacter } from "@/lib/active-character";
 import { createNotification } from "@/lib/notifications";
 import { sendMessage } from "@/app/chats/actions";
 import { STORY_DURATIONS, isValidStoryBg, parseOverlays } from "@/lib/stories";
+import { parseStickers, type StickerState } from "@/lib/story-stickers";
 
 export async function createStory(_prev: string | null, formData: FormData) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -25,8 +26,9 @@ export async function createStory(_prev: string | null, formData: FormData) {
   const audioStart = Number.isFinite(rawStart) ? Math.min(Math.max(rawStart, 0), 3600) : 0;
   const audioLength = Number.isFinite(rawLength) && rawLength >= 1 ? Math.min(rawLength, 30) : null;
   const hours = Number(formData.get("hours"));
+  const stickers = parseStickers(String(formData.get("stickers") ?? "[]"));
 
-  if (!imageUrl && !videoUrl && !text) return "Füge ein Bild oder einen Text hinzu.";
+  if (!imageUrl && !videoUrl && !text && !parseStickers(String(formData.get("stickers") ?? "[]")).length) return "Füge ein Bild oder einen Text hinzu.";
   const duration = STORY_DURATIONS.find((d) => d.hours === hours)?.hours ?? 24;
 
   const supabase = await createClient();
@@ -49,6 +51,7 @@ export async function createStory(_prev: string | null, formData: FormData) {
     audio_name: audioUrl && !videoUrl ? audioName.slice(0, 80) : null,
     audio_start: audioUrl && !videoUrl ? audioStart : 0,
     audio_length: audioUrl && !videoUrl ? audioLength : null,
+    stickers: stickers.length ? stickers : null,
     expires_at: new Date(Date.now() + duration * 3600_000).toISOString(),
   });
   if (error) return error.message;
@@ -205,4 +208,74 @@ export async function replyToStory(storyId: string, text: string): Promise<strin
   }
 
   return sendMessage(chatId!, character.id, content, null, { storyId });
+}
+
+// Stand der Sticker einer Story: Stimmen je Option, eigene Stimme und Antworten (Besitzer:in sieht alle, sonst nur die eigenen).
+export async function getStickerState(storyId: string): Promise<StickerState> {
+  const supabase = await createClient();
+  const viewer = await activeViewer();
+  const [{ data: votes }, { data: answers }] = await Promise.all([
+    supabase.from("story_sticker_votes").select("sticker_id, character_id, option_idx").eq("story_id", storyId),
+    supabase
+      .from("story_sticker_answers")
+      .select("sticker_id, character_id, text, created_at, characters(name)")
+      .eq("story_id", storyId)
+      .order("created_at", { ascending: true }),
+  ]);
+  const state: StickerState = { votes: {}, myVotes: {}, answers: {} };
+  for (const v of votes ?? []) {
+    const arr = (state.votes[v.sticker_id] ??= [0, 0, 0, 0]);
+    arr[v.option_idx] += 1;
+    if (viewer && v.character_id === viewer.character.id) state.myVotes[v.sticker_id] = v.option_idx;
+  }
+  for (const a of (answers ?? []) as unknown as { sticker_id: string; character_id: string; text: string; characters: { name: string } | null }[]) {
+    (state.answers[a.sticker_id] ??= []).push({
+      name: a.characters?.name ?? "?",
+      text: a.text,
+      mine: !!viewer && a.character_id === viewer.character.id,
+    });
+  }
+  return state;
+}
+
+export async function voteSticker(storyId: string, stickerId: string, optionIdx: number): Promise<string | null> {
+  if (!Number.isInteger(optionIdx) || optionIdx < 0 || optionIdx > 3) return "Ungültige Auswahl.";
+  const viewer = await activeViewer();
+  if (!viewer) return "Du brauchst einen aktiven Charakter.";
+  const { error } = await viewer.supabase
+    .from("story_sticker_votes")
+    .insert({ story_id: storyId, sticker_id: stickerId, character_id: viewer.character.id, option_idx: optionIdx });
+  if (error) return error.code === "23505" ? "Du hast schon abgestimmt." : error.message;
+  return null;
+}
+
+// Antwort auf eine Fragen-Box: im Namen des aktiven Charakters; die Besitzer:in wird benachrichtigt.
+export async function answerSticker(storyId: string, stickerId: string, text: string): Promise<string | null> {
+  const content = text.trim().slice(0, 500);
+  if (!content) return "Schreib eine Antwort.";
+  const viewer = await activeViewer();
+  if (!viewer) return "Du brauchst einen aktiven Charakter.";
+  const { supabase, user, character } = viewer;
+  const { error } = await supabase
+    .from("story_sticker_answers")
+    .insert({ story_id: storyId, sticker_id: stickerId, character_id: character.id, text: content });
+  if (error) return error.message;
+
+  const { data: story } = await supabase
+    .from("stories")
+    .select("id, character_id, characters!stories_character_id_fkey(owner_id, name)")
+    .eq("id", storyId)
+    .maybeSingle<StoryOwner>();
+  if (story?.characters && story.characters.owner_id !== user.id) {
+    await createNotification(supabase, {
+      userId: story.characters.owner_id,
+      type: "story_like",
+      actorName: character.name,
+      actorAvatarUrl: character.avatar_url,
+      link: `/characters/${story.character_id}`,
+      message: "hat auf deine Frage in der Story geantwortet",
+      recipientName: story.characters.name,
+    });
+  }
+  return null;
 }

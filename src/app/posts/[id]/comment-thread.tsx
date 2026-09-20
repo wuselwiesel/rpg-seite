@@ -109,6 +109,11 @@ export function CommentThread({
       pending: true,
     });
     if (replyTo) setExpanded((prev) => new Set(prev).add(replyTo.rootId));
+    try {
+      localStorage.removeItem(`draft:comment:${postId}`);
+    } catch {
+      // ignore
+    }
     setResetKey((k) => k + 1);
     setReplyTo(null);
     setError(null);
@@ -243,6 +248,7 @@ export function CommentThread({
             <MentionTextarea
               key={`${resetKey}-${replyTo?.rootId ?? ""}-${replyTo?.characterId ?? ""}`}
               name="content"
+              draftKey={`draft:comment:${postId}`}
               characters={mentionable}
               required
               rows={1}

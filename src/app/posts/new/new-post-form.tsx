@@ -23,7 +23,7 @@ const KINDS: { id: Kind; label: string; icon: typeof Type }[] = [
 
 export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; title: string }[]; people: Character[] }) {
   const [error, formAction, pending] = useActionState(createPost, null);
-  const { draft, restored, update, clear } = useDraft("draft:post-new", { content: "" });
+  const { draft, restored, update, clear } = useDraft("draft:post-new", { content: "", caption: "" });
   const [kind, setKind] = useState<Kind>("text");
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const mediaUrl = mediaUrls[0] ?? "";
@@ -32,7 +32,6 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
   const [minLocal, setMinLocal] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [caption, setCaption] = useState("");
 
   function switchKind(next: Kind) {
     if (next === kind) return;
@@ -221,8 +220,8 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
               Bildunterschrift (optional)
               <textarea
                 name="content"
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
+                value={draft.caption}
+                onChange={(e) => update({ caption: e.target.value })}
                 rows={3}
                 maxLength={2000}
                 className="rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent"

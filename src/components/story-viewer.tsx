@@ -9,6 +9,7 @@ import { deleteHighlight, deleteStory, replyToStory, toggleStoryLike } from "@/a
 import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/stories";
 import { StoryStage } from "./story-stage";
+import { StoryStickerLayer } from "./story-stickers";
 import type { Story } from "@/lib/types";
 
 export type StoryGroup = {
@@ -337,6 +338,19 @@ function StoryViewer({
             }}
           />
         </div>
+
+        {!!story.stickers && (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center" style={{ containerType: "size" }}>
+            <div className="relative" style={{ width: "min(100cqw, 100cqh * 9 / 16)", height: "min(100cqh, 100cqw * 16 / 9)", containerType: "inline-size" }}>
+              <StoryStickerLayer
+                story={story}
+                viewerCharacterId={viewerCharacterId}
+                isOwner={group.characterId === viewerCharacterId || (!viewerCharacterId && group.canManage)}
+                onFocusChange={setReplyFocus}
+              />
+            </div>
+          </div>
+        )}
 
         {story.audio_url && (
           <audio

@@ -231,6 +231,7 @@ export type Story = {
   audio_name: string | null;
   audio_start: number | null;
   audio_length: number | null;
+  stickers?: unknown;
   created_at: string;
   expires_at: string;
 };

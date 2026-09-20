@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createWikiPage, updateWikiPage } from "./actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { useDraft } from "@/lib/use-draft";
 import type { WikiCategory, WikiPage } from "@/lib/types";
 
 const CATEGORY_LABELS: Record<WikiCategory, string> = {
@@ -15,15 +16,18 @@ const CATEGORY_LABELS: Record<WikiCategory, string> = {
 export function WikiForm({ page }: { page?: WikiPage }) {
   const action = page ? updateWikiPage.bind(null, page.id) : createWikiPage;
   const [error, formAction, pending] = useActionState(action, null);
+  // Neue Einträge: Entwurf im Browser merken (Bearbeiten lädt immer den gespeicherten Stand).
+  const { draft, restored, update, clear } = useDraft("draft:wiki-new", { title: "", aliases: "", content: "" });
+  const isNew = !page;
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={() => isNew && clear()} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Titel
         <input
           type="text"
           name="title"
-          defaultValue={page?.title}
+          {...(isNew ? { value: draft.title, onChange: (e: React.ChangeEvent<HTMLInputElement>) => update({ title: e.target.value }) } : { defaultValue: page?.title })}
           required
           className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
         />
@@ -49,7 +53,7 @@ export function WikiForm({ page }: { page?: WikiPage }) {
         <input
           type="text"
           name="aliases"
-          defaultValue={page?.aliases?.join(", ")}
+          {...(isNew ? { value: draft.aliases, onChange: (e: React.ChangeEvent<HTMLInputElement>) => update({ aliases: e.target.value }) } : { defaultValue: page?.aliases?.join(", ") })}
           placeholder="z. B. Kapelle, alte Kapelle"
           className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
         />
@@ -61,7 +65,14 @@ export function WikiForm({ page }: { page?: WikiPage }) {
 
       <div className="flex flex-col gap-1 text-sm text-fg-soft">
         Inhalt
-        <RichTextEditor name="content" initialContent={page?.content} placeholder="Beschreibung, Details, Geheimnisse..." />
+        {(restored || !isNew) && (
+          <RichTextEditor
+            name="content"
+            initialContent={isNew ? draft.content : page?.content}
+            onChange={isNew ? (html) => update({ content: html }) : undefined}
+            placeholder="Beschreibung, Details, Geheimnisse..."
+          />
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
