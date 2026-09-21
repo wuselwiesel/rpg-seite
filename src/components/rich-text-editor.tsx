@@ -95,6 +95,16 @@ function Toolbar({ editor }: { editor: Editor }) {
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }
 
+  // Anführungszeichen » « (deutsche Rede): einzeln einfügen oder markierten Text damit umschließen.
+  function wrapInGuillemets() {
+    const { from, to, empty } = editor.state.selection;
+    if (empty) {
+      editor.chain().focus().insertContent("»«").setTextSelection(from + 1).run();
+    } else {
+      editor.chain().focus().insertContentAt(to, "«").insertContentAt(from, "»").run();
+    }
+  }
+
   return (
     <div className="flex flex-col gap-1 border-b border-line p-2">
       <div className="flex flex-wrap items-center gap-1">
@@ -166,6 +176,18 @@ function Toolbar({ editor }: { editor: Editor }) {
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         >
           &ldquo;Zitat&rdquo;
+        </ToolbarButton>
+
+        <span className="mx-1 h-5 w-px bg-line" />
+
+        <ToolbarButton label="Anführungszeichen » einfügen" onClick={() => editor.chain().focus().insertContent("»").run()}>
+          »
+        </ToolbarButton>
+        <ToolbarButton label="Anführungszeichen « einfügen" onClick={() => editor.chain().focus().insertContent("«").run()}>
+          «
+        </ToolbarButton>
+        <ToolbarButton label="Markierten Text in » « setzen" onClick={wrapInGuillemets}>
+          »…«
         </ToolbarButton>
 
         <span className="mx-1 h-5 w-px bg-line" />
