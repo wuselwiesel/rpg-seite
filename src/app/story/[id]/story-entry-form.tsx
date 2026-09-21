@@ -31,13 +31,29 @@ export function StoryEntryForm({
   const action = createStoryEntry.bind(null, storyPostId, worldId);
   const [error, formAction, pending] = useActionState(action, null);
   const [resetKey, setResetKey] = useState(0);
+  // Inhalt, mit dem der Editor nach einem Zurücksetzen startet (leer; bei einem Fehler der gesendete Text).
+  const [restoreText, setRestoreText] = useState("");
+  const latestHtml = useRef("");
+  const sentHtml = useRef("");
   const wasPending = useRef(false);
   const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
 
-  useEffect(() => {
-    if (wasPending.current && !pending && !error) {
+  // Sofort beim Absenden leeren; schlägt das Senden fehl, kommt der Text zurück.
+  function handleSubmit() {
+    sentHtml.current = latestHtml.current;
+    // Erst nach dem Absenden leeren: Das Formular hat seine Daten dann schon eingesammelt.
+    setTimeout(() => {
       clear();
       update({ content: "" });
+      setRestoreText("");
+      setResetKey((k) => k + 1);
+    }, 30);
+  }
+
+  useEffect(() => {
+    if (wasPending.current && !pending && error) {
+      setRestoreText(sentHtml.current);
+      update({ content: sentHtml.current });
       setResetKey((k) => k + 1);
     }
     wasPending.current = pending;
@@ -45,7 +61,7 @@ export function StoryEntryForm({
   }, [pending, error]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-2">
       <input type="hidden" name="character_id" value={writerId} />
       {narrator && <input type="hidden" name="narrator" value="on" />}
       {restored && (
@@ -53,8 +69,11 @@ export function StoryEntryForm({
         key={resetKey}
         name="content"
         // Nach dem Absenden startet der Editor leer; der (noch nicht aktualisierte) Entwurf darf nicht zurückkehren.
-        initialContent={resetKey > 0 ? "" : draft.content}
-        onChange={(html) => update({ content: html })}
+        initialContent={resetKey > 0 ? restoreText : draft.content}
+        onChange={(html) => {
+          latestHtml.current = html;
+          update({ content: html });
+        }}
         mentionCharacters={characters}
         minHeight={100}
         showToolbar={showToolbar}
