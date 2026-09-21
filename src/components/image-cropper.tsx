@@ -138,7 +138,7 @@ export function ImageCropper({
       const sh = box.h / scale;
       const sx = natural.w / 2 - (box.w / 2 + pos.x) / scale;
       const sy = natural.h / 2 - (box.h / 2 + pos.y) / scale;
-      const outW = Math.min(1600, Math.round(sw));
+      const outW = Math.min(1350, Math.round(sw));
       const outH = Math.round(outW / aspect.ratio);
       const canvas = document.createElement("canvas");
       canvas.width = outW;
@@ -149,7 +149,7 @@ export function ImageCropper({
       ctx.fillRect(0, 0, outW, outH);
       ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, outW, outH);
       bitmap.close();
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
       if (!blob) throw new Error("blob");
       onDone(new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "bild"}.jpg`, { type: "image/jpeg" }));
     } catch {

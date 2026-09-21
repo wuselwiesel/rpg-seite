@@ -10,6 +10,7 @@ import { InstallAppButton } from "./install-app-button";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { CharacterAvatar } from "./character-avatar";
+import { Wordmark } from "./wordmark";
 import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
 import { MobileModeButton } from "./mode-switch";
@@ -21,8 +22,8 @@ import type { Character, Profile, World } from "@/lib/types";
 function MobileCreateTab({ href, label }: { href: string; label: string }) {
   return (
     <Link href={href} aria-label={label} className="flex flex-1 items-center justify-center py-2">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-strong text-on-accent-strong transition hover:opacity-90">
-        <Plus className="h-5 w-5" strokeWidth={2.5} />
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-accent text-accent transition active:scale-90">
+        <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
       </span>
     </Link>
   );
@@ -63,8 +64,17 @@ export function MobileNav({
   return (
     <>
       <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-app px-4 py-2.5 print:hidden lg:hidden">
-        <div className="min-w-0 flex-1">
-          <ActiveCharacterMenu characters={characters} activeCharacter={activeCharacter} />
+        {pathname === "/" && (
+          <Link href="/" aria-label="Wortwinkel" className="shrink-0">
+            <Wordmark height={28} />
+          </Link>
+        )}
+        <div className={pathname === "/" ? "flex min-w-0 flex-1 justify-end" : "min-w-0 flex-1"}>
+          <ActiveCharacterMenu
+            characters={characters}
+            activeCharacter={activeCharacter}
+            avatarOnly={pathname === "/"}
+          />
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <NotificationBell

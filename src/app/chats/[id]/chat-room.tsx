@@ -615,7 +615,7 @@ export function ChatRoom({
         {pendingImage && (
           <div className="relative w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={pendingImage.previewUrl} alt="Vorschau" className="max-h-32 rounded-md object-cover" />
+            <img src={pendingImage.previewUrl} alt="Vorschau" className="max-h-40 max-w-full rounded-md object-contain" />
             <button
               type="button"
               onClick={clearImage}

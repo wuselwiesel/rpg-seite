@@ -62,8 +62,10 @@ export function FeedList({
   return (
     <>
       <div className="flex flex-col gap-2">
-        {posts.map((post) => (
-          <SocialPostCard key={post.id} post={post} activeCharacterId={activeCharacterId} tagHrefBase="/" />
+        {posts.map((post, i) => (
+          <div key={post.id} className={i >= initialPosts.length ? "feed-in" : undefined}>
+            <SocialPostCard post={post} activeCharacterId={activeCharacterId} tagHrefBase="/" priority={i === 0} />
+          </div>
         ))}
       </div>
       <div ref={sentinel} className="h-px" />

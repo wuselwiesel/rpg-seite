@@ -10,7 +10,7 @@
   --line: #e8ddd4;
   --fg: #423f4a;
   --fg-soft: #5b5666;
-  --muted: #6b6576;
+  --muted: #625c6e;
   --accent: #96565d;
   --accent-strong: #525871;
   --on-accent-strong: #fdfbf9;
@@ -26,7 +26,7 @@
   --line: #3a3542;
   --fg: #f3ece8;
   --fg-soft: #d8cfca;
-  --muted: #a79cb0;
+  --muted: #b3a9bc;
   --accent: #e3aeb3;
   --accent-strong: #f2c1a3;
   --on-accent-strong: #2b2028;
@@ -959,4 +959,22 @@ html.kb-open .mobile-bottom-nav {
   .book-avoid {
     break-inside: avoid;
   }
+}
+
+/* Weiche Übergänge: Menüs blenden ein, nachgeladene Beiträge gleiten sanft herein */
+@keyframes menu-pop {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+}
+.menu-pop {
+  transform-origin: top right;
+  animation: menu-pop 140ms ease-out both;
+}
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+.feed-in {
+  animation: feed-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-pop, .feed-in { animation: none; }
 }

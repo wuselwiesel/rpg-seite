@@ -1,5 +1,5 @@
-import { ListPageSkeleton } from "@/components/skeleton";
+import { RowListSkeleton } from "@/components/skeleton";
 
 export default function Loading() {
-  return <ListPageSkeleton />;
+  return <RowListSkeleton />;
 }

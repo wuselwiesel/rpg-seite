@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { MapPin, PenLine } from "lucide-react";
+import { LayoutList, MapPin, Rows3, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import { EntryCard } from "@/components/entry-card";
+import { StoryCompactRow } from "@/components/story-compact-row";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
@@ -21,6 +22,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const onlyMyTurn = params.dran === "1";
   const showArchived = params.archived === "1";
   const bookmarkedOnly = params.bookmarked === "1";
+  const compact = params.ansicht === "kompakt";
 
   const supabase = await createClient();
   const {
@@ -98,16 +100,60 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   ]);
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
-  return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-1 flex items-center gap-2">
-        <PenLine className="h-6 w-6 text-accent" strokeWidth={2} />
-        <h1 className="font-serif text-3xl text-fg">Story</h1>
-      </div>
-      <p className="mb-6 text-sm text-muted">Die Handlungsstränge von {activeWorld.name}.</p>
+  const filterCount = [arc, ort, onlyMyTurn, showArchived, bookmarkedOnly, q, tag, from || to].filter(Boolean).length;
+  function viewHref(view: "karten" | "kompakt") {
+    const next = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (key === "ansicht" || value === undefined) continue;
+      for (const v of Array.isArray(value) ? value : [value]) next.append(key, v);
+    }
+    if (view === "kompakt") next.set("ansicht", "kompakt");
+    const qs = next.toString();
+    return qs ? `/story?${qs}` : "/story";
+  }
 
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
+          <h1 className="font-serif text-3xl text-fg">Story</h1>
+          <p className="truncate text-sm text-muted">{activeWorld.name}</p>
+        </div>
+        <div className="flex shrink-0 rounded-full border border-line bg-surface p-0.5" role="group" aria-label="Ansicht">
+          <Link
+            href={viewHref("karten")}
+            replace
+            aria-label="Karten"
+            aria-current={!compact ? "true" : undefined}
+            className={`flex h-8 w-8 items-center justify-center rounded-full transition ${!compact ? "bg-accent-strong text-on-accent-strong" : "text-muted hover:text-fg"}`}
+          >
+            <Rows3 className="h-4 w-4" strokeWidth={2} />
+          </Link>
+          <Link
+            href={viewHref("kompakt")}
+            replace
+            aria-label="Kompakte Liste"
+            aria-current={compact ? "true" : undefined}
+            className={`flex h-8 w-8 items-center justify-center rounded-full transition ${compact ? "bg-accent-strong text-on-accent-strong" : "text-muted hover:text-fg"}`}
+          >
+            <LayoutList className="h-4 w-4" strokeWidth={2} />
+          </Link>
+        </div>
+      </div>
+
+      <details className="group mb-4" open={filterCount > 0}>
+        <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+          <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />
+          Filter
+          {filterCount > 0 && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-strong px-1 text-[10px] font-medium text-on-accent-strong">
+              {filterCount}
+            </span>
+          )}
+        </summary>
+        <div className="mt-3 flex flex-col gap-3">
       {arcs && arcs.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/story"
             className={`rounded-full px-3 py-1 text-xs font-medium transition ${
@@ -133,7 +179,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       )}
 
       {locations.length > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <MapPin className="h-4 w-4 text-muted" strokeWidth={2} />
           <Link
             href="/story"
@@ -158,16 +204,16 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       )}
 
       {arc && (
-        <p className="mb-4 text-sm">
+        <p className="text-sm">
           <Link href={`/story/arc/${arc}/buch`} className="text-accent hover:underline">
             Diesen Handlungsstrang als Buch (PDF / E-Book)
           </Link>
         </p>
       )}
 
-      <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} />
+      <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} label="Suche & Zeitraum" tight />
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {(myTurnCount ?? 0) > 0 && (
           <Link
             href={onlyMyTurn ? "/story" : "/story?dran=1"}
@@ -196,9 +242,12 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         </Link>
       </div>
 
+        </div>
+      </details>
+
       <Link
         href="/story/new"
-        className="mb-6 flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2"
+        className="mb-4 flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2 active:bg-surface-3"
       >
         <CharacterAvatar
           name={activeCharacter.name}
@@ -210,9 +259,22 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         </span>
       </Link>
 
-      <div className="flex flex-col gap-4">
+      <div className={compact ? "flex flex-col divide-y divide-line" : "flex flex-col gap-4"}>
         {storyPosts?.length ? (
-          storyPosts.map((post, index) => (
+          storyPosts.map((post, index) => compact ? (
+            <StoryCompactRow
+              key={post.id}
+              href={`/story/${post.id}`}
+              title={post.title}
+              content={post.content}
+              createdAt={post.created_at}
+              character={post.characters}
+              replyCount={post.story_entries?.[0]?.count ?? 0}
+              location={post.location}
+              pinned={post.pinned}
+              yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
+            />
+          ) : (
             <EntryCard
               key={post.id}
               id={post.id}

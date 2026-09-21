@@ -7,7 +7,6 @@ import { getActiveWorld } from "@/lib/worlds";
 import { FeedList } from "@/components/feed-list";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { fetchFeedPage } from "@/lib/feed";
-import { Wordmark } from "@/components/wordmark";
 import { StoriesStrip } from "@/components/stories-strip";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
@@ -37,16 +36,14 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
 
   return (
     <PullToRefresh>
-    <div className="flex gap-8 px-3 py-4 sm:px-6 sm:py-8 lg:px-10">
+    <div className="flex gap-8 px-3 pb-4 pt-2 sm:px-6 sm:py-8 lg:px-10">
       <div className="mx-auto min-w-0 max-w-[470px] flex-1">
-        <Link href="/" aria-label="Wortwinkel" className="mb-3 block w-fit lg:hidden">
-          <Wordmark height={34} />
-        </Link>
-        <Suspense fallback={<div className="mb-5 h-[92px]" />}>
-          <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
-        </Suspense>
-
-        <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} />
+        <div className="relative">
+          <Suspense fallback={<div className="mb-3 h-[84px]" />}>
+            <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
+          </Suspense>
+          <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} iconOnly />
+        </div>
 
         <FeedList
           initialPosts={initialPosts}

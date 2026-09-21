@@ -3,7 +3,8 @@ import { SquarePen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
-import { getUnreadChatIds } from "@/lib/chat-reads";
+import { getUnreadCounts } from "@/lib/chat-reads";
+import { messagePreview } from "@/lib/chat-preview";
 import type { Character, Chat } from "@/lib/types";
 import { ChatListItem } from "./chat-list-item";
 
@@ -39,7 +40,26 @@ export async function ChatList() {
     : { data: [] as ChatWithParticipants[] };
 
   const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
-  const unreadChatIds = new Set(await getUnreadChatIds(user.id, ownCharacters.map((c) => c.id), activeCharacter.id));
+  const unreadCounts = await getUnreadCounts(user.id, ownCharacters.map((c) => c.id), activeCharacter.id);
+
+  // Letzte Nachricht je Chat (eine Abfrage; neueste zuerst, pro Chat zählt die erste).
+  type LastMessage = { chat_id: string; character_id: string; content: string; image_url: string | null; shared_post_id: string | null; story_id: string | null; created_at: string };
+  const lastByChat = new Map<string, LastMessage>();
+  if (myChatIds.length) {
+    const { data: recent } = await supabase
+      .from("messages")
+      .select("chat_id, character_id, content, image_url, shared_post_id, story_id, created_at")
+      .in("chat_id", myChatIds)
+      .order("created_at", { ascending: false })
+      .limit(Math.max(60, myChatIds.length * 4))
+      .returns<LastMessage[]>();
+    for (const m of recent ?? []) if (!lastByChat.has(m.chat_id)) lastByChat.set(m.chat_id, m);
+  }
+  const sortedChats = [...(chats ?? [])].sort(
+    (a, b) =>
+      new Date(lastByChat.get(b.id)?.created_at ?? b.created_at).getTime() -
+      new Date(lastByChat.get(a.id)?.created_at ?? a.created_at).getTime(),
+  );
 
   return (
     <div className="flex flex-col">
@@ -68,8 +88,16 @@ export async function ChatList() {
       )}
 
       <ul className="flex flex-col">
-        {chats?.map((chat) => {
+        {sortedChats.map((chat) => {
           const others = chat.chat_participants.map((p) => p.characters).filter((c) => c.id !== activeCharacter.id);
+          const last = lastByChat.get(chat.id);
+          const senderName = last
+            ? last.character_id === activeCharacter.id
+              ? "Du"
+              : chat.is_group
+                ? (chat.chat_participants.find((p) => p.characters.id === last.character_id)?.characters.name.split(" ")[0] ?? null)
+                : null
+            : null;
           const title = (chat.is_group ? chat.name : (others[0]?.name ?? chat.name)) ?? "Chat";
           return (
             <li key={chat.id}>
@@ -78,7 +106,8 @@ export async function ChatList() {
                 title={title}
                 avatarUrl={chat.is_group ? chat.avatar_url : others[0]?.avatar_url}
                 participantCount={chat.chat_participants.length}
-                unread={unreadChatIds.has(chat.id)}
+                lastMessage={last ? { text: messagePreview(last), at: last.created_at, sender: senderName } : null}
+                unreadCount={unreadCounts[chat.id] ?? 0}
                 muted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
               />
             </li>

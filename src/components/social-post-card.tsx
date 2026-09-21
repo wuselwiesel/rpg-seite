@@ -7,6 +7,7 @@ import { PostMedia } from "./post-media";
 import { MediaCarousel } from "./media-carousel";
 import { DoubleTapLike } from "./double-tap-like";
 import { ReactionBar } from "./reaction-bar";
+import { PostMenu } from "./post-menu";
 import { SharePostButton } from "./share-post-button";
 import { CharacterThemed } from "./character-themed";
 import type { FeedPost } from "@/lib/feed-types";
@@ -16,10 +17,13 @@ export function SocialPostCard({
   post,
   activeCharacterId,
   tagHrefBase,
+  priority = false,
 }: {
   post: FeedPost;
   activeCharacterId: string;
   tagHrefBase?: string;
+  // Erster Beitrag im Feed: Bild sofort und bevorzugt laden.
+  priority?: boolean;
 }) {
   const { title, content, character, tags, storyPost } = post;
   const characterHref = `/characters/${post.characterId}`;
@@ -28,35 +32,47 @@ export function SocialPostCard({
   const media = post.mediaUrl && post.mediaType ? { url: post.mediaUrl, type: post.mediaType } : null;
   const gallery = post.mediaUrls && post.mediaUrls.length > 1 ? post.mediaUrls : null;
   const image = gallery ? null : media?.type === "image" ? media.url : media ? null : firstImageSrc(content);
+  const isGif = image ? /\.gif(\?|$)|giphy\.com|tenor\.com/i.test(image) : false;
   const handle = character?.username ?? character?.name ?? "Unbekannt";
 
   return (
     <CharacterThemed character={character}>
       <article className="-mx-3 border-b border-line pb-4 sm:mx-0">
-        <Link href={characterHref} className="flex items-center gap-3 px-3 py-3 sm:px-1">
-          <div className="rounded-full bg-gradient-to-tr from-accent to-accent-strong p-[2px]">
-            <div className="rounded-full bg-app p-[2px]">
-              <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={32} />
+        <div className="flex items-center gap-2.5 px-3 py-2 sm:px-1">
+          <Link href={characterHref} className="flex min-w-0 flex-1 items-center gap-2.5">
+            <div className="shrink-0 rounded-full bg-gradient-to-tr from-accent to-accent-strong p-[2px]">
+              <div className="rounded-full bg-app p-[2px]">
+                <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={30} />
+              </div>
             </div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-fg">{handle}</p>
-            {post.worldName && <p className="truncate text-xs text-muted">in {post.worldName}</p>}
-            {post.tagged.length > 0 && (
-              <p className="truncate text-xs text-muted">
-                mit {post.tagged.map((t) => t.username ?? t.name).join(", ")}
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="flex items-baseline gap-1.5 text-[13px] text-fg">
+                <span className="truncate font-semibold">{handle}</span>
+                {post.pinned && <Pin className="h-3 w-3 shrink-0 self-center text-muted" strokeWidth={2} aria-label="Angepinnt" />}
+                <time
+                  dateTime={post.createdAt}
+                  title={new Date(post.createdAt).toLocaleString("de-DE")}
+                  className="shrink-0 text-xs font-normal text-muted"
+                >
+                  {timeAgoShort(post.createdAt)}
+                </time>
               </p>
-            )}
-          </div>
-          {post.pinned && <Pin className="h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={2} aria-label="Angepinnt" />}
-          <time
-            dateTime={post.createdAt}
-            title={new Date(post.createdAt).toLocaleString("de-DE")}
-            className="shrink-0 text-xs text-muted"
-          >
-            {timeAgoShort(post.createdAt)}
-          </time>
-        </Link>
+              {(post.worldName || post.tagged.length > 0) && (
+                <p className="truncate text-xs text-muted">
+                  {post.tagged.length > 0
+                    ? `mit ${post.tagged.map((t) => t.username ?? t.name).join(", ")}`
+                    : `in ${post.worldName}`}
+                </p>
+              )}
+            </div>
+          </Link>
+          <PostMenu
+            postId={post.id}
+            characterHref={characterHref}
+            isOwn={post.characterId === activeCharacterId}
+            pinned={Boolean(post.pinned)}
+          />
+        </div>
 
         {storyPost && (
           <Link
@@ -78,10 +94,11 @@ export function SocialPostCard({
             <img
               src={image}
               alt={title || "Beitragsbild"}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
               decoding="async"
               draggable={false}
-              className="max-h-[590px] w-full bg-surface-2 object-cover sm:rounded-sm"
+              className={`max-h-[590px] w-full bg-surface-2 sm:rounded-sm ${isGif ? "object-contain" : "object-cover"}`}
             />
           ) : (
             <div className="flex aspect-square flex-col justify-center gap-3 bg-[var(--tile-bg,var(--surface-3))] p-8 text-[var(--tile-fg,var(--fg))] sm:rounded-sm">
@@ -108,7 +125,7 @@ export function SocialPostCard({
             initialReactions={post.reactions}
             commentSlot={
               <>
-                <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition hover:text-muted">
+                <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition duration-150 hover:text-muted active:scale-75">
                   <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
                 </Link>
                 <SharePostButton postId={post.id} characterId={activeCharacterId} />

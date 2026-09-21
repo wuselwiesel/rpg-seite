@@ -210,7 +210,7 @@ export function MessageBubble({
               {message.image_url && (
                 <a href={message.image_url} target="_blank" rel="noreferrer" className="mb-1 block">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={message.image_url} alt="Gesendetes Bild oder GIF" className="max-h-72 max-w-full rounded-md object-cover" />
+                  <img src={message.image_url} alt="Gesendetes Bild oder GIF" className="max-h-72 max-w-full rounded-md object-contain" />
                 </a>
               )}
               {message.content && (

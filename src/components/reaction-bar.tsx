@@ -117,7 +117,7 @@ export function ReactionBar({
       aria-label="Reaktion hinzufügen"
       className={
         heart
-          ? "flex h-7 w-7 items-center justify-center text-fg transition hover:text-muted"
+          ? "flex h-7 w-7 items-center justify-center text-fg transition duration-150 hover:text-muted active:scale-75"
           : `flex h-6 w-6 items-center justify-center rounded-full transition ${
               onBubble ? "text-current opacity-80 hover:bg-current/15" : "text-muted hover:bg-surface-2 hover:text-fg"
             }`
@@ -139,20 +139,30 @@ export function ReactionBar({
             }}
             aria-pressed={liked}
             aria-label={liked ? "Gefällt mir nicht mehr" : "Gefällt mir"}
-            className="flex items-center gap-1.5 text-fg transition active:scale-90"
+            className="flex items-center text-fg transition-transform duration-150 active:scale-75"
           >
             <Heart
               key={beat}
-              className={`h-7 w-7 ${beat > 0 && liked ? "heart-beat" : ""} ${
+              className={`h-7 w-7 transition-colors ${beat > 0 && liked ? "heart-beat" : ""} ${
                 liked ? "fill-[#ed4956] text-[#ed4956]" : ""
               }`}
               strokeWidth={liked ? 0 : 1.75}
             />
-            {heartCount > 0 && <span className="text-sm font-semibold">{heartCount}</span>}
           </button>
           {commentSlot}
-          {pickerButton}
+          <span className="ml-auto">{pickerButton}</span>
         </div>
+      )}
+      {heart && total > 0 && (
+        <button type="button" onClick={openList} className="w-fit text-left text-sm font-semibold text-fg hover:underline">
+          {heartCount > 0
+            ? heartCount === 1
+              ? "Gefällt 1 Charakter"
+              : `Gefällt ${heartCount} Charakteren`
+            : total === 1
+              ? "1 Reaktion"
+              : `${total} Reaktionen`}
+        </button>
       )}
       <div className="flex flex-wrap items-center gap-1">
       {chips.map((r) => (
@@ -177,7 +187,7 @@ export function ReactionBar({
 
       {!heart && pickerButton}
 
-      {postId && total > 0 && (
+      {postId && !heart && total > 0 && (
         <button
           type="button"
           onClick={openList}

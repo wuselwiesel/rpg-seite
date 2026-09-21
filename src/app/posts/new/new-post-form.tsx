@@ -151,11 +151,18 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className={mediaUrls.length === 1 ? "flex flex-col" : "grid grid-cols-3 gap-1.5"}>
                     {mediaUrls.map((url, i) => (
-                      <div key={url} className="relative aspect-square overflow-hidden rounded-lg bg-surface-2">
+                      <div
+                        key={url}
+                        className={`relative overflow-hidden rounded-lg bg-surface-2 ${mediaUrls.length === 1 ? "w-fit max-w-full" : "aspect-square"}`}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+                        <img
+                          src={url}
+                          alt={`Foto ${i + 1}`}
+                          className={mediaUrls.length === 1 ? "max-h-[60dvh] max-w-full object-contain" : "h-full w-full object-cover"}
+                        />
                         <button
                           type="button"
                           onClick={() => setMediaUrls((prev) => prev.filter((u) => u !== url))}

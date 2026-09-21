@@ -11,12 +11,20 @@ export function SearchFilterBar({
   from,
   to,
   tag,
+  iconOnly = false,
+  label = "Filter",
+  tight = false,
 }: {
   basePath: string;
   q: string;
   from: string;
   to: string;
   tag: string;
+  // Nur ein kleines Symbol (rechts oben neben der Story-Leiste), Filterchips erscheinen nur bei Bedarf.
+  iconOnly?: boolean;
+  label?: string;
+  // Ohne Außenabstand (z. B. innerhalb eines Filter-Blocks).
+  tight?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const activeCount = [Boolean(q), Boolean(tag), Boolean(from || to)].filter(Boolean).length;
@@ -35,17 +43,29 @@ export function SearchFilterBar({
   }
 
   return (
-    <div className="mb-6">
+    <div className={iconOnly ? (hasFilters || open ? "mb-3" : "") : tight ? "" : "mb-6"}>
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2"
+          aria-label="Filter"
+          aria-expanded={open}
+          className={
+            iconOnly
+              ? "absolute right-0 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-fg-soft transition active:scale-90 hover:bg-surface-2"
+              : "flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2"
+          }
         >
           <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />
-          Filter
+          {!iconOnly && label}
           {hasFilters && (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent-strong text-[10px] font-medium text-on-accent-strong">
+            <span
+              className={
+                iconOnly
+                  ? "absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent-strong text-[10px] font-medium text-on-accent-strong"
+                  : "flex h-4 w-4 items-center justify-center rounded-full bg-accent-strong text-[10px] font-medium text-on-accent-strong"
+              }
+            >
               {activeCount}
             </span>
           )}

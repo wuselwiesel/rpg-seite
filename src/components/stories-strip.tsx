@@ -52,12 +52,12 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
   }));
 
   return (
-    <div className="mb-5">
-      <ScrollRow className="pb-1">
+    <div className="mb-2 pr-11">
+      <ScrollRow className="pb-0.5">
         {characters.map((character) => {
           const isActive = character.id === activeCharacterId;
           const groupIndex = withStories.findIndex((c) => c.id === character.id);
-          const avatar = <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={56} />;
+          const avatar = <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={52} />;
           const caption = (
             <span className="w-full truncate text-center text-xs text-fg-soft">
               {isActive ? "Deine Story" : character.name.split(" ")[0]}
@@ -65,7 +65,7 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
           );
 
           return (
-            <div key={character.id} className="relative flex w-[68px] shrink-0 flex-col items-center gap-1.5">
+            <div key={character.id} className="relative flex w-[64px] shrink-0 flex-col items-center gap-1">
               {groupIndex >= 0 ? (
                 <StoryLauncher
                   groups={groups}
@@ -73,7 +73,7 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
                   ringWidth={2.5}
                   viewerCharacterId={activeCharacterId}
                   label={`Story von ${character.name} ansehen`}
-                  className="flex w-full flex-col items-center gap-1.5"
+                  className="flex w-full flex-col items-center gap-1"
                 >
                   {avatar}
                 </StoryLauncher>
@@ -93,9 +93,9 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
                 <Link
                   href="/stories/new"
                   aria-label="Neue Story erstellen"
-                  className="absolute right-0 top-[38px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong"
+                  className="absolute right-0 top-[34px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong"
                 >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+                  <Plus className="h-3 w-3" strokeWidth={3} />
                 </Link>
               )}
             </div>

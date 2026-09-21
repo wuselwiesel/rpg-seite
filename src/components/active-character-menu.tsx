@@ -12,9 +12,12 @@ import type { Character } from "@/lib/types";
 export function ActiveCharacterMenu({
   characters,
   activeCharacter,
+  avatarOnly = false,
 }: {
   characters: Character[];
   activeCharacter: Character | null;
+  // Nur Avatar + Pfeil (z. B. im Feed neben dem Logo), sonst Avatar + Benutzername.
+  avatarOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -46,12 +49,11 @@ export function ActiveCharacterMenu({
         className="flex max-w-full items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 text-left transition hover:bg-surface-2 active:bg-surface-3 disabled:opacity-60"
       >
         <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={36} />
-        <span className="min-w-0">
-          <span className="block truncate font-serif text-lg leading-tight text-fg">{activeCharacter.name}</span>
-          {activeCharacter.username && (
-            <span className="block truncate text-xs leading-tight text-muted">@{activeCharacter.username}</span>
-          )}
-        </span>
+        {!avatarOnly && (
+          <span className="min-w-0 truncate font-serif text-lg leading-tight text-fg">
+            {activeCharacter.username ?? activeCharacter.name}
+          </span>
+        )}
         <ChevronDown className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
       </button>
 

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
+import { Check } from "lucide-react";
 import { SetActiveButton } from "./set-active-button";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
@@ -59,10 +60,22 @@ export default async function CharactersPage() {
         {characters.map((character) => (
           <li
             key={character.id}
-            className="flex items-center gap-4 rounded-lg border border-line bg-surface p-4"
+            className={`flex items-center gap-4 rounded-2xl border bg-surface p-4 transition ${
+              character.id === activeId ? "border-accent/60" : "border-line"
+            }`}
           >
             <Link href={`/characters/${character.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-              <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={48} />
+              <span className="relative shrink-0">
+                <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={52} />
+                {character.id === activeId && (
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface bg-accent text-on-accent-strong"
+                    aria-hidden
+                  >
+                    <Check className="h-3 w-3 text-white" strokeWidth={3.5} />
+                  </span>
+                )}
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-fg hover:text-accent">{character.name}</p>
                 {character.bio && (
@@ -71,9 +84,7 @@ export default async function CharactersPage() {
               </div>
             </Link>
             {character.id === activeId ? (
-              <span className="shrink-0 rounded-full bg-accent-strong/15 px-3 py-1 text-xs font-medium text-accent">
-                Aktiv
-              </span>
+              <span className="shrink-0 text-xs font-medium text-accent">Aktiv</span>
             ) : (
               <SetActiveButton characterId={character.id} />
             )}

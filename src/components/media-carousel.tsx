@@ -34,7 +34,7 @@ export function MediaCarousel({ urls, alt, className = "" }: { urls: string[]; a
           />
         ))}
       </div>
-      <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+      <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/45 px-1.5 py-px text-[11px] font-medium text-white/90">
         {index + 1}/{urls.length}
       </span>
       {index > 0 && (
@@ -57,11 +57,13 @@ export function MediaCarousel({ urls, alt, className = "" }: { urls: string[]; a
           <ChevronRight className="h-5 w-5" strokeWidth={2} />
         </button>
       )}
-      <div className="pointer-events-none absolute inset-x-0 bottom-2.5 flex justify-center gap-1.5">
+      <div className="pointer-events-none flex justify-center gap-1 pt-2.5" aria-hidden>
         {urls.map((url, i) => (
           <span
             key={url}
-            className={`h-1.5 w-1.5 rounded-full transition ${i === index ? "bg-white shadow" : "bg-white/55"}`}
+            className={`rounded-full transition-all duration-200 ${
+              i === index ? "h-1.5 w-1.5 bg-accent-strong" : "h-[5px] w-[5px] bg-line"
+            }`}
           />
         ))}
       </div>

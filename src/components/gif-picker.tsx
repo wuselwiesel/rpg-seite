@@ -86,14 +86,23 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
       </div>
 
       {configured === true && (
-        <div className="grid min-h-24 grid-cols-3 gap-1.5 overflow-y-auto">
-          {results.map((g) => (
-            <button key={g.id} type="button" onClick={() => onPick(g.url)} title={g.title} className="aspect-square overflow-hidden rounded-lg bg-surface-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={g.preview} alt={g.title} loading="lazy" className="h-full w-full object-cover" />
-            </button>
-          ))}
-          {!loading && results.length === 0 && <p className="col-span-3 py-4 text-center text-sm text-muted">Nichts gefunden.</p>}
+        <div className="min-h-24 overflow-y-auto">
+          {/* Zwei Spalten in natürlichem Seitenverhältnis: nichts wird abgeschnitten. */}
+          <div className="columns-2 gap-1.5 [&>button]:mb-1.5">
+            {results.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => onPick(g.url)}
+                title={g.title}
+                className="block w-full break-inside-avoid overflow-hidden rounded-lg bg-surface-2 transition active:scale-95"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={g.preview} alt={g.title} loading="lazy" className="block h-auto w-full" />
+              </button>
+            ))}
+          </div>
+          {!loading && results.length === 0 && <p className="py-4 text-center text-sm text-muted">Nichts gefunden.</p>}
         </div>
       )}
 
