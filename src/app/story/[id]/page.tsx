@@ -13,6 +13,7 @@ import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { EarlierEntries } from "./earlier-entries";
+import { ScrollToLast } from "./scroll-to-last";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
 import { StoryPostBody } from "./story-post-body";
@@ -24,7 +25,9 @@ export default async function StoryPostDetailPage({
   searchParams,
 }: PageProps<"/story/[id]">) {
   const { id } = await params;
-  const { as: asCharacterId } = await searchParams;
+  const { as: asCharacterId, ziel } = await searchParams;
+  // Aus einer Benachrichtigung ("… wartet auf dich"): direkt zum letzten Beitrag springen.
+  const jumpToLast = ziel === "ende" || typeof asCharacterId === "string";
   const supabase = await createClient();
   const {
     data: { user },
@@ -51,7 +54,7 @@ export default async function StoryPostDetailPage({
       .eq("owner_id", user.id)
       .maybeSingle();
     if (wanted) {
-      redirect(`/switch-character?character=${wanted.id}&next=${encodeURIComponent(`/story/${id}`)}`);
+      redirect(`/switch-character?character=${wanted.id}&next=${encodeURIComponent(`/story/${id}?ziel=ende`)}`);
     }
   }
 
@@ -213,6 +216,7 @@ export default async function StoryPostDetailPage({
         </nav>
       )}
 
+      <ScrollToLast enabled={jumpToLast} />
       <h2 className="mb-4 font-serif text-xl text-fg">
         Fortsetzungen {continuations.length ? `(${continuations.length})` : ""}
       </h2>
@@ -234,11 +238,22 @@ export default async function StoryPostDetailPage({
           // Nur die letzten Beiträge sofort zeigen; ältere lassen sich ein- und ausklappen.
           const KEEP_VISIBLE = 5;
           const earlierCount = Math.max(0, nodes.length - KEEP_VISIBLE);
-          if (earlierCount < 2) return nodes;
+          const lastIndex = nodes.length - 1;
+          const mark = (list: typeof nodes, offset: number) =>
+            list.map((n, i) =>
+              offset + i === lastIndex ? (
+                <div key={n.key} id="letzter-beitrag" className="scroll-mt-20">
+                  {n}
+                </div>
+              ) : (
+                n
+              ),
+            );
+          if (earlierCount < 2) return mark(nodes, 0);
           return (
             <>
               <EarlierEntries count={earlierCount}>{nodes.slice(0, earlierCount)}</EarlierEntries>
-              {nodes.slice(earlierCount)}
+              {mark(nodes.slice(earlierCount), earlierCount)}
             </>
           );
         })()}

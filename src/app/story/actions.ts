@@ -177,7 +177,7 @@ async function notifyTurn(
     type: "turn",
     actorName: neutralActor ? "Erzähler:in" : (writer?.name ?? "Jemand"),
     actorAvatarUrl: neutralActor ? null : (writer?.avatar_url ?? null),
-    link: `/story/${storyPostId}?as=${turnCharacterId}`,
+    link: `/story/${storyPostId}?as=${turnCharacterId}&ziel=ende`,
     message: `wartet in „${title}“ auf dich`,
     recipientName: target.name,
   });
@@ -328,7 +328,7 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
     type: "turn",
     actorName: writer?.name ?? "Jemand",
     actorAvatarUrl: writer?.avatar_url ?? null,
-    link: `/story/${storyPostId}?as=${post.turn_character_id}`,
+    link: `/story/${storyPostId}?as=${post.turn_character_id}&ziel=ende`,
     message: `wartet in „${post.title}“ auf dich`,
     recipientName: target.name,
   });
