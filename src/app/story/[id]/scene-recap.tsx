@@ -69,11 +69,11 @@ export function SceneRecap({
 
   return (
     <details open={!since || fresh.length > 0} className="mb-6 rounded-xl bg-surface-2 px-4 py-3">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-fg">
-        <ScrollText className="h-4 w-4 text-accent" strokeWidth={2} />
-        Zuletzt geschah
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-1.5 text-sm font-medium text-fg">
+        <ScrollText className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
+        <span className="whitespace-nowrap">Zuletzt geschah</span>
         {since && fresh.length > 0 && (
-          <span className="ml-1 rounded-full bg-accent-strong px-2 py-0.5 text-xs font-medium text-on-accent-strong">
+          <span className="rounded-full bg-accent-strong px-2 py-0.5 text-xs font-medium text-on-accent-strong">
             {fresh.length} neu seit deinem letzten Besuch
           </span>
         )}
