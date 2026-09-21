@@ -8,11 +8,12 @@ import { formatDateTime, timeAgoShort } from "@/lib/format";
 import { stripHtml } from "@/lib/strip-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
+import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
-import { EarlierEntries } from "./earlier-entries";
+import { EntryList } from "./entry-list";
 import { ScrollToLast } from "./scroll-to-last";
 import { JumpToLast } from "./jump-to-last";
 import { StoryPostControls } from "./story-post-controls";
@@ -129,6 +130,16 @@ export default async function StoryPostDetailPage({
       }[]
     >();
 
+  // Charaktere für den Filter: erst die eigenen, dann alle übrigen, die in der Szene schreiben oder erwähnt werden.
+  const involvedIds = new Set<string>([storyPost.character_id, ...participantIds]);
+  for (const e of entries ?? []) {
+    if (e.kind !== "chapter") for (const id of parseMentionedCharacterIdsFromHtml(e.content)) involvedIds.add(id);
+  }
+  const filterCharacters = mentionableCharacters
+    .filter((c) => myCharacterIds.has(c.id) || involvedIds.has(c.id))
+    .map((c) => ({ id: c.id, name: c.name, own: myCharacterIds.has(c.id) }))
+    .sort((a, b) => Number(b.own) - Number(a.own));
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <article className="mb-8 rounded-lg border border-line bg-surface p-6">
@@ -226,43 +237,28 @@ export default async function StoryPostDetailPage({
       </div>
       {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
 
-      <div className="mb-6 flex flex-col gap-4">
-        {(() => {
+      <EntryList
+        items={(() => {
           let chapterCounter = 0;
-          const nodes = (entries ?? []).map((entry) => (
-            <StoryEntryItem
-              key={entry.id}
-              entry={entry}
-              storyPostId={storyPost.id}
-              canManage={myCharacterIds.has(entry.character_id)}
-              mentionCharacters={mentionableCharacters}
-              chapterNumber={entry.kind === "chapter" ? ++chapterCounter : undefined}
-              displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
-            />
-          ));
-          // Nur die letzten Beiträge sofort zeigen; ältere lassen sich ein- und ausklappen.
-          const KEEP_VISIBLE = 5;
-          const earlierCount = Math.max(0, nodes.length - KEEP_VISIBLE);
-          const lastIndex = nodes.length - 1;
-          const mark = (list: typeof nodes, offset: number) =>
-            list.map((n, i) =>
-              offset + i === lastIndex ? (
-                <div key={n.key} id="letzter-beitrag" className="scroll-mt-20">
-                  {n}
-                </div>
-              ) : (
-                n
-              ),
-            );
-          if (earlierCount < 2) return mark(nodes, 0);
-          return (
-            <>
-              <EarlierEntries count={earlierCount}>{nodes.slice(0, earlierCount)}</EarlierEntries>
-              {mark(nodes.slice(earlierCount), earlierCount)}
-            </>
-          );
+          return (entries ?? []).map((entry) => ({
+            id: entry.id,
+            kind: entry.kind,
+            authorId: entry.character_id,
+            mentionedIds: entry.kind === "chapter" ? [] : parseMentionedCharacterIdsFromHtml(entry.content),
+            node: (
+              <StoryEntryItem
+                entry={entry}
+                storyPostId={storyPost.id}
+                canManage={myCharacterIds.has(entry.character_id)}
+                mentionCharacters={mentionableCharacters}
+                chapterNumber={entry.kind === "chapter" ? ++chapterCounter : undefined}
+                displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
+              />
+            ),
+          }));
         })()}
-      </div>
+        characters={filterCharacters}
+      />
 
       {linkedPosts && linkedPosts.length > 0 && (
         <section className="mb-8">
