@@ -13,6 +13,7 @@ import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
+import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
 
@@ -152,16 +153,22 @@ export default async function StoryPostDetailPage({
             {storyPost.story_arcs.name}
           </Link>
         )}
-        <h1 className="mb-3 font-serif text-3xl text-fg">{storyPost.title}</h1>
-        <SceneMeta
+        <StoryPostBody
           storyPostId={storyPost.id}
-          location={storyPost.location}
-          inWorldTime={storyPost.in_world_time}
-          canEdit={myCharacterIds.has(storyPost.character_id)}
-        />
-        <div
-          className="post-content text-fg-soft"
-          dangerouslySetInnerHTML={{ __html: link(sanitizePostHtml(storyPost.content)) }}
+          title={storyPost.title}
+          rawContent={storyPost.content}
+          displayHtml={link(sanitizePostHtml(storyPost.content))}
+          narrator={!!storyPost.narrator}
+          authorName={storyPost.characters?.name ?? ""}
+          canEdit={myCharacterIds.has(storyPost.character_id) || isWorldOwner}
+          metaSlot={
+            <SceneMeta
+              storyPostId={storyPost.id}
+              location={storyPost.location}
+              inWorldTime={storyPost.in_world_time}
+              canEdit={myCharacterIds.has(storyPost.character_id)}
+            />
+          }
         />
       </article>
 

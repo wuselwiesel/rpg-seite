@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Feather } from "lucide-react";
 import { createStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { useDraft } from "@/lib/use-draft";
@@ -20,6 +21,7 @@ export function NewStoryPostForm({
   const [error, formAction, pending] = useActionState(createStoryPost, null);
   const [arcChoice, setArcChoice] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [narrator, setNarrator] = useState(false);
   const { draft, restored, update, clear } = useDraft("draft:story-new", { title: "", content: "", location: "", in_world_time: "" });
 
   return (
@@ -39,7 +41,22 @@ export function NewStoryPostForm({
         />
       </label>
       <div className="flex flex-col gap-1 text-sm text-fg-soft">
-        Inhalt
+        <div className="flex items-center justify-between">
+          Inhalt
+          <button
+            type="button"
+            onClick={() => setNarrator((v) => !v)}
+            aria-pressed={narrator}
+            title={narrator ? "Als Erzähler:in schreiben: an" : "Als Erzähler:in schreiben"}
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition ${
+              narrator ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
+            }`}
+          >
+            <Feather className="h-3.5 w-3.5" strokeWidth={2} />
+            {narrator ? "Als Erzähler:in" : "Erzähler:in"}
+          </button>
+        </div>
+        {narrator && <input type="hidden" name="narrator" value="on" />}
         {restored && (
           <RichTextEditor
             key="restored"

@@ -101,6 +101,7 @@ export type StoryPost = {
   in_world_time: string | null;
   turn_character_id: string | null;
   turn_set_at: string | null;
+  narrator?: boolean;
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];

@@ -99,6 +99,7 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
       is_private: isPrivate,
       location,
       in_world_time: inWorldTime,
+      narrator: formData.get("narrator") === "on",
     })
     .select("id")
     .single();
@@ -349,6 +350,59 @@ export async function updateStoryMeta(
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
   return null;
+}
+
+// Titel, Text und Erzähler-Modus der eigenen Szene ändern (RLS: nur Autor:in bzw. Welt-Besitzer:in).
+export async function updateStoryPost(
+  storyPostId: string,
+  _prevState: string | null,
+  formData: FormData,
+) {
+  const title = String(formData.get("title") ?? "").trim();
+  const content = sanitizePostHtml(String(formData.get("content") ?? "").trim());
+  const hasContent = stripHtml(content).length > 0 || content.includes("<img");
+  if (!title || !hasContent) return "Titel und Inhalt dürfen nicht leer sein.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("story_posts")
+    .update(
+      {
+        title,
+        content,
+        tags: extractHashtags(`${title} ${stripHtml(content)}`),
+        narrator: formData.get("narrator") === "on",
+      },
+      { count: "exact" },
+    )
+    .eq("id", storyPostId);
+
+  if (error) return error.message;
+  if (!count) return "Nur die Autor:in kann die Szene bearbeiten.";
+
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story");
+  return null;
+}
+
+export async function deleteStoryPost(storyPostId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase.from("story_posts").delete({ count: "exact" }).eq("id", storyPostId);
+  if (error) return error.message;
+  if (!count) return "Nur die Autor:in kann die Szene löschen.";
+
+  revalidatePath("/story");
+  redirect("/story");
 }
 
 export async function updateStoryEntry(

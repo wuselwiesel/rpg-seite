@@ -59,7 +59,7 @@ export function StoryEntryItem({
           <button
             type="button"
             onClick={handleDelete}
-            className="mt-1 text-xs text-muted opacity-0 transition hover:text-red-500 group-hover:opacity-100 focus:opacity-100"
+            className="mt-1 text-xs text-muted transition hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
           >
             Kapitel entfernen
           </button>
@@ -78,7 +78,7 @@ export function StoryEntryItem({
         <p className="mt-1 flex items-center justify-end gap-2 text-xs text-muted">
           Erzähler:in · {entry.characters?.name}
           {canManage && (
-            <span className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+            <span className="flex items-center gap-1 transition md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
               <button
                 type="button"
                 onClick={() => setEditing(true)}
