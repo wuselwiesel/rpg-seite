@@ -12,6 +12,7 @@ import { getWikiTerms } from "@/lib/wiki-terms";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
+import { EarlierEntries } from "./earlier-entries";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
 import { StoryPostBody } from "./story-post-body";
@@ -219,7 +220,7 @@ export default async function StoryPostDetailPage({
       <div className="mb-6 flex flex-col gap-4">
         {(() => {
           let chapterCounter = 0;
-          return entries?.map((entry) => (
+          const nodes = (entries ?? []).map((entry) => (
             <StoryEntryItem
               key={entry.id}
               entry={entry}
@@ -230,6 +231,16 @@ export default async function StoryPostDetailPage({
               displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
             />
           ));
+          // Nur die letzten Beiträge sofort zeigen; ältere lassen sich ein- und ausklappen.
+          const KEEP_VISIBLE = 5;
+          const earlierCount = Math.max(0, nodes.length - KEEP_VISIBLE);
+          if (earlierCount < 2) return nodes;
+          return (
+            <>
+              <EarlierEntries count={earlierCount}>{nodes.slice(0, earlierCount)}</EarlierEntries>
+              {nodes.slice(earlierCount)}
+            </>
+          );
         })()}
       </div>
 
