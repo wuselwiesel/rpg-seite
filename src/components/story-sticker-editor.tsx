@@ -5,6 +5,10 @@ import type { StorySticker } from "@/lib/story-stickers";
 
 const input = "w-full rounded-md border border-line bg-app px-3 py-1.5 text-base text-fg outline-none focus:border-accent";
 
+function tomorrowIso() {
+  return new Date(Date.now() + 24 * 3600_000).toISOString();
+}
+
 // Editor für Story-Sticker (Umfrage, Fragen-Box, Countdown): je Art höchstens einer.
 export function StoryStickerEditor({
   stickers,
@@ -23,9 +27,7 @@ export function StoryStickerEditor({
     if (type === "poll") upsert({ id, type, q: "", options: ["Ja", "Nein"] });
     if (type === "question") upsert({ id, type, prompt: "" });
     if (type === "countdown") {
-      const soon = new Date(Date.now() + 24 * 3600_000);
-      soon.setMinutes(soon.getMinutes() - soon.getTimezoneOffset());
-      upsert({ id, type, title: "", endsAt: new Date(soon.toISOString().slice(0, 16)).toISOString() });
+      upsert({ id, type, title: "", endsAt: tomorrowIso() });
     }
   }
 
