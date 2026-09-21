@@ -165,6 +165,7 @@ async function notifyTurn(
   writerUserId: string,
   writerCharacterId: string,
   turnCharacterId: string,
+  neutralActor = false,
 ) {
   const [{ data: target }, { data: writer }] = await Promise.all([
     supabase.from("characters").select("owner_id, name").eq("id", turnCharacterId).maybeSingle(),
@@ -174,8 +175,8 @@ async function notifyTurn(
   await createNotification(supabase, {
     userId: target.owner_id,
     type: "turn",
-    actorName: writer?.name ?? "Jemand",
-    actorAvatarUrl: writer?.avatar_url ?? null,
+    actorName: neutralActor ? "Erzähler:in" : (writer?.name ?? "Jemand"),
+    actorAvatarUrl: neutralActor ? null : (writer?.avatar_url ?? null),
     link: `/story/${storyPostId}?as=${turnCharacterId}`,
     message: `wartet in „${title}“ auf dich`,
     recipientName: target.name,
@@ -215,9 +216,10 @@ export async function createStoryEntry(
     characterId,
     `/story/${storyPostId}`,
     "hat dich in der Story erwähnt",
+    narrator,
   );
 
-  await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice);
+  await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice, true, narrator);
 
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
@@ -232,6 +234,7 @@ async function afterWriting(
   characterId: string,
   nextChoice: string,
   notify = true,
+  neutralActor = false,
 ) {
   const { data: before } = await supabase
     .from("story_posts")
@@ -240,7 +243,7 @@ async function afterWriting(
     .maybeSingle();
   const next = await assignNextTurn(supabase, storyPostId, characterId, nextChoice);
   if (notify && next && next !== before?.turn_character_id && before) {
-    await notifyTurn(supabase, storyPostId, before.title, userId, characterId, next);
+    await notifyTurn(supabase, storyPostId, before.title, userId, characterId, next, neutralActor);
   }
 }
 

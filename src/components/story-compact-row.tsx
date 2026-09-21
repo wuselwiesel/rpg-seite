@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MapPin, MessageCircle, Pin } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
+import { NarratorAvatar } from "./narrator-avatar";
 import { timeAgoShort } from "@/lib/format";
 import { stripHtml } from "@/lib/strip-html";
 import type { Character } from "@/lib/types";
@@ -16,6 +17,7 @@ export function StoryCompactRow({
   location,
   pinned,
   yourTurn,
+  narrator = false,
 }: {
   href: string;
   title: string;
@@ -26,10 +28,15 @@ export function StoryCompactRow({
   location?: string | null;
   pinned?: boolean;
   yourTurn?: boolean;
+  narrator?: boolean;
 }) {
   return (
     <Link href={href} className="flex items-center gap-3 px-1 py-3 transition active:bg-surface-2 hover:bg-surface-2/60">
-      <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={44} />
+      {narrator ? (
+        <NarratorAvatar size={44} />
+      ) : (
+        <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={44} />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <p className="min-w-0 flex-1 truncate font-serif text-lg leading-snug text-fg">{title}</p>

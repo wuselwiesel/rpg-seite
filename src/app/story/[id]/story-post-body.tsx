@@ -1,19 +1,18 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { Feather, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { deleteStoryPost, updateStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 
 // Titel, Ort/Zeit und Text der Szene. Die Autor:in kann sie hier bearbeiten oder löschen;
-// mit Erzähler:in-Modus erscheint der Text im Romanstil.
+// als Erzähler:in erscheint sie neutral, ohne Charakter.
 export function StoryPostBody({
   storyPostId,
   title,
   rawContent,
   displayHtml,
   narrator,
-  authorName,
   canEdit,
   metaSlot,
 }: {
@@ -22,7 +21,6 @@ export function StoryPostBody({
   rawContent: string;
   displayHtml: string;
   narrator: boolean;
-  authorName: string;
   canEdit: boolean;
   metaSlot: React.ReactNode;
 }) {
@@ -69,7 +67,7 @@ export function StoryPostBody({
             onChange={(e) => setNarratorOn(e.target.checked)}
             className="rounded border-line"
           />
-          Als Erzähler:in (Romanstil)
+          Als Erzähler:in (neutral, ohne Charakter)
         </label>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex gap-2">
@@ -123,15 +121,9 @@ export function StoryPostBody({
       {deleteError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{deleteError}</p>}
       {metaSlot}
       <div
-        className={`post-content ${narrator ? "font-serif text-base italic leading-relaxed text-fg-soft" : "text-fg-soft"}`}
+        className="post-content text-fg-soft"
         dangerouslySetInnerHTML={{ __html: displayHtml }}
       />
-      {narrator && (
-        <p className="mt-2 flex items-center justify-end gap-1.5 text-xs text-muted">
-          <Feather className="h-3 w-3" strokeWidth={2} />
-          Erzähler:in · {authorName}
-        </p>
-      )}
     </>
   );
 }

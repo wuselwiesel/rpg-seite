@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { NarratorAvatar } from "@/components/narrator-avatar";
 import { formatDateTime, timeAgoShort } from "@/lib/format";
 import { stripHtml } from "@/lib/strip-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -136,12 +137,16 @@ export default async function StoryPostDetailPage({
           initialBookmarked={!!bookmark}
         />
         <div className="mb-4 flex items-center gap-3">
-          <CharacterAvatar
-            name={storyPost.characters?.name ?? "?"}
-            avatarUrl={storyPost.characters?.avatar_url}
-          />
+          {storyPost.narrator ? (
+            <NarratorAvatar size={40} />
+          ) : (
+            <CharacterAvatar
+              name={storyPost.characters?.name ?? "?"}
+              avatarUrl={storyPost.characters?.avatar_url}
+            />
+          )}
           <div>
-            <p className="font-medium text-fg">{storyPost.characters?.name}</p>
+            <p className="font-medium text-fg">{storyPost.narrator ? "Erzähler:in" : storyPost.characters?.name}</p>
             <p className="text-xs text-muted">{formatDateTime(storyPost.created_at)}</p>
           </div>
         </div>
@@ -159,7 +164,6 @@ export default async function StoryPostDetailPage({
           rawContent={storyPost.content}
           displayHtml={link(sanitizePostHtml(storyPost.content))}
           narrator={!!storyPost.narrator}
-          authorName={storyPost.characters?.name ?? ""}
           canEdit={myCharacterIds.has(storyPost.character_id) || isWorldOwner}
           metaSlot={
             <SceneMeta

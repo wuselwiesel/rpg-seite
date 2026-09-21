@@ -273,6 +273,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               location={post.location}
               pinned={post.pinned}
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
+              narrator={!!post.narrator}
             />
           ) : (
             <EntryCard
@@ -298,6 +299,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               inWorldTime={post.in_world_time}
               locationHrefBase="/story"
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
+              narrator={!!post.narrator}
             />
           ))
         ) : q || tag || from || to || arc || ort || onlyMyTurn ? (

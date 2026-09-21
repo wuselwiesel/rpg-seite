@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useActionState } from "react";
 import { Dices, Pencil, Trash2, Type } from "lucide-react";
 import { updateStoryEntry, deleteStoryEntry } from "../actions";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
 import type { Character, StoryEntry } from "@/lib/types";
@@ -68,51 +69,21 @@ export function StoryEntryItem({
     );
   }
 
-  if (isNarrator && !editing) {
-    return (
-      <div className="group relative px-2 py-1 sm:px-6">
-        <div
-          className="post-content font-serif text-base italic leading-relaxed text-fg-soft"
-          dangerouslySetInnerHTML={{ __html: displayHtml ?? entry.content }}
-        />
-        <p className="mt-1 flex items-center justify-end gap-2 text-xs text-muted">
-          Erzähler:in · {entry.characters?.name}
-          {canManage && (
-            <span className="flex items-center gap-1 transition md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                title="Bearbeiten"
-                className="rounded p-1 hover:bg-surface-2 hover:text-fg"
-              >
-                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                title="Löschen"
-                className="rounded p-1 hover:bg-surface-2 hover:text-red-500"
-              >
-                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-            </span>
-          )}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex gap-3">
-      <CharacterAvatar
-        name={entry.characters?.name ?? "?"}
-        avatarUrl={entry.characters?.avatar_url}
-        size={32}
-      />
+      {isNarrator ? (
+        <NarratorAvatar size={32} />
+      ) : (
+        <CharacterAvatar
+          name={entry.characters?.name ?? "?"}
+          avatarUrl={entry.characters?.avatar_url}
+          size={32}
+        />
+      )}
       <div className="flex-1 rounded-lg border border-line bg-surface px-4 py-2">
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
-            <p className="text-sm font-medium text-fg">{entry.characters?.name}</p>
+            <p className="text-sm font-medium text-fg">{isNarrator ? "Erzähler:in" : entry.characters?.name}</p>
             <p className="text-xs text-muted">
               {formatDateTime(entry.created_at)}
               {entry.updated_at && " · bearbeitet"}

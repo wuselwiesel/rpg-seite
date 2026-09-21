@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock, EyeOff, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
+import { NarratorAvatar } from "./narrator-avatar";
 import type { Character } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 import { stripHtml } from "@/lib/strip-html";
@@ -31,6 +32,7 @@ export function EntryCard({
   inWorldTime,
   locationHrefBase,
   yourTurn,
+  narrator = false,
 }: {
   id: string;
   title: string;
@@ -55,24 +57,39 @@ export function EntryCard({
   inWorldTime?: string | null;
   locationHrefBase?: string;
   yourTurn?: boolean;
+  // Erzähler:in-Beitrag: neutral, ohne Charakter.
+  narrator?: boolean;
 }) {
   const preview = stripHtml(content);
   const surface = SURFACES[index % SURFACES.length];
 
   return (
     <article key={id} className={`rounded-2xl p-5 ${surface}`}>
-      <Link href={characterHref} className="mb-3 flex w-fit items-center gap-3">
-        <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={36} />
-        <div>
-          <p className="text-sm font-medium text-fg hover:text-accent">
-            {character?.name ?? "Unbekannt"}
-          </p>
-          <p className="text-xs text-muted">
-            {formatDateTime(createdAt)}
-            {worldName && <span> · in {worldName}</span>}
-          </p>
+      {narrator ? (
+        <div className="mb-3 flex w-fit items-center gap-3">
+          <NarratorAvatar size={36} />
+          <div>
+            <p className="text-sm font-medium text-fg">Erzähler:in</p>
+            <p className="text-xs text-muted">
+              {formatDateTime(createdAt)}
+              {worldName && <span> · in {worldName}</span>}
+            </p>
+          </div>
         </div>
-      </Link>
+      ) : (
+      <Link href={characterHref} className="mb-3 flex w-fit items-center gap-3">
+          <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={36} />
+          <div>
+            <p className="text-sm font-medium text-fg hover:text-accent">
+              {character?.name ?? "Unbekannt"}
+            </p>
+            <p className="text-xs text-muted">
+              {formatDateTime(createdAt)}
+              {worldName && <span> · in {worldName}</span>}
+            </p>
+          </div>
+        </Link>
+      )}
       {arcName && arcHref && (
         <Link
           href={arcHref}

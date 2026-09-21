@@ -92,6 +92,8 @@ export async function notifyMentionedCharacterIds(
   actorCharacterId: string,
   link: string,
   message: string,
+  // Erzähler:in-Beitrag: ohne Namen und Bild des schreibenden Charakters.
+  neutralActor = false,
 ) {
   if (mentionedCharacterIds.length === 0) return;
 
@@ -112,8 +114,8 @@ export async function notifyMentionedCharacterIds(
       createNotification(supabase, {
         userId: targetUserId,
         type: "mention",
-        actorName: actor?.name ?? "Jemand",
-        actorAvatarUrl: actor?.avatar_url ?? null,
+        actorName: neutralActor ? "Erzähler:in" : (actor?.name ?? "Jemand"),
+        actorAvatarUrl: neutralActor ? null : (actor?.avatar_url ?? null),
         link,
         message,
         recipientName: (owners ?? [])

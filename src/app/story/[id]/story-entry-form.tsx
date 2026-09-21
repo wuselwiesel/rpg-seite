@@ -55,7 +55,7 @@ export function StoryEntryForm({
         showToolbar={showToolbar}
         placeholder={
           narrator
-            ? "Erzähle, was geschieht – als Erzähler:in, im Romanstil..."
+            ? "Erzähle, was geschieht – als Erzähler:in, ohne Charakter..."
             : `Schreib die Geschichte weiter als ${characterName}... (@ um Charaktere zu markieren)`
         }
       />
