@@ -7,6 +7,7 @@ import { OfflineBanner } from "@/components/offline-banner";
 import { KeyboardFix } from "@/components/keyboard-fix";
 import { WikiPreviewLayer } from "@/components/wiki-preview-layer";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { PushSync } from "@/components/push-sync";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
         <ServiceWorkerRegister />
+        <PushSync />
         <WikiPreviewLayer />
         <KeyboardFix />
         <OfflineBanner />
