@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ScrollText } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { Sparkles, ScrollText } from "lucide-react";
+import { summarizeScene } from "../ai-actions";
 import { timeAgoShort } from "@/lib/format";
 
 export type RecapItem = { id: string; name: string; text: string; at: string };
@@ -13,13 +14,38 @@ export function SceneRecap({
   chapterTitle,
   chapterSummary,
   items,
+  aiSummary,
+  aiSummaryCount,
+  entryCount,
+  aiAvailable,
 }: {
   storyPostId: string;
   chapterTitle: string | null;
   chapterSummary: string | null;
   items: RecapItem[];
+  // KI-Zusammenfassung (gespeichert), Anzahl der Beiträge zum Zeitpunkt der Erstellung und aktuelle Anzahl.
+  aiSummary: string | null;
+  aiSummaryCount: number | null;
+  entryCount: number;
+  aiAvailable: boolean;
 }) {
   const [since, setSince] = useState<number | null | undefined>(undefined);
+  const [summary, setSummary] = useState(aiSummary);
+  const [summaryCount, setSummaryCount] = useState(aiSummaryCount);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiPending, startAi] = useTransition();
+
+  function runSummary() {
+    setAiError(null);
+    startAi(async () => {
+      const result = await summarizeScene(storyPostId);
+      if (result.error) setAiError(result.error);
+      else {
+        setSummary(result.summary);
+        setSummaryCount(result.count);
+      }
+    });
+  }
 
   useEffect(() => {
     const key = `scene-seen:${storyPostId}`;
@@ -37,7 +63,8 @@ export function SceneRecap({
   if (since === undefined) return null;
   const fresh = since ? items.filter((i) => new Date(i.at).getTime() > since) : [];
   const shown = since ? (fresh.length ? fresh : []) : items.slice(-3);
-  if (!chapterSummary && shown.length === 0) return null;
+  if (!chapterSummary && shown.length === 0 && !summary && !aiAvailable) return null;
+  const outdated = summary !== null && summaryCount !== entryCount;
 
   return (
     <details open={!since || fresh.length > 0} className="mb-6 rounded-xl bg-surface-2 px-4 py-3">
@@ -50,6 +77,30 @@ export function SceneRecap({
           </span>
         )}
       </summary>
+      {summary && (
+        <p className="mt-3 text-sm leading-relaxed text-fg-soft">
+          <span className="mr-1.5 inline-flex items-center gap-1 text-xs font-medium text-accent">
+            <Sparkles className="h-3 w-3" strokeWidth={2} />
+            KI
+          </span>
+          {summary}
+        </p>
+      )}
+      {aiAvailable && (!summary || outdated) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={runSummary}
+            disabled={aiPending}
+            className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-medium text-fg-soft transition hover:text-fg active:scale-95 disabled:opacity-60"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
+            {aiPending ? "Fasst zusammen..." : summary ? "Zusammenfassung erneuern" : "Mit KI zusammenfassen"}
+          </button>
+          <span className="text-[11px] text-muted">Der Text geht an Google Gemini.</span>
+        </div>
+      )}
+      {aiError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{aiError}</p>}
       {chapterSummary && (
         <p className="mt-3 text-sm text-fg-soft">
           <span className="font-medium text-fg">{chapterTitle ? `${chapterTitle}: ` : ""}</span>

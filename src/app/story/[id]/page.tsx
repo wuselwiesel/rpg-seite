@@ -100,7 +100,7 @@ export default async function StoryPostDetailPage({
   const turnIsMine = !!turnCharacter && myCharacterIds.has(turnCharacter.id);
   const recapItems = writing.map((e) => ({
     id: e.id,
-    name: e.characters?.name ?? "?",
+    name: e.kind === "narrator" ? "Erzähler:in" : (e.characters?.name ?? "?"),
     text: stripHtml(e.content),
     at: e.created_at,
   }));
@@ -190,6 +190,10 @@ export default async function StoryPostDetailPage({
         chapterTitle={lastChapter?.chapter_title ?? null}
         chapterSummary={lastChapter?.chapter_summary ?? null}
         items={recapItems}
+        aiSummary={storyPost.ai_summary ?? null}
+        aiSummaryCount={storyPost.ai_summary_count ?? null}
+        entryCount={writing.length}
+        aiAvailable={Boolean(process.env.GEMINI_API_KEY) && !storyPost.is_private}
       />
 
       {chapters.length > 0 && (

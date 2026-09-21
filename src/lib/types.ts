@@ -102,6 +102,8 @@ export type StoryPost = {
   turn_character_id: string | null;
   turn_set_at: string | null;
   narrator?: boolean;
+  ai_summary?: string | null;
+  ai_summary_count?: number | null;
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];
