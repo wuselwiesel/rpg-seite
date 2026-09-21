@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Feather } from "lucide-react";
 import { createStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { WriterSelect } from "@/components/writer-select";
 import { useDraft } from "@/lib/use-draft";
 import type { Character, StoryArc } from "@/lib/types";
 
@@ -11,13 +12,19 @@ const NEW_ARC_VALUE = "__new__";
 
 export function NewStoryPostForm({
   arcs,
-  otherCharacters,
+  allCharacters,
+  ownCharacters,
+  activeCharacterId,
   locations,
 }: {
   arcs: StoryArc[];
-  otherCharacters: Character[];
+  allCharacters: Character[];
+  ownCharacters: Character[];
+  activeCharacterId: string | null;
   locations: string[];
 }) {
+  const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
+  const otherCharacters = allCharacters.filter((c) => c.id !== writerId);
   const [error, formAction, pending] = useActionState(createStoryPost, null);
   const [arcChoice, setArcChoice] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -29,6 +36,13 @@ export function NewStoryPostForm({
     // pending/error transition would fire client-side - so the draft is
     // cleared optimistically on submit rather than after confirmation.
     <form action={formAction} onSubmit={() => clear()} className="flex flex-col gap-4">
+      <input type="hidden" name="character_id" value={writerId} />
+      {!narrator && <WriterSelect characters={ownCharacters} value={writerId} onChange={setWriterId} />}
+      {narrator && (
+        <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-fg-soft">
+          Du schreibst als <span className="font-medium text-fg">Erzähler:in</span> – ohne Charakter.
+        </p>
+      )}
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Titel
         <input

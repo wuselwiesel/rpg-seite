@@ -14,11 +14,13 @@ export function DiceRollForm({
   worldId,
   sheetUrl,
   targets,
+  writerId,
 }: {
   storyPostId: string;
   worldId: string;
   sheetUrl?: string | null;
   targets: Character[];
+  writerId: string;
 }) {
   const action = createDiceRoll.bind(null, storyPostId, worldId);
   const [error, formAction, pending] = useActionState(action, null);
@@ -57,6 +59,7 @@ export function DiceRollForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">
+      <input type="hidden" name="character_id" value={writerId} />
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Worauf würfelst du?
         <input

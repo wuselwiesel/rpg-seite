@@ -14,6 +14,7 @@ export function StoryEntryForm({
   participantIds,
   narrator,
   showToolbar,
+  writerId,
 }: {
   storyPostId: string;
   worldId: string;
@@ -22,9 +23,11 @@ export function StoryEntryForm({
   participantIds: string[];
   narrator: boolean;
   showToolbar: boolean;
+  writerId: string;
 }) {
-  const involved = characters.filter((c) => participantIds.includes(c.id));
-  const others = characters.filter((c) => !participantIds.includes(c.id));
+  const selectable = characters.filter((c) => c.id !== writerId);
+  const involved = selectable.filter((c) => participantIds.includes(c.id));
+  const others = selectable.filter((c) => !participantIds.includes(c.id));
   const action = createStoryEntry.bind(null, storyPostId, worldId);
   const [error, formAction, pending] = useActionState(action, null);
   const [resetKey, setResetKey] = useState(0);
@@ -43,6 +46,7 @@ export function StoryEntryForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-2">
+      <input type="hidden" name="character_id" value={writerId} />
       {narrator && <input type="hidden" name="narrator" value="on" />}
       {restored && (
       <RichTextEditor
@@ -70,7 +74,7 @@ export function StoryEntryForm({
         >
           {pending ? "Sende..." : narrator ? "Als Erzähler:in senden" : "Weiterschreiben"}
         </button>
-        {characters.length > 0 && (
+        {selectable.length > 0 && (
           <label className="flex items-center gap-1.5 text-xs text-muted">
             Danach dran:
             <select
@@ -78,7 +82,7 @@ export function StoryEntryForm({
               defaultValue=""
               className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-soft outline-none focus:border-accent"
             >
-              <option value="">automatisch</option>
+              <option value="">automatisch (zuletzt Schreibende:r)</option>
               {involved.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}

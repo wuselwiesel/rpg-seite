@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
+import { getActiveCharacter, getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { formatDateTime, timeAgoShort } from "@/lib/format";
@@ -69,7 +69,7 @@ export default async function StoryPostDetailPage({
     .returns<StoryEntry[]>();
 
   const mentionableCharacters = await getMentionableCharacters(user.id, storyPost.world_id);
-  const rollTargets = mentionableCharacters.filter((c) => c.id !== activeCharacter?.id);
+  const ownCharacters = await getOwnCharacters(user.id, storyPost.world_id);
 
   const { data: myCharacters } = await supabase
     .from("characters")
@@ -296,10 +296,10 @@ export default async function StoryPostDetailPage({
         <StoryComposer
           storyPostId={storyPost.id}
           worldId={storyPost.world_id}
-          characterName={activeCharacter?.name ?? "deinem Charakter"}
-          characters={rollTargets}
+          ownCharacters={ownCharacters}
+          activeCharacterId={activeCharacter?.id ?? null}
+          characters={mentionableCharacters}
           participantIds={participantIds}
-          sheetUrl={activeCharacter?.sheet_url}
         />
       )}
     </div>

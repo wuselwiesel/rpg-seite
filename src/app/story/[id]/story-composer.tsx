@@ -5,23 +5,29 @@ import { BookMarked, Feather, Type } from "lucide-react";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
 import { ChapterForm } from "./chapter-form";
+import { WriterSelect } from "@/components/writer-select";
 import type { Character } from "@/lib/types";
 
 export function StoryComposer({
   storyPostId,
   worldId,
-  characterName,
+  ownCharacters,
+  activeCharacterId,
   characters,
   participantIds,
-  sheetUrl,
 }: {
   storyPostId: string;
   worldId: string;
-  characterName: string;
+  // Eigene Charaktere in dieser Welt (zur Auswahl) und der aktuell aktive.
+  ownCharacters: Character[];
+  activeCharacterId: string | null;
+  // Alle ansprechbaren Charaktere der Welt (Erwähnungen, Wurf-Ziel, "Danach dran").
   characters: Character[];
   participantIds: string[];
-  sheetUrl?: string | null;
 }) {
+  const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
+  const writer = ownCharacters.find((c) => c.id === writerId) ?? ownCharacters[0] ?? null;
+  const others = characters.filter((c) => c.id !== writerId);
   const [mode, setMode] = useState<"write" | "roll">("write");
   const [showToolbar, setShowToolbar] = useState(false);
   const [narrator, setNarrator] = useState(false);
@@ -88,26 +94,37 @@ export function StoryComposer({
         )}
       </div>
 
+      {(mode === "roll" || !narrator) && (
+        <WriterSelect characters={ownCharacters} value={writerId} onChange={setWriterId} />
+      )}
+      {mode === "write" && narrator && (
+        <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-fg-soft">
+          Du schreibst als <span className="font-medium text-fg">Erzähler:in</span> – ohne Charakter.
+        </p>
+      )}
+
       {mode === "write" && showChapter && (
-        <ChapterForm storyPostId={storyPostId} worldId={worldId} onDone={() => setShowChapter(false)} />
+        <ChapterForm storyPostId={storyPostId} worldId={worldId} writerId={writerId} onDone={() => setShowChapter(false)} />
       )}
 
       {mode === "write" ? (
         <StoryEntryForm
           storyPostId={storyPostId}
           worldId={worldId}
-          characterName={characterName}
+          characterName={writer?.name ?? "deinem Charakter"}
           characters={characters}
           participantIds={participantIds}
           narrator={narrator}
           showToolbar={showToolbar}
+          writerId={writerId}
         />
       ) : (
         <DiceRollForm
           storyPostId={storyPostId}
           worldId={worldId}
-          sheetUrl={sheetUrl}
-          targets={characters}
+          sheetUrl={writer?.sheet_url}
+          targets={others}
+          writerId={writerId}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-character";
+import { getActiveCharacter, getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import type { StoryArc } from "@/lib/types";
 import { NewStoryPostForm } from "./new-story-post-form";
@@ -29,12 +29,18 @@ export default async function NewStoryPostPage() {
   ]);
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
-  const otherCharacters = mentionableCharacters.filter((c) => c.id !== activeCharacter?.id);
+  const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-6 font-serif text-3xl text-fg">Neue Szene</h1>
-      <NewStoryPostForm arcs={arcs ?? []} otherCharacters={otherCharacters} locations={locations} />
+      <NewStoryPostForm
+        arcs={arcs ?? []}
+        allCharacters={mentionableCharacters}
+        ownCharacters={ownCharacters}
+        activeCharacterId={activeCharacter?.id ?? null}
+        locations={locations}
+      />
     </div>
   );
 }

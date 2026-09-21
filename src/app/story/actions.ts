@@ -41,6 +41,22 @@ async function getActiveCharacterInWorld(userId: string, worldId: string) {
   return fallback?.id ?? null;
 }
 
+// Der gewählte eigene Charakter (Feld "character_id"); ohne gültige Wahl der aktive Charakter.
+async function resolveWriter(userId: string, worldId: string, chosenId: string) {
+  if (chosenId) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("characters")
+      .select("id")
+      .eq("id", chosenId)
+      .eq("owner_id", userId)
+      .eq("world_id", worldId)
+      .maybeSingle();
+    if (data) return data.id;
+  }
+  return getActiveCharacterInWorld(userId, worldId);
+}
+
 export async function createStoryPost(_prevState: string | null, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const rawContent = String(formData.get("content") ?? "").trim();
@@ -60,7 +76,7 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) return "Keine aktive Welt.";
 
-  const characterId = await getActiveCharacterInWorld(user.id, activeWorld.id);
+  const characterId = await resolveWriter(user.id, activeWorld.id, String(formData.get("character_id") ?? "").trim());
   if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
 
   const tags = extractHashtags(`${title} ${stripHtml(content)}`);
@@ -118,8 +134,8 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
-// Wer ist als Nächstes dran? Explizit gewählt oder automatisch: unter den bisher
-// Beteiligten (außer der Schreibenden) die Person, die am längsten nicht dran war.
+// Wer ist als Nächstes dran? Explizit gewählt oder automatisch: die Person, die zuletzt vor der
+// Schreibenden geschrieben hat (Erzähler:in-Beiträge und Kapitel zählen nicht).
 async function assignNextTurn(
   supabase: SupabaseClient,
   storyPostId: string,
@@ -135,20 +151,21 @@ async function assignNextTurn(
     nextId = choice;
   } else {
     const [{ data: post }, { data: entries }] = await Promise.all([
-      supabase.from("story_posts").select("character_id, created_at").eq("id", storyPostId).maybeSingle(),
-      supabase.from("story_entries").select("character_id, created_at").eq("story_post_id", storyPostId),
+      supabase.from("story_posts").select("character_id, created_at, narrator").eq("id", storyPostId).maybeSingle(),
+      supabase.from("story_entries").select("character_id, created_at, kind").eq("story_post_id", storyPostId),
     ]);
     const lastActive = new Map<string, number>();
-    if (post) lastActive.set(post.character_id, new Date(post.created_at).getTime());
+    if (post && !post.narrator) lastActive.set(post.character_id, new Date(post.created_at).getTime());
     for (const e of entries ?? []) {
+      if (e.kind === "narrator" || e.kind === "chapter") continue;
       const t = new Date(e.created_at).getTime();
       if (t > (lastActive.get(e.character_id) ?? 0)) lastActive.set(e.character_id, t);
     }
     lastActive.delete(writerCharacterId);
-    let oldest = Infinity;
+    let newest = -Infinity;
     for (const [id, t] of lastActive) {
-      if (t < oldest) {
-        oldest = t;
+      if (t > newest) {
+        newest = t;
         nextId = id;
       }
     }
@@ -201,7 +218,7 @@ export async function createStoryEntry(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const characterId = await getActiveCharacterInWorld(user.id, worldId);
+  const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
   if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
 
   const { error } = await supabase
@@ -252,6 +269,7 @@ export async function createChapter(
   worldId: string,
   title: string,
   summary: string,
+  chosenCharacterId = "",
 ): Promise<string | null> {
   const chapterTitle = title.trim().slice(0, 100);
   const chapterSummary = summary.trim().slice(0, 1500);
@@ -262,7 +280,7 @@ export async function createChapter(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const characterId = await getActiveCharacterInWorld(user.id, worldId);
+  const characterId = await resolveWriter(user.id, worldId, chosenCharacterId);
   if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
 
   const { error } = await supabase.from("story_entries").insert({
@@ -477,7 +495,7 @@ export async function createDiceRoll(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const characterId = await getActiveCharacterInWorld(user.id, worldId);
+  const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
   if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
 
   if (targetCharacterId) {

@@ -7,10 +7,12 @@ export function ChapterForm({
   storyPostId,
   worldId,
   onDone,
+  writerId,
 }: {
   storyPostId: string;
   worldId: string;
   onDone: () => void;
+  writerId: string;
 }) {
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -21,7 +23,7 @@ export function ChapterForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const err = await createChapter(storyPostId, worldId, title, summary);
+      const err = await createChapter(storyPostId, worldId, title, summary, writerId);
       if (err) setError(err);
       else onDone();
     });
