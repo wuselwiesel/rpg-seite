@@ -242,7 +242,7 @@ export default async function StoryPostDetailPage({
           let chapterCounter = 0;
           return (entries ?? []).map((entry) => ({
             id: entry.id,
-            kind: entry.kind,
+            kind: entry.kind ?? "entry",
             authorId: entry.character_id,
             mentionedIds: entry.kind === "chapter" ? [] : parseMentionedCharacterIdsFromHtml(entry.content),
             node: (
