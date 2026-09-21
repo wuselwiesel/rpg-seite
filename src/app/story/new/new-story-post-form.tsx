@@ -39,8 +39,8 @@ export function NewStoryPostForm({
       <input type="hidden" name="character_id" value={writerId} />
       {!narrator && <WriterSelect characters={ownCharacters} value={writerId} onChange={setWriterId} />}
       {narrator && (
-        <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-fg-soft">
-          Du schreibst als <span className="font-medium text-fg">Erzähler:in</span> – ohne Charakter.
+        <p className="text-xs text-muted">
+          Du schreibst als <span className="text-sm font-medium text-fg-soft">Erzähler:in</span> – ohne Charakter.
         </p>
       )}
       <label className="flex flex-col gap-1 text-sm text-fg-soft">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
 
@@ -20,16 +21,16 @@ export function WriterSelect({
   if (!selected) return null;
 
   return (
-    <label className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2">
-      <CharacterAvatar name={selected.name} avatarUrl={selected.avatar_url} size={36} />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-xs text-muted">{label}</span>
-        {characters.length > 1 ? (
+    <label className="flex w-fit max-w-full items-center gap-1.5 text-xs text-muted">
+      <CharacterAvatar name={selected.name} avatarUrl={selected.avatar_url} size={20} />
+      <span className="shrink-0">{label}</span>
+      {characters.length > 1 ? (
+        <span className="relative min-w-0">
           <select
             value={selected.id}
             onChange={(e) => onChange(e.target.value)}
             aria-label={label}
-            className="-ml-1 w-full min-w-0 cursor-pointer truncate rounded bg-transparent py-0.5 pl-1 text-base font-medium text-fg outline-none focus:ring-2 focus:ring-accent/40"
+            className="w-full min-w-0 cursor-pointer appearance-none truncate rounded bg-transparent py-1 pl-0.5 pr-5 text-sm font-medium text-fg-soft outline-none focus:ring-2 focus:ring-accent/40"
           >
             {characters.map((c) => (
               <option key={c.id} value={c.id}>
@@ -37,10 +38,11 @@ export function WriterSelect({
               </option>
             ))}
           </select>
-        ) : (
-          <span className="truncate text-base font-medium text-fg">{selected.name}</span>
-        )}
-      </span>
+          <ChevronDown className="pointer-events-none absolute right-0.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" strokeWidth={2} />
+        </span>
+      ) : (
+        <span className="truncate text-sm font-medium text-fg-soft">{selected.name}</span>
+      )}
     </label>
   );
 }
