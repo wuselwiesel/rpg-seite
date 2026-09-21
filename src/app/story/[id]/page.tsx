@@ -193,7 +193,9 @@ export default async function StoryPostDetailPage({
         aiSummary={storyPost.ai_summary ?? null}
         aiSummaryCount={storyPost.ai_summary_count ?? null}
         entryCount={writing.length}
-        aiAvailable={Boolean(process.env.GEMINI_API_KEY) && !storyPost.is_private}
+        aiProvider={
+          storyPost.is_private ? null : process.env.GROQ_API_KEY ? "Groq" : process.env.GEMINI_API_KEY ? "Google Gemini" : null
+        }
       />
 
       {chapters.length > 0 && (

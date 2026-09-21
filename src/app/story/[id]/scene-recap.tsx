@@ -17,7 +17,7 @@ export function SceneRecap({
   aiSummary,
   aiSummaryCount,
   entryCount,
-  aiAvailable,
+  aiProvider,
 }: {
   storyPostId: string;
   chapterTitle: string | null;
@@ -27,7 +27,8 @@ export function SceneRecap({
   aiSummary: string | null;
   aiSummaryCount: number | null;
   entryCount: number;
-  aiAvailable: boolean;
+  // Name des KI-Dienstes, wenn eingerichtet (sonst null: kein Knopf).
+  aiProvider: string | null;
 }) {
   const [since, setSince] = useState<number | null | undefined>(undefined);
   const [summary, setSummary] = useState(aiSummary);
@@ -63,7 +64,7 @@ export function SceneRecap({
   if (since === undefined) return null;
   const fresh = since ? items.filter((i) => new Date(i.at).getTime() > since) : [];
   const shown = since ? (fresh.length ? fresh : []) : items.slice(-3);
-  if (!chapterSummary && shown.length === 0 && !summary && !aiAvailable) return null;
+  if (!chapterSummary && shown.length === 0 && !summary && !aiProvider) return null;
   const outdated = summary !== null && summaryCount !== entryCount;
 
   return (
@@ -86,7 +87,7 @@ export function SceneRecap({
           {summary}
         </p>
       )}
-      {aiAvailable && (!summary || outdated) && (
+      {aiProvider && (!summary || outdated) && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -97,7 +98,7 @@ export function SceneRecap({
             <Sparkles className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
             {aiPending ? "Fasst zusammen..." : summary ? "Zusammenfassung erneuern" : "Mit KI zusammenfassen"}
           </button>
-          <span className="text-[11px] text-muted">Der Text geht an Google Gemini.</span>
+          <span className="text-[11px] text-muted">Der Text geht an {aiProvider}.</span>
         </div>
       )}
       {aiError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{aiError}</p>}
