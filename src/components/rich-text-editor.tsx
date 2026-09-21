@@ -11,6 +11,7 @@ import Mention from "@tiptap/extension-mention";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { createMentionSuggestion } from "@/lib/mention-suggestion";
+import { SymbolPicker } from "./symbol-picker";
 import type { Character } from "@/lib/types";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -50,6 +51,7 @@ function Toolbar({ editor }: { editor: Editor }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [symbolsOpen, setSymbolsOpen] = useState(false);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const original = e.target.files?.[0];
@@ -189,6 +191,9 @@ function Toolbar({ editor }: { editor: Editor }) {
         <ToolbarButton label="Markierten Text in » « setzen" onClick={wrapInGuillemets}>
           »…«
         </ToolbarButton>
+        <ToolbarButton label="Symbole einfügen" active={symbolsOpen} onClick={() => setSymbolsOpen((v) => !v)}>
+          ✦ Symbole
+        </ToolbarButton>
 
         <span className="mx-1 h-5 w-px bg-line" />
 
@@ -220,6 +225,12 @@ function Toolbar({ editor }: { editor: Editor }) {
           ↷
         </ToolbarButton>
       </div>
+      {symbolsOpen && (
+        <SymbolPicker
+          onPick={(symbol) => editor.chain().focus().insertContent(symbol).run()}
+          onClose={() => setSymbolsOpen(false)}
+        />
+      )}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <input
         ref={fileInputRef}
