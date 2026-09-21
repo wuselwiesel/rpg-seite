@@ -48,7 +48,8 @@ export function StoryEntryForm({
       <RichTextEditor
         key={resetKey}
         name="content"
-        initialContent={draft.content}
+        // Nach dem Absenden startet der Editor leer; der (noch nicht aktualisierte) Entwurf darf nicht zurückkehren.
+        initialContent={resetKey > 0 ? "" : draft.content}
         onChange={(html) => update({ content: html })}
         mentionCharacters={characters}
         minHeight={100}

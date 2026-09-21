@@ -14,6 +14,7 @@ import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { EarlierEntries } from "./earlier-entries";
 import { ScrollToLast } from "./scroll-to-last";
+import { JumpToLast } from "./jump-to-last";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
 import { StoryPostBody } from "./story-post-body";
@@ -217,9 +218,13 @@ export default async function StoryPostDetailPage({
       )}
 
       <ScrollToLast enabled={jumpToLast} />
-      <h2 className="mb-4 font-serif text-xl text-fg">
-        Fortsetzungen {continuations.length ? `(${continuations.length})` : ""}
-      </h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-serif text-xl text-fg">
+          Fortsetzungen {continuations.length ? `(${continuations.length})` : ""}
+        </h2>
+        {(entries?.length ?? 0) > 1 && <JumpToLast variant="inline" />}
+      </div>
+      {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
 
       <div className="mb-6 flex flex-col gap-4">
         {(() => {
