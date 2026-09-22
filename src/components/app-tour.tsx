@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { TOUR_START_EVENT } from "@/lib/tour";
 
-type Match = { attr: string; value: string } | { title: string } | { name: string };
+type Match = { attr: string } | { title: string } | { name: string };
 type Step = {
   title: string;
   text: string;
