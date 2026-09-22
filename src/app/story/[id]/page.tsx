@@ -135,9 +135,10 @@ export default async function StoryPostDetailPage({
   for (const e of entries ?? []) {
     if (e.kind !== "chapter") for (const id of parseMentionedCharacterIdsFromHtml(e.content)) involvedIds.add(id);
   }
+  const writtenIds = new Set(participantIds);
   const filterCharacters = mentionableCharacters
     .filter((c) => myCharacterIds.has(c.id) || involvedIds.has(c.id))
-    .map((c) => ({ id: c.id, name: c.name, own: myCharacterIds.has(c.id) }))
+    .map((c) => ({ id: c.id, name: c.name, own: myCharacterIds.has(c.id), wrote: writtenIds.has(c.id) }))
     .sort((a, b) => Number(b.own) - Number(a.own));
 
   return (

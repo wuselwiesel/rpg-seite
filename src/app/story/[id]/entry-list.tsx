@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { AtSign } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AtSign, ChevronDown } from "lucide-react";
 import { EarlierEntries } from "./earlier-entries";
 
 export type EntryListItem = {
@@ -11,7 +11,7 @@ export type EntryListItem = {
   mentionedIds: string[];
   node: React.ReactNode;
 };
-export type FilterCharacter = { id: string; name: string; own: boolean };
+export type FilterCharacter = { id: string; name: string; own: boolean; wrote: boolean };
 
 type Mode = "mentions" | "author" | "both";
 const MODES: { id: Mode; label: string }[] = [
@@ -26,6 +26,24 @@ const KEEP_VISIBLE = 5;
 export function EntryList({ items, characters }: { items: EntryListItem[]; characters: FilterCharacter[] }) {
   const [filterId, setFilterId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("mentions");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    function onDown(e: PointerEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMoreOpen(false);
+    }
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [moreOpen]);
 
   function matches(item: EntryListItem, id: string, m: Mode) {
     if (item.kind === "chapter") return false;
@@ -37,6 +55,12 @@ export function EntryList({ items, characters }: { items: EntryListItem[]; chara
   const filter = filterId ? characters.find((c) => c.id === filterId) ?? null : null;
   const shown = filter ? items.filter((i) => matches(i, filter.id, mode)) : items;
   const showFilterBar = items.length >= 3 && characters.length > 0;
+  // Direkt sichtbar: wer in der Szene selbst geschrieben hat. Alle anderen (eigene Charaktere,
+  // die hier noch nicht dran waren, oder nur Erwähnte) landen im "weitere"-Button, damit die
+  // Leiste nicht überläuft und man am Desktop nicht scrollen muss, um sie zu sehen.
+  const primary = characters.filter((c) => c.wrote);
+  const secondary = characters.filter((c) => !c.wrote);
+  const filterInSecondary = !!filter && !filter.wrote;
 
   const mark = (list: EntryListItem[], offset: number) =>
     list.map((item, i) =>
@@ -55,11 +79,7 @@ export function EntryList({ items, characters }: { items: EntryListItem[]; chara
     <>
       {showFilterBar && (
         <div className="mb-3 flex flex-col gap-2">
-          <div
-            className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            role="group"
-            aria-label="Beiträge filtern"
-          >
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Beiträge filtern">
             <button
               type="button"
               onClick={() => setFilterId(null)}
@@ -70,7 +90,7 @@ export function EntryList({ items, characters }: { items: EntryListItem[]; chara
             >
               Alle
             </button>
-            {characters.map((c) => {
+            {primary.map((c) => {
               const count = items.filter((i) => matches(i, c.id, mode)).length;
               const active = filterId === c.id;
               return (
@@ -90,6 +110,60 @@ export function EntryList({ items, characters }: { items: EntryListItem[]; chara
                 </button>
               );
             })}
+            {secondary.length > 0 && (
+              <div ref={moreRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={moreOpen}
+                  className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition active:scale-95 ${
+                    filterInSecondary ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+                  }`}
+                >
+                  {filterInSecondary ? (
+                    <>
+                      <AtSign className="h-3 w-3" strokeWidth={2.5} />
+                      {filter!.name.split(" ")[0]}
+                    </>
+                  ) : (
+                    `+${secondary.length} weitere`
+                  )}
+                  <ChevronDown className={`h-3 w-3 transition-transform ${moreOpen ? "rotate-180" : ""}`} strokeWidth={2.5} />
+                </button>
+                {moreOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Weitere Charaktere"
+                    className="menu-pop absolute left-0 top-full z-30 mt-1 max-h-64 w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-lg"
+                  >
+                    {secondary.map((c) => {
+                      const count = items.filter((i) => matches(i, c.id, mode)).length;
+                      const active = filterId === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setFilterId(active ? null : c.id);
+                            setMoreOpen(false);
+                          }}
+                          aria-pressed={active}
+                          className={`flex w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition ${
+                            active ? "bg-accent-strong/15 text-accent" : "text-fg-soft hover:bg-surface-2"
+                          }`}
+                        >
+                          <AtSign className="h-3 w-3 shrink-0" strokeWidth={2.5} />
+                          <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                          {c.own && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-label="dein Charakter" />}
+                          <span className="shrink-0 text-muted">{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {filter && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
