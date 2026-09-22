@@ -15,6 +15,16 @@ function subscribeTouch(callback: () => void) {
   return () => query.removeEventListener("change", callback);
 }
 
+function subscribeTourActive(callback: () => void) {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
+
+function getTourActiveSnapshot() {
+  return document.documentElement.classList.contains("tour-active");
+}
+
 export function MobileMain({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const immersive = isImmersiveChatPath(pathname);
@@ -34,12 +44,16 @@ export function MobileMain({ children }: { children: React.ReactNode }) {
     () => true,
   );
 
+  // Während des Rundgangs (app-tour.tsx setzt "tour-active" am <html>) keine View Transition: Bei den
+  // automatischen, schnell aufeinanderfolgenden Sprüngen blieb sonst kurz ein leeres Zwischenbild stehen.
+  const tourActive = useSyncExternalStore(subscribeTourActive, getTourActiveSnapshot, () => false);
+
   return (
     <main
       className={`min-w-0 flex-1 ${immersive ? "" : "pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0"}`}
     >
       {/* Weicher Übergang zwischen Seiten (View Transitions API; ohne Browser-Support einfach ohne Animation). */}
-      <ViewTransition default={visible && !touch ? "page-fade" : "none"}>{children}</ViewTransition>
+      <ViewTransition default={visible && !touch && !tourActive ? "page-fade" : "none"}>{children}</ViewTransition>
     </main>
   );
 }
