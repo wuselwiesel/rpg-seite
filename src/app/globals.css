@@ -911,6 +911,13 @@ body {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
+/* Während des Rundgangs: harte statt weicher Seitenwechsel, sonst blitzt zwischen den
+   automatischen Sprüngen kurz ein weißer Übergangsrahmen auf. */
+html.tour-active ::view-transition-group(*),
+html.tour-active ::view-transition-old(*),
+html.tour-active ::view-transition-new(*) {
+  animation: none !important;
+}
 
 /* "schreibt gerade..." */
 .typing-dot {

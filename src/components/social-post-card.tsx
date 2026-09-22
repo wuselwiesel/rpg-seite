@@ -16,11 +16,14 @@ import type { FeedPost } from "@/lib/feed-types";
 export function SocialPostCard({
   post,
   activeCharacterId,
+  myCharacters = [],
   tagHrefBase,
   priority = false,
 }: {
   post: FeedPost;
   activeCharacterId: string;
+  // Eigene Charaktere in der aktiven Welt: erlaubt, Beiträge mit jedem von ihnen zu liken.
+  myCharacters?: { id: string; name: string; avatar_url: string | null }[];
   tagHrefBase?: string;
   // Erster Beitrag im Feed: Bild sofort und bevorzugt laden.
   priority?: boolean;
@@ -123,6 +126,8 @@ export function SocialPostCard({
             heart
             target={{ postId: post.id }}
             initialReactions={post.reactions}
+            myCharacters={myCharacters}
+            activeCharacterId={activeCharacterId}
             commentSlot={
               <>
                 <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition duration-150 hover:text-muted active:scale-75">

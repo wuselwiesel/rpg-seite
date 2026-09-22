@@ -289,14 +289,16 @@ export default async function StoryPostDetailPage({
       {storyPost.locked ? (
         <p className="text-sm text-muted">Diese Szene ist gesperrt – keine neuen Fortsetzungen möglich.</p>
       ) : (
-        <StoryComposer
-          storyPostId={storyPost.id}
-          worldId={storyPost.world_id}
-          ownCharacters={ownCharacters}
-          activeCharacterId={activeCharacter?.id ?? null}
-          characters={mentionableCharacters}
-          participantIds={participantIds}
-        />
+        <div data-tour="story-composer">
+          <StoryComposer
+            storyPostId={storyPost.id}
+            worldId={storyPost.world_id}
+            ownCharacters={ownCharacters}
+            activeCharacterId={activeCharacter?.id ?? null}
+            characters={mentionableCharacters}
+            participantIds={participantIds}
+          />
+        </div>
       )}
     </div>
   );

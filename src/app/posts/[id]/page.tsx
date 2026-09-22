@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getMentionableCharacters, getActiveCharacter } from "@/lib/active-character";
+import { getMentionableCharacters, getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { PostMedia } from "@/components/post-media";
@@ -56,6 +56,8 @@ export default async function PostDetailPage({
   const activeWorld = await getActiveWorld(user.id);
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
   const activeCharacterSet = new Set(activeCharacter ? [activeCharacter.id] : []);
+  const worldCharacters = post.characters ? await getOwnCharacters(user.id, post.characters.world_id) : [];
+  const likeCharacters = worldCharacters.map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }));
 
   const mentionableCharacters = post.characters
     ? await getMentionableCharacters(user.id, post.characters.world_id)
@@ -133,6 +135,8 @@ export default async function PostDetailPage({
             heart
             target={{ postId: post.id }}
             initialReactions={aggregateReactions(post.reactions, activeCharacterSet)}
+            myCharacters={likeCharacters}
+            activeCharacterId={activeCharacter?.id}
             commentSlot={activeCharacter ? <SharePostButton postId={post.id} characterId={activeCharacter.id} /> : null}
           />
         </div>

@@ -259,7 +259,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         </span>
       </Link>
 
-      <div className={compact ? "flex flex-col divide-y divide-line" : "flex flex-col gap-4"}>
+      <div data-tour="story-list" className={compact ? "flex flex-col divide-y divide-line" : "flex flex-col gap-4"}>
         {storyPosts?.length ? (
           storyPosts.map((post, index) => compact ? (
             <StoryCompactRow

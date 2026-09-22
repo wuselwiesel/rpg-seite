@@ -39,7 +39,7 @@ async function getActiveCharacterId(userId: string) {
 }
 
 export async function toggleReaction(
-  target: { postId: string } | { messageId: string; characterId: string },
+  target: { postId: string; characterId?: string } | { messageId: string; characterId: string },
   emoji: string,
 ): Promise<string | null> {
   const supabase = await createClient();
@@ -48,7 +48,22 @@ export async function toggleReaction(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const characterId = "postId" in target ? await getActiveCharacterId(user.id) : target.characterId;
+  let characterId: string | null;
+  if ("postId" in target && target.characterId) {
+    // Explizit gewählter Charakter (z.B. aus dem "Als wen liken?"-Auswähler):
+    // gehört er wirklich mir?
+    const { data: owned } = await supabase
+      .from("characters")
+      .select("id")
+      .eq("id", target.characterId)
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    characterId = owned?.id ?? null;
+  } else if ("postId" in target) {
+    characterId = await getActiveCharacterId(user.id);
+  } else {
+    characterId = target.characterId;
+  }
   if (!characterId) return "Du brauchst zuerst einen Charakter.";
 
   const column = "postId" in target ? "post_id" : "message_id";

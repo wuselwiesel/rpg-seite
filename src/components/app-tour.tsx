@@ -34,6 +34,24 @@ const STEPS: Step[] = [
     match: { attr: "mode-switch" },
   },
   {
+    title: "Szenen",
+    text: "Jede Szene ist ein eigener Handlungsstrang. Tippe eine an, um mitzuschreiben oder zu würfeln.",
+    route: "/story",
+    match: { attr: "story-list" },
+  },
+  {
+    title: "Mitschreiben",
+    text: "In einer Szene schreibt ihr abwechselnd weiter. Wer dran ist, wird oben angezeigt – hier wählst du auch, mit welchem Charakter du schreibst.",
+    route: "@thread",
+    match: { attr: "story-composer" },
+  },
+  {
+    title: "Würfeln",
+    text: "Unter „Würfeln“ wirfst du z. B. einen W20 – wahlweise mit Werten aus dem Charakterbogen.",
+    route: "@thread",
+    match: { name: "Würfeln" },
+  },
+  {
     title: "Wiki",
     text: "Orte, NPCs und Fraktionen eurer Welt. Namen aus dem Wiki werden im Text automatisch verlinkt.",
     route: "/story",
@@ -96,11 +114,25 @@ function findTarget(match: Match): HTMLElement | null {
   return null;
 }
 
+// Link zur ersten Szene der Liste (falls vorhanden) – damit der Rundgang tatsächlich in eine
+// echte Szene hineinspringen kann, ohne eine feste ID zu kennen.
+function findFirstThreadHref(): string | null {
+  const link = document.querySelector<HTMLAnchorElement>('[data-tour="story-list"] a[href^="/story/"]');
+  return link?.getAttribute("href") ?? null;
+}
+
+// "@thread" ist ein Platzhalter für "die gerade gefundene erste Szene" statt einer festen Route.
+function resolveRoute(route: string | undefined, threadHref: string | null): string | null {
+  if (!route) return null;
+  return route === "@thread" ? threadHref : route;
+}
+
 export function AppTour() {
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [searching, setSearching] = useState(true);
+  const [threadHref, setThreadHref] = useState<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -110,35 +142,62 @@ export function AppTour() {
   useEffect(() => {
     function onStart() {
       setStepIndex(0);
+      setThreadHref(null);
       setActive(true);
     }
     window.addEventListener(TOUR_START_EVENT, onStart);
     return () => window.removeEventListener(TOUR_START_EVENT, onStart);
   }, []);
 
+  // Während des Rundgangs die weiche Seitenüberblendung abschalten: Sie lässt bei den
+  // automatischen Sprüngen sonst kurz ein weißes Zwischenbild aufblitzen.
+  useEffect(() => {
+    document.documentElement.classList.toggle("tour-active", active);
+    return () => document.documentElement.classList.remove("tour-active");
+  }, [active]);
+
   // Zielseite dieses Schritts ansteuern, falls nötig.
   useEffect(() => {
     if (!active) return;
-    if (step.route && pathname !== step.route) router.push(step.route);
-  }, [active, step, pathname, router]);
+    const target = resolveRoute(step.route, threadHref);
+    if (target && pathname !== target) router.push(target);
+  }, [active, step, pathname, router, threadHref]);
 
   // Ziel-Element suchen (mit ein paar Versuchen, falls die Seite gerade erst lädt) und Position verfolgen.
   const locate = useCallback(() => {
+    // Sobald die Szenenliste sichtbar ist, deren erste Szene für den "@thread"-Schritt merken.
+    if (pathname === "/story") {
+      const href = findFirstThreadHref();
+      if (href) setThreadHref((prev) => (prev === href ? prev : href));
+    }
     if (!step.match) {
       setRect(null);
       setSearching(false);
       return;
     }
-    if (step.route && pathname !== step.route) return;
+    const target = resolveRoute(step.route, threadHref);
+    if (step.route === "@thread" && !target) {
+      // Keine Szene vorhanden, in die gesprungen werden könnte – Text gilt trotzdem, nur ohne Ziel.
+      setRect(null);
+      setSearching(false);
+      return;
+    }
+    if (target && pathname !== target) return;
     const el = findTarget(step.match);
     if (!el) {
       setRect(null);
       return;
     }
+    // Anders als die feste Navigation kann ein Ziel innerhalb einer Seite (z.B. im Story-Composer)
+    // außerhalb des sichtbaren Bereichs liegen – dann erst ohne Animation dorthin scrollen.
+    const before = el.getBoundingClientRect();
+    if (before.top < 60 || before.bottom > window.innerHeight - 60) {
+      el.scrollIntoView({ block: "center", behavior: "instant" as ScrollBehavior });
+    }
     const r = el.getBoundingClientRect();
     setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     setSearching(false);
-  }, [step, pathname]);
+  }, [step, pathname, threadHref]);
 
   useEffect(() => {
     if (!active) return;
@@ -149,7 +208,7 @@ export function AppTour() {
     pollTimer.current = setInterval(() => {
       tries++;
       locate();
-      if (tries > 16 && pollTimer.current) {
+      if (tries > 40 && pollTimer.current) {
         clearInterval(pollTimer.current);
         setSearching(false);
       }

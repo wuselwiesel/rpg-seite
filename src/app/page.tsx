@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld, getWorldJoinedAt } from "@/lib/worlds";
 import { FeedList } from "@/components/feed-list";
 import { PullToRefresh } from "@/components/pull-to-refresh";
@@ -36,7 +36,11 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   if (!activeCharacter) redirect("/characters/new");
 
   const filters = { q, from, to, tag };
-  const initialPosts = await fetchFeedPage(filters, activeCharacter.id, activeWorld.id);
+  const [initialPosts, ownCharacters] = await Promise.all([
+    fetchFeedPage(filters, activeCharacter.id, activeWorld.id),
+    getOwnCharacters(user.id, activeWorld.id),
+  ]);
+  const myCharacters = ownCharacters.map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }));
 
   return (
     <PullToRefresh>
@@ -55,6 +59,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
           initialPosts={initialPosts}
           filters={filters}
           activeCharacterId={activeCharacter.id}
+          myCharacters={myCharacters}
           emptyState={
             q || tag || from || to ? (
               <p className="text-muted">Keine Einträge gefunden.</p>

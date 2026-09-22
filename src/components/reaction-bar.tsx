@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { Heart, SmilePlus, X } from "lucide-react";
+import { ChevronDown, Heart, SmilePlus, X } from "lucide-react";
 import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
 import { toggleReaction, getPostReactors, type Reactor } from "@/app/reactions/actions";
@@ -36,6 +36,8 @@ export function ReactionBar({
   onBubble = false,
   heart = false,
   commentSlot,
+  myCharacters = [],
+  activeCharacterId,
 }: {
   onBubble?: boolean;
   // Instagram-Stil: Herz-Button (❤️), danach `commentSlot`, dann Emoji-Auswahl; weitere Reaktionen darunter.
@@ -43,11 +45,17 @@ export function ReactionBar({
   commentSlot?: React.ReactNode;
   target: { postId: string } | { messageId: string; characterId: string };
   initialReactions: ReactionSummary[];
+  // Eigene Charaktere in der Welt dieses Beitrags: erlaubt, mit einem beliebigen von ihnen zu liken,
+  // nicht nur mit dem gerade aktiven. Nur für `heart` (Beiträge) relevant.
+  myCharacters?: { id: string; name: string; avatar_url: string | null }[];
+  activeCharacterId?: string;
 }) {
   const [reactions, setReactions] = useState(initialReactions);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [reactors, setReactors] = useState<Reactor[] | null>(null);
+  const [charPickerOpen, setCharPickerOpen] = useState(false);
+  const [myLikes, setMyLikes] = useState<Set<string> | null>(null);
   const total = reactions.reduce((sum, r) => sum + r.count, 0);
   const postId = "postId" in target ? target.postId : null;
   const [, startTransition] = useTransition();
@@ -87,6 +95,38 @@ export function ReactionBar({
     setListOpen(true);
     setReactors(null);
     getPostReactors(postId).then(setReactors);
+  }
+
+  function openCharPicker() {
+    if (!postId) return;
+    setCharPickerOpen(true);
+    setMyLikes(null);
+    getPostReactors(postId).then((list) => {
+      setMyLikes(new Set(list.filter((r) => r.emoji === "❤️").map((r) => r.character.id)));
+    });
+  }
+
+  // Mit einem bestimmten eigenen Charakter liken/entliken, unabhängig vom gerade aktiven.
+  function toggleAsCharacter(characterId: string) {
+    if (!postId || !myLikes) return;
+    const already = myLikes.has(characterId);
+    const nextLikes = new Set(myLikes);
+    if (already) nextLikes.delete(characterId);
+    else nextLikes.add(characterId);
+    setMyLikes(nextLikes);
+    setReactions((prev) => {
+      const delta = already ? -1 : 1;
+      const existing = prev.find((r) => r.emoji === "❤️");
+      if (existing) {
+        const nextCount = existing.count + delta;
+        if (nextCount <= 0) return prev.filter((r) => r.emoji !== "❤️");
+        return prev.map((r) => (r.emoji === "❤️" ? { ...r, count: nextCount } : r));
+      }
+      return delta > 0 ? [...prev, { emoji: "❤️", count: 1, reactedByMe: characterId === activeCharacterId }] : prev;
+    });
+    startTransition(async () => {
+      await toggleReaction({ postId, characterId }, "❤️");
+    });
   }
 
   function handleToggle(emoji: string) {
@@ -149,6 +189,17 @@ export function ReactionBar({
               strokeWidth={liked ? 0 : 1.75}
             />
           </button>
+          {myCharacters.length > 1 && (
+            <button
+              type="button"
+              onClick={openCharPicker}
+              title="Mit einem anderen Charakter liken"
+              aria-label="Mit einem anderen Charakter liken"
+              className="flex h-7 w-5 items-center justify-center text-muted transition hover:text-fg active:scale-90"
+            >
+              <ChevronDown className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
           {commentSlot}
           <span className="ml-auto">{pickerButton}</span>
         </div>
@@ -239,6 +290,55 @@ export function ReactionBar({
                     </Link>
                   </li>
                 ))}
+              </ul>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {charPickerOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <button
+              type="button"
+              onClick={() => setCharPickerOpen(false)}
+              aria-label="Schließen"
+              className="absolute inset-0"
+            />
+            <div className="relative flex max-h-[70vh] w-full max-w-sm flex-col rounded-2xl border border-line bg-surface shadow-xl">
+              <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                <h2 className="font-serif text-lg text-fg">Als wen liken?</h2>
+                <button
+                  type="button"
+                  onClick={() => setCharPickerOpen(false)}
+                  title="Schließen"
+                  className="rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                >
+                  <X className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
+              <ul className="overflow-y-auto p-2">
+                {myLikes === null && <li className="px-3 py-4 text-sm text-muted">Lädt...</li>}
+                {myLikes !== null &&
+                  myCharacters.map((c) => {
+                    const liked = myLikes.has(c.id);
+                    return (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          onClick={() => toggleAsCharacter(c.id)}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-surface-2 active:bg-surface-3"
+                        >
+                          <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={36} />
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{c.name}</span>
+                          <Heart
+                            className={`h-5 w-5 shrink-0 transition-colors ${liked ? "fill-[#ed4956] text-[#ed4956]" : "text-muted"}`}
+                            strokeWidth={liked ? 0 : 1.75}
+                          />
+                        </button>
+                      </li>
+                    );
+                  })}
               </ul>
             </div>
           </div>,

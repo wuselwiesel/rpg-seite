@@ -11,11 +11,13 @@ export function FeedList({
   initialPosts,
   filters,
   activeCharacterId,
+  myCharacters = [],
   emptyState,
 }: {
   initialPosts: FeedPost[];
   filters: FeedFilters;
   activeCharacterId: string;
+  myCharacters?: { id: string; name: string; avatar_url: string | null }[];
   emptyState: React.ReactNode;
 }) {
   const [posts, setPosts] = useState(initialPosts);
@@ -64,7 +66,13 @@ export function FeedList({
       <div className="flex flex-col gap-2">
         {posts.map((post, i) => (
           <div key={post.id} className={i >= initialPosts.length ? "feed-in" : undefined}>
-            <SocialPostCard post={post} activeCharacterId={activeCharacterId} tagHrefBase="/" priority={i === 0} />
+            <SocialPostCard
+              post={post}
+              activeCharacterId={activeCharacterId}
+              myCharacters={myCharacters}
+              tagHrefBase="/"
+              priority={i === 0}
+            />
           </div>
         ))}
       </div>
