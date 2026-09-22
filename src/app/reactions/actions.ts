@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/notifications";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 
@@ -68,6 +69,27 @@ export async function toggleReaction(
       .from("reactions")
       .insert({ character_id: characterId, emoji, [column]: targetId });
     if (error) return error.message;
+
+    // Herz auf einen Beitrag: die Besitzer:in benachrichtigen (gebündelt, siehe create_notification).
+    if ("postId" in target && emoji === "❤️") {
+      const { data: post } = await supabase
+        .from("posts")
+        .select("character_id, characters(owner_id, name)")
+        .eq("id", target.postId)
+        .maybeSingle<{ character_id: string; characters: { owner_id: string; name: string } | null }>();
+      if (post?.characters?.owner_id && post.character_id !== characterId) {
+        const { data: actor } = await supabase.from("characters").select("name, avatar_url").eq("id", characterId).maybeSingle();
+        await createNotification(supabase, {
+          userId: post.characters.owner_id,
+          type: "like",
+          actorName: actor?.name ?? "Jemand",
+          actorAvatarUrl: actor?.avatar_url ?? null,
+          link: `/posts/${target.postId}`,
+          message: "gefällt dein Beitrag",
+          recipientName: post.characters.name,
+        });
+      }
+    }
   }
 
   if ("postId" in target) revalidatePath("/");

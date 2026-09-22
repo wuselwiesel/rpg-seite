@@ -16,6 +16,7 @@ export const getWikiTerms = cache(async (worldId: string): Promise<WikiTerm[]> =
       category: p.category,
       excerpt: text.length > 200 ? `${text.slice(0, 197)}...` : text,
       aliases: (p.aliases as string[] | null) ?? [],
+      coverImageUrl: p.cover_image_url as string | null,
     };
   });
 });

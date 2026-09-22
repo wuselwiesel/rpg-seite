@@ -26,6 +26,8 @@ export async function createWikiPage(_prevState: string | null, formData: FormDa
   const rawContent = String(formData.get("content") ?? "").trim();
   const content = sanitizePostHtml(rawContent);
 
+  const coverImageUrl = String(formData.get("cover_image_url") ?? "").trim();
+
   if (!title) return "Titel darf nicht leer sein.";
   if (!CATEGORIES.includes(category as WikiCategory)) return "Ungültige Kategorie.";
 
@@ -40,7 +42,15 @@ export async function createWikiPage(_prevState: string | null, formData: FormDa
 
   const { data, error } = await supabase
     .from("wiki_pages")
-    .insert({ world_id: activeWorld.id, category, title, content, aliases: parseAliases(formData.get("aliases")), created_by: user.id })
+    .insert({
+      world_id: activeWorld.id,
+      category,
+      title,
+      content,
+      aliases: parseAliases(formData.get("aliases")),
+      cover_image_url: coverImageUrl || null,
+      created_by: user.id,
+    })
     .select("id")
     .single();
 
@@ -69,9 +79,18 @@ export async function updateWikiPage(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
+  const coverImageUrl = String(formData.get("cover_image_url") ?? "").trim();
+
   const { error } = await supabase
     .from("wiki_pages")
-    .update({ title, category, content, aliases: parseAliases(formData.get("aliases")), updated_at: new Date().toISOString() })
+    .update({
+      title,
+      category,
+      content,
+      aliases: parseAliases(formData.get("aliases")),
+      cover_image_url: coverImageUrl || null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", wikiPageId);
 
   if (error) return error.message;

@@ -26,3 +26,15 @@ export const getActiveWorld = cache(async (userId: string): Promise<World | null
 
   return worlds.find((w) => w.id === activeId) ?? worlds[0];
 });
+
+// Für die Kurzanleitung ("Wie funktioniert das hier?"): wann ist die Person dieser Welt beigetreten?
+export const getWorldJoinedAt = cache(async (userId: string, worldId: string): Promise<string | null> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("world_members")
+    .select("joined_at")
+    .eq("user_id", userId)
+    .eq("world_id", worldId)
+    .maybeSingle();
+  return data?.joined_at ?? null;
+});

@@ -7,6 +7,7 @@ import { EnterWorldButton } from "../enter-world-button";
 import { JoinWorldButton } from "../join-world-button";
 import { LeaveWorldButton } from "./leave-world-button";
 import { InviteFriendForm } from "./invite-friend-form";
+import { InviteLink } from "@/components/invite-link";
 import type { Profile, World } from "@/lib/types";
 
 type WorldMemberRow = { user_id: string; profiles: Profile };
@@ -85,6 +86,10 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
       {isOwner && (
         <>
           <h2 className="mb-3 font-serif text-xl text-fg">Freund:innen einladen</h2>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <InviteLink worldId={world.id} />
+            <p className="text-xs text-muted">Jede:r Angemeldete kann damit direkt beitreten.</p>
+          </div>
           <InviteFriendForm worldId={world.id} friends={invitableFriends} />
         </>
       )}

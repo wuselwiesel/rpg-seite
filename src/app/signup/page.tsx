@@ -3,9 +3,12 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { signup } from "./actions";
+import { useSearchParams } from "next/navigation";
 
 export default function SignupPage() {
   const [error, formAction, pending] = useActionState(signup, null);
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-sm flex-col justify-center px-4">
@@ -15,6 +18,7 @@ export default function SignupPage() {
       </p>
 
       <form action={formAction} className="flex flex-col gap-4">
+        {next && <input type="hidden" name="next" value={next} />}
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Benutzername
           <input
@@ -58,7 +62,7 @@ export default function SignupPage() {
 
       <p className="mt-6 text-sm text-muted">
         Schon dabei?{" "}
-        <Link href="/login" className="text-accent hover:underline">
+        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="text-accent hover:underline">
           Anmelden
         </Link>
       </p>

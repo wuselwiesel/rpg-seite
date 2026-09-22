@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createWikiPage, updateWikiPage } from "./actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { useDraft } from "@/lib/use-draft";
 import type { WikiCategory, WikiPage } from "@/lib/types";
 
@@ -22,6 +23,16 @@ export function WikiForm({ page }: { page?: WikiPage }) {
 
   return (
     <form action={formAction} onSubmit={() => isNew && clear()} className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+        Titelbild (optional)
+        <AvatarUpload
+          name="cover_image_url"
+          initialUrl={page?.cover_image_url}
+          displayName={page?.title ?? "Wiki-Eintrag"}
+          bucket="wiki-covers"
+          variant="cover"
+        />
+      </label>
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Titel
         <input

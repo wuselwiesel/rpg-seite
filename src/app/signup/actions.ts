@@ -31,5 +31,6 @@ export async function signup(_prevState: string | null, formData: FormData) {
     return error.message;
   }
 
-  redirect("/search?tab=worlds&welcome=1");
+  const next = String(formData.get("next") ?? "");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/search?tab=worlds&welcome=1");
 }

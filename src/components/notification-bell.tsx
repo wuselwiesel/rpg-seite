@@ -154,7 +154,11 @@ export function NotificationBell({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="text-fg-soft">
-                      <span className="font-medium text-fg">{n.actor_name ?? "Jemand"}</span> {n.message}
+                      <span className="font-medium text-fg">{n.actor_name ?? "Jemand"}</span>
+                      {n.actor_count && n.actor_count > 1 && (
+                        <> und {n.actor_count - 1} {n.actor_count - 1 === 1 ? "weitere Person" : "weitere"}</>
+                      )}{" "}
+                      {n.message}
                     </span>
                     {n.recipient_name && (
                       <span className="mt-0.5 block text-xs font-medium text-fg-soft">{n.recipient_name}</span>

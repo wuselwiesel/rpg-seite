@@ -185,6 +185,7 @@ export type WikiPage = {
   title: string;
   content: string;
   aliases?: string[];
+  cover_image_url?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

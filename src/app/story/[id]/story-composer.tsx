@@ -26,6 +26,14 @@ export function StoryComposer({
   participantIds: string[];
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
+  const [entryResetKey, setEntryResetKey] = useState(0);
+
+  // Beim Wechsel des schreibenden Charakters: ein begonnener Text bezieht sich sonst auf den
+  // falschen Charakter, deshalb wird das Feld beim Wechsel geleert (ohne Rückfrage).
+  function changeWriter(id: string) {
+    setWriterId(id);
+    setEntryResetKey((k) => k + 1);
+  }
   const writer = ownCharacters.find((c) => c.id === writerId) ?? ownCharacters[0] ?? null;
   const others = characters.filter((c) => c.id !== writerId);
   const [mode, setMode] = useState<"write" | "roll">("write");
@@ -95,7 +103,7 @@ export function StoryComposer({
       </div>
 
       {(mode === "roll" || !narrator) && (
-        <WriterSelect characters={ownCharacters} value={writerId} onChange={setWriterId} />
+        <WriterSelect characters={ownCharacters} value={writerId} onChange={changeWriter} />
       )}
       {mode === "write" && narrator && (
         <p className="text-xs text-muted">
@@ -117,6 +125,7 @@ export function StoryComposer({
           narrator={narrator}
           showToolbar={showToolbar}
           writerId={writerId}
+          resetKey={entryResetKey}
         />
       ) : (
         <DiceRollForm

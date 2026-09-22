@@ -81,17 +81,31 @@ export default async function WikiListPage({ searchParams }: PageProps<"/wiki">)
             <Link
               key={page.id}
               href={`/wiki/${page.id}`}
-              className="block rounded-xl bg-surface-2 p-4 transition hover:bg-surface-3"
+              className="flex items-center gap-3 rounded-xl bg-surface-2 p-4 transition hover:bg-surface-3"
             >
-              <div className="mb-1 flex items-center gap-2">
-                <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">
-                  {CATEGORY_LABELS[page.category]}
+              {page.cover_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={page.cover_image_url}
+                  alt=""
+                  className="h-14 w-14 shrink-0 rounded-lg bg-surface-3 object-cover"
+                />
+              ) : (
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-muted">
+                  <BookOpen className="h-5 w-5" strokeWidth={1.75} />
                 </span>
-                <h2 className="font-serif text-lg text-fg">{page.title}</h2>
-              </div>
-              {stripHtml(page.content) && (
-                <p className="line-clamp-2 text-sm text-fg-soft">{stripHtml(page.content)}</p>
               )}
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">
+                    {CATEGORY_LABELS[page.category]}
+                  </span>
+                  <h2 className="truncate font-serif text-lg text-fg">{page.title}</h2>
+                </div>
+                {stripHtml(page.content) && (
+                  <p className="line-clamp-2 text-sm text-fg-soft">{stripHtml(page.content)}</p>
+                )}
+              </div>
             </Link>
           ))
         ) : (

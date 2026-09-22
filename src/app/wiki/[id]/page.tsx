@@ -64,6 +64,15 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         )}
       </div>
 
+      {page.cover_image_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={page.cover_image_url}
+          alt=""
+          className="mb-4 aspect-[16/9] w-full rounded-xl bg-surface-2 object-cover"
+        />
+      )}
+
       <h1 className="mb-1 font-serif text-3xl text-fg">{page.title}</h1>
       <p className="mb-4 text-xs text-muted">Zuletzt bearbeitet am {formatDateTime(page.updated_at)}</p>
 

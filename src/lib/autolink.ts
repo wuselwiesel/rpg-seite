@@ -1,7 +1,7 @@
 // Verlinkt Wiki-Begriffe und #Hashtags im (bereits bereinigten) HTML eines Beitrags.
 // Arbeitet nur auf Textknoten und lässt Links und @-Erwähnungen unangetastet.
 
-export type WikiTerm = { id: string; title: string; category: string; excerpt: string; aliases?: string[] };
+export type WikiTerm = { id: string; title: string; category: string; excerpt: string; aliases?: string[]; coverImageUrl?: string | null };
 
 const CATEGORY_LABELS: Record<string, string> = { ort: "Ort", npc: "NPC", fraktion: "Fraktion", sonstiges: "Sonstiges" };
 
@@ -63,7 +63,9 @@ export function autolinkHtml(
         return (
           `<a class="wiki-link" href="/wiki/${entry.id}" data-wiki-title="${escapeAttr(entry.title)}"` +
           ` data-wiki-cat="${escapeAttr(CATEGORY_LABELS[entry.category] ?? "Wiki")}"` +
-          ` data-wiki-excerpt="${escapeAttr(entry.excerpt)}">${match}</a>`
+          ` data-wiki-excerpt="${escapeAttr(entry.excerpt)}"` +
+          (entry.coverImageUrl ? ` data-wiki-cover="${escapeAttr(entry.coverImageUrl)}"` : "") +
+          `>${match}</a>`
         );
       });
     })

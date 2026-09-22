@@ -3,9 +3,12 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { login } from "./actions";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [error, formAction, pending] = useActionState(login, null);
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-sm flex-col justify-center px-4">
@@ -15,6 +18,7 @@ export default function LoginPage() {
       </p>
 
       <form action={formAction} className="flex flex-col gap-4">
+        {next && <input type="hidden" name="next" value={next} />}
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Benutzername oder E-Mail
           <input
@@ -48,7 +52,8 @@ export default function LoginPage() {
 
       <p className="mt-6 text-sm text-muted">
         Noch keinen Charakter?{" "}
-        <Link href="/signup" className="text-accent hover:underline">
+        {/* Fortsetzungslink beim Wechsel zur Registrierung mitnehmen (z. B. Welt-Einladung) erhalten. */}
+        <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="text-accent hover:underline">
           Konto erstellen
         </Link>
       </p>

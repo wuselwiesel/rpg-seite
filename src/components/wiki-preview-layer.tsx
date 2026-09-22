@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-type Preview = { href: string; title: string; category: string; excerpt: string; x: number; y: number; below: boolean };
+type Preview = { href: string; title: string; category: string; excerpt: string; cover: string | null; x: number; y: number; below: boolean };
 
 // Zeigt für Wiki-Links im Text (a.wiki-link) eine Vorschau: am Desktop beim Darüberfahren,
 // am Handy beim ersten Antippen (ein zweites Antippen öffnet den Eintrag).
@@ -32,6 +32,7 @@ export function WikiPreviewLayer() {
         title: a.dataset.wikiTitle ?? a.textContent ?? "",
         category: a.dataset.wikiCat ?? "Wiki",
         excerpt: a.dataset.wikiExcerpt ?? "",
+        cover: a.dataset.wikiCover ?? null,
         x,
         y: below ? rect.bottom + 6 : rect.top - 6,
         below,
@@ -102,6 +103,10 @@ export function WikiPreviewLayer() {
       }}
       className="z-[60] rounded-xl border border-line bg-surface p-3 shadow-lg"
     >
+      {preview.cover && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={preview.cover} alt="" className="mb-2 h-28 w-full rounded-lg object-cover" />
+      )}
       <p className="mb-1 flex items-center gap-2">
         <span className="font-serif text-lg text-fg">{preview.title}</span>
         <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] text-fg-soft">{preview.category}</span>

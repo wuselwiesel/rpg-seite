@@ -47,6 +47,7 @@ export type AppNotification = {
   link: string;
   message: string;
   recipient_name?: string | null;
+  actor_count?: number;
   read_at: string | null;
   created_at: string;
 };
