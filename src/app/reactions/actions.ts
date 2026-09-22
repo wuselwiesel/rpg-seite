@@ -74,7 +74,7 @@ export async function toggleReaction(
     if ("postId" in target && emoji === "❤️") {
       const { data: post } = await supabase
         .from("posts")
-        .select("character_id, characters(owner_id, name)")
+        .select("character_id, characters!posts_character_id_fkey(owner_id, name)")
         .eq("id", target.postId)
         .maybeSingle<{ character_id: string; characters: { owner_id: string; name: string } | null }>();
       if (post?.characters?.owner_id && post.character_id !== characterId) {
