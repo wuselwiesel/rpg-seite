@@ -15,6 +15,7 @@ export function StoryEntryForm({
   narrator,
   showToolbar,
   writerId,
+  onTyping,
 }: {
   storyPostId: string;
   worldId: string;
@@ -24,6 +25,8 @@ export function StoryEntryForm({
   narrator: boolean;
   showToolbar: boolean;
   writerId: string;
+  // Meldet anderen, die die Szene offen haben, dass hier gerade geschrieben wird.
+  onTyping?: () => void;
 }) {
   const selectable = characters.filter((c) => c.id !== writerId);
   const involved = selectable.filter((c) => participantIds.includes(c.id));
@@ -73,6 +76,7 @@ export function StoryEntryForm({
         onChange={(html) => {
           latestHtml.current = html;
           update({ content: html });
+          if (html) onTyping?.();
         }}
         mentionCharacters={characters}
         minHeight={100}

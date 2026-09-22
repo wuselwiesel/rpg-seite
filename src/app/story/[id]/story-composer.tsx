@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BookMarked, Feather, Type } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
 import { ChapterForm } from "./chapter-form";
@@ -56,6 +57,51 @@ export function StoryComposer({
   const [showToolbar, setShowToolbar] = useState(false);
   const [narrator, setNarrator] = useState(false);
   const [showChapter, setShowChapter] = useState(false);
+
+  // Zeigt anderen, die diese Szene gerade offen haben, wer hier schreibt (wie bei den Chats).
+  const [typing, setTyping] = useState<Record<string, { name: string; until: number }>>({});
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const lastTypingSent = useRef(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`story-typing-${storyPostId}`)
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        const { characterId, name } = payload as { characterId: string; name: string };
+        setTyping((prev) => ({ ...prev, [characterId]: { name, until: Date.now() + 4000 } }));
+      })
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      channelRef.current = null;
+      supabase.removeChannel(channel);
+    };
+  }, [storyPostId]);
+
+  // "schreibt gerade..." verschwindet nach ein paar Sekunden ohne neues Signal.
+  useEffect(() => {
+    if (Object.keys(typing).length === 0) return;
+    const timer = setInterval(() => {
+      setTyping((prev) => {
+        const now = Date.now();
+        const next = Object.fromEntries(Object.entries(prev).filter(([, v]) => v.until > now));
+        return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [typing]);
+
+  function announceTyping() {
+    const now = Date.now();
+    if (now - lastTypingSent.current < 2500) return;
+    lastTypingSent.current = now;
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { characterId: writerId, name: narrator ? "Erzähler:in" : (writer?.name ?? "Jemand") },
+    });
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -131,6 +177,17 @@ export function StoryComposer({
         <ChapterForm storyPostId={storyPostId} worldId={worldId} writerId={writerId} onDone={() => setShowChapter(false)} />
       )}
 
+      {Object.keys(typing).length > 0 && (
+        <div className="-mt-1 flex items-center gap-2 text-xs text-muted" role="status">
+          <span className="flex gap-0.5">
+            <span className="typing-dot" />
+            <span className="typing-dot [animation-delay:150ms]" />
+            <span className="typing-dot [animation-delay:300ms]" />
+          </span>
+          {Object.values(typing).map((t) => t.name).join(", ")} schreibt…
+        </div>
+      )}
+
       {mode === "write" ? (
         <StoryEntryForm
           storyPostId={storyPostId}
@@ -141,6 +198,7 @@ export function StoryComposer({
           narrator={narrator}
           showToolbar={showToolbar}
           writerId={writerId}
+          onTyping={announceTyping}
         />
       ) : (
         <DiceRollForm
