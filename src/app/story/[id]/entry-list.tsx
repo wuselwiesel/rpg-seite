@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AtSign, ChevronDown } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
+import type { Character, StoryEntry } from "@/lib/types";
 import { EarlierEntries } from "./earlier-entries";
+import { StoryEntryItem } from "./story-entry-item";
 
 export type EntryListItem = {
   id: string;
@@ -23,11 +27,56 @@ const KEEP_VISIBLE = 5;
 
 // Beiträge einer Szene: die letzten sind sichtbar, ältere lassen sich einklappen. Zusätzlich lässt sich nach einem
 // Charakter filtern (@Erwähnungen und/oder Beiträge dieses Charakters), um beim Antworten schnell das Relevante zu sehen.
-export function EntryList({ items, characters }: { items: EntryListItem[]; characters: FilterCharacter[] }) {
+export function EntryList({
+  items,
+  characters,
+  storyPostId,
+  myCharacterIds,
+  mentionCharacters,
+}: {
+  items: EntryListItem[];
+  characters: FilterCharacter[];
+  storyPostId: string;
+  // Für neu eintreffende Beiträge (Realtime): wer darf sie bearbeiten/löschen, und wer sind
+  // die Charaktere für Avatar/Name und @-Erwähnungen im Bearbeiten-Formular.
+  myCharacterIds: string[];
+  mentionCharacters: Character[];
+}) {
   const [filterId, setFilterId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("mentions");
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  // Neue Beiträge anderer, die diese Szene offen haben, kommen per Realtime dazu – kein Neuladen nötig.
+  const [live, setLive] = useState<StoryEntry[]>([]);
+  const seenIds = useRef<Set<string>>(new Set(items.map((i) => i.id)));
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`story-entries-${storyPostId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "story_entries", filter: `story_post_id=eq.${storyPostId}` },
+        (payload) => {
+          const row = payload.new as StoryEntry;
+          if (seenIds.current.has(row.id)) return;
+          seenIds.current.add(row.id);
+          const author = mentionCharacters.find((c) => c.id === row.character_id) ?? null;
+          const rollTarget = row.roll_target_character_id
+            ? (mentionCharacters.find((c) => c.id === row.roll_target_character_id) ?? null)
+            : null;
+          setLive((prev) => [
+            ...prev,
+            { ...row, characters: author, roll_target_character: rollTarget ? { name: rollTarget.name } : null },
+          ]);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storyPostId]);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -52,9 +101,25 @@ export function EntryList({ items, characters }: { items: EntryListItem[]; chara
     return m === "mentions" ? mentioned : m === "author" ? written : mentioned || written;
   }
 
+  const liveListItems: EntryListItem[] = live.map((entry) => ({
+    id: entry.id,
+    kind: entry.kind ?? "entry",
+    authorId: entry.character_id,
+    mentionedIds: entry.kind === "chapter" ? [] : parseMentionedCharacterIdsFromHtml(entry.content),
+    node: (
+      <StoryEntryItem
+        entry={entry}
+        storyPostId={storyPostId}
+        canManage={myCharacterIds.includes(entry.character_id)}
+        mentionCharacters={mentionCharacters}
+      />
+    ),
+  }));
+  const allItems = live.length > 0 ? [...items, ...liveListItems] : items;
+
   const filter = filterId ? characters.find((c) => c.id === filterId) ?? null : null;
-  const shown = filter ? items.filter((i) => matches(i, filter.id, mode)) : items;
-  const showFilterBar = items.length >= 3 && characters.length > 0;
+  const shown = filter ? allItems.filter((i) => matches(i, filter.id, mode)) : allItems;
+  const showFilterBar = allItems.length >= 3 && characters.length > 0;
   // Direkt sichtbar: wer in der Szene selbst geschrieben hat. Alle anderen (eigene Charaktere,
   // die hier noch nicht dran waren, oder nur Erwähnte) landen im "weitere"-Button, damit die
   // Leiste nicht überläuft und man am Desktop nicht scrollen muss, um sie zu sehen.
@@ -91,7 +156,7 @@ export function EntryList({ items, characters }: { items: EntryListItem[]; chara
               Alle
             </button>
             {primary.map((c) => {
-              const count = items.filter((i) => matches(i, c.id, mode)).length;
+              const count = allItems.filter((i) => matches(i, c.id, mode)).length;
               const active = filterId === c.id;
               return (
                 <button
@@ -138,7 +203,7 @@ export function EntryList({ items, characters }: { items: EntryListItem[]; chara
                     className="menu-pop absolute left-0 top-full z-30 mt-1 max-h-64 w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-lg"
                   >
                     {secondary.map((c) => {
-                      const count = items.filter((i) => matches(i, c.id, mode)).length;
+                      const count = allItems.filter((i) => matches(i, c.id, mode)).length;
                       const active = filterId === c.id;
                       return (
                         <button

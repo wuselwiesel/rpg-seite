@@ -259,6 +259,9 @@ export default async function StoryPostDetailPage({
           }));
         })()}
         characters={filterCharacters}
+        storyPostId={storyPost.id}
+        myCharacterIds={Array.from(myCharacterIds)}
+        mentionCharacters={mentionableCharacters}
       />
 
       {linkedPosts && linkedPosts.length > 0 && (
