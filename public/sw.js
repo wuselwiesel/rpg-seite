@@ -141,16 +141,26 @@ self.addEventListener("fetch", (event) => {
   }
   if (SKIP_PATHS.some((re) => re.test(url.pathname))) return;
 
-  const isPage = request.mode === "navigate" || (request.headers.get("RSC") === "1" && !request.headers.get("Next-Router-Prefetch"));
-  if (isPage) {
+  const isNavigate = request.mode === "navigate";
+  const isRscSubrequest = !isNavigate && request.headers.get("RSC") === "1" && !request.headers.get("Next-Router-Prefetch");
+
+  if (isNavigate) {
+    // Ganzer Seitenaufruf (auch Neuladen): HTML und die darin verlinkten JS-Dateien gehören immer
+    // zusammen, auch wenn aus dem Cache – das Ergebnis bleibt also in sich stimmig.
     event.respondWith(
       networkFirst(request, PAGES, 4000).catch(async () => {
-        if (request.mode === "navigate") {
-          const offline = await caches.match(OFFLINE_URL);
-          if (offline) return offline;
-        }
+        const offline = await caches.match(OFFLINE_URL);
+        if (offline) return offline;
         return Response.error();
       }),
     );
+    return;
+  }
+
+  if (isRscSubrequest) {
+    // Klick-Navigation innerhalb der App: läuft mit dem bereits geladenen JS-Stand. Eine aus dem
+    // Cache servierte Antwort eines ANDEREN Deployments (nach einem Update) passt dazu nicht mehr
+    // und lässt React beim Einhängen abstürzen – deshalb hier nie zwischenspeichern, nur echtes Netz.
+    event.respondWith(fetch(request));
   }
 });
