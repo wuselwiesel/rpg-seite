@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BookMarked, Feather, Type } from "lucide-react";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
@@ -26,13 +26,29 @@ export function StoryComposer({
   participantIds: string[];
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
-  const [entryResetKey, setEntryResetKey] = useState(0);
 
-  // Beim Wechsel des schreibenden Charakters: ein begonnener Text bezieht sich sonst auf den
-  // falschen Charakter, deshalb wird das Feld beim Wechsel geleert (ohne Rückfrage).
+  // Wer zuletzt in dieser Szene geschrieben hat, bleibt auch nach einem Neuladen ausgewählt.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`wortwinkel:writer:${storyPostId}`);
+      if (saved && saved !== writerId && ownCharacters.some((c) => c.id === saved)) {
+        setWriterId(saved);
+      }
+    } catch {
+      /* egal */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storyPostId]);
+
+  // Beim Wechsel des schreibenden Charakters bleibt ein begonnener Entwurf stehen – nur wer
+  // ausgewählt ist, ändert sich.
   function changeWriter(id: string) {
     setWriterId(id);
-    setEntryResetKey((k) => k + 1);
+    try {
+      localStorage.setItem(`wortwinkel:writer:${storyPostId}`, id);
+    } catch {
+      /* egal */
+    }
   }
   const writer = ownCharacters.find((c) => c.id === writerId) ?? ownCharacters[0] ?? null;
   const others = characters.filter((c) => c.id !== writerId);
@@ -125,7 +141,6 @@ export function StoryComposer({
           narrator={narrator}
           showToolbar={showToolbar}
           writerId={writerId}
-          resetKey={entryResetKey}
         />
       ) : (
         <DiceRollForm

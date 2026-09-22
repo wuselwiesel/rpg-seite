@@ -15,7 +15,6 @@ export function StoryEntryForm({
   narrator,
   showToolbar,
   writerId,
-  resetKey: externalResetKey = 0,
 }: {
   storyPostId: string;
   worldId: string;
@@ -25,8 +24,6 @@ export function StoryEntryForm({
   narrator: boolean;
   showToolbar: boolean;
   writerId: string;
-  // Von außen erzwungenes Zurücksetzen (Charakterwechsel), ohne dass dabei gesendet wurde.
-  resetKey?: number;
 }) {
   const selectable = characters.filter((c) => c.id !== writerId);
   const involved = selectable.filter((c) => participantIds.includes(c.id));
@@ -34,7 +31,6 @@ export function StoryEntryForm({
   const action = createStoryEntry.bind(null, storyPostId, worldId);
   const [error, formAction, pending] = useActionState(action, null);
   const [resetKey, setResetKey] = useState(0);
-  const lastExternalReset = useRef(externalResetKey);
   // Inhalt, mit dem der Editor nach einem Zurücksetzen startet (leer; bei einem Fehler der gesendete Text).
   const [restoreText, setRestoreText] = useState("");
   const latestHtml = useRef("");
@@ -53,17 +49,6 @@ export function StoryEntryForm({
       setResetKey((k) => k + 1);
     }, 30);
   }
-
-  useEffect(() => {
-    if (externalResetKey !== lastExternalReset.current) {
-      lastExternalReset.current = externalResetKey;
-      clear();
-      update({ content: "" });
-      setRestoreText("");
-      setResetKey((k) => k + 1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalResetKey]);
 
   useEffect(() => {
     if (wasPending.current && !pending && error) {
