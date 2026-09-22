@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users } from "lucide-react";
+import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { ActiveCharacterMenu } from "./active-character-menu";
 import { InstallAppButton } from "./install-app-button";
@@ -15,13 +15,14 @@ import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
 import { MobileModeButton } from "./mode-switch";
 import { getAppMode } from "@/lib/app-mode";
+import { startTour } from "@/lib/tour";
 import { isImmersiveChatPath } from "@/lib/immersive-routes";
 import type { AppNotification } from "@/lib/notifications";
 import type { Character, Profile, World } from "@/lib/types";
 
 function MobileCreateTab({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} aria-label={label} className="flex flex-1 items-center justify-center py-2">
+    <Link href={href} aria-label={label} data-tour="compose" className="flex flex-1 items-center justify-center py-2">
       <span className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-accent text-accent transition active:scale-90">
         <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
       </span>
@@ -129,6 +130,7 @@ export function MobileNav({
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
+            data-tour="account-menu"
             className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[11px] font-medium text-muted transition hover:text-fg-soft"
           >
             <Menu className="h-5 w-5" strokeWidth={2} />
@@ -217,6 +219,17 @@ export function MobileNav({
             <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Konto &amp; Einstellungen
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setMoreOpen(false);
+              startTour();
+            }}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Rundgang starten
+          </button>
           <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-[15px] font-medium text-fg-soft">
             Hell / Dunkel
             <ThemeToggle />

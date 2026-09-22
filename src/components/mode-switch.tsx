@@ -9,7 +9,7 @@ export function ModeSwitch() {
   const mode = getAppMode(usePathname());
 
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium">
+    <div className="grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium" data-tour="mode-switch">
       <Link
         href="/"
         className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 transition ${
@@ -39,6 +39,7 @@ export function MobileModeButton() {
   return (
     <Link
       href={toStory ? "/story" : "/"}
+      data-tour="mode-switch"
       className="flex items-center gap-1.5 rounded-full bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong transition hover:opacity-90"
     >
       {toStory ? (

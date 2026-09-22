@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Menu, Settings, UserPlus, Users } from "lucide-react";
+import { Compass, Menu, Settings, UserPlus, Users } from "lucide-react";
 import { InstallAppButton } from "./install-app-button";
+import { startTour } from "@/lib/tour";
 
 // Hamburger-Menü in der Desktop-Seitenleiste: seltener genutzte Bereiche: Freund:innen, Charaktere, Konto.
 export function SidebarMenu() {
@@ -28,6 +29,7 @@ export function SidebarMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-label="Menü"
         aria-expanded={open}
+        data-tour="account-menu"
         className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
       >
         <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
@@ -46,6 +48,17 @@ export function SidebarMenu() {
             <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Konto &amp; Einstellungen
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              startTour();
+            }}
+            className={item}
+          >
+            <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Rundgang starten
+          </button>
           <InstallAppButton className={item} onDone={() => setOpen(false)} />
         </div>
       )}

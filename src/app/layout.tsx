@@ -8,6 +8,7 @@ import { KeyboardFix } from "@/components/keyboard-fix";
 import { WikiPreviewLayer } from "@/components/wiki-preview-layer";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { PushSync } from "@/components/push-sync";
+import { AppTour } from "@/components/app-tour";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <WikiPreviewLayer />
         <KeyboardFix />
         <OfflineBanner />
+        <AppTour />
         <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row">
           <Sidebar />
           <MobileMain>{children}</MobileMain>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { BookOpen, Compass, Network, X } from "lucide-react";
+import { BookOpen, Compass as CompassIcon, Map, Network, X } from "lucide-react";
+import { startTour } from "@/lib/tour";
 
 const STEPS = [
   {
-    icon: Compass,
+    icon: Map,
     title: "Szenen",
     text: "In „Story“ beginnt ihr Szenen mit Ort und Zeit und schreibt sie gemeinsam als Fortsetzungen weiter.",
   },
@@ -91,12 +91,17 @@ export function WorldOnboarding({ worldId, worldName, autoOpen }: { worldId: str
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        <Link href="/story" onClick={dismiss} className="text-sm font-medium text-accent hover:underline">
-          Zur Story
-        </Link>
-        <Link href="/wiki" onClick={dismiss} className="text-sm font-medium text-accent hover:underline">
-          Zum Wiki
-        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            dismiss();
+            startTour();
+          }}
+          className="flex items-center gap-1.5 rounded-full bg-accent-strong px-3.5 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+        >
+          <CompassIcon className="h-3.5 w-3.5" strokeWidth={2} />
+          Rundgang starten
+        </button>
         <button type="button" onClick={dismiss} className="ml-auto text-sm text-muted hover:text-fg-soft">
           Verstanden
         </button>
