@@ -197,19 +197,20 @@ export function AppTour() {
     ? { top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }
     : null;
 
-  // Tooltip-Position: unter dem Ziel, sonst darüber; sonst mittig (kein Ziel gefunden).
-  let card: { top: number; left: number; placement: "below" | "above" | "center" };
+  // Tooltip-Position: unter dem Ziel, sonst darüber (an der Unterkante verankert, damit die Karte
+  // nach oben wächst statt über den Bildschirmrand hinaus); sonst mittig (kein Ziel gefunden).
+  let card: { top?: number; bottom?: number; left: number; placement: "below" | "above" | "center" };
   if (spot) {
     const width = 300;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const below = spot.top + spot.height + 200 < vh;
+    const below = spot.top + spot.height + 210 < vh;
     const left = Math.min(Math.max(12, spot.left + spot.width / 2 - width / 2), vw - width - 12);
     card = below
-      ? { top: Math.min(spot.top + spot.height + 12, vh - 220), left, placement: "below" }
-      : { top: Math.max(12, spot.top - 12), left, placement: "above" };
+      ? { top: spot.top + spot.height + 12, left, placement: "below" }
+      : { bottom: Math.max(12, vh - spot.top + 12), left, placement: "above" };
   } else {
-    card = { top: 0, left: 0, placement: "center" };
+    card = { left: 0, placement: "center" };
   }
 
   return (
@@ -236,7 +237,11 @@ export function AppTour() {
             ? "fixed inset-x-4 top-1/2 z-10 mx-auto max-w-sm -translate-y-1/2 rounded-2xl bg-surface p-5 shadow-xl"
             : "menu-pop fixed z-10 w-[min(300px,calc(100vw-24px))] rounded-2xl bg-surface p-4 shadow-xl"
         }
-        style={card.placement === "center" ? undefined : { top: card.top, left: card.left }}
+        style={
+          card.placement === "center"
+            ? undefined
+            : { left: card.left, ...(card.placement === "below" ? { top: card.top } : { bottom: card.bottom }) }
+        }
       >
         <div className="mb-2 flex items-start justify-between gap-3">
           <p className="text-xs text-muted">
