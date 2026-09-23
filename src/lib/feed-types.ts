@@ -23,4 +23,5 @@ export type FeedPost = {
   storyPost: { id: string; title: string } | null;
   pinned: boolean;
   tagged: { id: string; name: string; username: string | null }[];
+  bonusLikes: number;
 };

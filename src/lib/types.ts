@@ -61,7 +61,9 @@ export type Post = {
   characters: Character | null;
   comments?: { count: number }[];
   likes?: { character_id: string }[];
-  reactions?: { emoji: string; character_id: string }[];
+  reactions?: { emoji: string; character_id: string; characters?: { name: string } | null }[];
+  // Zusätzliche, nicht echte Likes obendrauf – von der Besitzerin/dem Besitzer frei wählbar (Popularität je Charakter).
+  bonus_likes?: number;
 };
 
 export type Comment = {

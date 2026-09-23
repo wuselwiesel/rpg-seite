@@ -33,7 +33,7 @@ export default async function PostDetailPage({
 
   const { data: post } = await supabase
     .from("posts")
-    .select("*, characters!posts_character_id_fkey(*), reactions(emoji, character_id), story_post:story_post_id(id, title), post_tags(characters(id, name, username))")
+    .select("*, characters!posts_character_id_fkey(*), reactions(emoji, character_id, characters(name)), story_post:story_post_id(id, title), post_tags(characters(id, name, username))")
     .eq("id", id)
     .maybeSingle<Post>();
 
@@ -137,6 +137,8 @@ export default async function PostDetailPage({
             initialReactions={aggregateReactions(post.reactions, activeCharacterSet)}
             myCharacters={likeCharacters}
             activeCharacterId={activeCharacter?.id}
+            bonusLikes={post.bonus_likes ?? 0}
+            isOwn={isOwnPost}
             commentSlot={activeCharacter ? <SharePostButton postId={post.id} characterId={activeCharacter.id} /> : null}
           />
         </div>

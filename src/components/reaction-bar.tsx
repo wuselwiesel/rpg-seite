@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Heart, SmilePlus, X } from "lucide-react";
+import { ChevronDown, Heart, Pencil, SmilePlus, X } from "lucide-react";
 import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
-import { toggleReaction, getPostReactors, type Reactor } from "@/app/reactions/actions";
+import { toggleReaction, getPostReactors, setBonusLikes, type Reactor } from "@/app/reactions/actions";
 import { CharacterAvatar } from "./character-avatar";
 import { POST_LIKE_EVENT } from "./double-tap-like";
 import type { ReactionSummary } from "@/lib/reactions";
@@ -38,6 +38,8 @@ export function ReactionBar({
   commentSlot,
   myCharacters = [],
   activeCharacterId,
+  bonusLikes = 0,
+  isOwn = false,
 }: {
   onBubble?: boolean;
   // Instagram-Stil: Herz-Button (❤️), danach `commentSlot`, dann Emoji-Auswahl; weitere Reaktionen darunter.
@@ -49,6 +51,10 @@ export function ReactionBar({
   // nicht nur mit dem gerade aktiven. Nur für `heart` (Beiträge) relevant.
   myCharacters?: { id: string; name: string; avatar_url: string | null }[];
   activeCharacterId?: string;
+  // Zusätzliche, nicht echte Likes obendrauf (nur für `heart`/Beiträge; von der Besitzerin/dem
+  // Besitzer frei wählbar, siehe `isOwn`).
+  bonusLikes?: number;
+  isOwn?: boolean;
 }) {
   const [reactions, setReactions] = useState(initialReactions);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -56,6 +62,10 @@ export function ReactionBar({
   const [reactors, setReactors] = useState<Reactor[] | null>(null);
   const [charPickerOpen, setCharPickerOpen] = useState(false);
   const [myLikes, setMyLikes] = useState<Set<string> | null>(null);
+  const [bonusLikesState, setBonusLikesState] = useState(bonusLikes);
+  const [boostOpen, setBoostOpen] = useState(false);
+  const [boostInput, setBoostInput] = useState(String(bonusLikes));
+  const [boostSaving, setBoostSaving] = useState(false);
   const total = reactions.reduce((sum, r) => sum + r.count, 0);
   const postId = "postId" in target ? target.postId : null;
   const [, startTransition] = useTransition();
@@ -64,7 +74,9 @@ export function ReactionBar({
   const reactionsRef = useRef(reactions);
   reactionsRef.current = reactions;
   const liked = reactions.some((r) => r.emoji === "❤️" && r.reactedByMe);
-  const heartCount = reactions.find((r) => r.emoji === "❤️")?.count ?? 0;
+  const heartEntry = reactions.find((r) => r.emoji === "❤️");
+  const heartCount = heartEntry?.count ?? 0;
+  const boostedHeartCount = heartCount + bonusLikesState;
 
   // Doppeltipp auf das Post-Medium: nur liken, nie zurücknehmen.
   const likeKey = "postId" in target ? target.postId : target.messageId;
@@ -122,11 +134,40 @@ export function ReactionBar({
         if (nextCount <= 0) return prev.filter((r) => r.emoji !== "❤️");
         return prev.map((r) => (r.emoji === "❤️" ? { ...r, count: nextCount } : r));
       }
-      return delta > 0 ? [...prev, { emoji: "❤️", count: 1, reactedByMe: characterId === activeCharacterId }] : prev;
+      return delta > 0
+        ? [
+            ...prev,
+            {
+              emoji: "❤️",
+              count: 1,
+              reactedByMe: characterId === activeCharacterId,
+              sampleName: myCharacters.find((c) => c.id === characterId)?.name,
+            },
+          ]
+        : prev;
     });
     startTransition(async () => {
       await toggleReaction({ postId, characterId }, "❤️");
     });
+  }
+
+  function openBoost() {
+    setBoostInput(String(bonusLikesState));
+    setBoostOpen(true);
+  }
+
+  async function saveBoost() {
+    if (!postId) return;
+    const value = Math.max(0, Math.floor(Number(boostInput)) || 0);
+    setBoostSaving(true);
+    const err = await setBonusLikes(postId, value);
+    setBoostSaving(false);
+    if (err) {
+      alert(err);
+      return;
+    }
+    setBonusLikesState(value);
+    setBoostOpen(false);
   }
 
   function handleToggle(emoji: string) {
@@ -139,7 +180,8 @@ export function ReactionBar({
           r.emoji === emoji ? { ...r, count: nextCount, reactedByMe: !existing.reactedByMe } : r,
         );
       }
-      return [...prev, { emoji, count: 1, reactedByMe: true }];
+      const sampleName = emoji === "❤️" ? myCharacters.find((c) => c.id === activeCharacterId)?.name : undefined;
+      return [...prev, { emoji, count: 1, reactedByMe: true, sampleName }];
     });
     setPickerOpen(false);
     startTransition(async () => {
@@ -204,16 +246,35 @@ export function ReactionBar({
           <span className="ml-auto">{pickerButton}</span>
         </div>
       )}
-      {heart && total > 0 && (
-        <button type="button" onClick={openList} className="w-fit text-left text-sm font-semibold text-fg hover:underline">
-          {heartCount > 0
-            ? heartCount === 1
-              ? "Gefällt 1 Charakter"
-              : `Gefällt ${heartCount} Charakteren`
-            : total === 1
-              ? "1 Reaktion"
-              : `${total} Reaktionen`}
-        </button>
+      {heart && (boostedHeartCount > 0 || (total > 0 && heartCount === 0) || isOwn) && (
+        <div className="flex w-fit items-center gap-1.5">
+          {boostedHeartCount > 0 ? (
+            <button type="button" onClick={openList} className="text-left text-sm font-semibold text-fg hover:underline">
+              {heartEntry?.sampleName
+                ? boostedHeartCount > 1
+                  ? `${heartEntry.sampleName} und ${boostedHeartCount - 1} ${boostedHeartCount - 1 === 1 ? "anderem" : "anderen"} gefällt der Beitrag`
+                  : `${heartEntry.sampleName} gefällt der Beitrag`
+                : boostedHeartCount === 1
+                  ? "1 Person gefällt der Beitrag"
+                  : `${boostedHeartCount} Personen gefällt der Beitrag`}
+            </button>
+          ) : total > 0 ? (
+            <button type="button" onClick={openList} className="text-left text-sm font-semibold text-fg hover:underline">
+              {total === 1 ? "1 Reaktion" : `${total} Reaktionen`}
+            </button>
+          ) : null}
+          {isOwn && (
+            <button
+              type="button"
+              onClick={openBoost}
+              title="Like-Anzahl anpassen"
+              aria-label="Like-Anzahl anpassen"
+              className="rounded-full p-0.5 text-muted/60 transition hover:text-fg"
+            >
+              <Pencil className="h-3 w-3" strokeWidth={2} />
+            </button>
+          )}
+        </div>
       )}
       <div className="flex flex-wrap items-center gap-1">
       {chips.map((r) => (
@@ -290,7 +351,59 @@ export function ReactionBar({
                     </Link>
                   </li>
                 ))}
+                {bonusLikesState > 0 && (
+                  <li className="px-3 py-2.5 text-sm text-muted">
+                    und {bonusLikesState} {bonusLikesState === 1 ? "anderem" : "anderen"}
+                  </li>
+                )}
               </ul>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {boostOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <button type="button" onClick={() => setBoostOpen(false)} aria-label="Schließen" className="absolute inset-0" />
+            <div className="relative flex w-full max-w-xs flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg text-fg">Like-Anzahl</h2>
+                <button
+                  type="button"
+                  onClick={() => setBoostOpen(false)}
+                  title="Schließen"
+                  className="rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                >
+                  <X className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
+              <p className="text-xs text-muted">
+                Zusätzliche Likes, die niemand wirklich gegeben hat – nur für die Anzeige. Kommen oben auf die echten
+                Reaktionen drauf.
+              </p>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={boostInput}
+                onChange={(e) => setBoostInput(e.target.value)}
+                className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={saveBoost}
+                  disabled={boostSaving}
+                  className="rounded-md bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {boostSaving ? "Speichere..." : "Speichern"}
+                </button>
+                <button type="button" onClick={() => setBoostOpen(false)} className="text-sm text-muted hover:text-fg">
+                  Abbrechen
+                </button>
+              </div>
             </div>
           </div>,
           document.body,

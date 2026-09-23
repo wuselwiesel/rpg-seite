@@ -111,6 +111,31 @@ export async function toggleReaction(
   return null;
 }
 
+// Zusätzliche, nicht echte Likes für den eigenen Beitrag festlegen (Charaktere sind unterschiedlich beliebt).
+// Kommt oben auf die echten Reaktionen drauf, rein für die Anzeige.
+export async function setBonusLikes(postId: string, count: number): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: post } = await supabase
+    .from("posts")
+    .select("characters!posts_character_id_fkey(owner_id)")
+    .eq("id", postId)
+    .maybeSingle<{ characters: { owner_id: string } | null }>();
+  if (!post || post.characters?.owner_id !== user.id) return "Kein eigener Beitrag.";
+
+  const value = Math.max(0, Math.min(1_000_000, Math.floor(count) || 0));
+  const { error } = await supabase.from("posts").update({ bonus_likes: value }).eq("id", postId);
+  if (error) return error.message;
+
+  revalidatePath("/");
+  revalidatePath(`/posts/${postId}`);
+  return null;
+}
+
 export type Reactor = {
   emoji: string;
   character: { id: string; name: string; username: string | null; avatar_url: string | null };

@@ -7,7 +7,7 @@ import { FEED_PAGE_SIZE, type FeedFilters, type FeedPost } from "@/lib/feed-type
 
 
 export const POST_SELECT =
-  "*, characters!posts_character_id_fkey(*, worlds(name)), comments(count), reactions(emoji, character_id), story_post:story_post_id(id, title), post_tags(characters(id, name, username))";
+  "*, characters!posts_character_id_fkey(*, worlds(name)), comments(count), reactions(emoji, character_id, characters(name)), story_post:story_post_id(id, title), post_tags(characters(id, name, username))";
 
 export function toFeedPost(post: Post, activeCharacterId: string, activeWorldId: string): FeedPost {
   const withWorld = post.characters as (Character & { worlds?: { name: string } | null }) | null;
@@ -28,6 +28,7 @@ export function toFeedPost(post: Post, activeCharacterId: string, activeWorldId:
     storyPost: post.story_post ?? null,
     pinned: post.pinned ?? false,
     tagged: (post.post_tags ?? []).map((t) => t.characters).filter((c): c is NonNullable<typeof c> => !!c),
+    bonusLikes: post.bonus_likes ?? 0,
   };
 }
 

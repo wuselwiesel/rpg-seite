@@ -128,6 +128,8 @@ export function SocialPostCard({
             initialReactions={post.reactions}
             myCharacters={myCharacters}
             activeCharacterId={activeCharacterId}
+            bonusLikes={post.bonusLikes}
+            isOwn={post.characterId === activeCharacterId}
             commentSlot={
               <>
                 <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition duration-150 hover:text-muted active:scale-75">
