@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Skull, X } from "lucide-react";
 import { previewFateAction, postFateResultAction, type FatePreview } from "./actions";
 import type { Character } from "@/lib/types";
+import { ALL_TAGS } from "@/lib/fate-data";
 import { SEVERITY_ORDER } from "@/lib/fate-types";
 import type { Char1Config, FateSeverity, GenderFilter, SlotConfig } from "@/lib/fate-types";
 
@@ -163,6 +164,20 @@ export function SchicksalForm({
   const [rolling, setRolling] = useState(false);
   const [posting, setPosting] = useState(false);
 
+  const [themeTags, setThemeTags] = useState<string[] | null>(null);
+
+  function rollTheme() {
+    const pool = [...ALL_TAGS];
+    const picked: string[] = [];
+    const count = Math.min(2, pool.length);
+    for (let i = 0; i < count; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      picked.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+    setThemeTags(picked);
+  }
+
   function addSlot() {
     setSlots((prev) => (prev.length >= 2 ? prev : [...prev, { worldId: activeWorldId, gender: "alle", ownerId: "alle" }]));
   }
@@ -188,33 +203,44 @@ export function SchicksalForm({
   async function roll() {
     setRolling(true);
     setError(null);
-    const char1Config: Char1Config =
-      char1Mode === "specific" ? { mode: "specific", characterId: char1Id } : { mode: "pool", gender: char1Gender };
-    const result = await previewFateAction(char1Config, extraEnabled ? slots : [], { min: minSeverity, max: maxSeverity });
-    setRolling(false);
-    if ("error" in result) {
-      setError(result.error);
+    try {
+      const char1Config: Char1Config =
+        char1Mode === "specific" ? { mode: "specific", characterId: char1Id } : { mode: "pool", gender: char1Gender };
+      const result = await previewFateAction(char1Config, extraEnabled ? slots : [], { min: minSeverity, max: maxSeverity });
+      if ("error" in result) {
+        setError(result.error);
+        setPreview(null);
+      } else {
+        setPreview(result);
+      }
+    } catch {
+      setError("Würfeln hat gerade nicht geklappt. Bitte Seite neu laden und nochmal versuchen.");
       setPreview(null);
-      return;
+    } finally {
+      setRolling(false);
     }
-    setPreview(result);
   }
 
   async function post() {
     if (!preview) return;
     setPosting(true);
     setError(null);
-    const result = await postFateResultAction(
-      preview.fateId,
-      preview.char1.id,
-      preview.targets.map((t) => t.id),
-    );
-    setPosting(false);
-    if ("error" in result) {
-      setError(result.error);
-      return;
+    try {
+      const result = await postFateResultAction(
+        preview.fateId,
+        preview.char1.id,
+        preview.targets.map((t) => t.id),
+      );
+      if ("error" in result) {
+        setError(result.error);
+      } else {
+        router.push(`/story/${result.id}`);
+      }
+    } catch {
+      setError("Posten hat gerade nicht geklappt. Bitte nochmal versuchen.");
+    } finally {
+      setPosting(false);
     }
-    router.push(`/story/${result.id}`);
   }
 
   return (
@@ -326,6 +352,29 @@ export function SchicksalForm({
         )}
       </div>
 
+      <div className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">
+        <p className="text-sm font-medium text-fg">Themen-Generator (optional)</p>
+        <p className="text-xs text-muted">
+          Zieht zufällige Stichpunkte als Inspiration, unabhängig vom gewürfelten Schicksal – kann, muss aber nicht benutzt werden.
+        </p>
+        {themeTags && themeTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {themeTags.map((tag) => (
+              <span key={tag} className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={rollTheme}
+          className="self-start rounded-full bg-surface px-3 py-1.5 text-xs font-medium text-fg-soft transition hover:bg-surface-3 hover:text-fg"
+        >
+          {themeTags ? "Nochmal" : "Thema würfeln"}
+        </button>
+      </div>
+
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <button
@@ -347,16 +396,6 @@ export function SchicksalForm({
             </span>
           </div>
           <p className="font-serif text-xl leading-snug text-fg">{preview.text}</p>
-          {preview.tags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-muted">Worum es geht (optional):</span>
-              {preview.tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
           <button
             type="button"
             onClick={post}

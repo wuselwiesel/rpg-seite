@@ -312,3 +312,7 @@ export const FATES: Fate[] = [
   t(225, "Werwolf", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen geliebten Menschen.", tags: ["Werwölfe", "Kontrollverlust", "Mord", "Liebe"] }),
   t(226, "Werwolf", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen geliebten Menschen schwer.", tags: ["Werwölfe", "Kontrollverlust", "Gewalt", "Liebe"] }),
 ];
+
+// Alle im Datensatz vorkommenden Themen-Stichpunkte, gesammelt für den unabhängigen
+// Themen-Generator (zieht frei aus diesem Pool statt nur die Tags des gewürfelten Schicksals zu zeigen).
+export const ALL_TAGS: string[] = Array.from(new Set(FATES.flatMap((f) => f.tags ?? []))).sort((a, b) => a.localeCompare(b, "de"));
