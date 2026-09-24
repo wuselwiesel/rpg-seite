@@ -10,6 +10,14 @@ import { getActiveWorld } from "@/lib/worlds";
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
 const GENDERS = ["maennlich", "weiblich", "divers"] as const;
 const SPECIES = ["mensch", "vampir", "werwolf"] as const;
+const RELATIONSHIP_STATUSES = ["single", "beziehung", "kompliziert", "verheiratet"] as const;
+
+function parseRelationshipStatus(raw: FormDataEntryValue | null): (typeof RELATIONSHIP_STATUSES)[number] | null {
+  const value = String(raw ?? "");
+  return (RELATIONSHIP_STATUSES as readonly string[]).includes(value)
+    ? (value as (typeof RELATIONSHIP_STATUSES)[number])
+    : null;
+}
 
 function parseGender(raw: FormDataEntryValue | null): (typeof GENDERS)[number] | null {
   const value = String(raw ?? "");
@@ -109,9 +117,15 @@ export async function updateCharacter(
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
   const gender = parseGender(formData.get("gender"));
   const species = parseSpecies(formData.get("species"));
+  const relationshipStatus = parseRelationshipStatus(formData.get("relationship_status"));
+  const partnerCharacterId = String(formData.get("partner_character_id") ?? "").trim() || null;
+  const bestFriendCharacterId = String(formData.get("best_friend_character_id") ?? "").trim() || null;
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
+  }
+  if (partnerCharacterId === characterId || bestFriendCharacterId === characterId) {
+    return "Ein Charakter kann nicht die eigene Partnerin/der eigene beste Freund sein.";
   }
   const username = parseUsername(formData.get("username"));
   if (username.error) return username.error;
@@ -126,6 +140,19 @@ export async function updateCharacter(
 
   if (!user) return "Nicht angemeldet.";
 
+  // Partner:in / beste:r Freund:in müssen echte, für die Person erreichbare Charaktere sein
+  // (Welt-Mitglied), sonst still auf "keine Angabe" zurückfallen statt einen Fehler zu werfen.
+  const { data: own } = await supabase.from("characters").select("world_id").eq("id", characterId).maybeSingle();
+  let validPartnerId = partnerCharacterId;
+  let validBestFriendId = bestFriendCharacterId;
+  if (own && (partnerCharacterId || bestFriendCharacterId)) {
+    const idsToCheck = [partnerCharacterId, bestFriendCharacterId].filter((v): v is string => !!v);
+    const { data: candidates } = await supabase.from("characters").select("id, world_id").in("id", idsToCheck);
+    const validIds = new Set((candidates ?? []).filter((c) => c.world_id === own.world_id).map((c) => c.id));
+    if (partnerCharacterId && !validIds.has(partnerCharacterId)) validPartnerId = null;
+    if (bestFriendCharacterId && !validIds.has(bestFriendCharacterId)) validBestFriendId = null;
+  }
+
   const { error } = await supabase
     .from("characters")
     .update({
@@ -138,6 +165,9 @@ export async function updateCharacter(
       house: house || null,
       gender,
       species,
+      relationship_status: relationshipStatus,
+      partner_character_id: relationshipStatus && relationshipStatus !== "single" ? validPartnerId : null,
+      best_friend_character_id: validBestFriendId,
       avatar_url: avatarUrl || null,
       sheet_url: sheetUrl || null,
     })

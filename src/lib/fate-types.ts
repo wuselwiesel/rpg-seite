@@ -11,6 +11,16 @@ export type FateCategory =
   | "Vampir"
   | "Werwolf";
 
+export const FATE_CATEGORIES: FateCategory[] = [
+  "Beziehung",
+  "Familie",
+  "Gefahr",
+  "Kriminalität",
+  "Vergangenheit",
+  "Vampir",
+  "Werwolf",
+];
+
 export type FateSeverity = "leicht" | "mittel" | "schwer" | "sehr schwer" | "extrem";
 
 // Reihenfolge von harmlos zu extrem – bestimmt Sortierung und Range-Filter.
@@ -20,6 +30,9 @@ export const SEVERITY_ORDER: FateSeverity[] = ["leicht", "mittel", "schwer", "se
 export type FateRoleRequirement = {
   gender?: CharacterGender;
   species?: CharacterSpecies[];
+  // Nur für Zusatz-Charaktere: muss die echte Partnerin/der echte beste Freund von character1 sein
+  // (aus dessen Profil) - macht z.B. "wird betrogen" logisch statt zufällig.
+  relation?: "partner" | "bestFriend";
 };
 
 export type Fate = {
@@ -52,6 +65,8 @@ export type CharacterMeta = {
   species: CharacterSpecies;
   ownerId: string;
   worldId: string;
+  partnerId: string | null;
+  bestFriendId: string | null;
 };
 
 export type Char1Config =

@@ -6,8 +6,8 @@ import { Skull, X } from "lucide-react";
 import { previewFateAction, postFateResultAction, type FatePreview } from "./actions";
 import type { Character } from "@/lib/types";
 import { ALL_TAGS } from "@/lib/fate-data";
-import { SEVERITY_ORDER } from "@/lib/fate-types";
-import type { Char1Config, FateSeverity, GenderFilter, SlotConfig } from "@/lib/fate-types";
+import { FATE_CATEGORIES, SEVERITY_ORDER } from "@/lib/fate-types";
+import type { Char1Config, FateCategory, FateSeverity, GenderFilter, SlotConfig } from "@/lib/fate-types";
 
 export type WorldOption = {
   id: string;
@@ -139,13 +139,18 @@ function SeveritySelect({
   );
 }
 
+export type CharacterOption = { id: string; name: string; ownerLabel: string };
+export type WorldCharacterOptions = { worldId: string; worldName: string; characters: CharacterOption[] };
+
 export function SchicksalForm({
   ownCharacters,
   worldOptions,
+  allCharacterOptions,
   activeWorldId,
 }: {
   ownCharacters: Character[];
   worldOptions: WorldOption[];
+  allCharacterOptions: WorldCharacterOptions[];
   activeWorldId: string;
 }) {
   const router = useRouter();
@@ -158,6 +163,12 @@ export function SchicksalForm({
 
   const [minSeverity, setMinSeverity] = useState<FateSeverity>("leicht");
   const [maxSeverity, setMaxSeverity] = useState<FateSeverity>("extrem");
+
+  const [selectedCategories, setSelectedCategories] = useState<FateCategory[]>([]);
+
+  function toggleCategory(category: FateCategory) {
+    setSelectedCategories((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]));
+  }
 
   const [preview, setPreview] = useState<FatePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -206,7 +217,12 @@ export function SchicksalForm({
     try {
       const char1Config: Char1Config =
         char1Mode === "specific" ? { mode: "specific", characterId: char1Id } : { mode: "pool", gender: char1Gender };
-      const result = await previewFateAction(char1Config, extraEnabled ? slots : [], { min: minSeverity, max: maxSeverity });
+      const result = await previewFateAction(
+        char1Config,
+        extraEnabled ? slots : [],
+        { min: minSeverity, max: maxSeverity },
+        selectedCategories,
+      );
       if ("error" in result) {
         setError(result.error);
         setPreview(null);
@@ -230,6 +246,7 @@ export function SchicksalForm({
         preview.fateId,
         preview.char1.id,
         preview.targets.map((t) => t.id),
+        themeTags ?? [],
       );
       if ("error" in result) {
         setError(result.error);
@@ -271,17 +288,29 @@ export function SchicksalForm({
         </div>
 
         {char1Mode === "specific" ? (
-          <select
-            value={char1Id}
-            onChange={(e) => setChar1Id(e.target.value)}
-            className="rounded-md border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
-          >
-            {ownCharacters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              value={char1Id}
+              onChange={(e) => setChar1Id(e.target.value)}
+              className="rounded-md border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+            >
+              {allCharacterOptions.map((w) => (
+                <optgroup key={w.worldId} label={w.worldName}>
+                  {w.characters.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.ownerLabel})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {!ownCharacters.some((c) => c.id === char1Id) && (
+              <p className="text-xs text-muted">
+                Kein eigener Charakter – die Szene wird als Erzähler:in gepostet (Autor:innenschaft bleibt technisch bei
+                dir).
+              </p>
+            )}
+          </>
         ) : (
           <div className="w-1/2 pr-1.5">
             <GenderSelect value={char1Gender} onChange={setChar1Gender} />
@@ -295,6 +324,28 @@ export function SchicksalForm({
           <SeveritySelect label="Mindestens" value={minSeverity} onChange={changeMinSeverity} />
           <SeveritySelect label="Höchstens" value={maxSeverity} onChange={changeMaxSeverity} />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">
+        <p className="text-sm font-medium text-fg">Kategorie (optional)</p>
+        <div className="flex flex-wrap gap-2">
+          {FATE_CATEGORIES.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => toggleCategory(category)}
+              aria-pressed={selectedCategories.includes(category)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                selectedCategories.includes(category)
+                  ? "bg-accent-strong text-on-accent-strong"
+                  : "bg-surface text-fg-soft hover:text-fg"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+        {selectedCategories.length === 0 && <p className="text-xs text-muted">Keine Auswahl = alle Kategorien.</p>}
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">

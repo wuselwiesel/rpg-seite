@@ -24,7 +24,9 @@ export default async function SchicksalPage() {
 
   const friendLabel = new Map(friends.map((f) => [f.id, f.nickname ?? f.username]));
 
-  const worldOptions: WorldOption[] = await Promise.all(
+  // Für jede Welt: Besitzer:innen-Liste (Profil-Filter) UND die vollständige Charakterliste
+  // (für "Bestimmter Charakter" bei Charakter 1 - auch Charaktere anderer Accounts/Welten wählbar).
+  const perWorld = await Promise.all(
     worlds.map(async (world) => {
       const mentionable = await getMentionableCharacters(user.id, world.id);
       const ownerIds = Array.from(new Set(mentionable.map((c) => c.owner_id)));
@@ -32,9 +34,18 @@ export default async function SchicksalPage() {
         ownerId: id,
         label: id === user.id ? "Ich" : (friendLabel.get(id) ?? "Unbekannt"),
       }));
-      return { id: world.id, name: world.name, owners };
+      const characters = mentionable.map((c) => ({
+        id: c.id,
+        name: c.name,
+        ownerLabel: c.owner_id === user.id ? "Ich" : (friendLabel.get(c.owner_id) ?? "Unbekannt"),
+      }));
+      return { world: { id: world.id, name: world.name, owners }, characters };
     }),
   );
+  const worldOptions: WorldOption[] = perWorld.map((p) => p.world);
+  const allCharacterOptions = perWorld
+    .filter((p) => p.characters.length > 0)
+    .map((p) => ({ worldId: p.world.id, worldName: p.world.name, characters: p.characters }));
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
@@ -42,7 +53,12 @@ export default async function SchicksalPage() {
       <p className="mb-6 text-sm text-muted">
         Würfle ein einschneidendes Schicksal für einen deiner Charaktere und poste es als neue Szene in der Story.
       </p>
-      <SchicksalForm ownCharacters={ownCharacters} worldOptions={worldOptions} activeWorldId={activeWorld.id} />
+      <SchicksalForm
+        ownCharacters={ownCharacters}
+        worldOptions={worldOptions}
+        allCharacterOptions={allCharacterOptions}
+        activeWorldId={activeWorld.id}
+      />
     </div>
   );
 }

@@ -5,15 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { rollFate } from "@/lib/fate-engine";
-import { FATES } from "@/lib/fate-data";
-import { SEVERITY_ORDER } from "@/lib/fate-types";
+import { ALL_TAGS, FATES } from "@/lib/fate-data";
+import { FATE_CATEGORIES, SEVERITY_ORDER } from "@/lib/fate-types";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { extractHashtags } from "@/lib/hashtags";
 import { stripHtml } from "@/lib/strip-html";
 import { notifyMentionedCharacterIds } from "@/lib/notifications";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import type { Character, CharacterGender, CharacterSpecies } from "@/lib/types";
-import type { Char1Config, CharacterMeta, SeverityRange, SlotConfig } from "@/lib/fate-types";
+import type { Char1Config, CharacterMeta, FateCategory, SeverityRange, SlotConfig } from "@/lib/fate-types";
 
 function toMeta(c: Character): CharacterMeta {
   return {
@@ -23,6 +23,8 @@ function toMeta(c: Character): CharacterMeta {
     species: (c.species ?? "mensch") as CharacterSpecies,
     ownerId: c.owner_id,
     worldId: c.world_id,
+    partnerId: c.partner_character_id ?? null,
+    bestFriendId: c.best_friend_character_id ?? null,
   };
 }
 
@@ -39,10 +41,14 @@ export async function previewFateAction(
   char1Config: Char1Config,
   slots: SlotConfig[],
   severityRange: SeverityRange,
+  categories: FateCategory[] = [],
 ): Promise<FatePreview | { error: string }> {
   if (slots.length > 2) return { error: "Maximal zwei zusätzliche Charaktere möglich." };
   if (!SEVERITY_ORDER.includes(severityRange.min) || !SEVERITY_ORDER.includes(severityRange.max)) {
     return { error: "Ungültiger Schweregrad." };
+  }
+  if (categories.some((c) => !FATE_CATEGORIES.includes(c))) {
+    return { error: "Ungültige Kategorie." };
   }
 
   const supabase = await createClient();
@@ -66,12 +72,26 @@ export async function previewFateAction(
   ]);
   if (ownCharacters.length === 0) return { error: "Du brauchst zuerst einen Charakter in dieser Welt." };
 
-  if (char1Config.mode === "specific" && !ownCharacters.some((c) => c.id === char1Config.characterId)) {
-    return { error: "Ungültiger Charakter." };
+  // Charakter 1: normalerweise einer der eigenen. Bei "Bestimmter Charakter" darf es auch ein
+  // fremder Charakter (anderer Account, auch aus einer anderen Welt) sein - die Szene wird dann
+  // als Erzähler:in gepostet (postFateResultAction), die eigene Autorenschaft bleibt technisch nötig.
+  let char1Pool: CharacterMeta[];
+  if (char1Config.mode === "specific") {
+    const own = ownCharacters.find((c) => c.id === char1Config.characterId);
+    if (own) {
+      char1Pool = [toMeta(own)];
+    } else {
+      const allMentionable = (await Promise.all(myWorlds.map((w) => getMentionableCharacters(user.id, w.id)))).flat();
+      const found = allMentionable.find((c) => c.id === char1Config.characterId);
+      if (!found) return { error: "Ungültiger Charakter." };
+      char1Pool = [toMeta(found)];
+    }
+  } else {
+    char1Pool = ownCharacters.map(toMeta);
   }
 
   const targetPool = slotMentionable.flat().map(toMeta);
-  const result = rollFate(ownCharacters.map(toMeta), targetPool, char1Config, slots, severityRange);
+  const result = rollFate(char1Pool, targetPool, char1Config, slots, severityRange, categories);
   if ("error" in result) return result;
 
   return {
@@ -92,10 +112,14 @@ function mentionSpan(c: { id: string; name: string }): string {
   return `<span data-type="mention" class="mention" data-id="${c.id}">@${escapeHtml(c.name)}</span>`;
 }
 
+const MAX_THEME_TAGS = 5;
+const MAX_THEME_TAG_LENGTH = 40;
+
 export async function postFateResultAction(
   fateId: number,
   char1Id: string,
   targetIds: string[],
+  themeTags: string[] = [],
 ): Promise<{ error: string } | { id: string }> {
   const supabase = await createClient();
   const {
@@ -115,15 +139,29 @@ export async function postFateResultAction(
     ...myWorlds.map((w) => getMentionableCharacters(user.id, w.id)),
   ]);
 
-  const char1 = ownCharacters.find((c) => c.id === char1Id);
-  if (!char1) return { error: "Ungültiger Charakter für Charakter 1." };
-  if (targetIds.length < fate.minTargets || targetIds.length > fate.maxTargets) {
-    return { error: "Ungültige Charakterauswahl." };
-  }
-
   // Erreichbar über irgendeine Welt, in der die Person Mitglied ist (eigene + Freundes-Charaktere).
   const mentionableById = new Map<string, Character>();
   for (const list of mentionablePerWorld) for (const c of list) mentionableById.set(c.id, c);
+
+  const char1Own = ownCharacters.find((c) => c.id === char1Id);
+  const char1Subject = char1Own ?? mentionableById.get(char1Id);
+  if (!char1Subject) return { error: "Ungültiger Charakter für Charakter 1." };
+
+  // Charakter 1 ist kein eigener Charakter (anderer Account/andere Welt): die Szene braucht trotzdem
+  // technisch eine eigene Autorin/einen eigenen Autor (Datenbank-Regel) - dann als Erzähler:in posten.
+  let authorCharacter: Character;
+  let narrator = false;
+  if (char1Own) {
+    authorCharacter = char1Own;
+  } else {
+    if (ownCharacters.length === 0) return { error: "Du brauchst einen eigenen Charakter in dieser Welt." };
+    authorCharacter = ownCharacters[0];
+    narrator = true;
+  }
+
+  if (targetIds.length < fate.minTargets || targetIds.length > fate.maxTargets) {
+    return { error: "Ungültige Charakterauswahl." };
+  }
 
   const targets: Character[] = [];
   const used = new Set([char1Id]);
@@ -134,14 +172,26 @@ export async function postFateResultAction(
     targets.push(c);
   }
 
-  // Text serverseitig neu gerendert (nie dem Client vertrauen) – character1 fett statt als
-  // Erwähnung (ist bereits die Autor:in der Szene), die übrigen Charaktere als klickbare @-Erwähnung.
+  // Text serverseitig neu gerendert (nie dem Client vertrauen) – character1 fett (eigener Charakter,
+  // schon als Autor:in sichtbar) oder als Erwähnung (fremder Charakter, Erzähler:in-Modus), die
+  // übrigen Charaktere immer als klickbare @-Erwähnung.
   const template = targets.length === fate.maxTargets ? fate.text : (fate.soloText ?? fate.text);
-  let html = template.split("{character1}").join(`<strong>${escapeHtml(char1.name)}</strong>`);
+  let html = template
+    .split("{character1}")
+    .join(narrator ? mentionSpan(char1Subject) : `<strong>${escapeHtml(char1Subject.name)}</strong>`);
   targets.forEach((target, i) => {
     html = html.split(`{character${i + 2}}`).join(mentionSpan(target));
   });
   html = `<p>${html}</p>`;
+
+  // Gewürfelte Themen (aus dem unabhängigen Themen-Generator) mit in die Szene übernehmen –
+  // nur bekannte Tags akzeptieren, nie ungeprüften Client-Text in den Beitrag schreiben.
+  const validThemeTags = Array.from(new Set(themeTags))
+    .filter((t) => ALL_TAGS.includes(t) && t.length <= MAX_THEME_TAG_LENGTH)
+    .slice(0, MAX_THEME_TAGS);
+  if (validThemeTags.length > 0) {
+    html += `<p><em>Themen: ${validThemeTags.map(escapeHtml).join(", ")}</em></p>`;
+  }
   const content = sanitizePostHtml(html);
 
   const title = `Schicksal: ${fate.category}`;
@@ -151,11 +201,12 @@ export async function postFateResultAction(
     .from("story_posts")
     .insert({
       world_id: activeWorld.id,
-      character_id: char1.id,
+      character_id: authorCharacter.id,
       title,
       content,
       tags,
       is_private: false,
+      narrator,
     })
     .select("id")
     .single();
@@ -165,10 +216,10 @@ export async function postFateResultAction(
   await notifyMentionedCharacterIds(
     parseMentionedCharacterIdsFromHtml(content),
     user.id,
-    char1.id,
+    authorCharacter.id,
     `/story/${data.id}`,
     "wurde vom Schicksalswürfel in eine Szene verwickelt",
-    false,
+    narrator,
   );
 
   revalidatePath("/story");

@@ -62,19 +62,25 @@ const w = { gender: "maennlich" as const };
 const f = { gender: "weiblich" as const };
 const vamp: FateRoleRequirement = { species: ["vampir"] };
 const wolf: FateRoleRequirement = { species: ["werwolf"] };
+// Für "wird zum ersten Mal gebissen/verwandelt"-Schicksale: darf nicht schon die Zielspezies sein.
+const notYetVamp: FateRoleRequirement = { species: ["mensch", "werwolf"] };
+const notYetWolf: FateRoleRequirement = { species: ["mensch", "vampir"] };
+// Für Kontrollverlust-Schicksale: character1 muss selbst bereits Vampir/Werwolf sein.
+const isVamp: FateRoleRequirement = { species: ["vampir"] };
+const isWolf: FateRoleRequirement = { species: ["werwolf"] };
 
 export const FATES: Fate[] = [
   // ---- Beziehung (1-28) ----
-  t(1, "Beziehung", "schwer", "{character1} wird von {character2} betrogen.", { tags: ["Verrat"] }),
+  t(1, "Beziehung", "schwer", "{character1} wird von {character2} betrogen.", { role: { relation: "partner" }, tags: ["Verrat"] }),
   t(2, "Beziehung", "mittel", "{character1} verliebt sich in {character2} – obwohl {character2} bereits vergeben ist.", { tags: ["Liebe"] }),
   t(3, "Beziehung", "schwer", "{character1} entdeckt, dass {character2} seit Monaten ein Geheimnis verschweigt.", { tags: ["Geheimnis", "Vertrauensbruch"] }),
-  t(4, "Beziehung", "schwer", "{character1} wird von {character2} verlassen – ohne Vorwarnung.", { tags: ["Liebe", "Verlust"] }),
+  t(4, "Beziehung", "schwer", "{character1} wird von {character2} verlassen – ohne Vorwarnung.", { role: { relation: "partner" }, tags: ["Liebe", "Verlust"] }),
   t(5, "Beziehung", "mittel", "{character1} beginnt eine heimliche Beziehung mit {character2}.", { tags: ["Liebe", "Geheimnis"] }),
   t2(6, "Beziehung", "schwer", "{character1} entdeckt eine Affäre zwischen {character2} und {character3}.", { tags: ["Verrat", "Affäre"] }),
   t(7, "Beziehung", "schwer", "{character1} wird von {character2} öffentlich bloßgestellt.", { tags: ["Erniedrigung"] }),
   t(8, "Beziehung", "sehr schwer", "{character1} wird von {character2} erpresst – mit einem Geheimnis, das alles zerstören könnte.", { tags: ["Erpressung", "Geheimnis"] }),
   s(9, "Beziehung", "mittel", "{character1} muss sich zwischen zwei Menschen entscheiden, die {character1} beide etwas bedeuten.", { tags: ["Liebe", "Konflikt"] }),
-  t(10, "Beziehung", "schwer", "{character1} entdeckt, dass die eigene Beziehung zu {character2} auf einer Lüge aufgebaut war.", { tags: ["Verrat", "Geheimnis"] }),
+  t(10, "Beziehung", "schwer", "{character1} entdeckt, dass die eigene Beziehung zu {character2} auf einer Lüge aufgebaut war.", { role: { relation: "partner" }, tags: ["Verrat", "Geheimnis"] }),
   t2(11, "Beziehung", "sehr schwer", "{character1} gerät zwischen {character2} und {character3} – beide kämpfen um {character1}.", { tags: ["Liebe", "Konflikt"] }),
   t(12, "Beziehung", "mittel", "{character1} merkt, dass die Gefühle für {character2} plötzlich alles andere überschatten.", { tags: ["Liebe"] }),
   t(13, "Beziehung", "schwer", "{character1} wird von {character2} vor die Wahl gestellt: alles oder nichts.", { tags: ["Konflikt", "Liebe"] }),
@@ -185,32 +191,32 @@ export const FATES: Fate[] = [
   t(110, "Vergangenheit", "sehr schwer", "{character1} entdeckt, dass {character2} seit Jahren Teil eines Geheimnisses ist, das die eigene Vergangenheit betrifft.", { tags: ["Geheimnis", "Vergangenheit"] }),
 
   // ---- Vampir (111-130) ----
-  s(111, "Vampir", "sehr schwer", "{character1} wird von einem Vampir gebissen.", { tags: ["Vampire", "Verwandlung"] }),
-  t(112, "Vampir", "sehr schwer", "{character1} wird von {character2}, einem Vampir, gebissen.", { role: vamp, tags: ["Vampire", "Verwandlung"] }),
+  s(111, "Vampir", "sehr schwer", "{character1} wird von einem Vampir gebissen.", { char1: notYetVamp, tags: ["Vampire", "Verwandlung"] }),
+  t(112, "Vampir", "sehr schwer", "{character1} wird von {character2}, einem Vampir, gebissen.", { role: vamp, char1: notYetVamp, tags: ["Vampire", "Verwandlung"] }),
   s(113, "Vampir", "sehr schwer", "{character1} wird von einem Vampir entführt.", { tags: ["Vampire", "Entführung"] }),
-  s(114, "Vampir", "sehr schwer", "{character1} wird gegen den eigenen Willen in einen Vampir verwandelt.", { tags: ["Vampire", "Verwandlung"] }),
+  s(114, "Vampir", "sehr schwer", "{character1} wird gegen den eigenen Willen in einen Vampir verwandelt.", { char1: notYetVamp, tags: ["Vampire", "Verwandlung"] }),
   t(115, "Vampir", "sehr schwer", "{character1} entdeckt, dass {character2} in Wahrheit ein Vampir ist.", { role: vamp, tags: ["Vampire", "Geheimnis"] }),
   s(116, "Vampir", "sehr schwer", "{character1} wird zum Ziel eines Vampirs, der es auf mehr als nur Blut abgesehen hat.", { tags: ["Vampire", "Bedrohung"] }),
   t2(117, "Vampir", "sehr schwer", "{character1} gerät zwischen zwei rivalisierende Vampire: {character2} und {character3}.", { role2: vamp, role3: vamp, tags: ["Vampire", "Konflikt"] }),
   s(118, "Vampir", "sehr schwer", "{character1} wird bei einem Angriff eines Vampirs schwer verletzt.", { tags: ["Vampire", "Verletzung"] }),
   t(119, "Vampir", "sehr schwer", "{character1} wird von {character2} vor einem Vampirangriff gerettet – um einen hohen Preis.", { tags: ["Vampire", "Rettung"] }),
   s(120, "Vampir", "sehr schwer", "{character1} findet Spuren eines Vampirangriffs in der eigenen Nachbarschaft.", { tags: ["Vampire", "Bedrohung"] }),
-  t(121, "Vampir", "sehr schwer", "{character1} wird von {character2} vor eine Wahl gestellt: sich dem Ruf des Vampirblutes zu ergeben oder dagegen anzukämpfen.", { role: vamp, tags: ["Vampire", "Verwandlung"] }),
-  s(122, "Vampir", "schwer", "{character1} spürt zum ersten Mal die Folgen eines lange zurückliegenden Vampirbisses.", { tags: ["Vampire", "Verwandlung"] }),
-  t(123, "Vampir", "sehr schwer", "{character1} wird von {character2} als Vampir enttarnt – vor allen.", { role: vamp, tags: ["Vampire", "Geheimnis"] }),
+  t(121, "Vampir", "sehr schwer", "{character1} wird von {character2} vor eine Wahl gestellt: sich dem Ruf des Vampirblutes zu ergeben oder dagegen anzukämpfen.", { role: vamp, char1: notYetVamp, tags: ["Vampire", "Verwandlung"] }),
+  s(122, "Vampir", "schwer", "{character1} spürt zum ersten Mal die Folgen eines lange zurückliegenden Vampirbisses.", { char1: notYetVamp, tags: ["Vampire", "Verwandlung"] }),
+  t(123, "Vampir", "sehr schwer", "{character1} wird von {character2} als Vampir enttarnt – vor allen.", { char1: isVamp, tags: ["Vampire", "Geheimnis"] }),
   s(124, "Vampir", "sehr schwer", "{character1} wird nachts von einem Vampir verfolgt.", { tags: ["Vampire", "Bedrohung"] }),
   t(125, "Vampir", "sehr schwer", "{character1} erfährt, dass {character2} seit Jahren ein Vampirdasein verheimlicht.", { role: vamp, tags: ["Vampire", "Geheimnis"] }),
   s(126, "Vampir", "sehr schwer", "{character1} wird in einen Konflikt zwischen verfeindeten Vampirclans hineingezogen.", { tags: ["Vampire", "Konflikt"] }),
-  t(127, "Vampir", "sehr schwer", "{character1} wird von {character2} gebissen und muss nun mit den ersten Anzeichen der Verwandlung leben.", { role: vamp, char1: { species: ["mensch"] }, tags: ["Vampire", "Verwandlung"] }),
+  t(127, "Vampir", "sehr schwer", "{character1} wird von {character2} gebissen und muss nun mit den ersten Anzeichen der Verwandlung leben.", { role: vamp, char1: notYetVamp, tags: ["Vampire", "Verwandlung"] }),
   s(128, "Vampir", "sehr schwer", "{character1} wird Ziel eines Vampirs, der eine alte Rechnung begleichen will.", { tags: ["Vampire", "Bedrohung"] }),
   t(129, "Vampir", "sehr schwer", "{character1} muss sich entscheiden, ob {character2} nach der Verwandlung in einen Vampir noch vertraut werden kann.", { role: vamp, tags: ["Vampire", "Vertrauensbruch"] }),
-  s(130, "Vampir", "sehr schwer", "{character1} wird nach einem nächtlichen Angriff mit ersten Symptomen einer Vampirverwandlung konfrontiert.", { tags: ["Vampire", "Verwandlung"] }),
+  s(130, "Vampir", "sehr schwer", "{character1} wird nach einem nächtlichen Angriff mit ersten Symptomen einer Vampirverwandlung konfrontiert.", { char1: notYetVamp, tags: ["Vampire", "Verwandlung"] }),
 
   // ---- Werwolf (131-150) ----
-  s(131, "Werwolf", "sehr schwer", "{character1} wird von einem Werwolf gebissen.", { tags: ["Werwölfe", "Verwandlung"] }),
-  t(132, "Werwolf", "sehr schwer", "{character1} wird von {character2}, einem Werwolf, gebissen.", { role: wolf, tags: ["Werwölfe", "Verwandlung"] }),
+  s(131, "Werwolf", "sehr schwer", "{character1} wird von einem Werwolf gebissen.", { char1: notYetWolf, tags: ["Werwölfe", "Verwandlung"] }),
+  t(132, "Werwolf", "sehr schwer", "{character1} wird von {character2}, einem Werwolf, gebissen.", { role: wolf, char1: notYetWolf, tags: ["Werwölfe", "Verwandlung"] }),
   s(133, "Werwolf", "sehr schwer", "{character1} wird von einem Werwolf angegriffen.", { tags: ["Werwölfe", "Gewalt"] }),
-  s(134, "Werwolf", "sehr schwer", "{character1} verwandelt sich zum ersten Mal in einen Werwolf.", { tags: ["Werwölfe", "Verwandlung"] }),
+  s(134, "Werwolf", "sehr schwer", "{character1} verwandelt sich zum ersten Mal in einen Werwolf.", { char1: notYetWolf, tags: ["Werwölfe", "Verwandlung"] }),
   t(135, "Werwolf", "sehr schwer", "{character1} entdeckt, dass {character2} in Wahrheit ein Werwolf ist.", { role: wolf, tags: ["Werwölfe", "Geheimnis"] }),
   s(136, "Werwolf", "sehr schwer", "{character1} wird von einem Werwolf verfolgt.", { tags: ["Werwölfe", "Bedrohung"] }),
   t2(137, "Werwolf", "sehr schwer", "{character1} gerät zwischen zwei verfeindete Werwölfe: {character2} und {character3}.", { role2: wolf, role3: wolf, tags: ["Werwölfe", "Konflikt"] }),
@@ -218,15 +224,15 @@ export const FATES: Fate[] = [
   t(139, "Werwolf", "sehr schwer", "{character1} wird von {character2} vor einem Werwolfangriff gerettet – um einen hohen Preis.", { tags: ["Werwölfe", "Rettung"] }),
   s(140, "Werwolf", "sehr schwer", "{character1} findet Spuren eines Werwolfangriffs in der Nähe des eigenen Zuhauses.", { tags: ["Werwölfe", "Bedrohung"] }),
   t(141, "Werwolf", "sehr schwer", "{character1} wird von {character2} vor eine Wahl gestellt: das Rudel oder die eigene Menschlichkeit.", { role: wolf, tags: ["Werwölfe", "Konflikt"] }),
-  s(142, "Werwolf", "schwer", "{character1} spürt zum ersten Mal die Folgen eines lange zurückliegenden Werwolfbisses.", { tags: ["Werwölfe", "Verwandlung"] }),
-  t(143, "Werwolf", "sehr schwer", "{character1} wird von {character2} als Werwolf enttarnt – vor allen.", { role: wolf, tags: ["Werwölfe", "Geheimnis"] }),
+  s(142, "Werwolf", "schwer", "{character1} spürt zum ersten Mal die Folgen eines lange zurückliegenden Werwolfbisses.", { char1: notYetWolf, tags: ["Werwölfe", "Verwandlung"] }),
+  t(143, "Werwolf", "sehr schwer", "{character1} wird von {character2} als Werwolf enttarnt – vor allen.", { char1: isWolf, tags: ["Werwölfe", "Geheimnis"] }),
   s(144, "Werwolf", "sehr schwer", "{character1} wird bei Vollmond von einem Werwolf gejagt.", { tags: ["Werwölfe", "Bedrohung"] }),
   t(145, "Werwolf", "sehr schwer", "{character1} erfährt, dass {character2} seit Jahren ein Werwolfdasein verheimlicht.", { role: wolf, tags: ["Werwölfe", "Geheimnis"] }),
   s(146, "Werwolf", "sehr schwer", "{character1} wird in einen Konflikt zwischen verfeindeten Rudeln hineingezogen.", { tags: ["Werwölfe", "Konflikt"] }),
-  t(147, "Werwolf", "sehr schwer", "{character1} wird von {character2} gebissen und muss nun mit den ersten Anzeichen der Verwandlung leben.", { role: wolf, char1: { species: ["mensch"] }, tags: ["Werwölfe", "Verwandlung"] }),
+  t(147, "Werwolf", "sehr schwer", "{character1} wird von {character2} gebissen und muss nun mit den ersten Anzeichen der Verwandlung leben.", { role: wolf, char1: notYetWolf, tags: ["Werwölfe", "Verwandlung"] }),
   s(148, "Werwolf", "sehr schwer", "{character1} wird Ziel eines Werwolfs, der eine alte Rechnung begleichen will.", { tags: ["Werwölfe", "Bedrohung"] }),
   t(149, "Werwolf", "sehr schwer", "{character1} muss sich entscheiden, ob {character2} nach der ersten Verwandlung noch vertraut werden kann.", { role: wolf, tags: ["Werwölfe", "Vertrauensbruch"] }),
-  s(150, "Werwolf", "sehr schwer", "{character1} wird nach einem nächtlichen Vorfall mit den ersten Symptomen einer Werwolfverwandlung konfrontiert.", { tags: ["Werwölfe", "Verwandlung"] }),
+  s(150, "Werwolf", "sehr schwer", "{character1} wird nach einem nächtlichen Vorfall mit den ersten Symptomen einer Werwolfverwandlung konfrontiert.", { char1: notYetWolf, tags: ["Werwölfe", "Verwandlung"] }),
 
   // ---- Extrem (151-172) ----
   s(151, "Kriminalität", "extrem", "{character1} wird ermordet.", { tags: ["Mord"] }),
@@ -249,7 +255,7 @@ export const FATES: Fate[] = [
   s(168, "Gefahr", "extrem", "{character1} wird bei einer Folter schwer und dauerhaft gezeichnet.", { tags: ["Gewalt", "Bleibende Schäden"] }),
   s(169, "Kriminalität", "extrem", "{character1} begeht in einer Verzweiflungstat ein schweres Verbrechen.", { tags: ["Kriminalität"] }),
   s(170, "Kriminalität", "extrem", "{character1} wird lebenslang für ein Verbrechen inhaftiert, das jemand anderes begangen hat.", { tags: ["Kriminalität", "Gefängnis"] }),
-  s(171, "Vampir", "extrem", "{character1} wird von einem Vampir fast vollständig ausgeblutet und überlebt nur knapp.", { tags: ["Vampire", "Lebensgefahr"] }),
+  s(171, "Vampir", "extrem", "{character1} wird von einem Vampir fast vollständig ausgeblutet und überlebt nur knapp.", { char1: notYetVamp, tags: ["Vampire", "Lebensgefahr"] }),
   s(172, "Werwolf", "extrem", "{character1} verliert bei einem Angriff eines Werwolfs dauerhaft die Kontrolle über einen Teil des eigenen Körpers.", { tags: ["Werwölfe", "Bleibende Schäden"] }),
 
   // ---- Leicht (173-204) ----
@@ -299,18 +305,37 @@ export const FATES: Fate[] = [
   t(214, "Beziehung", "sehr schwer", "{character1} stellt {character2} vor eine unmögliche Wahl.", { tags: ["Manipulation", "Konflikt"] }),
 
   // ---- Kontrollverlust: Vampire & Werwölfe (215-226) ----
-  s(215, "Vampir", "extrem", "{character1} verliert bei einem Blutrausch die Kontrolle und tötet eine unschuldige Person.", { tags: ["Vampire", "Kontrollverlust", "Mord"] }),
-  s(216, "Vampir", "sehr schwer", "{character1} verliert bei einem Blutrausch die Kontrolle und verletzt eine unschuldige Person schwer.", { tags: ["Vampire", "Kontrollverlust", "Gewalt"] }),
-  t(217, "Vampir", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen nahen Verwandten.", tags: ["Vampire", "Kontrollverlust", "Mord", "Familie"] }),
-  t(218, "Vampir", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen nahen Verwandten schwer.", tags: ["Vampire", "Kontrollverlust", "Gewalt", "Familie"] }),
-  t(219, "Vampir", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen geliebten Menschen.", tags: ["Vampire", "Kontrollverlust", "Mord", "Liebe"] }),
-  t(220, "Vampir", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen geliebten Menschen schwer.", tags: ["Vampire", "Kontrollverlust", "Gewalt", "Liebe"] }),
-  s(221, "Werwolf", "extrem", "{character1} verliert bei einer Verwandlung die Kontrolle und tötet eine unschuldige Person.", { tags: ["Werwölfe", "Kontrollverlust", "Mord"] }),
-  s(222, "Werwolf", "sehr schwer", "{character1} verliert bei einer Verwandlung die Kontrolle und verletzt eine unschuldige Person schwer.", { tags: ["Werwölfe", "Kontrollverlust", "Gewalt"] }),
-  t(223, "Werwolf", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen nahen Verwandten.", tags: ["Werwölfe", "Kontrollverlust", "Mord", "Familie"] }),
-  t(224, "Werwolf", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen nahen Verwandten schwer.", tags: ["Werwölfe", "Kontrollverlust", "Gewalt", "Familie"] }),
-  t(225, "Werwolf", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen geliebten Menschen.", tags: ["Werwölfe", "Kontrollverlust", "Mord", "Liebe"] }),
-  t(226, "Werwolf", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen geliebten Menschen schwer.", tags: ["Werwölfe", "Kontrollverlust", "Gewalt", "Liebe"] }),
+  s(215, "Vampir", "extrem", "{character1} verliert bei einem Blutrausch die Kontrolle und tötet eine unschuldige Person.", { char1: isVamp, tags: ["Vampire", "Kontrollverlust", "Mord"] }),
+  s(216, "Vampir", "sehr schwer", "{character1} verliert bei einem Blutrausch die Kontrolle und verletzt eine unschuldige Person schwer.", { char1: isVamp, tags: ["Vampire", "Kontrollverlust", "Gewalt"] }),
+  t(217, "Vampir", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen nahen Verwandten.", char1: isVamp, tags: ["Vampire", "Kontrollverlust", "Mord", "Familie"] }),
+  t(218, "Vampir", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen nahen Verwandten schwer.", char1: isVamp, tags: ["Vampire", "Kontrollverlust", "Gewalt", "Familie"] }),
+  t(219, "Vampir", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen geliebten Menschen.", char1: isVamp, tags: ["Vampire", "Kontrollverlust", "Mord", "Liebe"] }),
+  t(220, "Vampir", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen geliebten Menschen schwer.", char1: isVamp, tags: ["Vampire", "Kontrollverlust", "Gewalt", "Liebe"] }),
+  s(221, "Werwolf", "extrem", "{character1} verliert bei einer Verwandlung die Kontrolle und tötet eine unschuldige Person.", { char1: isWolf, tags: ["Werwölfe", "Kontrollverlust", "Mord"] }),
+  s(222, "Werwolf", "sehr schwer", "{character1} verliert bei einer Verwandlung die Kontrolle und verletzt eine unschuldige Person schwer.", { char1: isWolf, tags: ["Werwölfe", "Kontrollverlust", "Gewalt"] }),
+  t(223, "Werwolf", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen nahen Verwandten.", char1: isWolf, tags: ["Werwölfe", "Kontrollverlust", "Mord", "Familie"] }),
+  t(224, "Werwolf", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen nahen Verwandten schwer.", char1: isWolf, tags: ["Werwölfe", "Kontrollverlust", "Gewalt", "Familie"] }),
+  t(225, "Werwolf", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen geliebten Menschen.", char1: isWolf, tags: ["Werwölfe", "Kontrollverlust", "Mord", "Liebe"] }),
+  t(226, "Werwolf", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen geliebten Menschen schwer.", char1: isWolf, tags: ["Werwölfe", "Kontrollverlust", "Gewalt", "Liebe"] }),
+
+  // ---- Beziehung & Liebe: mehr Bandbreite, inkl. Besessenheit/Stalking (227-238) ----
+  t(227, "Beziehung", "mittel", "{character1} verliebt sich in {character2}.", { tags: ["Liebe"] }),
+  t(228, "Beziehung", "mittel", "{character1} verliebt sich unglücklich in {character2} – ohne Erwiderung.", { tags: ["Liebe"] }),
+  t(229, "Beziehung", "mittel", "{character1} und {character2} erleben eine verbotene Liebe.", { tags: ["Liebe", "Verbotene Liebe"] }),
+  t(230, "Beziehung", "mittel", "{character1} gesteht {character2} die eigenen Gefühle – mit ungewissem Ausgang.", { tags: ["Liebe"] }),
+  t(231, "Beziehung", "schwer", "{character1} kann nicht mehr aufhören, an {character2} zu denken – es wird ungesund.", { tags: ["Liebe", "Besessenheit"] }),
+  t(232, "Beziehung", "schwer", "{character1} entwickelt eine Besessenheit für {character2}.", { tags: ["Besessenheit"] }),
+  t(233, "Beziehung", "schwer", "{character1} beginnt, {character2} ohne dessen Wissen genau zu beobachten.", { tags: ["Stalking", "Besessenheit"] }),
+  t(234, "Beziehung", "sehr schwer", "{character1} stalkt {character2}.", { tags: ["Stalking", "Bedrohung"] }),
+  t(235, "Beziehung", "sehr schwer", "{character1} taucht ungefragt überall auf, wo {character2} ist.", { tags: ["Stalking", "Bedrohung"] }),
+  t(236, "Beziehung", "sehr schwer", "{character1} wird von {character2} besessen verfolgt, obwohl die Beziehung längst vorbei ist.", { tags: ["Stalking", "Ex"] }),
+  t(237, "Beziehung", "sehr schwer", "{character1} entdeckt, dass {character2} heimlich Nachrichten und Fotos von der eigenen Person sammelt.", { tags: ["Stalking", "Übergriffig"] }),
+  t(238, "Beziehung", "mittel", "{character1} wird von der eigenen Zuneigung zu {character2} überrumpelt – mitten in einer Krise.", { tags: ["Liebe"] }),
+
+  // ---- Nutzt das echte Beziehungsnetz: Partnerin/bester Freund statt Zufallsperson (239-241) ----
+  t(239, "Beziehung", "sehr schwer", "{character1} wird von der besten Freundin bzw. dem besten Freund {character2} verraten.", { role: { relation: "bestFriend" }, tags: ["Verrat", "Vertrauensbruch"] }),
+  t(240, "Beziehung", "schwer", "{character1} entdeckt, dass {character2} als beste:r Freund:in ein großes Geheimnis vor {character1} hütet.", { role: { relation: "bestFriend" }, tags: ["Geheimnis", "Vertrauensbruch"] }),
+  t(241, "Beziehung", "sehr schwer", "{character1} muss sich entscheiden, ob {character2} von der Beziehungskrise mit der eigenen Partnerin bzw. dem eigenen Partner erfahren darf.", { role: { relation: "bestFriend" }, tags: ["Liebe", "Vertrauensbruch"] }),
 ];
 
 // Alle im Datensatz vorkommenden Themen-Stichpunkte, gesammelt für den unabhängigen

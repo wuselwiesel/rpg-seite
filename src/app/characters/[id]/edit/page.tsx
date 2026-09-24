@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMentionableCharacters } from "@/lib/active-character";
 import type { Character } from "@/lib/types";
 import { EditCharacterForm } from "./edit-character-form";
 import { DeleteCharacterButton } from "./delete-character-button";
@@ -24,10 +25,13 @@ export default async function EditCharacterPage({
   if (!character) notFound();
   if (character.owner_id !== user.id) redirect(`/characters/${id}`);
 
+  // Für Partner:in / beste:r Freund:in: eigene + Freundes-Charaktere derselben Welt, ohne sich selbst.
+  const mentionable = (await getMentionableCharacters(user.id, character.world_id)).filter((c) => c.id !== character.id);
+
   return (
     <div className="mx-auto max-w-md px-4 py-10">
       <h1 className="mb-6 font-serif text-3xl text-fg">Charakter bearbeiten</h1>
-      <EditCharacterForm character={character} />
+      <EditCharacterForm character={character} mentionableCharacters={mentionable} />
 
       <div className="mt-8 border-t border-line pt-6">
         <p className="mb-3 text-sm text-muted">

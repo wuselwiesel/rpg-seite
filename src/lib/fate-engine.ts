@@ -5,6 +5,7 @@ import type {
   Char1Config,
   CharacterMeta,
   Fate,
+  FateCategory,
   FateRollResult,
   FateRoleRequirement,
   GenderFilter,
@@ -27,6 +28,15 @@ function satisfiesRole(c: CharacterMeta, role: FateRoleRequirement | undefined):
   if (!role) return true;
   if (role.gender && c.gender !== role.gender) return false;
   if (role.species && role.species.length > 0 && !role.species.includes(c.species)) return false;
+  return true;
+}
+
+// Nur für Zusatz-Charaktere: muss laut character1s Profil wirklich die Partnerin/der beste Freund sein.
+// Ist bei character1 keine Partnerin/kein bester Freund hinterlegt, kann diese Rolle nicht besetzt werden.
+function satisfiesRelation(c: CharacterMeta, role: FateRoleRequirement | undefined, char1: CharacterMeta): boolean {
+  if (!role?.relation) return true;
+  if (role.relation === "partner") return !!char1.partnerId && char1.partnerId === c.id;
+  if (role.relation === "bestFriend") return !!char1.bestFriendId && char1.bestFriendId === c.id;
   return true;
 }
 
@@ -79,7 +89,8 @@ function tryAssign(
           c.worldId === slot.worldId &&
           genderMatchesFilter(c, slot.gender) &&
           ownerMatchesFilter(c, slot.ownerId) &&
-          satisfiesRole(c, role),
+          satisfiesRole(c, role) &&
+          satisfiesRelation(c, role, char1),
       );
       if (candidates.length === 0) {
         ok = false;
@@ -100,13 +111,18 @@ export function rollFate(
   char1Config: Char1Config,
   slots: SlotConfig[],
   severityRange: SeverityRange,
+  categories: FateCategory[] = [],
 ): FateRollResult | { error: string } {
   const numSlots = slots.length;
   const minIndex = SEVERITY_ORDER.indexOf(severityRange.min);
   const maxIndex = SEVERITY_ORDER.indexOf(severityRange.max);
   const eligible = FATES.filter((f) => {
     const i = SEVERITY_ORDER.indexOf(f.severity);
-    return f.minTargets <= numSlots && i >= minIndex && i <= maxIndex;
+    // Wurde ein Zusatz-Charakter konfiguriert, sollen auch nur Schicksale gewürfelt werden,
+    // die tatsächlich einen weiteren Charakter einbinden können (keine reinen Solo-Schicksale).
+    const usesExtraCharacter = numSlots === 0 || f.maxTargets >= 1;
+    const categoryOk = categories.length === 0 || categories.includes(f.category);
+    return f.minTargets <= numSlots && i >= minIndex && i <= maxIndex && usesExtraCharacter && categoryOk;
   });
   if (eligible.length === 0) return { error: "Keine passenden Schicksale für diese Auswahl gefunden." };
 
