@@ -94,11 +94,24 @@ export function DiceRollForm({
             <option value="" disabled>
               Aus Charakterbogen wählen...
             </option>
-            {statOptions.map((o) => (
-              <option key={o.name} value={o.name}>
-                {o.name} ({o.value})
-              </option>
-            ))}
+            <optgroup label="Attribute">
+              {statOptions
+                .filter((o) => o.category === "Attribut")
+                .map((o) => (
+                  <option key={o.name} value={o.name}>
+                    {o.name} ({o.value})
+                  </option>
+                ))}
+            </optgroup>
+            <optgroup label="Talente">
+              {statOptions
+                .filter((o) => o.category === "Talent")
+                .map((o) => (
+                  <option key={o.name} value={o.name}>
+                    {o.name} ({o.value})
+                  </option>
+                ))}
+            </optgroup>
           </select>
         </label>
       )}

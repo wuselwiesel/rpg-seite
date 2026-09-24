@@ -40,7 +40,7 @@ export function num(v: string | undefined) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export type StatOption = { name: string; value: number };
+export type StatOption = { name: string; value: number; category: "Attribut" | "Talent" };
 
 // Flache Liste aller würfelbaren Werte (Attribute + Talente) aus einem
 // geladenen Charakterbogen, für die Wert-Auswahl beim Würfeln.
@@ -49,10 +49,15 @@ export function getStatOptions(data: CharakterbogenData): StatOption[] {
     ...ATTR_TABLE.map((a) => ({
       name: a.name,
       value: num(data.attrBasis?.[a.code]) + num(data.attrBonus?.[a.code]),
+      category: "Attribut" as const,
     })),
     ...TALENT_LIST.map((name) => {
       const tid = talentSlug(name);
-      return { name, value: num(data.talentBasis?.[tid]) + num(data.talentBonus?.[tid]) };
+      return {
+        name,
+        value: num(data.talentBasis?.[tid]) + num(data.talentBonus?.[tid]),
+        category: "Talent" as const,
+      };
     }),
   ];
 }
