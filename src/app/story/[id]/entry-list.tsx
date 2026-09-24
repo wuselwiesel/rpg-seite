@@ -50,6 +50,15 @@ export function EntryList({
   const [live, setLive] = useState<StoryEntry[]>([]);
   const seenIds = useRef<Set<string>>(new Set(items.map((i) => i.id)));
 
+  // Wenn der eigene Beitrag (Fortsetzung/Wurf/Kapitel) durch revalidatePath() serverseitig neu
+  // in `items` auftaucht, muss das hier nachgezogen werden - sonst hält der Realtime-Listener
+  // ihn weiterhin für "noch nicht gesehen" und hängt ihn zusätzlich an `live` an (Duplikat).
+  useEffect(() => {
+    const itemIds = new Set(items.map((i) => i.id));
+    for (const id of itemIds) seenIds.current.add(id);
+    setLive((prev) => prev.filter((entry) => !itemIds.has(entry.id)));
+  }, [items]);
+
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
