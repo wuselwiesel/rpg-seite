@@ -11,7 +11,10 @@ export type FateCategory =
   | "Vampir"
   | "Werwolf";
 
-export type FateSeverity = "mittel" | "schwer" | "sehr schwer";
+export type FateSeverity = "leicht" | "mittel" | "schwer" | "sehr schwer" | "extrem";
+
+// Reihenfolge von harmlos zu extrem – bestimmt Sortierung und Range-Filter.
+export const SEVERITY_ORDER: FateSeverity[] = ["leicht", "mittel", "schwer", "sehr schwer", "extrem"];
 
 // Anforderung an eine Rolle (character1 oder einen der Zusatz-Charaktere).
 export type FateRoleRequirement = {
@@ -56,6 +59,9 @@ export type Char1Config =
 // Jeder Zusatz-Charakter hat eine eigene Welt (Standard: die aktive Welt), aus der
 // seine Charaktere/Person stammen - eine Freundin kann in mehreren Welten sein.
 export type SlotConfig = { worldId: string; gender: GenderFilter; ownerId: OwnerFilter };
+
+// Optionaler Schweregrad-Bereich (inklusiv). Standard: die volle Bandbreite, also keine Einschränkung.
+export type SeverityRange = { min: FateSeverity; max: FateSeverity };
 
 export type FateRollResult = {
   fate: Fate;

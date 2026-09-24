@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Skull, X } from "lucide-react";
 import { previewFateAction, postFateResultAction, type FatePreview } from "./actions";
 import type { Character } from "@/lib/types";
-import type { Char1Config, GenderFilter, SlotConfig } from "@/lib/fate-types";
+import { SEVERITY_ORDER } from "@/lib/fate-types";
+import type { Char1Config, FateSeverity, GenderFilter, SlotConfig } from "@/lib/fate-types";
 
 export type WorldOption = {
   id: string;
@@ -21,9 +22,11 @@ const GENDER_LABELS: Record<GenderFilter, string> = {
 };
 
 const SEVERITY_STYLES: Record<string, string> = {
+  leicht: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   mittel: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   schwer: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
   "sehr schwer": "bg-red-500/15 text-red-600 dark:text-red-400",
+  extrem: "bg-red-700/20 text-red-700 dark:text-red-300",
 };
 
 function GenderSelect({ value, onChange }: { value: GenderFilter; onChange: (v: GenderFilter) => void }) {
@@ -100,6 +103,41 @@ function ProfilSelect({
   );
 }
 
+const SEVERITY_LABELS: Record<FateSeverity, string> = {
+  leicht: "Leicht",
+  mittel: "Mittel",
+  schwer: "Schwer",
+  "sehr schwer": "Sehr schwer",
+  extrem: "Extrem",
+};
+
+function SeveritySelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: FateSeverity;
+  onChange: (v: FateSeverity) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-fg-soft">
+      {label}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as FateSeverity)}
+        className="rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
+      >
+        {SEVERITY_ORDER.map((s) => (
+          <option key={s} value={s}>
+            {SEVERITY_LABELS[s]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function SchicksalForm({
   ownCharacters,
   worldOptions,
@@ -116,6 +154,9 @@ export function SchicksalForm({
 
   const [extraEnabled, setExtraEnabled] = useState(false);
   const [slots, setSlots] = useState<SlotConfig[]>([]);
+
+  const [minSeverity, setMinSeverity] = useState<FateSeverity>("leicht");
+  const [maxSeverity, setMaxSeverity] = useState<FateSeverity>("extrem");
 
   const [preview, setPreview] = useState<FatePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,12 +175,22 @@ export function SchicksalForm({
     setSlots((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
   }
 
+  function changeMinSeverity(value: FateSeverity) {
+    setMinSeverity(value);
+    if (SEVERITY_ORDER.indexOf(value) > SEVERITY_ORDER.indexOf(maxSeverity)) setMaxSeverity(value);
+  }
+
+  function changeMaxSeverity(value: FateSeverity) {
+    setMaxSeverity(value);
+    if (SEVERITY_ORDER.indexOf(value) < SEVERITY_ORDER.indexOf(minSeverity)) setMinSeverity(value);
+  }
+
   async function roll() {
     setRolling(true);
     setError(null);
     const char1Config: Char1Config =
       char1Mode === "specific" ? { mode: "specific", characterId: char1Id } : { mode: "pool", gender: char1Gender };
-    const result = await previewFateAction(char1Config, extraEnabled ? slots : []);
+    const result = await previewFateAction(char1Config, extraEnabled ? slots : [], { min: minSeverity, max: maxSeverity });
     setRolling(false);
     if ("error" in result) {
       setError(result.error);
@@ -210,6 +261,14 @@ export function SchicksalForm({
             <GenderSelect value={char1Gender} onChange={setChar1Gender} />
           </div>
         )}
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">
+        <p className="text-sm font-medium text-fg">Schweregrad (optional)</p>
+        <div className="grid grid-cols-2 gap-3">
+          <SeveritySelect label="Mindestens" value={minSeverity} onChange={changeMinSeverity} />
+          <SeveritySelect label="Höchstens" value={maxSeverity} onChange={changeMaxSeverity} />
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">

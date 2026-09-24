@@ -6,13 +6,14 @@ import { getMentionableCharacters, getOwnCharacters } from "@/lib/active-charact
 import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { rollFate } from "@/lib/fate-engine";
 import { FATES } from "@/lib/fate-data";
+import { SEVERITY_ORDER } from "@/lib/fate-types";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { extractHashtags } from "@/lib/hashtags";
 import { stripHtml } from "@/lib/strip-html";
 import { notifyMentionedCharacterIds } from "@/lib/notifications";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import type { Character, CharacterGender, CharacterSpecies } from "@/lib/types";
-import type { Char1Config, CharacterMeta, SlotConfig } from "@/lib/fate-types";
+import type { Char1Config, CharacterMeta, SeverityRange, SlotConfig } from "@/lib/fate-types";
 
 function toMeta(c: Character): CharacterMeta {
   return {
@@ -37,8 +38,12 @@ export type FatePreview = {
 export async function previewFateAction(
   char1Config: Char1Config,
   slots: SlotConfig[],
+  severityRange: SeverityRange,
 ): Promise<FatePreview | { error: string }> {
   if (slots.length > 2) return { error: "Maximal zwei zusätzliche Charaktere möglich." };
+  if (!SEVERITY_ORDER.includes(severityRange.min) || !SEVERITY_ORDER.includes(severityRange.max)) {
+    return { error: "Ungültiger Schweregrad." };
+  }
 
   const supabase = await createClient();
   const {
@@ -66,7 +71,7 @@ export async function previewFateAction(
   }
 
   const targetPool = slotMentionable.flat().map(toMeta);
-  const result = rollFate(ownCharacters.map(toMeta), targetPool, char1Config, slots);
+  const result = rollFate(ownCharacters.map(toMeta), targetPool, char1Config, slots, severityRange);
   if ("error" in result) return result;
 
   return {

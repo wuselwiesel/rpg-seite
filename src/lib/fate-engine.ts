@@ -1,5 +1,6 @@
 // Auswahl-Logik des Schicksalswürfels: rein funktional, kennt weder UI noch Datenbank.
 import { FATES } from "@/lib/fate-data";
+import { SEVERITY_ORDER } from "@/lib/fate-types";
 import type {
   Char1Config,
   CharacterMeta,
@@ -8,6 +9,7 @@ import type {
   FateRoleRequirement,
   GenderFilter,
   OwnerFilter,
+  SeverityRange,
   SlotConfig,
 } from "@/lib/fate-types";
 
@@ -97,9 +99,15 @@ export function rollFate(
   targetPool: CharacterMeta[],
   char1Config: Char1Config,
   slots: SlotConfig[],
+  severityRange: SeverityRange,
 ): FateRollResult | { error: string } {
   const numSlots = slots.length;
-  const eligible = FATES.filter((f) => f.minTargets <= numSlots);
+  const minIndex = SEVERITY_ORDER.indexOf(severityRange.min);
+  const maxIndex = SEVERITY_ORDER.indexOf(severityRange.max);
+  const eligible = FATES.filter((f) => {
+    const i = SEVERITY_ORDER.indexOf(f.severity);
+    return f.minTargets <= numSlots && i >= minIndex && i <= maxIndex;
+  });
   if (eligible.length === 0) return { error: "Keine passenden Schicksale für diese Auswahl gefunden." };
 
   const char1Candidates =
