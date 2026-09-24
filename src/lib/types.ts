@@ -135,6 +135,8 @@ export type StoryEntry = {
   // getrennt vom frei formulierten roll_label, damit beides erhalten bleibt.
   roll_stat_name?: string | null;
   roll_value?: number | null;
+  // Erschwernis/Erleichterung, die auf den Wert angerechnet wurde (z.B. -2 oder +2).
+  roll_bonus?: number | null;
   roll_die?: number | null;
   roll_result?: number | null;
   roll_success?: boolean | null;

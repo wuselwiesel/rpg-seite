@@ -482,12 +482,17 @@ export async function createDiceRoll(
 ) {
   const label = String(formData.get("label") ?? "").trim();
   const statName = String(formData.get("stat_name") ?? "").trim().slice(0, 60) || null;
-  const value = Number(formData.get("value"));
+  const rawValue = String(formData.get("value") ?? "").trim();
+  // Ohne Wert wird nur der reine Würfelwurf angezeigt, ohne Erfolg/Misserfolg-Auswertung.
+  const value = rawValue === "" ? null : Number(rawValue);
+  const rawBonus = String(formData.get("bonus") ?? "").trim();
+  const bonus = rawBonus === "" ? 0 : Number(rawBonus);
   const die = Number(formData.get("die"));
   const targetCharacterId = String(formData.get("target_character_id") ?? "").trim() || null;
 
   if (!label) return "Bitte angeben, worauf du würfelst.";
-  if (!Number.isFinite(value) || value < 1 || value > 999) return "Ungültiger Wert.";
+  if (value !== null && (!Number.isFinite(value) || value < 1 || value > 999)) return "Ungültiger Wert.";
+  if (!Number.isFinite(bonus) || bonus < -99 || bonus > 99) return "Ungültiger Bonus.";
   if (!ALLOWED_DICE.includes(die)) return "Ungültiger Würfel.";
 
   const supabase = await createClient();
@@ -509,15 +514,24 @@ export async function createDiceRoll(
   }
 
   const result = 1 + Math.floor(Math.random() * die);
-  const success = result <= value;
+  // Bonus/Malus (Erschwernis/Erleichterung) wirkt auf den Zielwert, nicht auf den Wurf selbst -
+  // positiver Bonus erleichtert die Probe (höherer Wert = leichter zu unterwürfeln).
+  const effectiveValue = value === null ? null : Math.max(1, value + bonus);
+  const success = effectiveValue === null ? null : result <= effectiveValue;
+
+  const content =
+    value === null
+      ? `würfelt auf „${label}“: ${result} (W${die})`
+      : `würfelt auf „${label}“: ${result}/${effectiveValue}${bonus !== 0 ? ` (${value}${bonus > 0 ? "+" : ""}${bonus})` : ""} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`;
 
   const { error } = await supabase.from("story_entries").insert({
     story_post_id: storyPostId,
     character_id: characterId,
-    content: `würfelt auf „${label}“: ${result}/${value} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`,
+    content,
     roll_label: label,
     roll_stat_name: statName,
     roll_value: value,
+    roll_bonus: bonus !== 0 ? bonus : null,
     roll_die: die,
     roll_result: result,
     roll_success: success,
@@ -550,9 +564,12 @@ export async function createDiceRoll(
         actorAvatarUrl: actor?.avatar_url ?? null,
         link: `/story/${storyPostId}`,
         recipientName: target.name,
-        message: success
-          ? `hat erfolgreich auf „${label}“ gegen dich gewürfelt`
-          : `hat auf „${label}“ gegen dich gewürfelt – ohne Erfolg`,
+        message:
+          success === null
+            ? `hat auf „${label}“ gegen dich gewürfelt`
+            : success
+              ? `hat erfolgreich auf „${label}“ gegen dich gewürfelt`
+              : `hat auf „${label}“ gegen dich gewürfelt – ohne Erfolg`,
       });
     }
   }

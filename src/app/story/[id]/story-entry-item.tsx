@@ -162,17 +162,35 @@ export function StoryEntryItem({
                   gegen <span className="font-medium text-fg">{entry.roll_target_character.name}</span>
                 </>
               )}
-              : {entry.roll_result}/{entry.roll_value} (W{entry.roll_die})
+              :{" "}
+              {entry.roll_value != null ? (
+                <>
+                  {entry.roll_result}/{entry.roll_value + (entry.roll_bonus ?? 0)}
+                  {entry.roll_bonus ? (
+                    <span className="text-muted">
+                      {" "}
+                      ({entry.roll_value}
+                      {entry.roll_bonus > 0 ? "+" : ""}
+                      {entry.roll_bonus})
+                    </span>
+                  ) : null}{" "}
+                  (W{entry.roll_die})
+                </>
+              ) : (
+                <>{entry.roll_result} (W{entry.roll_die})</>
+              )}
             </span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                entry.roll_success
-                  ? "bg-green-500/15 text-green-700 dark:text-green-400"
-                  : "bg-red-500/15 text-red-700 dark:text-red-400"
-              }`}
-            >
-              {entry.roll_success ? "Erfolg" : "Misserfolg"}
-            </span>
+            {entry.roll_value != null && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  entry.roll_success
+                    ? "bg-green-500/15 text-green-700 dark:text-green-400"
+                    : "bg-red-500/15 text-red-700 dark:text-red-400"
+                }`}
+              >
+                {entry.roll_success ? "Erfolg" : "Misserfolg"}
+              </span>
+            )}
           </div>
         ) : (
           // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -

@@ -27,6 +27,7 @@ export function DiceRollForm({
   const [label, setLabel] = useState("");
   const [statName, setStatName] = useState("");
   const [value, setValue] = useState("");
+  const [bonus, setBonus] = useState("");
   const [target, setTarget] = useState("");
   const [statOptions, setStatOptions] = useState<StatOption[]>([]);
   const wasPending = useRef(false);
@@ -54,6 +55,7 @@ export function DiceRollForm({
       setLabel("");
       setStatName("");
       setValue("");
+      setBonus("");
       setTarget("");
     }
     wasPending.current = pending;
@@ -119,7 +121,7 @@ export function DiceRollForm({
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1 text-sm text-fg-soft">
-          Wert
+          Wert (optional)
           <input
             type="number"
             name="value"
@@ -127,11 +129,24 @@ export function DiceRollForm({
             max={999}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            required
+            placeholder="frei würfeln"
             className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
           />
         </label>
-        <label className="flex flex-1 flex-col gap-1 text-sm text-fg-soft">
+        <label className="flex w-24 flex-col gap-1 text-sm text-fg-soft">
+          Bonus
+          <input
+            type="number"
+            name="bonus"
+            min={-99}
+            max={99}
+            value={bonus}
+            onChange={(e) => setBonus(e.target.value)}
+            placeholder="±0"
+            className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
+          />
+        </label>
+        <label className="flex w-24 flex-col gap-1 text-sm text-fg-soft">
           Würfel
           <select
             name="die"
@@ -146,6 +161,10 @@ export function DiceRollForm({
           </select>
         </label>
       </div>
+      <p className="-mt-1 text-xs text-muted">
+        Ohne Wert wird nur der Wurf angezeigt, ohne Erfolg/Misserfolg. Bonus erschwert (negativ) oder
+        erleichtert (positiv) die Probe, indem er auf den Wert angerechnet wird.
+      </p>
 
       {targets.length > 0 && (
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
