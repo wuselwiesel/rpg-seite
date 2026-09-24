@@ -297,4 +297,18 @@ export const FATES: Fate[] = [
   t(212, "Beziehung", "schwer", "{character1} verrät {character2} für den eigenen Vorteil.", { tags: ["Verrat"] }),
   t(213, "Gefahr", "schwer", "{character1} droht {character2} unverhohlen.", { tags: ["Bedrohung"] }),
   t(214, "Beziehung", "sehr schwer", "{character1} stellt {character2} vor eine unmögliche Wahl.", { tags: ["Manipulation", "Konflikt"] }),
+
+  // ---- Kontrollverlust: Vampire & Werwölfe (215-226) ----
+  s(215, "Vampir", "extrem", "{character1} verliert bei einem Blutrausch die Kontrolle und tötet eine unschuldige Person.", { tags: ["Vampire", "Kontrollverlust", "Mord"] }),
+  s(216, "Vampir", "sehr schwer", "{character1} verliert bei einem Blutrausch die Kontrolle und verletzt eine unschuldige Person schwer.", { tags: ["Vampire", "Kontrollverlust", "Gewalt"] }),
+  t(217, "Vampir", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen nahen Verwandten.", tags: ["Vampire", "Kontrollverlust", "Mord", "Familie"] }),
+  t(218, "Vampir", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen nahen Verwandten schwer.", tags: ["Vampire", "Kontrollverlust", "Gewalt", "Familie"] }),
+  t(219, "Vampir", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen geliebten Menschen.", tags: ["Vampire", "Kontrollverlust", "Mord", "Liebe"] }),
+  t(220, "Vampir", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen geliebten Menschen schwer.", tags: ["Vampire", "Kontrollverlust", "Gewalt", "Liebe"] }),
+  s(221, "Werwolf", "extrem", "{character1} verliert bei einer Verwandlung die Kontrolle und tötet eine unschuldige Person.", { tags: ["Werwölfe", "Kontrollverlust", "Mord"] }),
+  s(222, "Werwolf", "sehr schwer", "{character1} verliert bei einer Verwandlung die Kontrolle und verletzt eine unschuldige Person schwer.", { tags: ["Werwölfe", "Kontrollverlust", "Gewalt"] }),
+  t(223, "Werwolf", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen nahen Verwandten.", tags: ["Werwölfe", "Kontrollverlust", "Mord", "Familie"] }),
+  t(224, "Werwolf", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen nahen Verwandten.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen nahen Verwandten schwer.", tags: ["Werwölfe", "Kontrollverlust", "Gewalt", "Familie"] }),
+  t(225, "Werwolf", "extrem", "{character1} verliert die Kontrolle und tötet {character2} – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und tötet einen geliebten Menschen.", tags: ["Werwölfe", "Kontrollverlust", "Mord", "Liebe"] }),
+  t(226, "Werwolf", "sehr schwer", "{character1} verliert die Kontrolle und verletzt {character2} schwer – einen geliebten Menschen.", { optional: true, soloText: "{character1} verliert die Kontrolle und verletzt einen geliebten Menschen schwer.", tags: ["Werwölfe", "Kontrollverlust", "Gewalt", "Liebe"] }),
 ];
