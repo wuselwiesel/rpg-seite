@@ -36,6 +36,8 @@ export type Fate = {
   text: string;
   // Fallback-Text ohne Zusatz-Charaktere (nur wenn minTargets === 0 und maxTargets >= 1).
   soloText?: string;
+  // Kurze Themen-Stichpunkte (z.B. "Manipulation", "Vampire") - rein informativ, nie Pflicht.
+  tags?: string[];
 };
 
 export type GenderFilter = "alle" | CharacterGender;

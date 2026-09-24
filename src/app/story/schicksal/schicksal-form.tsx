@@ -347,6 +347,16 @@ export function SchicksalForm({
             </span>
           </div>
           <p className="font-serif text-xl leading-snug text-fg">{preview.text}</p>
+          {preview.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted">Worum es geht (optional):</span>
+              {preview.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={post}

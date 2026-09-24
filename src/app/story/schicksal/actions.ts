@@ -31,6 +31,7 @@ export type FatePreview = {
   category: string;
   severity: string;
   text: string;
+  tags: string[];
   char1: { id: string; name: string };
   targets: { id: string; name: string }[];
 };
@@ -78,6 +79,7 @@ export async function previewFateAction(
     fateId: result.fate.id,
     category: result.fate.category,
     severity: result.fate.severity,
+    tags: result.fate.tags ?? [],
     text: result.text,
     char1: { id: result.char1.id, name: result.char1.name },
     targets: result.targets.map((t) => ({ id: t.id, name: t.name })),
