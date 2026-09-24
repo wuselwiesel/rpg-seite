@@ -7,8 +7,8 @@ import type {
   FateRollResult,
   FateRoleRequirement,
   GenderFilter,
+  OwnerFilter,
   SlotConfig,
-  SpeciesFilter,
 } from "@/lib/fate-types";
 
 function genderMatchesFilter(c: CharacterMeta, filter: GenderFilter): boolean {
@@ -16,9 +16,9 @@ function genderMatchesFilter(c: CharacterMeta, filter: GenderFilter): boolean {
   return c.gender === filter;
 }
 
-function speciesMatchesFilter(c: CharacterMeta, filter: SpeciesFilter): boolean {
+function ownerMatchesFilter(c: CharacterMeta, filter: OwnerFilter): boolean {
   if (filter === "alle") return true;
-  return c.species === filter;
+  return c.ownerId === filter;
 }
 
 function satisfiesRole(c: CharacterMeta, role: FateRoleRequirement | undefined): boolean {
@@ -74,8 +74,9 @@ function tryAssign(
       const candidates = targetPool.filter(
         (c) =>
           !used.has(c.id) &&
+          c.worldId === slot.worldId &&
           genderMatchesFilter(c, slot.gender) &&
-          speciesMatchesFilter(c, slot.species) &&
+          ownerMatchesFilter(c, slot.ownerId) &&
           satisfiesRole(c, role),
       );
       if (candidates.length === 0) {
@@ -104,7 +105,7 @@ export function rollFate(
   const char1Candidates =
     char1Config.mode === "specific"
       ? ownPool.filter((c) => c.id === char1Config.characterId)
-      : ownPool.filter((c) => genderMatchesFilter(c, char1Config.gender) && speciesMatchesFilter(c, char1Config.species));
+      : ownPool.filter((c) => genderMatchesFilter(c, char1Config.gender));
   if (char1Candidates.length === 0) return { error: "Kein Charakter passt zu dieser Auswahl für Charakter 1." };
 
   for (const fate of shuffle(eligible)) {

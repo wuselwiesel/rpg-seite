@@ -5,20 +5,19 @@ import { useRouter } from "next/navigation";
 import { Skull, X } from "lucide-react";
 import { previewFateAction, postFateResultAction, type FatePreview } from "./actions";
 import type { Character } from "@/lib/types";
-import type { Char1Config, GenderFilter, SlotConfig, SpeciesFilter } from "@/lib/fate-types";
+import type { Char1Config, GenderFilter, SlotConfig } from "@/lib/fate-types";
+
+export type WorldOption = {
+  id: string;
+  name: string;
+  owners: { ownerId: string; label: string }[];
+};
 
 const GENDER_LABELS: Record<GenderFilter, string> = {
   alle: "Alle",
   weiblich: "Nur Frauen",
   maennlich: "Nur Männer",
   divers: "Nur Divers",
-};
-
-const SPECIES_LABELS: Record<SpeciesFilter, string> = {
-  alle: "Alle",
-  mensch: "Nur Menschen",
-  vampir: "Nur Vampire",
-  werwolf: "Nur Werwölfe",
 };
 
 const SEVERITY_STYLES: Record<string, string> = {
@@ -46,18 +45,54 @@ function GenderSelect({ value, onChange }: { value: GenderFilter; onChange: (v: 
   );
 }
 
-function SpeciesSelect({ value, onChange }: { value: SpeciesFilter; onChange: (v: SpeciesFilter) => void }) {
+function WorldSelect({
+  worldOptions,
+  value,
+  onChange,
+}: {
+  worldOptions: WorldOption[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-fg-soft">
+      Welt
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
+      >
+        {worldOptions.map((w) => (
+          <option key={w.id} value={w.id}>
+            {w.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function ProfilSelect({
+  owners,
+  value,
+  onChange,
+}: {
+  owners: { ownerId: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <label className="flex flex-col gap-1 text-xs text-fg-soft">
       Profil
       <select
         value={value}
-        onChange={(e) => onChange(e.target.value as SpeciesFilter)}
+        onChange={(e) => onChange(e.target.value)}
         className="rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
       >
-        {(Object.keys(SPECIES_LABELS) as SpeciesFilter[]).map((sp) => (
-          <option key={sp} value={sp}>
-            {SPECIES_LABELS[sp]}
+        <option value="alle">Alle</option>
+        {owners.map((o) => (
+          <option key={o.ownerId} value={o.ownerId}>
+            {o.label}
           </option>
         ))}
       </select>
@@ -67,16 +102,17 @@ function SpeciesSelect({ value, onChange }: { value: SpeciesFilter; onChange: (v
 
 export function SchicksalForm({
   ownCharacters,
-  mentionable,
+  worldOptions,
+  activeWorldId,
 }: {
   ownCharacters: Character[];
-  mentionable: Character[];
+  worldOptions: WorldOption[];
+  activeWorldId: string;
 }) {
   const router = useRouter();
   const [char1Mode, setChar1Mode] = useState<"pool" | "specific">("pool");
   const [char1Id, setChar1Id] = useState(ownCharacters[0]?.id ?? "");
   const [char1Gender, setChar1Gender] = useState<GenderFilter>("alle");
-  const [char1Species, setChar1Species] = useState<SpeciesFilter>("alle");
 
   const [extraEnabled, setExtraEnabled] = useState(false);
   const [slots, setSlots] = useState<SlotConfig[]>([]);
@@ -87,7 +123,7 @@ export function SchicksalForm({
   const [posting, setPosting] = useState(false);
 
   function addSlot() {
-    setSlots((prev) => (prev.length >= 2 ? prev : [...prev, { gender: "alle", species: "alle" }]));
+    setSlots((prev) => (prev.length >= 2 ? prev : [...prev, { worldId: activeWorldId, gender: "alle", ownerId: "alle" }]));
   }
 
   function removeSlot(index: number) {
@@ -102,7 +138,7 @@ export function SchicksalForm({
     setRolling(true);
     setError(null);
     const char1Config: Char1Config =
-      char1Mode === "specific" ? { mode: "specific", characterId: char1Id } : { mode: "pool", gender: char1Gender, species: char1Species };
+      char1Mode === "specific" ? { mode: "specific", characterId: char1Id } : { mode: "pool", gender: char1Gender };
     const result = await previewFateAction(char1Config, extraEnabled ? slots : []);
     setRolling(false);
     if ("error" in result) {
@@ -170,9 +206,8 @@ export function SchicksalForm({
             ))}
           </select>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="w-1/2 pr-1.5">
             <GenderSelect value={char1Gender} onChange={setChar1Gender} />
-            <SpeciesSelect value={char1Species} onChange={setChar1Species} />
           </div>
         )}
       </div>
@@ -185,7 +220,7 @@ export function SchicksalForm({
             onChange={(e) => {
               setExtraEnabled(e.target.checked);
               if (!e.target.checked) setSlots([]);
-              else if (slots.length === 0) setSlots([{ gender: "alle", species: "alle" }]);
+              else if (slots.length === 0) setSlots([{ worldId: activeWorldId, gender: "alle", ownerId: "alle" }]);
             }}
             className="rounded border-line"
           />
@@ -194,25 +229,35 @@ export function SchicksalForm({
 
         {extraEnabled && (
           <div className="flex flex-col gap-3">
-            {slots.map((slot, i) => (
-              <div key={i} className="flex flex-col gap-2 rounded-lg border border-line p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-fg-soft">Charakter {i + 2}</p>
-                  <button
-                    type="button"
-                    onClick={() => removeSlot(i)}
-                    aria-label={`Charakter ${i + 2} entfernen`}
-                    className="text-muted transition hover:text-fg"
-                  >
-                    <X className="h-3.5 w-3.5" strokeWidth={2} />
-                  </button>
+            {slots.map((slot, i) => {
+              const owners = worldOptions.find((w) => w.id === slot.worldId)?.owners ?? [];
+              return (
+                <div key={i} className="flex flex-col gap-2 rounded-lg border border-line p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-fg-soft">Charakter {i + 2}</p>
+                    <button
+                      type="button"
+                      onClick={() => removeSlot(i)}
+                      aria-label={`Charakter ${i + 2} entfernen`}
+                      className="text-muted transition hover:text-fg"
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                  </div>
+                  {worldOptions.length > 1 && (
+                    <WorldSelect
+                      worldOptions={worldOptions}
+                      value={slot.worldId}
+                      onChange={(worldId) => updateSlot(i, { worldId, ownerId: "alle" })}
+                    />
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <GenderSelect value={slot.gender} onChange={(g) => updateSlot(i, { gender: g })} />
+                    <ProfilSelect owners={owners} value={slot.ownerId} onChange={(o) => updateSlot(i, { ownerId: o })} />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <GenderSelect value={slot.gender} onChange={(g) => updateSlot(i, { gender: g })} />
-                  <SpeciesSelect value={slot.species} onChange={(sp) => updateSlot(i, { species: sp })} />
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {slots.length < 2 && (
               <button type="button" onClick={addSlot} className="self-start text-sm text-accent hover:underline">
                 + weiteren Charakter hinzufügen

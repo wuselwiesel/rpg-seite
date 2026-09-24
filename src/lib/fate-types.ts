@@ -36,20 +36,26 @@ export type Fate = {
 };
 
 export type GenderFilter = "alle" | CharacterGender;
-export type SpeciesFilter = "alle" | CharacterSpecies;
+// "alle" = jede erreichbare Person, sonst die konkrete Nutzer-ID einer bestimmten
+// Person (der eigene Account oder eine Freundin/ein Freund), deren Charaktere gemeint sind.
+export type OwnerFilter = "alle" | string;
 
 export type CharacterMeta = {
   id: string;
   name: string;
   gender: CharacterGender | null;
   species: CharacterSpecies;
+  ownerId: string;
+  worldId: string;
 };
 
 export type Char1Config =
   | { mode: "specific"; characterId: string }
-  | { mode: "pool"; gender: GenderFilter; species: SpeciesFilter };
+  | { mode: "pool"; gender: GenderFilter };
 
-export type SlotConfig = { gender: GenderFilter; species: SpeciesFilter };
+// Jeder Zusatz-Charakter hat eine eigene Welt (Standard: die aktive Welt), aus der
+// seine Charaktere/Person stammen - eine Freundin kann in mehreren Welten sein.
+export type SlotConfig = { worldId: string; gender: GenderFilter; ownerId: OwnerFilter };
 
 export type FateRollResult = {
   fate: Fate;

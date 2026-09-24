@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
-import { getActiveWorld } from "@/lib/worlds";
+import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { rollFate } from "@/lib/fate-engine";
 import { FATES } from "@/lib/fate-data";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -20,6 +20,8 @@ function toMeta(c: Character): CharacterMeta {
     name: c.name,
     gender: (c.gender ?? null) as CharacterGender | null,
     species: (c.species ?? "mensch") as CharacterSpecies,
+    ownerId: c.owner_id,
+    worldId: c.world_id,
   };
 }
 
@@ -47,9 +49,15 @@ export async function previewFateAction(
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) return { error: "Keine aktive Welt." };
 
-  const [ownCharacters, mentionable] = await Promise.all([
+  const myWorlds = await getUserWorlds(user.id);
+  const myWorldIds = new Set(myWorlds.map((w) => w.id));
+  for (const slot of slots) {
+    if (!myWorldIds.has(slot.worldId)) return { error: "Ungültige Welt ausgewählt." };
+  }
+
+  const [ownCharacters, ...slotMentionable] = await Promise.all([
     getOwnCharacters(user.id, activeWorld.id),
-    getMentionableCharacters(user.id, activeWorld.id),
+    ...Array.from(new Set(slots.map((s) => s.worldId))).map((worldId) => getMentionableCharacters(user.id, worldId)),
   ]);
   if (ownCharacters.length === 0) return { error: "Du brauchst zuerst einen Charakter in dieser Welt." };
 
@@ -57,7 +65,8 @@ export async function previewFateAction(
     return { error: "Ungültiger Charakter." };
   }
 
-  const result = rollFate(ownCharacters.map(toMeta), mentionable.map(toMeta), char1Config, slots);
+  const targetPool = slotMentionable.flat().map(toMeta);
+  const result = rollFate(ownCharacters.map(toMeta), targetPool, char1Config, slots);
   if ("error" in result) return result;
 
   return {
@@ -95,9 +104,10 @@ export async function postFateResultAction(
   const fate = FATES.find((f) => f.id === fateId);
   if (!fate) return { error: "Unbekanntes Schicksal." };
 
-  const [ownCharacters, mentionable] = await Promise.all([
+  const myWorlds = await getUserWorlds(user.id);
+  const [ownCharacters, ...mentionablePerWorld] = await Promise.all([
     getOwnCharacters(user.id, activeWorld.id),
-    getMentionableCharacters(user.id, activeWorld.id),
+    ...myWorlds.map((w) => getMentionableCharacters(user.id, w.id)),
   ]);
 
   const char1 = ownCharacters.find((c) => c.id === char1Id);
@@ -106,7 +116,10 @@ export async function postFateResultAction(
     return { error: "Ungültige Charakterauswahl." };
   }
 
-  const mentionableById = new Map(mentionable.map((c) => [c.id, c]));
+  // Erreichbar über irgendeine Welt, in der die Person Mitglied ist (eigene + Freundes-Charaktere).
+  const mentionableById = new Map<string, Character>();
+  for (const list of mentionablePerWorld) for (const c of list) mentionableById.set(c.id, c);
+
   const targets: Character[] = [];
   const used = new Set([char1Id]);
   for (const id of targetIds) {
