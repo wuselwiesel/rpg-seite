@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutList, MapPin, Rows3, SlidersHorizontal } from "lucide-react";
+import { LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -245,19 +245,29 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         </div>
       </details>
 
-      <Link
-        href="/story/new"
-        className="mb-4 flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2 active:bg-surface-3"
-      >
-        <CharacterAvatar
-          name={activeCharacter.name}
-          avatarUrl={activeCharacter.avatar_url}
-          size={36}
-        />
-        <span className="text-sm text-muted">
-          Beginn eine neue Szene als {activeCharacter.name}...
-        </span>
-      </Link>
+      <div className="mb-4 flex items-center gap-2">
+        <Link
+          href="/story/new"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2 active:bg-surface-3"
+        >
+          <CharacterAvatar
+            name={activeCharacter.name}
+            avatarUrl={activeCharacter.avatar_url}
+            size={36}
+          />
+          <span className="truncate text-sm text-muted">
+            Beginn eine neue Szene als {activeCharacter.name}...
+          </span>
+        </Link>
+        <Link
+          href="/story/schicksal"
+          aria-label="Schicksalswürfel"
+          title="Schicksalswürfel"
+          className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg active:bg-surface-3"
+        >
+          <Skull className="h-5 w-5" strokeWidth={2} />
+        </Link>
+      </div>
 
       <div data-tour="story-list" className={compact ? "flex flex-col divide-y divide-line" : "flex flex-col gap-4"}>
         {storyPosts?.length ? (

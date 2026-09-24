@@ -25,6 +25,9 @@ export type Friendship = {
   addressee?: Profile | null;
 };
 
+export type CharacterGender = "maennlich" | "weiblich" | "divers";
+export type CharacterSpecies = "mensch" | "vampir" | "werwolf";
+
 export type Character = {
   id: string;
   owner_id: string;
@@ -38,6 +41,8 @@ export type Character = {
   avatar_url: string | null;
   bio: string | null;
   sheet_url: string | null;
+  gender?: CharacterGender | null;
+  species?: CharacterSpecies;
   created_at: string;
   worlds?: { name: string } | null;
 };

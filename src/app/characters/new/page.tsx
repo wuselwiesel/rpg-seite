@@ -60,6 +60,34 @@ export default function NewCharacterPage() {
             className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
           />
         </label>
+        <div className="grid grid-cols-2 gap-4">
+          <label className="flex flex-col gap-1 text-sm text-fg-soft">
+            Geschlecht (optional)
+            <select
+              name="gender"
+              defaultValue=""
+              className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+            >
+              <option value="">Unbekannt</option>
+              <option value="weiblich">Weiblich</option>
+              <option value="maennlich">Männlich</option>
+              <option value="divers">Divers</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-fg-soft">
+            Wesen
+            <select
+              name="species"
+              defaultValue="mensch"
+              className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+            >
+              <option value="mensch">Mensch</option>
+              <option value="vampir">Vampir</option>
+              <option value="werwolf">Werwolf</option>
+            </select>
+          </label>
+        </div>
+        <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Haus / Familie (optional)
         <input

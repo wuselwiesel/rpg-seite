@@ -8,6 +8,18 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
+const GENDERS = ["maennlich", "weiblich", "divers"] as const;
+const SPECIES = ["mensch", "vampir", "werwolf"] as const;
+
+function parseGender(raw: FormDataEntryValue | null): (typeof GENDERS)[number] | null {
+  const value = String(raw ?? "");
+  return (GENDERS as readonly string[]).includes(value) ? (value as (typeof GENDERS)[number]) : null;
+}
+
+function parseSpecies(raw: FormDataEntryValue | null): (typeof SPECIES)[number] {
+  const value = String(raw ?? "");
+  return (SPECIES as readonly string[]).includes(value) ? (value as (typeof SPECIES)[number]) : "mensch";
+}
 
 function parseUsername(raw: FormDataEntryValue | null): { value: string | null; error?: string } {
   const value = String(raw ?? "").trim().replace(/^@/, "").toLowerCase();
@@ -30,6 +42,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
   const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
+  const gender = parseGender(formData.get("gender"));
+  const species = parseSpecies(formData.get("species"));
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -60,6 +74,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       ...(username.value ? { username: username.value } : {}),
       bio: bio || null,
       house: house || null,
+      gender,
+      species,
       avatar_url: avatarUrl || null,
       sheet_url: sheetUrl || null,
     })
@@ -91,6 +107,8 @@ export async function updateCharacter(
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
   const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
+  const gender = parseGender(formData.get("gender"));
+  const species = parseSpecies(formData.get("species"));
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -118,6 +136,8 @@ export async function updateCharacter(
       theme_bg: themeBg || null,
       bio: bio || null,
       house: house || null,
+      gender,
+      species,
       avatar_url: avatarUrl || null,
       sheet_url: sheetUrl || null,
     })
