@@ -481,6 +481,7 @@ export async function createDiceRoll(
   formData: FormData,
 ) {
   const label = String(formData.get("label") ?? "").trim();
+  const statName = String(formData.get("stat_name") ?? "").trim().slice(0, 60) || null;
   const value = Number(formData.get("value"));
   const die = Number(formData.get("die"));
   const targetCharacterId = String(formData.get("target_character_id") ?? "").trim() || null;
@@ -515,6 +516,7 @@ export async function createDiceRoll(
     character_id: characterId,
     content: `würfelt auf „${label}“: ${result}/${value} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`,
     roll_label: label,
+    roll_stat_name: statName,
     roll_value: value,
     roll_die: die,
     roll_result: result,

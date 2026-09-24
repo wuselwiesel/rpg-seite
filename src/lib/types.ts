@@ -43,9 +43,14 @@ export type Character = {
   sheet_url: string | null;
   gender?: CharacterGender | null;
   species?: CharacterSpecies;
+  relationship_status?: CharacterRelationshipStatus | null;
+  partner_character_id?: string | null;
+  best_friend_character_id?: string | null;
   created_at: string;
   worlds?: { name: string } | null;
 };
+
+export type CharacterRelationshipStatus = "single" | "beziehung" | "kompliziert" | "verheiratet";
 
 export type Post = {
   id: string;
@@ -126,6 +131,9 @@ export type StoryEntry = {
   updated_at?: string | null;
   characters: Character | null;
   roll_label?: string | null;
+  // Welcher Wert/Skill vom Charakterbogen gewürfelt wurde (z.B. "Überzeugen/Manipulieren") -
+  // getrennt vom frei formulierten roll_label, damit beides erhalten bleibt.
+  roll_stat_name?: string | null;
   roll_value?: number | null;
   roll_die?: number | null;
   roll_result?: number | null;

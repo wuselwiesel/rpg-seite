@@ -155,6 +155,7 @@ export function StoryEntryItem({
             <Dices className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
             <span className="text-fg-soft">
               würfelt auf <span className="font-medium text-fg">„{entry.roll_label}“</span>
+              {entry.roll_stat_name && <span className="text-muted"> ({entry.roll_stat_name})</span>}
               {entry.roll_target_character?.name && (
                 <>
                   {" "}

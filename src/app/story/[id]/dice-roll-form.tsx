@@ -25,6 +25,7 @@ export function DiceRollForm({
   const action = createDiceRoll.bind(null, storyPostId, worldId);
   const [error, formAction, pending] = useActionState(action, null);
   const [label, setLabel] = useState("");
+  const [statName, setStatName] = useState("");
   const [value, setValue] = useState("");
   const [target, setTarget] = useState("");
   const [statOptions, setStatOptions] = useState<StatOption[]>([]);
@@ -51,6 +52,7 @@ export function DiceRollForm({
   useEffect(() => {
     if (wasPending.current && !pending && !error) {
       setLabel("");
+      setStatName("");
       setValue("");
       setTarget("");
     }
@@ -82,6 +84,7 @@ export function DiceRollForm({
               const opt = statOptions.find((o) => o.name === e.target.value);
               if (!opt) return;
               setValue(String(opt.value));
+              setStatName(opt.name);
               setLabel((current) => current || opt.name);
             }}
             className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
@@ -96,6 +99,22 @@ export function DiceRollForm({
             ))}
           </select>
         </label>
+      )}
+
+      {statName && (
+        <input type="hidden" name="stat_name" value={statName} />
+      )}
+      {statName && (
+        <p className="-mt-1 flex items-center gap-1.5 text-xs text-muted">
+          Wert: <span className="font-medium text-fg-soft">{statName}</span>
+          <button
+            type="button"
+            onClick={() => setStatName("")}
+            className="text-muted underline decoration-dotted hover:text-fg"
+          >
+            entfernen
+          </button>
+        </p>
       )}
 
       <div className="flex gap-3">
