@@ -42,6 +42,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#a6646b",
+  // Ohne "cover" bleibt env(safe-area-inset-bottom) wirkungslos (0) und die untere Leiste
+  // sitzt beim Scrollen nicht bündig am echten Bildschirmrand, sondern wirkt "hochgerutscht".
+  viewportFit: "cover",
 };
 
 const themeInitScript = `
