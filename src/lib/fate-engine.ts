@@ -106,7 +106,8 @@ function tryAssign(
 }
 
 export function rollFate(
-  ownPool: CharacterMeta[],
+  // Kandidaten für Charakter 1 - im "pool"-Modus je nach Profil-Filter auch fremde Charaktere.
+  char1Pool: CharacterMeta[],
   targetPool: CharacterMeta[],
   char1Config: Char1Config,
   slots: SlotConfig[],
@@ -128,8 +129,10 @@ export function rollFate(
 
   const char1Candidates =
     char1Config.mode === "specific"
-      ? ownPool.filter((c) => c.id === char1Config.characterId)
-      : ownPool.filter((c) => genderMatchesFilter(c, char1Config.gender));
+      ? char1Pool.filter((c) => c.id === char1Config.characterId)
+      : char1Pool.filter(
+          (c) => genderMatchesFilter(c, char1Config.gender) && ownerMatchesFilter(c, char1Config.ownerId),
+        );
   if (char1Candidates.length === 0) return { error: "Kein Charakter passt zu dieser Auswahl für Charakter 1." };
 
   for (const fate of shuffle(eligible)) {

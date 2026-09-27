@@ -37,6 +37,7 @@ export default async function SchicksalPage() {
       const characters = mentionable.map((c) => ({
         id: c.id,
         name: c.name,
+        ownerId: c.owner_id,
         ownerLabel: c.owner_id === user.id ? "Ich" : (friendLabel.get(c.owner_id) ?? "Unbekannt"),
       }));
       return { world: { id: world.id, name: world.name, owners }, characters };

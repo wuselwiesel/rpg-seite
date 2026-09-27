@@ -71,7 +71,7 @@ export type CharacterMeta = {
 
 export type Char1Config =
   | { mode: "specific"; characterId: string }
-  | { mode: "pool"; gender: GenderFilter };
+  | { mode: "pool"; gender: GenderFilter; ownerId: OwnerFilter };
 
 // Jeder Zusatz-Charakter hat eine eigene Welt (Standard: die aktive Welt), aus der
 // seine Charaktere/Person stammen - eine Freundin kann in mehreren Welten sein.

@@ -66,15 +66,16 @@ export async function previewFateAction(
     if (!myWorldIds.has(slot.worldId)) return { error: "Ungültige Welt ausgewählt." };
   }
 
-  const [ownCharacters, ...slotMentionable] = await Promise.all([
+  const [ownCharacters, activeWorldMentionable, ...slotMentionable] = await Promise.all([
     getOwnCharacters(user.id, activeWorld.id),
+    getMentionableCharacters(user.id, activeWorld.id),
     ...Array.from(new Set(slots.map((s) => s.worldId))).map((worldId) => getMentionableCharacters(user.id, worldId)),
   ]);
   if (ownCharacters.length === 0) return { error: "Du brauchst zuerst einen Charakter in dieser Welt." };
 
-  // Charakter 1: normalerweise einer der eigenen. Bei "Bestimmter Charakter" darf es auch ein
-  // fremder Charakter (anderer Account, auch aus einer anderen Welt) sein - die Szene wird dann
-  // als Erzähler:in gepostet (postFateResultAction), die eigene Autorenschaft bleibt technisch nötig.
+  // Charakter 1: im "pool"-Modus per Profil-Filter auch Freund:innen-Charaktere der aktiven Welt
+  // möglich. Bei "Bestimmter Charakter" darf es auch ein fremder Charakter (anderer Account, auch
+  // aus einer anderen Welt) sein - die Szene wird dann als Erzähler:in gepostet (postFateResultAction).
   let char1Pool: CharacterMeta[];
   if (char1Config.mode === "specific") {
     const own = ownCharacters.find((c) => c.id === char1Config.characterId);
@@ -87,7 +88,7 @@ export async function previewFateAction(
       char1Pool = [toMeta(found)];
     }
   } else {
-    char1Pool = ownCharacters.map(toMeta);
+    char1Pool = activeWorldMentionable.map(toMeta);
   }
 
   const targetPool = slotMentionable.flat().map(toMeta);

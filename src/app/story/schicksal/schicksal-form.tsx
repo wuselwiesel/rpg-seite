@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skull, X } from "lucide-react";
 import { previewFateAction, postFateResultAction, type FatePreview } from "./actions";
 import type { Character } from "@/lib/types";
 import { ALL_TAGS } from "@/lib/fate-data";
 import { FATE_CATEGORIES, SEVERITY_ORDER } from "@/lib/fate-types";
-import type { Char1Config, FateCategory, FateSeverity, GenderFilter, SlotConfig } from "@/lib/fate-types";
+import type { Char1Config, FateCategory, FateSeverity, GenderFilter, OwnerFilter, SlotConfig } from "@/lib/fate-types";
 
 export type WorldOption = {
   id: string;
@@ -139,7 +139,7 @@ function SeveritySelect({
   );
 }
 
-export type CharacterOption = { id: string; name: string; ownerLabel: string };
+export type CharacterOption = { id: string; name: string; ownerId: string; ownerLabel: string };
 export type WorldCharacterOptions = { worldId: string; worldName: string; characters: CharacterOption[] };
 
 export function SchicksalForm({
@@ -157,6 +157,42 @@ export function SchicksalForm({
   const [char1Mode, setChar1Mode] = useState<"pool" | "specific">("pool");
   const [char1Id, setChar1Id] = useState(ownCharacters[0]?.id ?? "");
   const [char1Gender, setChar1Gender] = useState<GenderFilter>("alle");
+  const [char1Owner, setChar1Owner] = useState<OwnerFilter>("alle");
+
+  // Filter für "Bestimmter Charakter": engt die (nach Welt gruppierte) Auswahlliste ein.
+  const [char1FilterWorld, setChar1FilterWorld] = useState<string>("alle");
+  const [char1FilterOwner, setChar1FilterOwner] = useState<string>("alle");
+
+  const activeWorldOwners = worldOptions.find((w) => w.id === activeWorldId)?.owners ?? [];
+
+  // Alle Besitzer:innen, deren Charaktere irgendwo wählbar sind (für den Profil-Filter bei
+  // "Bestimmter Charakter" - anders als activeWorldOwners nicht auf die aktive Welt beschränkt).
+  const allOwners = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const w of allCharacterOptions) for (const c of w.characters) map.set(c.ownerId, c.ownerLabel);
+    return Array.from(map, ([ownerId, label]) => ({ ownerId, label }));
+  }, [allCharacterOptions]);
+
+  const filteredCharacterOptions = useMemo(
+    () =>
+      allCharacterOptions
+        .filter((w) => char1FilterWorld === "alle" || w.worldId === char1FilterWorld)
+        .map((w) => ({
+          ...w,
+          characters: w.characters.filter((c) => char1FilterOwner === "alle" || c.ownerId === char1FilterOwner),
+        }))
+        .filter((w) => w.characters.length > 0),
+    [allCharacterOptions, char1FilterWorld, char1FilterOwner],
+  );
+
+  // Passt die aktuelle Auswahl nicht mehr zum Filter, automatisch auf den ersten
+  // verfügbaren Charakter wechseln, statt eine unsichtbare Auswahl stehen zu lassen.
+  useEffect(() => {
+    if (char1Mode !== "specific") return;
+    const stillVisible = filteredCharacterOptions.some((w) => w.characters.some((c) => c.id === char1Id));
+    if (!stillVisible) setChar1Id(filteredCharacterOptions[0]?.characters[0]?.id ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredCharacterOptions, char1Mode]);
 
   const [extraEnabled, setExtraEnabled] = useState(false);
   const [slots, setSlots] = useState<SlotConfig[]>([]);
@@ -216,7 +252,9 @@ export function SchicksalForm({
     setError(null);
     try {
       const char1Config: Char1Config =
-        char1Mode === "specific" ? { mode: "specific", characterId: char1Id } : { mode: "pool", gender: char1Gender };
+        char1Mode === "specific"
+          ? { mode: "specific", characterId: char1Id }
+          : { mode: "pool", gender: char1Gender, ownerId: char1Owner };
       const result = await previewFateAction(
         char1Config,
         extraEnabled ? slots : [],
@@ -289,12 +327,20 @@ export function SchicksalForm({
 
         {char1Mode === "specific" ? (
           <>
+            <div className="grid grid-cols-2 gap-3">
+              <WorldSelect
+                worldOptions={[{ id: "alle", name: "Alle Welten", owners: [] }, ...worldOptions]}
+                value={char1FilterWorld}
+                onChange={setChar1FilterWorld}
+              />
+              <ProfilSelect owners={allOwners} value={char1FilterOwner} onChange={setChar1FilterOwner} />
+            </div>
             <select
               value={char1Id}
               onChange={(e) => setChar1Id(e.target.value)}
               className="rounded-md border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
             >
-              {allCharacterOptions.map((w) => (
+              {filteredCharacterOptions.map((w) => (
                 <optgroup key={w.worldId} label={w.worldName}>
                   {w.characters.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -304,6 +350,9 @@ export function SchicksalForm({
                 </optgroup>
               ))}
             </select>
+            {filteredCharacterOptions.length === 0 && (
+              <p className="text-xs text-muted">Kein Charakter passt zu dieser Filterkombination.</p>
+            )}
             {!ownCharacters.some((c) => c.id === char1Id) && (
               <p className="text-xs text-muted">
                 Kein eigener Charakter – die Szene wird als Erzähler:in gepostet (Autor:innenschaft bleibt technisch bei
@@ -312,8 +361,9 @@ export function SchicksalForm({
             )}
           </>
         ) : (
-          <div className="w-1/2 pr-1.5">
+          <div className="grid grid-cols-2 gap-3">
             <GenderSelect value={char1Gender} onChange={setChar1Gender} />
+            <ProfilSelect owners={activeWorldOwners} value={char1Owner} onChange={setChar1Owner} />
           </div>
         )}
       </div>
