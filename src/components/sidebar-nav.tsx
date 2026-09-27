@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, BookOpen, Library, Network, PenLine } from "lucide-react";
+import { House, Search, BookOpen, Library, Network, PenLine, UserRound } from "lucide-react";
 import { getAppMode } from "@/lib/app-mode";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
+import type { Character } from "@/lib/types";
 
 const ICON = "h-[18px] w-[18px] shrink-0";
 
@@ -13,10 +14,12 @@ export function SidebarNav({
   userId,
   myCharacterIds,
   unreadCounts,
+  activeCharacter,
 }: {
   userId: string;
   myCharacterIds: string[];
   unreadCounts: Record<string, number>;
+  activeCharacter: Character | null;
 }) {
   const pathname = usePathname();
   const mode = getAppMode(pathname);
@@ -35,6 +38,11 @@ export function SidebarNav({
           <NavLink href="/characters/relationships" icon={<Network className={ICON} strokeWidth={2} />}>
             Beziehungen
           </NavLink>
+          {activeCharacter && (
+            <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
+              Profil
+            </NavLink>
+          )}
         </nav>
         <Link
           href={inWiki ? "/wiki/new" : "/story/new"}

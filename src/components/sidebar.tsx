@@ -128,6 +128,7 @@ export async function Sidebar() {
         userId={user.id}
         myCharacterIds={myCharacterIds}
         unreadCounts={unreadCounts}
+        activeCharacter={activeCharacter}
       />
       </div>
     </aside>

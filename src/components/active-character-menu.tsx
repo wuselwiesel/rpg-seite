@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { setActiveCharacter } from "@/app/characters/actions";
 import { CharacterAvatar } from "./character-avatar";
@@ -22,6 +22,7 @@ export function ActiveCharacterMenu({
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const pathname = usePathname();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,9 +68,13 @@ export function ActiveCharacterMenu({
                 onClick={() => {
                   setOpen(false);
                   if (c.id === activeCharacter.id) return;
+                  // Steht man gerade auf dem Profil eines eigenen Charakters, soll nach dem
+                  // Wechsel das Profil des neu aktiven Charakters angezeigt werden.
+                  const onOwnProfile = characters.some((own) => pathname === `/characters/${own.id}`);
                   startTransition(async () => {
                     await setActiveCharacter(c.id);
-                    router.refresh();
+                    if (onOwnProfile) router.push(`/characters/${c.id}`);
+                    else router.refresh();
                   });
                 }}
                 className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-surface-2"
