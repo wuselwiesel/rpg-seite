@@ -729,10 +729,11 @@ export async function toggleStoryPostFlag(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  // Beim Fortsetzen ("Abschließen" aufheben) alten Zug löschen, sonst könnte sofort wieder ein
-  // veraltetes "Du bist dran" für jemanden aufblitzen, der vor dem Abschließen dran war.
+  // Beim Abschließen/Fortsetzen immer den Zug löschen: Abgeschlossen heißt niemand ist mehr
+  // dran (die Story-Übersicht berechnet "Du bist dran" rein aus turn_character_id, unabhängig
+  // von locked); beim Fortsetzen verhindert es, dass ein veralteter Zug sofort wieder aufblitzt.
   const update: Record<string, unknown> = { [flag]: value };
-  if (flag === "locked" && !value) {
+  if (flag === "locked") {
     update.turn_character_id = null;
     update.turn_set_at = null;
   }
