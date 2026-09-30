@@ -142,6 +142,9 @@ export type StoryEntry = {
   roll_success?: boolean | null;
   roll_target_character_id?: string | null;
   roll_target_character?: { name: string } | null;
+  // Verbleibende Glückspunkte (aus dem Charakterbogen) für diesen Charakter in dieser Szene,
+  // Stand nach diesem Wurf - null, wenn kein Glück-Wert bekannt/verknüpft ist.
+  roll_luck_remaining?: number | null;
   kind?: "entry" | "narrator" | "chapter";
   chapter_title?: string | null;
   chapter_summary?: string | null;

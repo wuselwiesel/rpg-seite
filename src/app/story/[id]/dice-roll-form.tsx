@@ -1,13 +1,34 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { Dices } from "lucide-react";
-import { createDiceRoll } from "../actions";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { Clover, Dices } from "lucide-react";
+import { createDiceRoll, getLuckPointsRemaining, rerollWithLuck, type DiceRollState } from "../actions";
 import { parseSheetUrl, fetchPublicSheet } from "@/lib/charakterbogen";
 import { getStatOptions, type StatOption } from "@/lib/charakterbogen-stats";
 import type { Character } from "@/lib/types";
 
 const DICE_SIZES = [4, 6, 8, 10, 12, 20, 100];
+const INITIAL_STATE: DiceRollState = { error: null, luckRemaining: null };
+
+type LastRoll = {
+  label: string;
+  statName: string | null;
+  value: number | null;
+  bonus: number;
+  die: number;
+  targetCharacterId: string | null;
+};
+
+function CloverRow({ remaining }: { remaining: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" title={`${remaining} Glückspunkt${remaining === 1 ? "" : "e"} übrig`}>
+      {Array.from({ length: remaining }, (_, i) => (
+        <Clover key={i} className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
+      ))}
+      {remaining === 0 && <span className="text-xs text-muted">0</span>}
+    </span>
+  );
+}
 
 export function DiceRollForm({
   storyPostId,
@@ -23,14 +44,22 @@ export function DiceRollForm({
   writerId: string;
 }) {
   const action = createDiceRoll.bind(null, storyPostId, worldId);
-  const [error, formAction, pending] = useActionState(action, null);
+  const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
   const [label, setLabel] = useState("");
   const [statName, setStatName] = useState("");
   const [value, setValue] = useState("");
   const [bonus, setBonus] = useState("");
+  const [die, setDie] = useState(20);
   const [target, setTarget] = useState("");
   const [statOptions, setStatOptions] = useState<StatOption[]>([]);
   const wasPending = useRef(false);
+
+  const [luckRemaining, setLuckRemaining] = useState<number | null>(null);
+  const [lastRoll, setLastRoll] = useState<LastRoll | null>(null);
+  const [rerolling, startReroll] = useTransition();
+  const [rerollError, setRerollError] = useState<string | null>(null);
+
+  const glueckOption = statOptions.find((o) => o.category === "Attribut" && o.name === "Glück");
 
   useEffect(() => {
     if (!sheetUrl) return;
@@ -50,20 +79,69 @@ export function DiceRollForm({
     };
   }, [sheetUrl]);
 
+  // Vor dem ersten Wurf schon anzeigen, wie viele Glückspunkte in dieser Szene noch übrig sind.
   useEffect(() => {
-    if (wasPending.current && !pending && !error) {
+    if (!glueckOption || glueckOption.value <= 0) {
+      setLuckRemaining(null);
+      return;
+    }
+    let cancelled = false;
+    getLuckPointsRemaining(storyPostId, writerId, glueckOption.value).then((remaining) => {
+      if (!cancelled) setLuckRemaining(remaining);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storyPostId, writerId, glueckOption?.value]);
+
+  useEffect(() => {
+    if (wasPending.current && !pending && !state.error) {
+      setLastRoll({
+        label,
+        statName: statName || null,
+        value: value === "" ? null : Number(value),
+        bonus: bonus === "" ? 0 : Number(bonus),
+        die,
+        targetCharacterId: target || null,
+      });
+      if (state.luckRemaining !== null) setLuckRemaining(state.luckRemaining);
       setLabel("");
       setStatName("");
       setValue("");
       setBonus("");
       setTarget("");
+      setRerollError(null);
     }
     wasPending.current = pending;
-  }, [pending, error]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending, state]);
+
+  function reroll() {
+    if (!lastRoll || !glueckOption) return;
+    setRerollError(null);
+    startReroll(async () => {
+      const result = await rerollWithLuck(storyPostId, worldId, {
+        ...lastRoll,
+        characterId: writerId,
+        luckMax: glueckOption.value,
+      });
+      if (result.error) setRerollError(result.error);
+      if (result.luckRemaining !== null) setLuckRemaining(result.luckRemaining);
+    });
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">
       <input type="hidden" name="character_id" value={writerId} />
+      {glueckOption && glueckOption.value > 0 && <input type="hidden" name="luck_max" value={glueckOption.value} />}
+
+      {luckRemaining !== null && (
+        <p className="flex items-center gap-2 text-xs text-muted">
+          Glückspunkte in dieser Szene: <CloverRow remaining={luckRemaining} />
+        </p>
+      )}
+
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Worauf würfelst du?
         <input
@@ -163,7 +241,8 @@ export function DiceRollForm({
           Würfel
           <select
             name="die"
-            defaultValue={20}
+            value={die}
+            onChange={(e) => setDie(Number(e.target.value))}
             className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
           >
             {DICE_SIZES.map((d) => (
@@ -198,7 +277,7 @@ export function DiceRollForm({
         </label>
       )}
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
 
       <button
         type="submit"
@@ -208,6 +287,21 @@ export function DiceRollForm({
         <Dices className="h-4 w-4" strokeWidth={2} />
         {pending ? "Würfle..." : "Würfeln"}
       </button>
+
+      {lastRoll && glueckOption && luckRemaining !== null && luckRemaining > 0 && (
+        <div className="flex flex-col items-start gap-1 border-t border-line pt-3">
+          <button
+            type="button"
+            onClick={reroll}
+            disabled={rerolling}
+            className="flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-fg disabled:opacity-50"
+          >
+            <Clover className="h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
+            {rerolling ? "Würfle nochmal..." : "Glückspunkt einsetzen: nochmal würfeln"}
+          </button>
+          {rerollError && <p className="text-xs text-red-600 dark:text-red-400">{rerollError}</p>}
+        </div>
+      )}
     </form>
   );
 }

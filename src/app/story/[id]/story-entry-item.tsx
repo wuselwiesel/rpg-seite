@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useActionState } from "react";
-import { Dices, Pencil, Trash2, Type } from "lucide-react";
+import { Clover, Dices, Pencil, Trash2, Type } from "lucide-react";
 import { updateStoryEntry, deleteStoryEntry } from "../actions";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
@@ -189,6 +189,17 @@ export function StoryEntryItem({
                 }`}
               >
                 {entry.roll_success ? "Erfolg" : "Misserfolg"}
+              </span>
+            )}
+            {entry.roll_luck_remaining != null && (
+              <span
+                className="inline-flex items-center gap-0.5"
+                title={`${entry.roll_luck_remaining} Glückspunkt${entry.roll_luck_remaining === 1 ? "" : "e"} übrig`}
+              >
+                {Array.from({ length: entry.roll_luck_remaining }, (_, i) => (
+                  <Clover key={i} className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
+                ))}
+                {entry.roll_luck_remaining === 0 && <span className="text-xs text-muted">0 Glück</span>}
               </span>
             )}
           </div>

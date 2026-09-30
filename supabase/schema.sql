@@ -455,7 +455,8 @@ create table public.story_entries (
   roll_die integer,
   roll_result integer,
   roll_success boolean,
-  roll_target_character_id uuid references public.characters (id) on delete set null
+  roll_target_character_id uuid references public.characters (id) on delete set null,
+  roll_luck_remaining integer
 );
 
 alter table public.story_posts enable row level security;

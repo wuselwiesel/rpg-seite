@@ -91,6 +91,7 @@ export default async function StoryPostDetailPage({
       .maybeSingle(),
   ]);
   const isWorldOwner = world?.created_by === user.id;
+  const isAuthor = myCharacterIds.has(storyPost.character_id);
 
   const chapters = (entries ?? []).filter((e) => e.kind === "chapter");
   const lastChapter = chapters[chapters.length - 1] ?? null;
@@ -151,6 +152,7 @@ export default async function StoryPostDetailPage({
           locked={storyPost.locked}
           archived={storyPost.archived}
           isWorldOwner={isWorldOwner}
+          isAuthor={isAuthor}
           initialBookmarked={!!bookmark}
         />
         <div className="mb-4 flex items-center gap-3">
@@ -291,7 +293,7 @@ export default async function StoryPostDetailPage({
       )}
 
       {storyPost.locked ? (
-        <p className="text-sm text-muted">Diese Szene ist gesperrt – keine neuen Fortsetzungen möglich.</p>
+        <p className="text-sm text-muted">Diese Szene ist abgeschlossen – keine neuen Fortsetzungen möglich.</p>
       ) : (
         <div data-tour="story-composer">
           <StoryComposer

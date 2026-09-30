@@ -12,6 +12,34 @@ import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacterIds, createNotification } from "@/lib/notifications";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+// Zu jedem bei einer Szene angegebenen Ort gibt es automatisch einen leeren Wiki-Eintrag
+// (Kategorie "ort"), den man dann füllen kann - legt nichts doppelt an, Titel-Vergleich
+// ist case-insensitiv.
+async function ensureLocationWikiPage(
+  supabase: SupabaseClient,
+  worldId: string,
+  userId: string,
+  location: string | null,
+) {
+  const title = location?.trim();
+  if (!title) return;
+  const { data: existing } = await supabase
+    .from("wiki_pages")
+    .select("title")
+    .eq("world_id", worldId)
+    .eq("category", "ort");
+  if ((existing ?? []).some((p) => p.title.toLowerCase() === title.toLowerCase())) return;
+  await supabase.from("wiki_pages").insert({
+    world_id: worldId,
+    category: "ort",
+    title,
+    content: "",
+    created_by: userId,
+  });
+}
+
 async function getActiveCharacterInWorld(userId: string, worldId: string) {
   const cookieStore = await cookies();
   const cookieId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value;
@@ -128,11 +156,12 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
       .insert(viewerCharacterIds.map((characterId) => ({ story_post_id: data.id, character_id: characterId })));
   }
 
+  if (location) await ensureLocationWikiPage(supabase, activeWorld.id, user.id, location);
+
   revalidatePath("/story");
+  revalidatePath("/wiki");
   redirect(`/story/${data.id}`);
 }
-
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 // Wer ist als Nächstes dran? Explizit gewählt oder automatisch: die Person, die zuletzt vor der
 // Schreibenden geschrieben hat (Erzähler:in-Beiträge und Kapitel zählen nicht).
@@ -359,17 +388,26 @@ export async function updateStoryMeta(
   inWorldTime: string,
 ): Promise<string | null> {
   const supabase = await createClient();
-  const { error, count } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const trimmedLocation = location.trim().slice(0, 80) || null;
+  const { data, error } = await supabase
     .from("story_posts")
-    .update(
-      { location: location.trim().slice(0, 80) || null, in_world_time: inWorldTime.trim().slice(0, 80) || null },
-      { count: "exact" },
-    )
-    .eq("id", storyPostId);
+    .update({ location: trimmedLocation, in_world_time: inWorldTime.trim().slice(0, 80) || null })
+    .eq("id", storyPostId)
+    .select("world_id")
+    .maybeSingle();
   if (error) return error.message;
-  if (!count) return "Nur die Autor:in der Szene kann Ort und Zeit ändern.";
+  if (!data) return "Nur die Autor:in der Szene kann Ort und Zeit ändern.";
+
+  if (trimmedLocation) await ensureLocationWikiPage(supabase, data.world_id, user.id, trimmedLocation);
+
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
+  revalidatePath("/wiki");
   return null;
 }
 
@@ -474,55 +512,71 @@ export async function deleteStoryEntry(entryId: string, storyPostId: string) {
 
 const ALLOWED_DICE = [4, 6, 8, 10, 12, 20, 100];
 
-export async function createDiceRoll(
+export type DiceRollState = { error: string | null; luckRemaining: number | null };
+
+type RollParams = {
+  characterId: string;
+  label: string;
+  statName: string | null;
+  value: number | null;
+  bonus: number;
+  die: number;
+  targetCharacterId: string | null;
+};
+
+// Für die Anzeige im Würfeln-Formular, bevor überhaupt gewürfelt wurde.
+export async function getLuckPointsRemaining(
   storyPostId: string,
-  worldId: string,
-  _prevState: string | null,
-  formData: FormData,
-) {
-  const label = String(formData.get("label") ?? "").trim();
-  const statName = String(formData.get("stat_name") ?? "").trim().slice(0, 60) || null;
-  const rawValue = String(formData.get("value") ?? "").trim();
-  // Ohne Wert wird nur der reine Würfelwurf angezeigt, ohne Erfolg/Misserfolg-Auswertung.
-  const value = rawValue === "" ? null : Number(rawValue);
-  const rawBonus = String(formData.get("bonus") ?? "").trim();
-  const bonus = rawBonus === "" ? 0 : Number(rawBonus);
-  const die = Number(formData.get("die"));
-  const targetCharacterId = String(formData.get("target_character_id") ?? "").trim() || null;
-
-  if (!label) return "Bitte angeben, worauf du würfelst.";
-  if (value !== null && (!Number.isFinite(value) || value < 1 || value > 999)) return "Ungültiger Wert.";
-  if (!Number.isFinite(bonus) || bonus < -99 || bonus > 99) return "Ungültiger Bonus.";
-  if (!ALLOWED_DICE.includes(die)) return "Ungültiger Würfel.";
-
+  characterId: string,
+  luckMax: number,
+): Promise<number | null> {
+  if (!Number.isFinite(luckMax) || luckMax < 0 || luckMax > 99) return null;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return "Nicht angemeldet.";
+  return getLuckRemaining(supabase, storyPostId, characterId, luckMax);
+}
 
-  const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
-  if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
+// Letzter bekannter Glückspunkte-Stand dieses Charakters in dieser Szene (der jüngste Wurf mit
+// gesetztem roll_luck_remaining) - ohne vorherigen Eintrag gilt der volle Wert aus dem Charakterbogen.
+async function getLuckRemaining(
+  supabase: SupabaseClient,
+  storyPostId: string,
+  characterId: string,
+  luckMax: number,
+): Promise<number> {
+  const { data } = await supabase
+    .from("story_entries")
+    .select("roll_luck_remaining")
+    .eq("story_post_id", storyPostId)
+    .eq("character_id", characterId)
+    .not("roll_luck_remaining", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.roll_luck_remaining ?? luckMax;
+}
 
-  if (targetCharacterId) {
-    const { data: target } = await supabase
-      .from("characters")
-      .select("world_id")
-      .eq("id", targetCharacterId)
-      .maybeSingle();
-    if (!target || target.world_id !== worldId) return "Ungültiges Ziel.";
-  }
-
+// Würfelt, legt den story_entries-Eintrag an und benachrichtigt ein etwaiges Ziel - genutzt sowohl
+// vom normalen Wurf als auch vom Glücks-Reroll (identische Parameter, neuer Zufallswurf).
+async function performDiceRoll(
+  supabase: SupabaseClient,
+  userId: string,
+  storyPostId: string,
+  params: RollParams,
+  luckRemaining: number | null,
+  spentLuck: boolean,
+): Promise<DiceRollState> {
+  const { characterId, label, statName, value, bonus, die, targetCharacterId } = params;
   const result = 1 + Math.floor(Math.random() * die);
   // Bonus/Malus (Erschwernis/Erleichterung) wirkt auf den Zielwert, nicht auf den Wurf selbst -
   // positiver Bonus erleichtert die Probe (höherer Wert = leichter zu unterwürfeln).
   const effectiveValue = value === null ? null : Math.max(1, value + bonus);
   const success = effectiveValue === null ? null : result <= effectiveValue;
 
+  const verb = spentLuck ? "setzt einen Glückspunkt ein und würfelt erneut auf" : "würfelt auf";
   const content =
     value === null
-      ? `würfelt auf „${label}“: ${result} (W${die})`
-      : `würfelt auf „${label}“: ${result}/${effectiveValue}${bonus !== 0 ? ` (${value}${bonus > 0 ? "+" : ""}${bonus})` : ""} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`;
+      ? `${verb} „${label}“: ${result} (W${die})`
+      : `${verb} „${label}“: ${result}/${effectiveValue}${bonus !== 0 ? ` (${value}${bonus > 0 ? "+" : ""}${bonus})` : ""} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`;
 
   const { error } = await supabase.from("story_entries").insert({
     story_post_id: storyPostId,
@@ -536,12 +590,13 @@ export async function createDiceRoll(
     roll_result: result,
     roll_success: success,
     roll_target_character_id: targetCharacterId,
+    roll_luck_remaining: luckRemaining,
   });
 
-  if (error) return error.message;
+  if (error) return { error: error.message, luckRemaining: null };
 
   // Bei einem Wurf auf jemanden gibt es schon die Wurf-Benachrichtigung.
-  await afterWriting(supabase, storyPostId, user.id, characterId, targetCharacterId ?? "", !targetCharacterId);
+  await afterWriting(supabase, storyPostId, userId, characterId, targetCharacterId ?? "", !targetCharacterId);
 
   if (targetCharacterId && targetCharacterId !== characterId) {
     const { data: target } = await supabase
@@ -575,11 +630,94 @@ export async function createDiceRoll(
   }
 
   revalidatePath(`/story/${storyPostId}`);
-  return null;
+  return { error: null, luckRemaining };
 }
 
-// Moderationswerkzeuge für Welt-Owner: Szenen anpinnen/lösen, sperren/
-// entsperren (keine neuen Fortsetzungen mehr) oder archivieren.
+export async function createDiceRoll(
+  storyPostId: string,
+  worldId: string,
+  _prevState: DiceRollState | null,
+  formData: FormData,
+): Promise<DiceRollState> {
+  const label = String(formData.get("label") ?? "").trim();
+  const statName = String(formData.get("stat_name") ?? "").trim().slice(0, 60) || null;
+  const rawValue = String(formData.get("value") ?? "").trim();
+  // Ohne Wert wird nur der reine Würfelwurf angezeigt, ohne Erfolg/Misserfolg-Auswertung.
+  const value = rawValue === "" ? null : Number(rawValue);
+  const rawBonus = String(formData.get("bonus") ?? "").trim();
+  const bonus = rawBonus === "" ? 0 : Number(rawBonus);
+  const die = Number(formData.get("die"));
+  const targetCharacterId = String(formData.get("target_character_id") ?? "").trim() || null;
+  const rawLuckMax = String(formData.get("luck_max") ?? "").trim();
+  const luckMax = rawLuckMax === "" ? null : Number(rawLuckMax);
+
+  if (!label) return { error: "Bitte angeben, worauf du würfelst.", luckRemaining: null };
+  if (value !== null && (!Number.isFinite(value) || value < 1 || value > 999))
+    return { error: "Ungültiger Wert.", luckRemaining: null };
+  if (!Number.isFinite(bonus) || bonus < -99 || bonus > 99) return { error: "Ungültiger Bonus.", luckRemaining: null };
+  if (!ALLOWED_DICE.includes(die)) return { error: "Ungültiger Würfel.", luckRemaining: null };
+  if (luckMax !== null && (!Number.isFinite(luckMax) || luckMax < 0 || luckMax > 99))
+    return { error: "Ungültiger Glückswert.", luckRemaining: null };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet.", luckRemaining: null };
+
+  const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
+  if (!characterId) return { error: "Du brauchst zuerst einen Charakter in dieser Welt.", luckRemaining: null };
+
+  if (targetCharacterId) {
+    const { data: target } = await supabase
+      .from("characters")
+      .select("world_id")
+      .eq("id", targetCharacterId)
+      .maybeSingle();
+    if (!target || target.world_id !== worldId) return { error: "Ungültiges Ziel.", luckRemaining: null };
+  }
+
+  const luckRemaining = luckMax === null ? null : await getLuckRemaining(supabase, storyPostId, characterId, luckMax);
+
+  return performDiceRoll(
+    supabase,
+    user.id,
+    storyPostId,
+    { characterId, label, statName, value, bonus, die, targetCharacterId },
+    luckRemaining,
+    false,
+  );
+}
+
+// Glückspunkt einsetzen: derselbe Wurf (gleicher Wert/Bonus/Würfel/Ziel) wird noch einmal gewürfelt,
+// nur solange in dieser Szene für diesen Charakter noch Glückspunkte übrig sind.
+export async function rerollWithLuck(
+  storyPostId: string,
+  worldId: string,
+  params: RollParams & { luckMax: number },
+): Promise<DiceRollState> {
+  const { luckMax, ...rollParams } = params;
+  if (!Number.isFinite(luckMax) || luckMax < 1 || luckMax > 99) return { error: "Ungültiger Glückswert.", luckRemaining: null };
+  if (!ALLOWED_DICE.includes(rollParams.die)) return { error: "Ungültiger Würfel.", luckRemaining: null };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet.", luckRemaining: null };
+
+  const characterId = await resolveWriter(user.id, worldId, rollParams.characterId);
+  if (!characterId) return { error: "Du brauchst zuerst einen Charakter in dieser Welt.", luckRemaining: null };
+
+  const current = await getLuckRemaining(supabase, storyPostId, characterId, luckMax);
+  if (current <= 0) return { error: "Keine Glückspunkte mehr übrig.", luckRemaining: 0 };
+
+  return performDiceRoll(supabase, user.id, storyPostId, { ...rollParams, characterId }, current - 1, true);
+}
+
+// Anpinnen/Archivieren: Moderationswerkzeuge für Welt-Owner. Sperren/Entsperren ("Abschließen"/
+// "Fortsetzen") darf zusätzlich die Autor:in der Szene selbst (RLS erlaubt das bereits für alle
+// drei Flags, siehe story_posts_update_author) - die Sichtbarkeit der Buttons steuert die UI.
 export async function toggleStoryPostFlag(
   storyPostId: string,
   flag: "pinned" | "locked" | "archived",
@@ -591,9 +729,17 @@ export async function toggleStoryPostFlag(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
+  // Beim Fortsetzen ("Abschließen" aufheben) alten Zug löschen, sonst könnte sofort wieder ein
+  // veraltetes "Du bist dran" für jemanden aufblitzen, der vor dem Abschließen dran war.
+  const update: Record<string, unknown> = { [flag]: value };
+  if (flag === "locked" && !value) {
+    update.turn_character_id = null;
+    update.turn_set_at = null;
+  }
+
   const { error, count } = await supabase
     .from("story_posts")
-    .update({ [flag]: value }, { count: "exact" })
+    .update(update, { count: "exact" })
     .eq("id", storyPostId);
 
   if (error) return error.message;
