@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Network } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getActiveCharacter } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { REL_CATEGORIES } from "@/lib/relationships";
 import type { Character, CharacterRelationship, RelationshipHistoryEntry } from "@/lib/types";
@@ -32,6 +33,8 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
 
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) redirect("/worlds");
+
+  const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
 
   const [{ data: characters }, { data: relationships }, { data: worldRow }, { data: history }] = await Promise.all([
     supabase.from("characters").select("*").eq("world_id", activeWorld.id).order("name").returns<Character[]>(),
@@ -130,7 +133,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
 
       {view === "netz" && (
         <div className="mb-8 rounded-2xl bg-surface-2 p-6">
-          <RelationshipGraph characters={shownChars} relationships={shownRels} />
+          <RelationshipGraph characters={shownChars} relationships={shownRels} initialFocusId={activeCharacter?.id} />
         </div>
       )}
 
