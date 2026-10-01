@@ -72,6 +72,10 @@ export function usePresenceStatus(room: string, me: { characterId: string; name:
     setMyCustom("");
     setMyStatus((cur) => (cur === id ? null : id));
   }, []);
+  const clear = useCallback(() => {
+    setMyCustom("");
+    setMyStatus(null);
+  }, []);
   const setCustom = useCallback((text: string) => {
     setMyCustom(cleanCustom(text));
     setMyStatus(null);
@@ -82,6 +86,7 @@ export function usePresenceStatus(room: string, me: { characterId: string; name:
     myCustom,
     toggle,
     setCustom,
+    clear,
     others: Object.fromEntries(Object.entries(others).filter(([cid]) => cid !== me.characterId)),
   };
 }

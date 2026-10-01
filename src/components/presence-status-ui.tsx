@@ -9,55 +9,74 @@ type Presence = {
   myCustom: string;
   toggle: (id: PresenceStatusId) => void;
   setCustom: (text: string) => void;
+  clear: () => void;
 };
 
 export function StatusPicker({ presence }: { presence: Presence }) {
   const { myStatus, myCustom, toggle, setCustom } = presence;
-  const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [symbols, setSymbols] = useState(false);
 
-  function open() {
-    setDraft(myCustom);
-    setEditing(true);
-  }
-  function save() {
-    setCustom(draft);
-    setEditing(false);
+  const current = myCustom || PRESENCE_STATUSES.find((s) => s.id === myStatus)?.chip || "";
+
+  function close() {
+    setOpen(false);
     setSymbols(false);
+  }
+  function pick(id: PresenceStatusId) {
+    toggle(id);
+    close();
+  }
+  function saveCustom() {
+    setCustom(draft);
+    close();
   }
   function clear() {
     setCustom("");
     setDraft("");
-    setEditing(false);
-    setSymbols(false);
+    close();
   }
-
-  const chip = (active: boolean) =>
-    `rounded-full border px-2.5 py-1 transition ${
-      active ? "border-accent bg-accent/10 text-fg" : "border-line text-muted hover:text-fg-soft"
-    }`;
 
   return (
     <div className="flex flex-col gap-2 text-xs">
-      <div className="flex flex-wrap items-center gap-1.5" aria-label="Status">
-        <span className="text-muted">Status:</span>
-        {PRESENCE_STATUSES.map((s) => (
-          <button key={s.id} type="button" onClick={() => toggle(s.id)} aria-pressed={myStatus === s.id} className={chip(myStatus === s.id)}>
-            {s.chip}
-          </button>
-        ))}
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
-          onClick={() => (editing ? setEditing(false) : open())}
-          aria-pressed={!!myCustom}
-          className={chip(!!myCustom || editing)}
+          onClick={() => {
+            setDraft(myCustom);
+            setOpen((v) => !v);
+          }}
+          aria-expanded={open}
+          className={`rounded-full border px-2.5 py-1 transition ${
+            current ? "border-accent bg-accent/10 text-fg" : "border-line text-muted hover:text-fg-soft"
+          }`}
         >
-          {myCustom ? `✎ ${myCustom}` : "✎ eigener …"}
+          {current ? `Status: ${current}` : "Status setzen"}
         </button>
+        {current && (
+          <button type="button" onClick={clear} aria-label="Status entfernen" className="text-muted hover:text-fg">
+            ✕
+          </button>
+        )}
       </div>
-      {editing && (
+      {open && (
         <div className="flex flex-col gap-2 rounded-xl bg-surface-2 p-2">
+          <div className="flex flex-wrap gap-1.5">
+            {PRESENCE_STATUSES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => pick(s.id)}
+                aria-pressed={myStatus === s.id}
+                className={`rounded-full border px-2.5 py-1 transition ${
+                  myStatus === s.id ? "border-accent bg-accent/10 text-fg" : "border-line text-fg-soft hover:text-fg"
+                }`}
+              >
+                {s.chip}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center gap-1.5">
             <input
               value={draft}
@@ -65,16 +84,24 @@ export function StatusPicker({ presence }: { presence: Presence }) {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  save();
+                  saveCustom();
                 }
               }}
               maxLength={CUSTOM_STATUS_MAX}
-              placeholder="z. B. 🌙 schreibt die nächste Szene …"
+              placeholder="Oder selbst schreiben, z. B. 🌙 liest nach …"
               aria-label="Eigener Status"
               className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-fg"
             />
-            <button type="button" onClick={() => setSymbols((v) => !v)} aria-pressed={symbols} className={chip(symbols)}>
+            <button
+              type="button"
+              onClick={() => setSymbols((v) => !v)}
+              aria-pressed={symbols}
+              className="rounded-full border border-line px-2.5 py-1 text-fg-soft hover:text-fg"
+            >
               ☾ ✦
+            </button>
+            <button type="button" onClick={saveCustom} className="rounded-full bg-accent-strong px-3 py-1 font-medium text-on-accent-strong">
+              Setzen
             </button>
           </div>
           {symbols && (
@@ -83,16 +110,6 @@ export function StatusPicker({ presence }: { presence: Presence }) {
               onClose={() => setSymbols(false)}
             />
           )}
-          <div className="flex justify-end gap-1.5">
-            {myCustom && (
-              <button type="button" onClick={clear} className="rounded-full px-3 py-1 text-muted hover:text-fg">
-                Entfernen
-              </button>
-            )}
-            <button type="button" onClick={save} className="rounded-full bg-accent-strong px-3 py-1 font-medium text-on-accent-strong">
-              Setzen
-            </button>
-          </div>
         </div>
       )}
     </div>
