@@ -23,7 +23,7 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
   let query = supabase
     .from("redaktion_posts")
     .select(
-      "*, author:author_id(id, username, nickname, avatar_url), poll_options:redaktion_poll_options(count), comments:redaktion_comments(count)",
+      "*, author:author_id(id, username, nickname, avatar_url), story_post:story_post_id(id, title), poll_options:redaktion_poll_options(count), comments:redaktion_comments(count)",
     )
     .order("created_at", { ascending: false })
     .limit(50);

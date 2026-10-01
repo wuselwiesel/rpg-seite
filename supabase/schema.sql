@@ -2075,4 +2075,39 @@ create policy "comments_update_own" on public.comments
     or fake_author_id = auth.uid()
   );
 
+-- Redaktion-Beiträge sollen dieselben Beitragsarten wie der normale Feed unterstützen (Text,
+-- Foto/Video mit mehreren Fotos, Verlinkung einer Story) statt nur ein einzelnes Bild.
+alter table public.redaktion_posts rename column image_url to media_url;
+
+alter table public.redaktion_posts
+  add column media_type text check (media_type in ('image', 'video')),
+  add column media_urls text[],
+  add column story_post_id uuid references public.story_posts (id) on delete set null;
+
+-- NPC-Kommentare sollen nicht nur auf eigenen Beiträgen möglich sein, sondern überall dort, wo man
+-- auch "echt" (mit einem Charakter) kommentieren könnte - also auch auf Beiträgen von Freund:innen.
+drop policy "comments_insert_own_character" on public.comments;
+create policy "comments_insert_own_character" on public.comments
+  for insert to authenticated with check (
+    (
+      character_id is not null
+      and exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+      and exists (
+        select 1 from public.posts p
+        join public.characters pc on pc.id = p.character_id
+        where p.id = post_id and (pc.owner_id = auth.uid() or public.is_friend_of(pc.owner_id))
+      )
+    )
+    or
+    (
+      character_id is null
+      and fake_author_id = auth.uid()
+      and exists (
+        select 1 from public.posts p
+        join public.characters pc on pc.id = p.character_id
+        where p.id = post_id and (pc.owner_id = auth.uid() or public.is_friend_of(pc.owner_id))
+      )
+    )
+  );
+
 notify pgrst, 'reload schema';

@@ -2,26 +2,45 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Film, ImageIcon, Plus, Type, X } from "lucide-react";
 import { createRedaktionPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { GifPicker } from "@/components/gif-picker";
+import { ASPECTS, ImageCropper, canCrop } from "@/components/image-cropper";
 import { useDraft } from "@/lib/use-draft";
 import { uploadPostMedia } from "@/lib/upload-media";
 import type { Character } from "@/lib/types";
 
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 20;
+const MAX_PHOTOS = 10;
 
-export function NewRedaktionPostForm({ mentionCharacters }: { mentionCharacters: Character[] }) {
+type Kind = "text" | "image" | "video";
+
+const KINDS: { id: Kind; label: string; icon: typeof Type }[] = [
+  { id: "text", label: "Text", icon: Type },
+  { id: "image", label: "Foto", icon: ImageIcon },
+  { id: "video", label: "Video", icon: Film },
+];
+
+export function NewRedaktionPostForm({
+  mentionCharacters,
+  storyPosts,
+}: {
+  mentionCharacters: Character[];
+  storyPosts: { id: string; title: string }[];
+}) {
   const router = useRouter();
   const [error, formAction, pending] = useActionState(createRedaktionPost, null);
-  const { draft, restored, update, clear } = useDraft("draft:redaktion-new", { content: "" });
+  const { draft, restored, update, clear } = useDraft("draft:redaktion-new", { content: "", caption: "" });
   const wasPending = useRef(false);
 
-  const [imageUrl, setImageUrl] = useState("");
+  const [kind, setKind] = useState<Kind>("text");
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const mediaUrl = mediaUrls[0] ?? "";
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
   const [gifOpen, setGifOpen] = useState(false);
 
   const [pollEnabled, setPollEnabled] = useState(false);
@@ -37,19 +56,40 @@ export function NewRedaktionPostForm({ mentionCharacters }: { mentionCharacters:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending, error]);
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  function switchKind(next: Kind) {
+    if (next === kind) return;
+    setKind(next);
+    setMediaUrls([]);
+    setUploadError(null);
+  }
+
+  async function uploadFiles(files: File[]) {
     setUploading(true);
     setUploadError(null);
-    const result = await uploadPostMedia(file);
-    setUploading(false);
-    if ("error" in result) {
-      setUploadError(result.error);
-      return;
+    const added: string[] = [];
+    for (const file of files) {
+      const result = await uploadPostMedia(file);
+      if ("error" in result) {
+        setUploadError(result.error);
+        break;
+      }
+      added.push(result.url);
     }
-    setImageUrl(result.url);
+    if (added.length) setMediaUrls((prev) => (kind === "image" ? [...prev, ...added] : added));
+    setUploading(false);
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS - (kind === "image" ? mediaUrls.length : 0));
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (kind === "image") {
+      const direct = files.filter((f) => !canCrop(f));
+      setCropQueue(files.filter(canCrop));
+      if (direct.length) void uploadFiles(direct);
+    } else {
+      void uploadFiles(files);
+    }
   }
 
   function updateOption(i: number, value: string) {
@@ -64,6 +104,8 @@ export function NewRedaktionPostForm({ mentionCharacters }: { mentionCharacters:
     setOptions((prev) => (prev.length > MIN_OPTIONS ? prev.filter((_, idx) => idx !== i) : prev));
   }
 
+  const canSubmit = kind === "text" ? true : mediaUrls.length > 0;
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
       <h1 className="mb-4 font-serif text-3xl text-fg">Neuer Redaktions-Beitrag</h1>
@@ -71,71 +113,182 @@ export function NewRedaktionPostForm({ mentionCharacters }: { mentionCharacters:
         Sichtbar für dich und deine Freund:innen - unabhängig von Charakteren und Welten.
       </p>
 
+      <div className="mb-5 flex gap-1 rounded-xl bg-surface-2 p-1" role="tablist" aria-label="Art des Beitrags">
+        {KINDS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={kind === id}
+            onClick={() => switchKind(id)}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              kind === id ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg-soft"
+            }`}
+          >
+            <Icon className="h-4 w-4" strokeWidth={2} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {cropQueue.length > 0 && (
+        <ImageCropper
+          key={cropQueue[0].name + cropQueue.length}
+          file={cropQueue[0]}
+          aspects={[ASPECTS.square, ASPECTS.portrait, ASPECTS.landscape]}
+          title={cropQueue.length > 1 ? `Foto zuschneiden (${cropQueue.length} übrig)` : "Foto zuschneiden"}
+          onCancel={() => setCropQueue([])}
+          onDone={(cropped) => {
+            setCropQueue((q) => q.slice(1));
+            void uploadFiles([cropped]);
+          }}
+        />
+      )}
+
       <form action={formAction} onSubmit={() => clear()} className="flex flex-col gap-4">
-        <input type="hidden" name="image_url" value={imageUrl} />
+        <input type="hidden" name="kind" value={kind} />
+        <input type="hidden" name="media_url" value={mediaUrl} />
+        <input type="hidden" name="media_urls" value={JSON.stringify(kind === "image" ? mediaUrls : [])} />
         <input type="hidden" name="poll_character_mode" value={pollEnabled && characterMode ? "on" : ""} />
         <input type="hidden" name="poll_multi_select" value={pollEnabled ? (multiSelect ? "on" : "") : ""} />
         <input type="hidden" name="poll_show_voters" value={pollEnabled ? (showVoters ? "on" : "") : ""} />
         <input type="hidden" name="poll_closes_at" value={pollEnabled ? closesAt : ""} />
 
-        <div className="flex flex-col gap-1 text-sm text-fg-soft">
-          Inhalt
-          {restored && (
-            <RichTextEditor
-              key="restored"
-              name="content"
-              initialContent={draft.content}
-              onChange={(html) => update({ content: html })}
-              mentionCharacters={mentionCharacters}
-              allowFontSelection
-              placeholder="Was gibt's Neues?"
-            />
-          )}
-        </div>
-
-        {imageUrl ? (
-          <div className="relative w-fit max-w-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageUrl} alt="" className="max-h-[50dvh] max-w-full rounded-lg object-contain" />
-            <button
-              type="button"
-              onClick={() => setImageUrl("")}
-              aria-label="Bild entfernen"
-              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white"
-            >
-              <X className="h-4 w-4" strokeWidth={2} />
-            </button>
+        {kind === "text" ? (
+          <div className="flex flex-col gap-1 text-sm text-fg-soft">
+            Inhalt
+            {restored && (
+              <RichTextEditor
+                key="restored"
+                name="content"
+                initialContent={draft.content}
+                onChange={(html) => update({ content: html })}
+                mentionCharacters={mentionCharacters}
+                allowFontSelection
+                placeholder="Was gibt's Neues?"
+              />
+            )}
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <label className="cursor-pointer rounded-full bg-surface-2 px-3 py-1.5 text-xs font-bold tracking-wide text-fg-soft transition hover:text-fg">
-              {uploading ? "Lädt..." : "Bild hinzufügen"}
-              <input type="file" accept="image/*" onChange={handleFile} className="hidden" disabled={uploading} />
+          <>
+            {mediaUrls.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {kind === "video" ? (
+                  <div className="relative overflow-hidden rounded-xl bg-black">
+                    <video src={mediaUrl} controls playsInline className="max-h-[60dvh] w-full" />
+                    <button
+                      type="button"
+                      onClick={() => setMediaUrls([])}
+                      aria-label="Entfernen"
+                      className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white"
+                    >
+                      <X className="h-5 w-5" strokeWidth={2} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className={mediaUrls.length === 1 ? "flex flex-col" : "grid grid-cols-3 gap-1.5"}>
+                    {mediaUrls.map((url, i) => (
+                      <div
+                        key={url}
+                        className={`relative overflow-hidden rounded-lg bg-surface-2 ${mediaUrls.length === 1 ? "w-fit max-w-full" : "aspect-square"}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={`Foto ${i + 1}`}
+                          className={mediaUrls.length === 1 ? "max-h-[60dvh] max-w-full object-contain" : "h-full w-full object-cover"}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setMediaUrls((prev) => prev.filter((u) => u !== url))}
+                          aria-label={`Foto ${i + 1} entfernen`}
+                          className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
+                        >
+                          <X className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                      </div>
+                    ))}
+                    {mediaUrls.length < MAX_PHOTOS && (
+                      <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-line text-fg-soft transition hover:bg-surface-2">
+                        <Plus className="h-6 w-6" strokeWidth={2} />
+                        <span className="text-xs">{uploading ? "Lädt..." : "Foto"}</span>
+                        <input type="file" accept="image/*" multiple onChange={handleFile} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line bg-surface px-4 py-14 text-center text-fg-soft transition hover:bg-surface-2">
+                {kind === "image" ? <ImageIcon className="h-8 w-8" strokeWidth={1.5} /> : <Film className="h-8 w-8" strokeWidth={1.5} />}
+                <span className="text-sm font-medium">
+                  {uploading ? "Lädt hoch..." : kind === "image" ? "Fotos auswählen" : "Video auswählen"}
+                </span>
+                <span className="text-xs text-muted">{kind === "video" ? "bis 50 MB" : `bis zu ${MAX_PHOTOS} Fotos`}</span>
+                <input
+                  type="file"
+                  accept={kind === "image" ? "image/*" : "video/*"}
+                  multiple={kind === "image"}
+                  onChange={handleFile}
+                  className="hidden"
+                />
+              </label>
+            )}
+            {kind === "image" && mediaUrls.length < MAX_PHOTOS && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setGifOpen((v) => !v)}
+                  aria-expanded={gifOpen}
+                  className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-bold tracking-wide text-fg-soft transition hover:text-fg"
+                >
+                  GIF hinzufügen
+                </button>
+                {gifOpen && (
+                  <div className="absolute left-0 top-full z-30 mt-2 w-full sm:w-auto">
+                    <GifPicker
+                      onPick={(url) => {
+                        setMediaUrls((prev) => [...prev, url].slice(0, MAX_PHOTOS));
+                        setGifOpen(false);
+                      }}
+                      onClose={() => setGifOpen(false)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            {uploadError && <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>}
+            <label className="flex flex-col gap-1 text-sm text-fg-soft">
+              Bildunterschrift (optional)
+              <textarea
+                name="content"
+                value={draft.caption}
+                onChange={(e) => update({ caption: e.target.value })}
+                rows={3}
+                maxLength={2000}
+                className="rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent"
+              />
             </label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setGifOpen((v) => !v)}
-                aria-expanded={gifOpen}
-                className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-bold tracking-wide text-fg-soft transition hover:text-fg"
-              >
-                GIF hinzufügen
-              </button>
-              {gifOpen && (
-                <div className="absolute left-0 top-full z-30 mt-2 w-full sm:w-auto">
-                  <GifPicker
-                    onPick={(url) => {
-                      setImageUrl(url);
-                      setGifOpen(false);
-                    }}
-                    onClose={() => setGifOpen(false)}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+          </>
         )}
-        {uploadError && <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>}
+
+        {storyPosts.length > 0 && (
+          <label className="flex flex-col gap-1 text-sm text-fg-soft">
+            Aus der Story verlinken (optional)
+            <select
+              name="story_post_id"
+              defaultValue=""
+              className="rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent"
+            >
+              <option value="">Keine Verknüpfung</option>
+              {storyPosts.map((sp) => (
+                <option key={sp.id} value={sp.id}>
+                  {sp.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div className="rounded-xl border border-line bg-surface p-3">
           <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-fg">
@@ -236,7 +389,7 @@ export function NewRedaktionPostForm({ mentionCharacters }: { mentionCharacters:
 
         <button
           type="submit"
-          disabled={pending || uploading}
+          disabled={pending || uploading || !canSubmit}
           className="mt-2 self-start rounded-md bg-accent-strong px-5 py-2 font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
         >
           {pending ? "Speichere..." : "Veröffentlichen"}

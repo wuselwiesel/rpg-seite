@@ -57,9 +57,10 @@ export default async function PostDetailPage({
   const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
 
   // Zuletzt benutzte NPC-Profile (Name + Avatar) dieser Account-Inhaberin/dieses -Inhabers,
-  // zur Wiederverwendung beim Erstellen eines neuen NPC-Kommentars - nur für eigene Beiträge relevant.
+  // zur Wiederverwendung beim Erstellen eines neuen NPC-Kommentars - geht auf jedem sichtbaren
+  // Beitrag, nicht nur auf eigenen.
   const recentFakeProfiles: { name: string; avatarUrl: string | null }[] = [];
-  if (isOwnPost) {
+  {
     const { data: fakeRows } = await supabase
       .from("comments")
       .select("fake_name, fake_avatar_url, created_at")
@@ -178,7 +179,6 @@ export default async function PostDetailPage({
         activeCharacter={activeCharacter}
         myCharacterIds={Array.from(myCharacterIds)}
         currentUserId={user.id}
-        isOwnPost={isOwnPost}
         recentFakeProfiles={recentFakeProfiles}
         mentionable={mentionableCharacters}
       />

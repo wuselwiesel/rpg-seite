@@ -10,13 +10,44 @@ import { createNotification } from "@/lib/notifications";
 import { isAllowedGifUrl } from "@/lib/gif";
 import { getAllMentionableCharacters } from "@/lib/redaktion";
 
+function escapeHtml(text: string) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Gleiche Beitragsarten wie im normalen Feed (createPost): Text (volles RichText), Foto (bis zu 10,
+// Bildunterschrift als Klartext) oder Video. Bei Foto/Video ist der Inhalt nur eine Bildunterschrift -
+// dadurch rendert ein reiner Text-Beitrag als einfacher Text (wie bei Reddit/Threads), nicht als
+// Bild-Kachel mit Text, weil das "post-content" direkt ohne Medien-Rahmen angezeigt wird.
 export async function createRedaktionPost(_prevState: string | null, formData: FormData) {
-  const rawContent = String(formData.get("content") ?? "").trim();
-  const content = sanitizePostHtml(rawContent);
-  const imageUrlRaw = String(formData.get("image_url") ?? "").trim();
+  const kind = String(formData.get("kind") ?? "text");
+  const mediaType = kind === "image" || kind === "video" ? kind : null;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const ownStorage = (url: string) => Boolean(supabaseUrl) && url.startsWith(`${supabaseUrl}/storage/`);
-  const imageUrl = imageUrlRaw && (ownStorage(imageUrlRaw) || isAllowedGifUrl(imageUrlRaw)) ? imageUrlRaw : null;
+  const allowedImage = (url: string) => ownStorage(url) || isAllowedGifUrl(url);
+
+  let mediaUrls: string[] = [];
+  if (mediaType === "image") {
+    try {
+      const parsed = JSON.parse(String(formData.get("media_urls") ?? "[]"));
+      if (Array.isArray(parsed)) mediaUrls = parsed.map(String).filter(allowedImage).slice(0, 10);
+    } catch {
+      /* ungültige Liste ignorieren */
+    }
+  } else if (mediaType === "video") {
+    const single = String(formData.get("media_url") ?? "").trim();
+    if (ownStorage(single)) mediaUrls = [single];
+  }
+  if (mediaType && mediaUrls.length === 0) {
+    return mediaType === "video" ? "Bitte wähle ein Video aus." : "Bitte wähle mindestens ein Foto aus.";
+  }
+  const mediaUrl = mediaUrls[0] ?? "";
+
+  const storyPostId = String(formData.get("story_post_id") ?? "").trim() || null;
+
+  const rawContent = String(formData.get("content") ?? "").trim();
+  const content = mediaType
+    ? sanitizePostHtml(rawContent ? `<p>${escapeHtml(rawContent).replace(/\n/g, "<br>")}</p>` : "")
+    : sanitizePostHtml(rawContent);
 
   const pollCharacterMode = formData.get("poll_character_mode") === "on";
   const pollOptionLabels = formData
@@ -26,7 +57,8 @@ export async function createRedaktionPost(_prevState: string | null, formData: F
     .slice(0, 20);
   const hasPoll = pollCharacterMode || pollOptionLabels.length >= 2;
 
-  if (!stripHtml(content) && !imageUrl && !hasPoll) {
+  const hasContent = Boolean(mediaType) || stripHtml(content).length > 0 || content.includes("<img");
+  if (!hasContent && !hasPoll) {
     return "Der Beitrag darf nicht leer sein.";
   }
   if (!pollCharacterMode && pollOptionLabels.length === 1) {
@@ -50,7 +82,10 @@ export async function createRedaktionPost(_prevState: string | null, formData: F
     .insert({
       author_id: user.id,
       content,
-      image_url: imageUrl,
+      media_url: mediaType ? mediaUrl : null,
+      media_type: mediaType,
+      media_urls: mediaType === "image" && mediaUrls.length > 1 ? mediaUrls : null,
+      story_post_id: storyPostId,
       tags: extractHashtags(stripHtml(content)),
       poll_multi_select: hasPoll ? pollMultiSelect : false,
       poll_show_voters: hasPoll ? pollShowVoters : false,

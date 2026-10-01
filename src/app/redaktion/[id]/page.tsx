@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { PostMedia } from "@/components/post-media";
+import { MediaCarousel } from "@/components/media-carousel";
 import { autolinkHtml } from "@/lib/autolink";
 import { timeAgoShort } from "@/lib/format";
 import { DeleteRedaktionPostButton } from "./delete-redaktion-post-button";
@@ -23,7 +27,7 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
 
   const { data: post } = await supabase
     .from("redaktion_posts")
-    .select("*, author:author_id(id, username, nickname, avatar_url)")
+    .select("*, author:author_id(id, username, nickname, avatar_url), story_post:story_post_id(id, title)")
     .eq("id", id)
     .maybeSingle<RedaktionPost>();
   if (!post) notFound();
@@ -68,9 +72,28 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
           {isOwn && <DeleteRedaktionPostButton postId={post.id} />}
         </div>
 
-        {post.image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.image_url} alt="" className="mb-4 max-h-[75vh] w-full rounded-lg bg-black object-contain" />
+        {post.story_post && (
+          <Link
+            href={`/story/${post.story_post.id}`}
+            className="mb-4 flex w-fit max-w-full items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-xs text-fg-soft transition hover:bg-surface-3 hover:text-fg"
+          >
+            <BookOpen className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            <span className="truncate">Aus der Story: {post.story_post.title}</span>
+          </Link>
+        )}
+
+        {post.media_urls && post.media_urls.length > 1 ? (
+          <MediaCarousel urls={post.media_urls} alt="" className="mb-4 overflow-hidden rounded-lg" />
+        ) : (
+          post.media_url &&
+          post.media_type && (
+            <PostMedia
+              url={post.media_url}
+              type={post.media_type}
+              alt=""
+              className="mb-4 max-h-[75vh] w-full rounded-lg bg-black object-contain"
+            />
+          )
         )}
 
         <div className="post-content text-fg-soft" dangerouslySetInnerHTML={{ __html: contentHtml }} />

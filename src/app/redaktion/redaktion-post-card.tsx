@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BarChart3, MessageCircle, Trash2 } from "lucide-react";
+import { BarChart3, BookOpen, MessageCircle, Trash2 } from "lucide-react";
 import { deleteRedaktionPost } from "./actions";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { PostMedia } from "@/components/post-media";
+import { MediaCarousel } from "@/components/media-carousel";
 import { autolinkHtml } from "@/lib/autolink";
 import { stripHtml } from "@/lib/strip-html";
 import { timeAgoShort } from "@/lib/format";
@@ -29,6 +31,7 @@ export function RedaktionPostCard({
   const preview = stripHtml(post.content);
   const contentHtml = autolinkHtml(post.content, { tagHref: "/redaktion" });
   const authorName = post.author?.nickname || post.author?.username || "Unbekannt";
+  const hasMedia = Boolean(post.media_type);
 
   async function handleDelete() {
     if (!confirm("Diesen Beitrag wirklich löschen?")) return;
@@ -62,20 +65,36 @@ export function RedaktionPostCard({
         )}
       </div>
 
-      {post.image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={post.image_url}
-          alt=""
-          className="mb-3 max-h-[420px] w-full rounded-lg bg-surface-2 object-cover"
-        />
+      {post.story_post && (
+        <Link
+          href={`/story/${post.story_post.id}`}
+          className="mb-3 flex w-fit max-w-full items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-xs text-fg-soft transition hover:bg-surface-3 hover:text-fg"
+        >
+          <BookOpen className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+          <span className="truncate">Aus der Story: {post.story_post.title}</span>
+        </Link>
       )}
 
+      {post.media_urls && post.media_urls.length > 1 ? (
+        <MediaCarousel urls={post.media_urls} alt="" className="mb-3 overflow-hidden rounded-lg" />
+      ) : (
+        post.media_url &&
+        post.media_type && (
+          <PostMedia
+            url={post.media_url}
+            type={post.media_type}
+            alt=""
+            className="mb-3 max-h-[420px] w-full rounded-lg bg-black object-contain"
+          />
+        )
+      )}
+
+      {/* Reiner Text-Beitrag rendert als einfacher Text (wie bei Reddit/Threads) - keine Bild-Kachel. */}
       <div
         className="post-content text-[15px] text-fg-soft [&_p]:my-1.5"
         dangerouslySetInnerHTML={{ __html: contentHtml }}
       />
-      {!post.image_url && preview.length > 320 && (
+      {!hasMedia && preview.length > 320 && (
         <Link href={detailHref} className="mt-1 block text-sm font-medium text-fg-soft hover:text-fg">
           Weiterlesen
         </Link>

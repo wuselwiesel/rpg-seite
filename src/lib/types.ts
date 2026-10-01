@@ -282,7 +282,10 @@ export type RedaktionPost = {
   id: string;
   author_id: string;
   content: string;
-  image_url: string | null;
+  media_url: string | null;
+  media_type: "image" | "video" | null;
+  media_urls: string[] | null;
+  story_post_id: string | null;
   tags: string[];
   poll_multi_select: boolean;
   poll_show_voters: boolean;
@@ -291,6 +294,7 @@ export type RedaktionPost = {
   created_at: string;
   updated_at: string | null;
   author?: Pick<Profile, "id" | "username" | "nickname" | "avatar_url"> | null;
+  story_post?: { id: string; title: string } | null;
   poll_options?: RedaktionPollOption[];
   comment_count?: number;
 };

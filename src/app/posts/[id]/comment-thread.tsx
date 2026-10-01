@@ -150,7 +150,6 @@ export function CommentThread({
   activeCharacter,
   myCharacterIds,
   currentUserId,
-  isOwnPost,
   recentFakeProfiles,
   mentionable,
 }: {
@@ -159,8 +158,6 @@ export function CommentThread({
   activeCharacter: Character | null;
   myCharacterIds: string[];
   currentUserId: string;
-  // Nur auf eigenen Beiträgen dürfen NPC-Kommentare erstellt werden.
-  isOwnPost: boolean;
   recentFakeProfiles: { name: string; avatarUrl: string | null }[];
   mentionable: Character[];
 }) {
@@ -266,11 +263,6 @@ export function CommentThread({
         <div className="min-w-0 flex-1">
           <div className="text-sm text-fg">
             <span className="font-semibold">{displayName}</span>{" "}
-            {own && isFake && (
-              <span className="rounded bg-surface-2 px-1 py-0.5 align-middle text-[10px] font-normal text-muted" title="Nur du siehst diese Markierung">
-                NPC
-              </span>
-            )}{" "}
             {editing === c.id ? null : <MentionText text={text} className="inline whitespace-pre-line text-fg-soft" />}
           </div>
           {editing === c.id ? (
@@ -360,18 +352,16 @@ export function CommentThread({
         action={submit}
         className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] -mx-4 flex flex-col gap-2 border-t border-line bg-app px-4 py-3 lg:bottom-0"
       >
-        {isOwnPost && (
-          <button
-            type="button"
-            onClick={() => setFakeMode((v) => !v)}
-            className={`flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
-              fakeMode ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
-            }`}
-          >
-            <UserRoundPlus className="h-3.5 w-3.5" strokeWidth={2} />
-            {fakeMode ? "NPC-Modus aktiv" : "Als NPC kommentieren"}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setFakeMode((v) => !v)}
+          className={`flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+            fakeMode ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+          }`}
+        >
+          <UserRoundPlus className="h-3.5 w-3.5" strokeWidth={2} />
+          {fakeMode ? "NPC-Modus aktiv" : "Als NPC kommentieren"}
+        </button>
         {fakeMode && <FakeCommentFields key={resetKey} recentProfiles={recentFakeProfiles} />}
         {replyTo && (
           <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
