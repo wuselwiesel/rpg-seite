@@ -270,3 +270,43 @@ export type Highlight = {
   created_at: string;
   highlight_stories?: { position: number; stories: Story | null }[];
 };
+
+// "Redaktion": Out-of-Character-Posts/Umfragen vom Account selbst (nicht von einem Charakter).
+export type RedaktionPost = {
+  id: string;
+  author_id: string;
+  content: string;
+  image_url: string | null;
+  tags: string[];
+  poll_multi_select: boolean;
+  poll_show_voters: boolean;
+  poll_character_mode: boolean;
+  poll_closes_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+  author?: Pick<Profile, "id" | "username" | "nickname" | "avatar_url"> | null;
+  poll_options?: RedaktionPollOption[];
+  comment_count?: number;
+};
+
+export type RedaktionPollOption = {
+  id: string;
+  post_id: string;
+  label: string;
+  character_id: string | null;
+  position: number;
+  character?: { id: string; name: string; avatar_url: string | null } | null;
+  vote_count?: number;
+  voters?: { id: string; username: string; nickname: string | null }[];
+};
+
+export type RedaktionComment = {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  parent_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+  author?: Pick<Profile, "id" | "username" | "nickname" | "avatar_url"> | null;
+};

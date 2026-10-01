@@ -74,6 +74,7 @@ export function SocialPostCard({
             characterHref={characterHref}
             isOwn={post.characterId === activeCharacterId}
             pinned={Boolean(post.pinned)}
+            createdAt={post.createdAt}
           />
         </div>
 

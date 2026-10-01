@@ -15,6 +15,7 @@ import { CommentThread } from "./comment-thread";
 import { MediaCarousel } from "@/components/media-carousel";
 import { PinPostButton } from "@/components/pin-post-button";
 import { DeletePostButton } from "@/components/delete-post-button";
+import { EditPostDateButton } from "@/components/edit-post-date-button";
 import { SharePostButton } from "@/components/share-post-button";
 import { CharacterThemed } from "@/components/character-themed";
 import Link from "next/link";
@@ -86,6 +87,7 @@ export default async function PostDetailPage({
           </div>
           {isOwnPost && (
             <div className="flex items-start gap-2">
+              <EditPostDateButton postId={post.id} createdAt={post.created_at} />
               <PinPostButton postId={post.id} initialPinned={post.pinned ?? false} />
               <DeletePostButton postId={post.id} />
             </div>

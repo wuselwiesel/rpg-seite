@@ -394,6 +394,31 @@ export async function togglePinPost(postId: string): Promise<string | null> {
   return null;
 }
 
+// Erlaubt, den angezeigten Zeitpunkt eines eigenen Beitrags nachträglich zu verschieben (z.B. um eine
+// glaubwürdige Zeitlinie herzustellen) - unabhängig von publish_at, das nur fürs Vorausplanen gilt.
+export async function updatePostCreatedAt(postId: string, isoDate: string): Promise<string | null> {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "Ungültiges Datum.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  // RLS (posts_update_own) lässt nur eigene Beiträge zu; count zeigt, ob wirklich etwas geändert wurde.
+  const { error, count } = await supabase
+    .from("posts")
+    .update({ created_at: date.toISOString() }, { count: "exact" })
+    .eq("id", postId);
+  if (error) return "Speichern fehlgeschlagen.";
+  if (!count) return "Beitrag nicht gefunden.";
+
+  revalidatePath("/");
+  revalidatePath(`/posts/${postId}`);
+  return null;
+}
+
 export async function deletePost(postId: string): Promise<string | null> {
   const supabase = await createClient();
   const {

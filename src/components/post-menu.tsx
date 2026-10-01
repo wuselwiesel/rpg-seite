@@ -3,23 +3,35 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Ellipsis, ExternalLink, Link2, Pin, Trash2, User } from "lucide-react";
-import { deletePost, togglePinPost } from "@/app/posts/actions";
+import { Clock, Ellipsis, ExternalLink, Link2, Pin, Trash2, User } from "lucide-react";
+import { deletePost, togglePinPost, updatePostCreatedAt } from "@/app/posts/actions";
 
-// "⋯"-Menü im Post-Kopf (wie bei Instagram): öffnen, Profil, Link kopieren; für eigene Beiträge anpinnen/löschen.
+// Lokale Uhrzeit im Format für <input type="datetime-local"> (JJJJ-MM-TTThh:mm).
+function toLocalInputValue(iso: string) {
+  const d = new Date(iso);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+// "⋯"-Menü im Post-Kopf (wie bei Instagram): öffnen, Profil, Link kopieren; für eigene Beiträge
+// anpinnen/löschen/Datum ändern (z.B. um eine glaubwürdige Zeitlinie herzustellen).
 export function PostMenu({
   postId,
   characterHref,
   isOwn,
   pinned,
+  createdAt,
 }: {
   postId: string;
   characterHref: string;
   isOwn: boolean;
   pinned: boolean;
+  createdAt: string;
 }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateValue, setDateValue] = useState(() => toLocalInputValue(createdAt));
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
@@ -27,10 +39,16 @@ export function PostMenu({
   useEffect(() => {
     if (!open) return;
     function onDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setEditingDate(false);
+      }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        setEditingDate(false);
+      }
     }
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
@@ -60,7 +78,10 @@ export function PostMenu({
     <div ref={ref} className="relative shrink-0">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+          setEditingDate(false);
+        }}
         aria-label="Mehr Optionen"
         aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center rounded-full text-fg transition active:scale-90 hover:bg-surface-2"
@@ -72,7 +93,45 @@ export function PostMenu({
           role="menu"
           className="menu-pop absolute right-0 top-full z-30 mt-1 w-56 rounded-2xl border border-line bg-surface p-1.5 shadow-lg"
         >
-          {note ? (
+          {editingDate ? (
+            <div className="flex flex-col gap-2 p-1.5">
+              <input
+                type="datetime-local"
+                value={dateValue}
+                onChange={(e) => setDateValue(e.target.value)}
+                className="rounded-md border border-line bg-app px-2 py-1.5 text-sm text-fg outline-none focus:border-accent"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={pending || !dateValue}
+                  onClick={() =>
+                    startTransition(async () => {
+                      const iso = new Date(dateValue).toISOString();
+                      const err = await updatePostCreatedAt(postId, iso);
+                      if (err) {
+                        setNote(err);
+                        return;
+                      }
+                      setEditingDate(false);
+                      router.refresh();
+                      setOpen(false);
+                    })
+                  }
+                  className="flex-1 rounded-lg bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {pending ? "..." : "Speichern"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingDate(false)}
+                  className="rounded-lg px-3 py-1.5 text-xs text-muted hover:text-fg"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          ) : note ? (
             <p className="px-3 py-2.5 text-sm text-muted" role="status">
               {note}
             </p>
@@ -89,6 +148,16 @@ export function PostMenu({
               </button>
               {isOwn && (
                 <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateValue(toLocalInputValue(createdAt));
+                      setEditingDate(true);
+                    }}
+                    className={item}
+                  >
+                    <Clock className="h-4 w-4 text-muted" strokeWidth={2} /> Datum ändern
+                  </button>
                   <button
                     type="button"
                     disabled={pending}
