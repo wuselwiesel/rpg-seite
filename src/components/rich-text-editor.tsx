@@ -15,6 +15,7 @@ import { resizeImage } from "@/lib/image-resize";
 import { createMentionSuggestion } from "@/lib/mention-suggestion";
 import { SymbolPicker } from "./symbol-picker";
 import { PROFILE_FONTS } from "@/lib/profile-theme";
+import { loadDefaultFontId, saveDefaultFontId } from "@/lib/default-font";
 import type { Character } from "@/lib/types";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -55,6 +56,20 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
+  const [fontsOpen, setFontsOpen] = useState(false);
+  const [defaultFontId, setDefaultFontId] = useState<string | null>(loadDefaultFontId);
+
+  // Ohne Markierung gilt die Wahl als Standard für neuen Text und wird gemerkt;
+  // mit Markierung ändert sie nur den markierten Text.
+  function pickFont(font: (typeof PROFILE_FONTS)[number] | null) {
+    const chain = editor.chain().focus();
+    if (font) chain.setFontFamily(font.family).run();
+    else chain.unsetFontFamily().run();
+    if (editor.state.selection.empty) {
+      saveDefaultFontId(font?.id ?? null);
+      setDefaultFontId(font?.id ?? null);
+    }
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const original = e.target.files?.[0];
@@ -201,25 +216,9 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
         {allowFontSelection && (
           <>
             <span className="mx-1 h-5 w-px bg-line" />
-            <select
-              aria-label="Schriftart für die Auswahl setzen"
-              title="Schriftart für die Auswahl setzen - markiere Text (auch einzelne Wörter/Buchstaben) und wähle eine Schrift"
-              value={PROFILE_FONTS.find((f) => editor.isActive("textStyle", { fontFamily: f.family }))?.id ?? ""}
-              onChange={(e) => {
-                const font = PROFILE_FONTS.find((f) => f.id === e.target.value);
-                if (font) editor.chain().focus().setFontFamily(font.family).run();
-                else editor.chain().focus().unsetFontFamily().run();
-                e.currentTarget.blur();
-              }}
-              className="rounded border border-line bg-surface px-1.5 py-1 text-xs text-fg-soft outline-none focus:border-accent"
-            >
-              <option value="">Schriftart…</option>
-              {PROFILE_FONTS.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
+            <ToolbarButton label="Schriftart wählen" active={fontsOpen} onClick={() => setFontsOpen((v) => !v)}>
+              Aa Schriftart
+            </ToolbarButton>
           </>
         )}
 
@@ -259,6 +258,50 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
           onClose={() => setSymbolsOpen(false)}
         />
       )}
+      {fontsOpen && (
+        <div className="flex flex-col gap-2 rounded-xl bg-surface-2 p-2" role="group" aria-label="Schriftarten">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted">
+              Ohne Markierung: Standard für neuen Text (wird gemerkt). Mit Markierung: nur der markierte Text.
+            </p>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setFontsOpen(false)}
+              className="shrink-0 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface hover:text-fg"
+            >
+              Schließen
+            </button>
+          </div>
+          <div className="grid max-h-56 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pickFont(null)}
+              className={`rounded-lg border px-2.5 py-2 text-left text-sm transition ${
+                !defaultFontId ? "border-accent bg-accent/10 text-fg" : "border-line bg-surface text-fg-soft hover:text-fg"
+              }`}
+            >
+              Standard
+            </button>
+            {PROFILE_FONTS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pickFont(f)}
+                style={{ fontFamily: f.family }}
+                className={`rounded-lg border px-2.5 py-2 text-left text-base transition ${
+                  defaultFontId === f.id ? "border-accent bg-accent/10 text-fg" : "border-line bg-surface text-fg-soft hover:text-fg"
+                }`}
+              >
+                <span className="block truncate">{f.name}</span>
+                <span className="block truncate text-xs opacity-70">Der Mond steigt auf</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <input
         ref={fileInputRef}
@@ -294,6 +337,14 @@ export function RichTextEditor({
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
 
+  // Gemerkte Standard-Schriftart auf neuen, leeren Text anwenden.
+  function applyDefaultFont(ed: Editor) {
+    if (!allowFontSelection || !ed.isEmpty) return;
+    if (ed.state.storedMarks?.some((m) => m.type.name === "textStyle")) return;
+    const font = PROFILE_FONTS.find((f) => f.id === loadDefaultFontId());
+    if (font) ed.commands.setFontFamily(font.family);
+  }
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -319,7 +370,11 @@ export function RichTextEditor({
         style: `min-height: ${minHeight}px`,
       },
     },
+    onCreate: ({ editor }) => applyDefaultFont(editor),
+    onFocus: ({ editor }) => applyDefaultFont(editor),
+    onSelectionUpdate: ({ editor }) => applyDefaultFont(editor),
     onUpdate: ({ editor }) => {
+      applyDefaultFont(editor);
       const nextHtml = editor.getHTML();
       setHtml(nextHtml);
       onChange?.(nextHtml);
