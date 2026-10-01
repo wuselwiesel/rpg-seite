@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useOptimistic, useState } from "react";
 import { Trash2, X } from "lucide-react";
 import { createRedaktionComment, deleteRedaktionComment } from "../actions";
@@ -68,10 +69,14 @@ export function RedaktionCommentThread({
     const name = c.author?.nickname || c.author?.username || "Jemand";
     return (
       <div key={c.id} className="flex gap-3">
-        <CharacterAvatar name={name} avatarUrl={c.author?.avatar_url} size={isReply ? 28 : 36} />
+        <Link href={`/redaktion/profil/${c.author_id}`} className="shrink-0">
+          <CharacterAvatar name={name} avatarUrl={c.author?.avatar_url} size={isReply ? 28 : 36} />
+        </Link>
         <div className="min-w-0 flex-1">
           <div className="text-sm text-fg">
-            <span className="font-semibold">{name}</span>{" "}
+            <Link href={`/redaktion/profil/${c.author_id}`} className="font-semibold hover:underline">
+              {name}
+            </Link>{" "}
             <span className="whitespace-pre-line text-fg-soft">{c.content}</span>
           </div>
           <div className="mt-0.5 flex items-center gap-3 text-xs text-muted">

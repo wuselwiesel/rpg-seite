@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Newspaper, PenLine } from "lucide-react";
+import { Newspaper, PenLine, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { RedaktionPostCard } from "./redaktion-post-card";
 import type { RedaktionPost } from "@/lib/types";
@@ -39,13 +39,22 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
           <Newspaper className="h-7 w-7 text-fg-soft" strokeWidth={1.75} />
           Redaktion
         </h1>
-        <Link
-          href="/redaktion/new"
-          className="flex items-center gap-1.5 rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
-        >
-          <PenLine className="h-4 w-4" strokeWidth={2} />
-          Neu
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/redaktion/profil/${user.id}`}
+            className="flex items-center gap-1.5 rounded-md bg-surface-2 px-4 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-3 hover:text-fg"
+          >
+            <UserRound className="h-4 w-4" strokeWidth={2} />
+            Mein Profil
+          </Link>
+          <Link
+            href="/redaktion/new"
+            className="flex items-center gap-1.5 rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+          >
+            <PenLine className="h-4 w-4" strokeWidth={2} />
+            Neu
+          </Link>
+        </div>
       </div>
       <p className="mb-6 text-sm text-fg-soft">
         Beiträge, Umfragen und Diskussionen vom Account selbst - sichtbar für dich und deine Freund:innen, losgelöst von Charakteren und Welten.

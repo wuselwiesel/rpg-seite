@@ -64,9 +64,13 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
     <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
       <article className="mb-8 rounded-xl border border-line bg-surface p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-3">
-          <CharacterAvatar name={authorName} avatarUrl={post.author?.avatar_url} />
+          <Link href={`/redaktion/profil/${post.author_id}`}>
+            <CharacterAvatar name={authorName} avatarUrl={post.author?.avatar_url} />
+          </Link>
           <div className="min-w-0 flex-1">
-            <p className="font-medium text-fg">{authorName}</p>
+            <Link href={`/redaktion/profil/${post.author_id}`} className="block truncate font-medium text-fg hover:underline">
+              {authorName}
+            </Link>
             <p className="text-xs text-muted">{timeAgoShort(post.created_at)}</p>
           </div>
           {isOwn && <DeleteRedaktionPostButton postId={post.id} />}

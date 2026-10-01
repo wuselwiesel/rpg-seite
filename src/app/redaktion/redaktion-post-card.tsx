@@ -46,10 +46,14 @@ export function RedaktionPostCard({
   return (
     <article className="rounded-xl border border-line bg-surface p-4">
       <div className="mb-3 flex items-center gap-2.5">
-        <CharacterAvatar name={authorName} avatarUrl={post.author?.avatar_url} size={34} />
+        <Link href={`/redaktion/profil/${post.author_id}`} className="shrink-0">
+          <CharacterAvatar name={authorName} avatarUrl={post.author?.avatar_url} size={34} />
+        </Link>
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-sm font-semibold text-fg">{authorName}</p>
-          <time dateTime={post.created_at} className="text-xs text-muted">
+          <Link href={`/redaktion/profil/${post.author_id}`} className="block truncate text-sm font-semibold text-fg hover:underline">
+            {authorName}
+          </Link>
+          <time dateTime={post.created_at} className="block text-xs text-muted">
             {timeAgoShort(post.created_at)}
           </time>
         </div>
