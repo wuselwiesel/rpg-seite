@@ -16,7 +16,7 @@ export function RedaktionPostCard({
   pollOptionCount,
   commentCount,
 }: {
-  post: RedaktionPost;
+  post: Omit<RedaktionPost, "poll_options">;
   isOwn: boolean;
   pollOptionCount: number;
   commentCount: number;
