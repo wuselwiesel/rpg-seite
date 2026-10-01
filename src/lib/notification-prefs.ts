@@ -11,6 +11,7 @@ export type NotificationPrefs = {
   digest_only: boolean;
   muted_world_ids: string[];
   muted_character_ids: string[];
+  muted_notification_types: string[];
 };
 
 export const DEFAULT_PREFS: Omit<NotificationPrefs, "user_id"> = {
@@ -22,6 +23,7 @@ export const DEFAULT_PREFS: Omit<NotificationPrefs, "user_id"> = {
   digest_only: false,
   muted_world_ids: [],
   muted_character_ids: [],
+  muted_notification_types: [],
 };
 
 function minutes(hhmm: string): number {
@@ -47,10 +49,11 @@ export function inQuietHours(prefs: Pick<NotificationPrefs, "dnd_enabled" | "dnd
   return start < end ? now >= start && now < end : now >= start || now < end;
 }
 
-// Soll für diese Empfänger:in gerade KEIN Push rausgehen? (Nicht stören, nur Zusammenfassung, Welt/Charakter stumm)
+// Soll für diese Empfänger:in gerade KEIN Push rausgehen? (Nicht stören, nur Zusammenfassung,
+// Welt/Charakter stumm, oder dieser Benachrichtigungs-Typ ausgeschaltet)
 export async function shouldSuppressPush(
   userId: string,
-  target: { recipientName?: string | null; recipientCharacterId?: string | null },
+  target: { recipientName?: string | null; recipientCharacterId?: string | null; type?: string },
 ): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("get_notification_prefs", { p_user_id: userId });
@@ -58,6 +61,7 @@ export async function shouldSuppressPush(
   if (!prefs) return false;
   if (prefs.digest_only) return true;
   if (inQuietHours(prefs)) return true;
+  if (target.type && prefs.muted_notification_types.includes(target.type)) return true;
   if (prefs.muted_world_ids.length === 0 && prefs.muted_character_ids.length === 0) return false;
 
   let characters: { id: string; world_id: string }[] = [];

@@ -76,6 +76,7 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
             digest_only: prefsRow?.digest_only ?? false,
             muted_world_ids: prefsRow?.muted_world_ids ?? [],
             muted_character_ids: prefsRow?.muted_character_ids ?? [],
+            muted_notification_types: prefsRow?.muted_notification_types ?? [],
           }}
           worlds={Array.from(worldMap.values())}
         />

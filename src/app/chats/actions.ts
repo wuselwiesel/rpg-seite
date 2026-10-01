@@ -9,6 +9,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sendPushToUser } from "@/lib/push";
 import { isAllowedGifUrl } from "@/lib/gif";
 import { mentionedCharacterIds } from "@/lib/mentions";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export async function createChat(_prevState: string | null, formData: FormData) {
   const isGroup = formData.get("is_group") === "on";
@@ -88,6 +89,10 @@ export async function sendMessage(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
+  if (await isRateLimited(supabase, "messages", "character_id", characterId, 10, 30)) {
+    return "Zu viele Nachrichten in kurzer Zeit. Kurz warten und nochmal versuchen.";
+  }
+
   const { error } = await supabase.from("messages").insert({
     ...(options.id ? { id: options.id } : {}),
     chat_id: chatId,
@@ -135,7 +140,7 @@ async function pushToRecipients(chatId: string, characterId: string, content: st
           ? "hat dich in einer Nachricht erwähnt"
           : "hat dir eine Nachricht geschickt",
         url: `/chats/${chatId}?as=${recipientCharacterId}`,
-      }, { recipientCharacterId }),
+      }, { recipientCharacterId, type: "message" }),
     ),
   );
 }

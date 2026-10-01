@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { NOTIFICATION_TYPE_GROUPS } from "@/lib/notification-types";
+
+const VALID_NOTIFICATION_TYPES = new Set(NOTIFICATION_TYPE_GROUPS.flatMap((g) => g.types));
 
 export async function updateProfile(_prevState: string | null, formData: FormData) {
   const username = String(formData.get("username") ?? "").trim();
@@ -52,6 +55,7 @@ export async function saveNotificationPrefs(input: {
   digestOnly: boolean;
   mutedWorldIds: string[];
   mutedCharacterIds: string[];
+  mutedNotificationTypes: string[];
 }): Promise<string | null> {
   const time = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!time.test(input.dndStart) || !time.test(input.dndEnd)) return "Bitte gültige Uhrzeiten angeben.";
@@ -78,6 +82,7 @@ export async function saveNotificationPrefs(input: {
     digest_only: input.digestEnabled && input.digestOnly,
     muted_world_ids: input.mutedWorldIds.filter((id) => uuid.test(id)),
     muted_character_ids: input.mutedCharacterIds.filter((id) => uuid.test(id)),
+    muted_notification_types: input.mutedNotificationTypes.filter((t) => VALID_NOTIFICATION_TYPES.has(t)),
     updated_at: new Date().toISOString(),
   });
   if (error) return error.message;

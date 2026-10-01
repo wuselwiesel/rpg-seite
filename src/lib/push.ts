@@ -20,7 +20,7 @@ function ensureVapidConfigured() {
 export async function sendPushToUser(
   userId: string,
   payload: { title: string; body: string; url: string },
-  target: { recipientName?: string | null; recipientCharacterId?: string | null } = {},
+  target: { recipientName?: string | null; recipientCharacterId?: string | null; type?: string } = {},
 ) {
   if (!ensureVapidConfigured()) return;
   if (await shouldSuppressPush(userId, target)) return;

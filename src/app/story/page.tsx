@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -10,6 +10,10 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import type { StoryArc, StoryPost } from "@/lib/types";
+
+// Szenen pro Seite im Story-Feed - ohne Grenze wuerde die Abfrage mit wachsendem
+// Content immer langsamer werden, weil sie bislang ausnahmslos alle Posts der Welt laed.
+const PAGE_SIZE = 20;
 
 export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const params = await searchParams;
@@ -23,6 +27,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const showArchived = params.archived === "1";
   const bookmarkedOnly = params.bookmarked === "1";
   const compact = params.ansicht === "kompakt";
+  const page = Math.max(1, (typeof params.seite === "string" && Number(params.seite)) || 1);
 
   const supabase = await createClient();
   const {
@@ -39,11 +44,14 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
   let storyQuery = supabase
     .from("story_posts")
-    .select("*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs(name)")
+    .select("*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs(name)", {
+      count: "exact",
+    })
     .eq("world_id", activeWorld.id)
     .eq("archived", showArchived)
     .order("pinned", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
   if (q) {
     const escaped = escapePostgrestValue(q);
@@ -77,7 +85,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.in("turn_character_id", myCharIds.length ? myCharIds : ["00000000-0000-0000-0000-000000000000"]);
   }
 
-  const [{ data: storyPosts }, { data: arcs }, { data: locationRows }, { count: myTurnCount }] = await Promise.all([
+  const [{ data: storyPosts, count: totalCount }, { data: arcs }, { data: locationRows }, { count: myTurnCount }] = await Promise.all([
     storyQuery.returns<StoryPost[]>(),
     supabase
       .from("story_arcs")
@@ -108,6 +116,17 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       for (const v of Array.isArray(value) ? value : [value]) next.append(key, v);
     }
     if (view === "kompakt") next.set("ansicht", "kompakt");
+    const qs = next.toString();
+    return qs ? `/story?${qs}` : "/story";
+  }
+  const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));
+  function pageHref(targetPage: number) {
+    const next = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (key === "seite" || value === undefined) continue;
+      for (const v of Array.isArray(value) ? value : [value]) next.append(key, v);
+    }
+    if (targetPage > 1) next.set("seite", String(targetPage));
     const qs = next.toString();
     return qs ? `/story?${qs}` : "/story";
   }
@@ -323,6 +342,36 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
           </p>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between gap-3">
+          {page > 1 ? (
+            <Link
+              href={pageHref(page - 1)}
+              className="flex items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+              Zurück
+            </Link>
+          ) : (
+            <span />
+          )}
+          <p className="text-sm text-muted">
+            Seite {page} von {totalPages}
+          </p>
+          {page < totalPages ? (
+            <Link
+              href={pageHref(page + 1)}
+              className="flex items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              Weiter
+              <ChevronRight className="h-4 w-4" strokeWidth={2} />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
+      )}
     </div>
   );
 }

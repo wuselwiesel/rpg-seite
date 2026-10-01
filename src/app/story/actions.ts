@@ -11,6 +11,7 @@ import { stripHtml } from "@/lib/strip-html";
 import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacterIds, createNotification } from "@/lib/notifications";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
+import { isRateLimited } from "@/lib/rate-limit";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -249,6 +250,10 @@ export async function createStoryEntry(
 
   const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
   if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
+
+  if (await isRateLimited(supabase, "story_entries", "character_id", characterId, 10, 15)) {
+    return "Zu viele Beiträge in kurzer Zeit. Kurz warten und nochmal versuchen.";
+  }
 
   const { error } = await supabase
     .from("story_entries")
@@ -566,6 +571,11 @@ async function performDiceRoll(
   spentLuck: boolean,
 ): Promise<DiceRollState> {
   const { characterId, label, statName, value, bonus, die, targetCharacterId } = params;
+
+  if (await isRateLimited(supabase, "story_entries", "character_id", characterId, 10, 15)) {
+    return { error: "Zu viele Würfe in kurzer Zeit. Kurz warten und nochmal versuchen.", luckRemaining: null };
+  }
+
   const result = 1 + Math.floor(Math.random() * die);
   // Bonus/Malus (Erschwernis/Erleichterung) wirkt auf den Zielwert, nicht auf den Wurf selbst -
   // positiver Bonus erleichtert die Probe (höherer Wert = leichter zu unterwürfeln).

@@ -1748,6 +1748,7 @@ create table if not exists public.notification_prefs (
   digest_last_sent_at timestamptz,
   muted_world_ids uuid[] not null default '{}',
   muted_character_ids uuid[] not null default '{}',
+  muted_notification_types text[] not null default '{}',
   updated_at timestamptz not null default now()
 );
 
