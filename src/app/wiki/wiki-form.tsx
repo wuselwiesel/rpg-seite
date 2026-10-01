@@ -82,6 +82,7 @@ export function WikiForm({ page }: { page?: WikiPage }) {
             initialContent={isNew ? draft.content : page?.content}
             onChange={isNew ? (html) => update({ content: html }) : undefined}
             placeholder="Beschreibung, Details, Geheimnisse..."
+            allowFontSelection
           />
         )}
       </div>
