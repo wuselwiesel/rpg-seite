@@ -6,7 +6,6 @@ import { CornerUpLeft, Pencil, Play, Trash2 } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { DoubleTapLike } from "@/components/double-tap-like";
 import { ReactionBar } from "@/components/reaction-bar";
-import { PROFILE_FONTS } from "@/lib/profile-theme";
 import { formatDateTime } from "@/lib/format";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { parseMentions, plainMentions } from "@/lib/mentions";
@@ -98,7 +97,8 @@ export function MessageBubble({
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const swipe = useRef<{ x: number; y: number; active: boolean } | null>(null);
-  const font = PROFILE_FONTS.find((f) => f.id === message.characters?.theme_font)?.family;
+  // Nur die Akzentfarbe, nicht die Profil-Schriftart übernehmen - sonst wirkt der Chat
+  // mit vielen Charakteren/Fonts schnell chaotisch, siehe Nutzerfeedback.
   const accent = message.characters?.theme_accent;
 
   function resetRow() {
@@ -146,7 +146,7 @@ export function MessageBubble({
           isOwn ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg"
         }`}
       >
-        <div style={{ fontFamily: font }}>
+        <div>
           {!isOwn && accent && (
             <span aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full" style={{ background: accent }} />
           )}

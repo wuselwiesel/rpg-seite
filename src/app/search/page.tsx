@@ -6,16 +6,26 @@ import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
 import { JoinWorldButton } from "@/app/worlds/join-world-button";
 import { escapePostgrestValue } from "@/lib/postgrest";
-import type { Character, Friendship, Profile, World } from "@/lib/types";
+import { stripHtml } from "@/lib/strip-html";
+import type { Character, Friendship, Profile, StoryPost, WikiPage, World } from "@/lib/types";
 import { AddFriendButton } from "./add-friend-button";
 import { FollowWorldButton } from "./follow-world-button";
 
 type WorldWithCreator = World & { creator: Pick<Profile, "username" | "nickname"> | null };
+type SearchTab = "characters" | "users" | "worlds" | "scenes" | "wiki";
+const TABS: { key: SearchTab; label: string; placeholder: string }[] = [
+  { key: "characters", label: "Charaktere", placeholder: "Name oder @nutzername..." },
+  { key: "users", label: "Nutzer:innen", placeholder: "Benutzername..." },
+  { key: "worlds", label: "Welten", placeholder: "Weltname..." },
+  { key: "scenes", label: "Szenen", placeholder: "Titel, Text oder Ort..." },
+  { key: "wiki", label: "Wiki", placeholder: "Titel oder Text..." },
+];
+const WIKI_CATEGORY_LABELS: Record<string, string> = { ort: "Ort", npc: "NPC", fraktion: "Fraktion", sonstiges: "Sonstiges" };
 
 export default async function SearchPage({ searchParams }: PageProps<"/search">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";
-  const tab = params.tab === "worlds" ? "worlds" : params.tab === "users" ? "users" : "characters";
+  const tab: SearchTab = TABS.some((t) => t.key === params.tab) ? (params.tab as SearchTab) : "characters";
   const isWelcome = params.welcome === "1";
 
   const supabase = await createClient();
@@ -32,6 +42,12 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   let worldResults: WorldWithCreator[] = [];
   const memberWorldIds = new Set<string>();
   const followedWorldIds = new Set<string>();
+
+  let sceneResults: (Pick<StoryPost, "id" | "title" | "content" | "location" | "created_at"> & {
+    characters: { name: string; avatar_url: string | null } | null;
+    worlds: { name: string } | null;
+  })[] = [];
+  let wikiResults: (Pick<WikiPage, "id" | "title" | "content" | "category"> & { worlds: { name: string } | null })[] = [];
 
   if (tab === "characters") {
     if (q) {
@@ -70,6 +86,30 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       friendStatus.set(otherId, { status: f.status, direction });
     }
     userResults = profiles ?? [];
+  } else if (tab === "scenes") {
+    if (q) {
+      const term = escapePostgrestValue(q);
+      const { data } = await supabase
+        .from("story_posts")
+        .select("id, title, content, location, created_at, characters!story_posts_character_id_fkey(name, avatar_url), worlds(name)")
+        .or(`title.ilike.%${term}%,content.ilike.%${term}%,location.ilike.%${term}%`)
+        .order("created_at", { ascending: false })
+        .limit(30)
+        .returns<typeof sceneResults>();
+      sceneResults = data ?? [];
+    }
+  } else if (tab === "wiki") {
+    if (q) {
+      const term = escapePostgrestValue(q);
+      const { data } = await supabase
+        .from("wiki_pages")
+        .select("id, title, content, category, worlds(name)")
+        .or(`title.ilike.%${term}%,content.ilike.%${term}%`)
+        .order("title")
+        .limit(30)
+        .returns<typeof wikiResults>();
+      wikiResults = data ?? [];
+    }
   } else {
     const [{ data: memberships }, { data: follows }, { data: worlds }] = await Promise.all([
       supabase.from("world_members").select("world_id").eq("user_id", user.id),
@@ -140,31 +180,18 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         </div>
       )}
 
-      <div className="mb-4 flex gap-1 rounded-lg bg-surface-2 p-1">
-        <Link
-          href={`/search?tab=characters${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
-          className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
-            tab === "characters" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
-          }`}
-        >
-          Charaktere
-        </Link>
-        <Link
-          href={`/search?tab=users${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
-          className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
-            tab === "users" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
-          }`}
-        >
-          Nutzer:innen
-        </Link>
-        <Link
-          href={`/search?tab=worlds${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
-          className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
-            tab === "worlds" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
-          }`}
-        >
-          Welten
-        </Link>
+      <div className="mb-4 flex gap-1 overflow-x-auto rounded-lg bg-surface-2 p-1">
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            href={`/search?tab=${t.key}${q ? `&q=${encodeURIComponent(q)}` : ""}${isWelcome ? "&welcome=1" : ""}`}
+            className={`shrink-0 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
+              tab === t.key ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
       </div>
 
       <form action="/search" className="mb-8 flex gap-2">
@@ -178,7 +205,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           spellCheck={false}
           enterKeyHint="search"
           defaultValue={q}
-          placeholder={tab === "characters" ? "Name oder @nutzername..." : tab === "users" ? "Benutzername..." : "Weltname..."}
+          placeholder={TABS.find((t) => t.key === tab)?.placeholder}
           className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
         />
         <button
@@ -280,6 +307,50 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
                   <JoinWorldButton worldId={w.id} />
                 </div>
               )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {q && tab === "scenes" && (
+        <ul className="flex flex-col gap-2">
+          {sceneResults.length === 0 && <p className="text-sm text-muted">Keine Szene gefunden.</p>}
+          {sceneResults.map((s) => (
+            <li key={s.id}>
+              <Link
+                href={`/story/${s.id}`}
+                className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-fg">{s.title}</p>
+                  {s.location && <span className="shrink-0 text-xs text-muted">{s.location}</span>}
+                </div>
+                <p className="truncate text-xs text-muted">
+                  {s.characters?.name} · {s.worlds?.name}
+                </p>
+                <p className="line-clamp-2 text-xs text-fg-soft">{stripHtml(s.content)}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {q && tab === "wiki" && (
+        <ul className="flex flex-col gap-2">
+          {wikiResults.length === 0 && <p className="text-sm text-muted">Kein Wiki-Eintrag gefunden.</p>}
+          {wikiResults.map((w) => (
+            <li key={w.id}>
+              <Link
+                href={`/wiki/${w.id}`}
+                className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-fg">{w.title}</p>
+                  <span className="shrink-0 text-xs text-muted">{WIKI_CATEGORY_LABELS[w.category] ?? w.category}</span>
+                </div>
+                <p className="truncate text-xs text-muted">{w.worlds?.name}</p>
+                {w.content && <p className="line-clamp-2 text-xs text-fg-soft">{stripHtml(w.content)}</p>}
+              </Link>
             </li>
           ))}
         </ul>

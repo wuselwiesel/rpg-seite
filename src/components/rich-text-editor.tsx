@@ -8,10 +8,13 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import Mention from "@tiptap/extension-mention";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { FontFamily } from "@tiptap/extension-font-family";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { createMentionSuggestion } from "@/lib/mention-suggestion";
 import { SymbolPicker } from "./symbol-picker";
+import { PROFILE_FONTS } from "@/lib/profile-theme";
 import type { Character } from "@/lib/types";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -47,7 +50,7 @@ function ToolbarButton({
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSelection?: boolean }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -195,6 +198,31 @@ function Toolbar({ editor }: { editor: Editor }) {
           ✦ Symbole
         </ToolbarButton>
 
+        {allowFontSelection && (
+          <>
+            <span className="mx-1 h-5 w-px bg-line" />
+            <select
+              aria-label="Schriftart für die Auswahl setzen"
+              title="Schriftart für die Auswahl setzen - markiere Text (auch einzelne Wörter/Buchstaben) und wähle eine Schrift"
+              value={PROFILE_FONTS.find((f) => editor.isActive("textStyle", { fontFamily: f.family }))?.id ?? ""}
+              onChange={(e) => {
+                const font = PROFILE_FONTS.find((f) => f.id === e.target.value);
+                if (font) editor.chain().focus().setFontFamily(font.family).run();
+                else editor.chain().focus().unsetFontFamily().run();
+                e.currentTarget.blur();
+              }}
+              className="rounded border border-line bg-surface px-1.5 py-1 text-xs text-fg-soft outline-none focus:border-accent"
+            >
+              <option value="">Schriftart…</option>
+              {PROFILE_FONTS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+
         <span className="mx-1 h-5 w-px bg-line" />
 
         <ToolbarButton label="Link" active={editor.isActive("link")} onClick={setLink}>
@@ -251,6 +279,7 @@ export function RichTextEditor({
   mentionCharacters,
   minHeight = 240,
   showToolbar = true,
+  allowFontSelection = false,
 }: {
   name: string;
   initialContent?: string;
@@ -259,6 +288,9 @@ export function RichTextEditor({
   mentionCharacters?: Character[];
   minHeight?: number;
   showToolbar?: boolean;
+  // Schriftart-Auswahl im Toolbar für markierten Text (wort-/buchstabengenau) - bewusst
+  // nur dort aktiviert, wo es angefragt wurde (Feed-Posts), nicht überall, siehe Chat/Story.
+  allowFontSelection?: boolean;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
 
@@ -270,6 +302,7 @@ export function RichTextEditor({
       Link.configure({ openOnClick: false, autolink: true }),
       Image,
       Placeholder.configure({ placeholder: placeholder ?? "Schreib deine Geschichte..." }),
+      ...(allowFontSelection ? [TextStyle, FontFamily] : []),
       ...(mentionCharacters
         ? [
             Mention.configure({
@@ -300,7 +333,7 @@ export function RichTextEditor({
   return (
     <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
-      {editor && showToolbar && <Toolbar editor={editor} />}
+      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} />}
       <EditorContent editor={editor} />
     </div>
   );

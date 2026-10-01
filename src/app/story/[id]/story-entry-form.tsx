@@ -81,6 +81,7 @@ export function StoryEntryForm({
         mentionCharacters={characters}
         minHeight={100}
         showToolbar={showToolbar}
+        allowFontSelection
         placeholder={
           narrator
             ? "Erzähle, was geschieht – als Erzähler:in, ohne Charakter..."

@@ -1,5 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Cormorant_Garamond, Playfair_Display, Lora, Caveat } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Cormorant_Garamond,
+  Playfair_Display,
+  Lora,
+  Caveat,
+  Cinzel,
+  Cinzel_Decorative,
+  MedievalSharp,
+  Metamorphous,
+  Pirata_One,
+  UnifrakturMaguntia,
+  Nosifer,
+  Eagle_Lake,
+  Great_Vibes,
+  Dancing_Script,
+  EB_Garamond,
+  Crimson_Pro,
+  Spectral,
+  Special_Elite,
+  Josefin_Sans,
+  Quicksand,
+  Bebas_Neue,
+  Abril_Fatface,
+  IM_Fell_English,
+} from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { MobileMain } from "@/components/mobile-main";
@@ -29,6 +55,53 @@ const serif = Cormorant_Garamond({
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], preload: false });
 const lora = Lora({ variable: "--font-lora", subsets: ["latin"], preload: false });
 const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], preload: false });
+
+// Große Font-Auswahl für die Profil-/Post-Personalisierung (Charakterprofile + Inline-Schrift
+// in Beiträgen) - bewusst mit preload:false, da pro Nutzung meist nur wenige dieser Schriften
+// tatsächlich gerendert werden und die Datei dann erst nachgeladen wird.
+const cinzel = Cinzel({ variable: "--font-cinzel", subsets: ["latin"], weight: ["400"], preload: false });
+const cinzelDecorative = Cinzel_Decorative({ variable: "--font-cinzel-decorative", subsets: ["latin"], weight: ["400"], preload: false });
+const medievalSharp = MedievalSharp({ variable: "--font-medieval-sharp", subsets: ["latin"], weight: ["400"], preload: false });
+const metamorphous = Metamorphous({ variable: "--font-metamorphous", subsets: ["latin"], weight: ["400"], preload: false });
+const pirataOne = Pirata_One({ variable: "--font-pirata-one", subsets: ["latin"], weight: ["400"], preload: false });
+const unifraktur = UnifrakturMaguntia({ variable: "--font-unifraktur", subsets: ["latin"], weight: ["400"], preload: false });
+const nosifer = Nosifer({ variable: "--font-nosifer", subsets: ["latin"], weight: ["400"], preload: false });
+const eagleLake = Eagle_Lake({ variable: "--font-eagle-lake", subsets: ["latin"], weight: ["400"], preload: false });
+const greatVibes = Great_Vibes({ variable: "--font-great-vibes", subsets: ["latin"], weight: ["400"], preload: false });
+const dancingScript = Dancing_Script({ variable: "--font-dancing-script", subsets: ["latin"], weight: ["400"], preload: false });
+const ebGaramond = EB_Garamond({ variable: "--font-eb-garamond", subsets: ["latin"], weight: ["400"], preload: false });
+const crimsonPro = Crimson_Pro({ variable: "--font-crimson-pro", subsets: ["latin"], weight: ["400"], preload: false });
+const spectral = Spectral({ variable: "--font-spectral", subsets: ["latin"], weight: ["400"], preload: false });
+const specialElite = Special_Elite({ variable: "--font-special-elite", subsets: ["latin"], weight: ["400"], preload: false });
+const josefinSans = Josefin_Sans({ variable: "--font-josefin-sans", subsets: ["latin"], weight: ["400"], preload: false });
+const quicksand = Quicksand({ variable: "--font-quicksand", subsets: ["latin"], weight: ["400"], preload: false });
+const bebasNeue = Bebas_Neue({ variable: "--font-bebas-neue", subsets: ["latin"], weight: ["400"], preload: false });
+const abrilFatface = Abril_Fatface({ variable: "--font-abril-fatface", subsets: ["latin"], weight: ["400"], preload: false });
+const imFellEnglish = IM_Fell_English({ variable: "--font-im-fell-english", subsets: ["latin"], weight: ["400"], preload: false });
+
+const personalizationFontVariables = [
+  cinzel,
+  cinzelDecorative,
+  medievalSharp,
+  metamorphous,
+  pirataOne,
+  unifraktur,
+  nosifer,
+  eagleLake,
+  greatVibes,
+  dancingScript,
+  ebGaramond,
+  crimsonPro,
+  spectral,
+  specialElite,
+  josefinSans,
+  quicksand,
+  bebasNeue,
+  abrilFatface,
+  imFellEnglish,
+]
+  .map((f) => f.variable)
+  .join(" ");
 
 export const metadata: Metadata = {
   title: "Wortwinkel",
@@ -63,7 +136,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} ${playfair.variable} ${lora.variable} ${caveat.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} ${playfair.variable} ${lora.variable} ${caveat.variable} ${personalizationFontVariables} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

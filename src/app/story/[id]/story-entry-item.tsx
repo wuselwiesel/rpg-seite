@@ -121,6 +121,7 @@ export function StoryEntryItem({
               mentionCharacters={mentionCharacters}
               minHeight={80}
               showToolbar={showToolbar}
+              allowFontSelection
             />
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
             <div className="flex items-center gap-2">

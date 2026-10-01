@@ -131,6 +131,7 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
                 name="content"
                 initialContent={draft.content}
                 onChange={(html) => update({ content: html })}
+                allowFontSelection
               />
             )}
           </div>

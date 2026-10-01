@@ -78,6 +78,7 @@ export function NewStoryPostForm({
             initialContent={draft.content}
             placeholder="Erzähl, was gerade passiert..."
             onChange={(html) => update({ content: html })}
+            allowFontSelection
           />
         )}
       </div>

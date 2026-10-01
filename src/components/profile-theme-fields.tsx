@@ -59,7 +59,7 @@ export function ProfileThemeFields({
       <input type="hidden" name="theme_accent" value={accent} />
       <input type="hidden" name="theme_bg" value={bg} />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto pr-1">
         {PROFILE_FONTS.map((f) => (
           <button
             key={f.id}
