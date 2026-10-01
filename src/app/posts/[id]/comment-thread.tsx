@@ -1,13 +1,16 @@
 "use client";
 
 import { useOptimistic, useState, useTransition, useActionState, useEffect, useRef } from "react";
-import { Heart, Pencil, Trash2, X } from "lucide-react";
-import { createComment, deleteComment, toggleLike, updateComment } from "../actions";
+import { Heart, Pencil, Trash2, UserRoundPlus, X } from "lucide-react";
+import { createComment, createFakeComment, deleteComment, toggleLike, updateComment } from "../actions";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { MentionText } from "@/components/mention-text";
 import { MentionTextarea } from "@/components/mention-textarea";
 import { timeAgoShort } from "@/lib/format";
 import type { Character, Comment } from "@/lib/types";
+
+type EditPatch = { content: string; fake_name?: string; fake_avatar_url?: string | null };
 
 function CommentHeart({ commentId, initialLiked, initialCount }: { commentId: string; initialLiked: boolean; initialCount: number }) {
   const [liked, setLiked] = useState(initialLiked);
@@ -34,17 +37,92 @@ function CommentHeart({ commentId, initialLiked, initialCount }: { commentId: st
   );
 }
 
-function EditForm({ comment, postId, onDone }: { comment: Comment; postId: string; onDone: (content?: string) => void }) {
+// Name + Avatar für einen neuen NPC-Kommentar - eigenständige Formularfelder (name="fake_name"/
+// "fake_avatar_url"), damit `submit` sie direkt aus dem FormData lesen kann. Zeigt zuletzt benutzte
+// NPC-Profile zur Wiederverwendung an, damit nicht jedes Mal neu getippt werden muss.
+function FakeCommentFields({ recentProfiles }: { recentProfiles: { name: string; avatarUrl: string | null }[] }) {
+  const [name, setName] = useState("");
+  const [initialAvatar, setInitialAvatar] = useState("");
+  const [avatarKey, setAvatarKey] = useState(0);
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-dashed border-line p-3">
+      {recentProfiles.length > 0 && (
+        <select
+          defaultValue=""
+          onChange={(e) => {
+            const p = recentProfiles[Number(e.target.value)];
+            e.currentTarget.value = "";
+            if (!p) return;
+            setName(p.name);
+            setInitialAvatar(p.avatarUrl ?? "");
+            setAvatarKey((k) => k + 1);
+          }}
+          className="rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-fg-soft outline-none focus:border-accent"
+        >
+          <option value="">Vorheriges NPC-Profil wählen...</option>
+          {recentProfiles.map((p, i) => (
+            <option key={i} value={i}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      )}
+      <div className="flex items-center gap-3">
+        <AvatarUpload key={avatarKey} name="fake_avatar_url" initialUrl={initialAvatar} displayName={name || "NPC"} bucket="avatars" />
+        <input
+          type="text"
+          name="fake_name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name des NPCs"
+          required
+          maxLength={60}
+          className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+        />
+      </div>
+    </div>
+  );
+}
+
+function EditForm({
+  comment,
+  postId,
+  isFake,
+  onDone,
+}: {
+  comment: Comment;
+  postId: string;
+  isFake: boolean;
+  onDone: (patch?: EditPatch) => void;
+}) {
   const [content, setContent] = useState(comment.content);
+  const [name, setName] = useState(comment.fake_name ?? "");
   const [error, formAction, pending] = useActionState(updateComment.bind(null, comment.id, postId), null);
   const wasPending = useRef(false);
   useEffect(() => {
-    if (wasPending.current && !pending && !error) onDone(content);
+    if (wasPending.current && !pending && !error) {
+      onDone(isFake ? { content, fake_name: name, fake_avatar_url: comment.fake_avatar_url } : { content });
+    }
     wasPending.current = pending;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending, error]);
   return (
     <form action={formAction} className="mt-1 flex flex-col gap-2">
+      {isFake && (
+        <div className="flex items-center gap-3">
+          <AvatarUpload name="fake_avatar_url" initialUrl={comment.fake_avatar_url ?? ""} displayName={name || "NPC"} bucket="avatars" />
+          <input
+            type="text"
+            name="fake_name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            maxLength={60}
+            className="flex-1 rounded-md border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+          />
+        </div>
+      )}
       <textarea
         name="content"
         value={content}
@@ -71,22 +149,30 @@ export function CommentThread({
   comments,
   activeCharacter,
   myCharacterIds,
+  currentUserId,
+  isOwnPost,
+  recentFakeProfiles,
   mentionable,
 }: {
   postId: string;
   comments: Comment[];
   activeCharacter: Character | null;
   myCharacterIds: string[];
+  currentUserId: string;
+  // Nur auf eigenen Beiträgen dürfen NPC-Kommentare erstellt werden.
+  isOwnPost: boolean;
+  recentFakeProfiles: { name: string; avatarUrl: string | null }[];
   mentionable: Character[];
 }) {
   const [optimistic, addOptimistic] = useOptimistic(comments, (state, c: Comment) => [...state, c]);
-  const [replyTo, setReplyTo] = useState<{ rootId: string; name: string; characterId: string } | null>(null);
+  const [replyTo, setReplyTo] = useState<{ rootId: string; name: string; characterId: string | null } | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<string | null>(null);
-  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [overrides, setOverrides] = useState<Record<string, EditPatch>>({});
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [fakeMode, setFakeMode] = useState(false);
   const mine = new Set(myCharacterIds);
 
   const visible = optimistic.filter((c) => !removed.has(c.id));
@@ -95,8 +181,40 @@ export function CommentThread({
 
   async function submit(formData: FormData) {
     const content = String(formData.get("content") ?? "").trim();
-    if (!content || !activeCharacter) return;
+    if (!content) return;
     formData.set("parent_id", replyTo?.rootId ?? "");
+
+    if (fakeMode) {
+      const fakeName = String(formData.get("fake_name") ?? "").trim();
+      if (!fakeName) {
+        setError("Name darf nicht leer sein.");
+        return;
+      }
+      const fakeAvatarUrl = String(formData.get("fake_avatar_url") ?? "").trim() || null;
+      addOptimistic({
+        id: `tmp-${crypto.randomUUID()}`,
+        post_id: postId,
+        character_id: null,
+        content,
+        parent_id: replyTo?.rootId ?? null,
+        created_at: new Date().toISOString(),
+        characters: null,
+        fake_author_id: currentUserId,
+        fake_name: fakeName,
+        fake_avatar_url: fakeAvatarUrl,
+        likes: [],
+        pending: true,
+      });
+      if (replyTo) setExpanded((prev) => new Set(prev).add(replyTo.rootId));
+      setResetKey((k) => k + 1);
+      setReplyTo(null);
+      setError(null);
+      const err = await createFakeComment(postId, null, formData);
+      if (err) setError(err);
+      return;
+    }
+
+    if (!activeCharacter) return;
     addOptimistic({
       id: `tmp-${crypto.randomUUID()}`,
       post_id: postId,
@@ -136,22 +254,32 @@ export function CommentThread({
   }
 
   function renderComment(c: Comment, rootId: string, isReply: boolean) {
-    const own = mine.has(c.character_id);
-    const text = overrides[c.id] ?? c.content;
+    const isFake = Boolean(c.fake_author_id);
+    const own = isFake ? c.fake_author_id === currentUserId : c.character_id ? mine.has(c.character_id) : false;
+    const ov = overrides[c.id];
+    const text = ov?.content ?? c.content;
+    const displayName = isFake ? (ov?.fake_name ?? c.fake_name ?? "NPC") : (c.characters?.username ?? c.characters?.name ?? "?");
+    const avatarUrl = isFake ? (ov?.fake_avatar_url ?? c.fake_avatar_url) : c.characters?.avatar_url;
     return (
       <div key={c.id} className={`flex gap-3 ${c.pending ? "opacity-60" : ""}`}>
-        <CharacterAvatar name={c.characters?.name ?? "?"} avatarUrl={c.characters?.avatar_url} size={isReply ? 28 : 36} />
+        <CharacterAvatar name={displayName} avatarUrl={avatarUrl} size={isReply ? 28 : 36} />
         <div className="min-w-0 flex-1">
           <div className="text-sm text-fg">
-            <span className="font-semibold">{c.characters?.username ?? c.characters?.name}</span>{" "}
+            <span className="font-semibold">{displayName}</span>{" "}
+            {own && isFake && (
+              <span className="rounded bg-surface-2 px-1 py-0.5 align-middle text-[10px] font-normal text-muted" title="Nur du siehst diese Markierung">
+                NPC
+              </span>
+            )}{" "}
             {editing === c.id ? null : <MentionText text={text} className="inline whitespace-pre-line text-fg-soft" />}
           </div>
           {editing === c.id ? (
             <EditForm
               comment={{ ...c, content: text }}
               postId={postId}
-              onDone={(content) => {
-                if (content !== undefined) setOverrides((prev) => ({ ...prev, [c.id]: content }));
+              isFake={isFake}
+              onDone={(patch) => {
+                if (patch) setOverrides((prev) => ({ ...prev, [c.id]: patch }));
                 setEditing(null);
               }}
             />
@@ -161,9 +289,7 @@ export function CommentThread({
               {!c.pending && (
                 <button
                   type="button"
-                  onClick={() =>
-                    setReplyTo({ rootId, name: c.characters?.username ?? c.characters?.name ?? "", characterId: c.character_id })
-                  }
+                  onClick={() => setReplyTo({ rootId, name: displayName, characterId: isFake ? null : c.character_id })}
                   className="font-semibold text-muted hover:text-fg"
                 >
                   Antworten
@@ -234,6 +360,19 @@ export function CommentThread({
         action={submit}
         className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] -mx-4 flex flex-col gap-2 border-t border-line bg-app px-4 py-3 lg:bottom-0"
       >
+        {isOwnPost && (
+          <button
+            type="button"
+            onClick={() => setFakeMode((v) => !v)}
+            className={`flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+              fakeMode ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+            }`}
+          >
+            <UserRoundPlus className="h-3.5 w-3.5" strokeWidth={2} />
+            {fakeMode ? "NPC-Modus aktiv" : "Als NPC kommentieren"}
+          </button>
+        )}
+        {fakeMode && <FakeCommentFields key={resetKey} recentProfiles={recentFakeProfiles} />}
         {replyTo && (
           <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
             <span>Antwort an {replyTo.name}</span>
@@ -243,7 +382,7 @@ export function CommentThread({
           </div>
         )}
         <div className="flex items-start gap-3">
-          {activeCharacter && <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={36} />}
+          {!fakeMode && activeCharacter && <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={36} />}
           <div className="min-w-0 flex-1">
             <MentionTextarea
               key={`${resetKey}-${replyTo?.rootId ?? ""}-${replyTo?.characterId ?? ""}`}
@@ -253,9 +392,9 @@ export function CommentThread({
               required
               rows={1}
               autoFocus={Boolean(replyTo)}
-              initialText={replyTo ? `@${replyTo.name.split(/\s+/)[0]} ` : ""}
-              initialMentions={replyTo ? [{ name: replyTo.name.split(/\s+/)[0], id: replyTo.characterId }] : []}
-              placeholder="Kommentieren..."
+              initialText={replyTo?.characterId ? `@${replyTo.name.split(/\s+/)[0]} ` : ""}
+              initialMentions={replyTo?.characterId ? [{ name: replyTo.name.split(/\s+/)[0], id: replyTo.characterId }] : []}
+              placeholder={fakeMode ? "Als NPC kommentieren..." : "Kommentieren..."}
             />
           </div>
           <button

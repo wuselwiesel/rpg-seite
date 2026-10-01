@@ -40,14 +40,14 @@ export function EditPostDateButton({ postId, createdAt }: { postId: string; crea
   }
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <div className="flex w-full min-w-[220px] flex-col items-stretch gap-1.5 sm:w-auto">
+      <input
+        type="datetime-local"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg outline-none focus:border-accent"
+      />
       <div className="flex items-center gap-1.5">
-        <input
-          type="datetime-local"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg outline-none focus:border-accent"
-        />
         <button
           type="button"
           disabled={pending || !value}

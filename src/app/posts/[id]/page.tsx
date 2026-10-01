@@ -12,6 +12,8 @@ import { getWikiTerms } from "@/lib/wiki-terms";
 import { aggregateReactions } from "@/lib/reactions";
 import type { Comment, Post } from "@/lib/types";
 import { CommentThread } from "./comment-thread";
+import { PostBody } from "./post-body";
+import { htmlCaptionToPlainText } from "@/lib/strip-html";
 import { MediaCarousel } from "@/components/media-carousel";
 import { PinPostButton } from "@/components/pin-post-button";
 import { DeletePostButton } from "@/components/delete-post-button";
@@ -53,6 +55,26 @@ export default async function PostDetailPage({
     supabase.from("characters").select("id").eq("owner_id", user.id),
   ]);
   const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
+
+  // Zuletzt benutzte NPC-Profile (Name + Avatar) dieser Account-Inhaberin/dieses -Inhabers,
+  // zur Wiederverwendung beim Erstellen eines neuen NPC-Kommentars - nur für eigene Beiträge relevant.
+  const recentFakeProfiles: { name: string; avatarUrl: string | null }[] = [];
+  if (isOwnPost) {
+    const { data: fakeRows } = await supabase
+      .from("comments")
+      .select("fake_name, fake_avatar_url, created_at")
+      .eq("fake_author_id", user.id)
+      .not("fake_name", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const seen = new Set<string>();
+    for (const row of fakeRows ?? []) {
+      if (!row.fake_name || seen.has(row.fake_name)) continue;
+      seen.add(row.fake_name);
+      recentFakeProfiles.push({ name: row.fake_name, avatarUrl: row.fake_avatar_url });
+      if (recentFakeProfiles.length >= 10) break;
+    }
+  }
   // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
   const activeWorld = await getActiveWorld(user.id);
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
@@ -86,7 +108,7 @@ export default async function PostDetailPage({
             </p>
           </div>
           {isOwnPost && (
-            <div className="flex items-start gap-2">
+            <div className="flex flex-wrap items-start justify-end gap-2">
               <EditPostDateButton postId={post.id} createdAt={post.created_at} />
               <PinPostButton postId={post.id} initialPinned={post.pinned ?? false} />
               <DeletePostButton postId={post.id} />
@@ -128,9 +150,13 @@ export default async function PostDetailPage({
             />
           )
         )}
-        <div
-          className="post-content text-fg-soft"
-          dangerouslySetInnerHTML={{ __html: contentHtml }}
+        <PostBody
+          postId={post.id}
+          contentHtml={contentHtml}
+          rawContent={post.media_type ? htmlCaptionToPlainText(post.content) : post.content}
+          hasMedia={Boolean(post.media_type)}
+          isOwnPost={isOwnPost}
+          mentionable={mentionableCharacters}
         />
         <div className="mt-4">
           <ReactionBar
@@ -151,6 +177,9 @@ export default async function PostDetailPage({
         comments={comments ?? []}
         activeCharacter={activeCharacter}
         myCharacterIds={Array.from(myCharacterIds)}
+        currentUserId={user.id}
+        isOwnPost={isOwnPost}
+        recentFakeProfiles={recentFakeProfiles}
         mentionable={mentionableCharacters}
       />
     </div>

@@ -255,11 +255,50 @@ export async function updateComment(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const { error } = await supabase
-    .from("comments")
-    .update({ content, updated_at: new Date().toISOString() })
-    .eq("id", commentId);
+  const update: { content: string; updated_at: string; fake_name?: string; fake_avatar_url?: string | null } = {
+    content,
+    updated_at: new Date().toISOString(),
+  };
+  // Nur bei NPC-Kommentaren mitgeschickt (siehe FakeCommentFields) - erlaubt, Name/Avatar nachträglich zu ändern.
+  if (formData.has("fake_name")) {
+    const fakeName = String(formData.get("fake_name") ?? "").trim();
+    if (!fakeName) return "Name darf nicht leer sein.";
+    update.fake_name = fakeName;
+    update.fake_avatar_url = String(formData.get("fake_avatar_url") ?? "").trim() || null;
+  }
 
+  const { error } = await supabase.from("comments").update(update).eq("id", commentId);
+
+  if (error) return error.message;
+
+  revalidatePath(`/posts/${postId}`);
+  return null;
+}
+
+// Kommentar von einem frei erfundenen "Profil" (Name + Avatar, kein echter Charakter) - nur auf
+// eigenen Beiträgen möglich (RLS comments_insert_own_character), z.B. um mehr Beteiligung zu simulieren.
+export async function createFakeComment(postId: string, _prevState: string | null, formData: FormData) {
+  const content = String(formData.get("content") ?? "").trim();
+  if (!content) return "Kommentar darf nicht leer sein.";
+  const fakeName = String(formData.get("fake_name") ?? "").trim();
+  if (!fakeName) return "Name darf nicht leer sein.";
+  const fakeAvatarUrl = String(formData.get("fake_avatar_url") ?? "").trim() || null;
+  const parentId = String(formData.get("parent_id") ?? "").trim() || null;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase.from("comments").insert({
+    post_id: postId,
+    fake_author_id: user.id,
+    fake_name: fakeName,
+    fake_avatar_url: fakeAvatarUrl,
+    content,
+    parent_id: parentId,
+  });
   if (error) return error.message;
 
   revalidatePath(`/posts/${postId}`);
@@ -412,6 +451,42 @@ export async function updatePostCreatedAt(postId: string, isoDate: string): Prom
     .update({ created_at: date.toISOString() }, { count: "exact" })
     .eq("id", postId);
   if (error) return "Speichern fehlgeschlagen.";
+  if (!count) return "Beitrag nicht gefunden.";
+
+  revalidatePath("/");
+  revalidatePath(`/posts/${postId}`);
+  return null;
+}
+
+// Erlaubt, Inhalt/Bildunterschrift eines eigenen Beitrags nachträglich zu ändern. Bei Foto-/Video-
+// Beiträgen ist der Inhalt nur eine Bildunterschrift (Klartext), bei reinen Text-Beiträgen die volle
+// formatierte HTML - exakt dieselbe Verarbeitung wie beim Erstellen in createPost.
+export async function updatePostContent(postId: string, _prevState: string | null, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: post } = await supabase.from("posts").select("media_type").eq("id", postId).maybeSingle<{ media_type: string | null }>();
+  if (!post) return "Beitrag nicht gefunden.";
+
+  const rawContent = String(formData.get("content") ?? "").trim();
+  const content = post.media_type
+    ? sanitizePostHtml(rawContent ? `<p>${escapeHtml(rawContent).replace(/\n/g, "<br>")}</p>` : "")
+    : sanitizePostHtml(rawContent);
+
+  const hasContent = Boolean(post.media_type) || stripHtml(content).length > 0 || content.includes("<img");
+  if (!hasContent) return "Der Beitrag darf nicht leer sein.";
+
+  const tags = extractHashtags(stripHtml(content));
+
+  // RLS (posts_update_own) lässt nur eigene Beiträge zu; count zeigt, ob wirklich etwas geändert wurde.
+  const { error, count } = await supabase
+    .from("posts")
+    .update({ content, tags, updated_at: new Date().toISOString() }, { count: "exact" })
+    .eq("id", postId);
+  if (error) return error.message;
   if (!count) return "Beitrag nicht gefunden.";
 
   revalidatePath("/");

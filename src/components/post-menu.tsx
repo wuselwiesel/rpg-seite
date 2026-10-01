@@ -91,7 +91,7 @@ export function PostMenu({
       {open && (
         <div
           role="menu"
-          className="menu-pop absolute right-0 top-full z-30 mt-1 w-56 rounded-2xl border border-line bg-surface p-1.5 shadow-lg"
+          className={`menu-pop absolute right-0 top-full z-30 mt-1 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface p-1.5 shadow-lg ${editingDate ? "w-72" : "w-56"}`}
         >
           {editingDate ? (
             <div className="flex flex-col gap-2 p-1.5">
@@ -99,7 +99,7 @@ export function PostMenu({
                 type="datetime-local"
                 value={dateValue}
                 onChange={(e) => setDateValue(e.target.value)}
-                className="rounded-md border border-line bg-app px-2 py-1.5 text-sm text-fg outline-none focus:border-accent"
+                className="w-full min-w-0 rounded-md border border-line bg-app px-2 py-1.5 text-sm text-fg outline-none focus:border-accent"
               />
               <div className="flex gap-2">
                 <button

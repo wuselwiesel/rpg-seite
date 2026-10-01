@@ -79,7 +79,7 @@ export type Post = {
 export type Comment = {
   id: string;
   post_id: string;
-  character_id: string;
+  character_id: string | null;
   content: string;
   parent_id?: string | null;
   created_at: string;
@@ -87,6 +87,12 @@ export type Comment = {
   characters: Character | null;
   likes?: { character_id: string }[];
   pending?: boolean;
+  // Kommentar von einem frei erfundenen "Profil" statt einem echten Charakter (nur für eigene
+  // Beiträge erstellbar) - für alle außer der Account-Inhaberin/dem -Inhaber nicht von echten zu
+  // unterscheiden.
+  fake_author_id?: string | null;
+  fake_name?: string | null;
+  fake_avatar_url?: string | null;
 };
 
 export type StoryArc = {
