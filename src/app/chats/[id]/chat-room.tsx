@@ -606,7 +606,7 @@ export function ChatRoom({
         className="flex flex-col gap-2 border-t border-line pt-4"
         style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
-        <StatusPicker value={presence.myStatus} onToggle={presence.toggle} />
+        <StatusPicker presence={presence} />
         {replyTo && (
           <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
             <CornerUpLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />

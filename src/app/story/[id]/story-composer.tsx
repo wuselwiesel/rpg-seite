@@ -196,7 +196,7 @@ export function StoryComposer({
       )}
 
       <StatusList others={presence.others} hideIds={Object.keys(typing)} />
-      <StatusPicker value={presence.myStatus} onToggle={presence.toggle} />
+      <StatusPicker presence={presence} />
 
       {mode === "write" ? (
         <StoryEntryForm
