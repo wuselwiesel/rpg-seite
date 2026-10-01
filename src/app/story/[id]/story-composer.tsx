@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
 import { ChapterForm } from "./chapter-form";
+import { usePresenceStatus } from "@/lib/presence-status";
+import { StatusList, StatusPicker } from "@/components/presence-status-ui";
 import { WriterSelect } from "@/components/writer-select";
 import type { Character } from "@/lib/types";
 
@@ -91,6 +93,11 @@ export function StoryComposer({
     }, 1000);
     return () => clearInterval(timer);
   }, [typing]);
+
+  const presence = usePresenceStatus(`story-${storyPostId}`, {
+    characterId: writerId,
+    name: narrator ? "Erzähler:in" : (writer?.name ?? "Jemand"),
+  });
 
   function announceTyping() {
     const now = Date.now();
@@ -187,6 +194,9 @@ export function StoryComposer({
           {Object.values(typing).map((t) => t.name).join(", ")} schreibt…
         </div>
       )}
+
+      <StatusList others={presence.others} hideIds={Object.keys(typing)} />
+      <StatusPicker value={presence.myStatus} onToggle={presence.toggle} />
 
       {mode === "write" ? (
         <StoryEntryForm
