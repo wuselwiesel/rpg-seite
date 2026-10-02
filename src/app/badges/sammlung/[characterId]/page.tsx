@@ -2,12 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AUTO_BADGES, CHARACTER_CATEGORIES } from "@/lib/badges";
 import { characterMetrics, getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/badges-server";
-import { BadgeFilterTabs, BadgeSections, SpecialBadges } from "@/components/badge-sections";
+import { BadgeFilterTabs, BadgeSections, FocusedBadge, SpecialBadges } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
 export default async function CharacterBadgeCollectionPage({ params, searchParams }: PageProps<"/badges/sammlung/[characterId]">) {
   const { characterId } = await params;
   const sp = await searchParams;
+  const focusKey = Array.isArray(sp.badge) ? sp.badge[0] : sp.badge;
   const showAll = (Array.isArray(sp.zeige) ? sp.zeige[0] : sp.zeige) === "alle";
   const supabase = await createClient();
   const {
@@ -45,6 +46,7 @@ export default async function CharacterBadgeCollectionPage({ params, searchParam
         total={defs.length}
         extra={special.length}
       />
+      <FocusedBadge badge={badges.find((b) => b.key === focusKey)} defs={defs} />
       <BadgeFilterTabs basePath={`/badges/sammlung/${character.id}`} showAll={showAll} earned={autoEarned.length + special.length} total={defs.length + special.length} />
       <SpecialBadges badges={special} />
       <BadgeSections defs={defs} categories={CHARACTER_CATEGORIES} earned={autoEarned} metrics={metrics} showAll={showAll} />

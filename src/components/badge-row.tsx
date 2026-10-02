@@ -30,7 +30,7 @@ export function BadgeRow({ badges, collectionHref }: { badges: BadgeView[]; coll
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5">
       {badges.map((b) => (
-        <BadgeChip key={b.awardId} icon={b.icon} name={b.name} description={b.description} color={b.color} href={collectionHref} />
+        <BadgeChip key={b.awardId} icon={b.icon} name={b.name} description={b.description} color={b.color} href={`${collectionHref}?badge=${encodeURIComponent(b.key)}`} />
       ))}
       <Link href={collectionHref} className="ml-1 text-xs text-muted underline decoration-dotted hover:text-fg">
         Sammlung ansehen

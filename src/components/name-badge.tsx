@@ -68,7 +68,8 @@ export function NameBadge({ characterId, userId }: { characterId?: string | null
   const badge = characterId ? cache.characters.get(characterId) : userId ? cache.users.get(userId) : null;
   if (!badge) return null;
   // Klick führt in die Badge-Sammlung der Person.
-  const href = characterId ? `/badges/sammlung/${characterId}` : `/badges/konto/${userId}`;
+  const base = characterId ? `/badges/sammlung/${characterId}` : `/badges/konto/${userId}`;
+  const href = badge.key ? `${base}?badge=${encodeURIComponent(badge.key)}` : base;
   return (
     <Link
       href={href}

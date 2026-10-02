@@ -103,3 +103,24 @@ export function SpecialBadges({ badges }: { badges: BadgeView[] }) {
     </section>
   );
 }
+
+// Das angeklickte Badge zuerst: Beschreibung, Bedeutung und wann es erreicht wurde.
+export function FocusedBadge({ badge, defs }: { badge: BadgeView | undefined; defs: AutoBadgeDef[] }) {
+  if (!badge) return null;
+  const def = defs.find((d) => d.key === badge.key);
+  return (
+    <section className="mb-8" aria-label="Ausgewähltes Badge">
+      <ul>
+        <BadgeCard
+          icon={badge.icon}
+          name={badge.name}
+          description={badge.description || "Ein besonderer Titel aus dieser Welt."}
+          meaning={def?.meaning}
+          color={badge.color}
+          tier={def?.tier}
+          footnote={`${badge.awardedByName ? `Verliehen von ${badge.awardedByName} · ` : "Erhalten am "}${formatDate(badge.awardedAt.slice(0, 10))}`}
+        />
+      </ul>
+    </section>
+  );
+}

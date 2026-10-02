@@ -112,7 +112,7 @@ export async function setFeaturedBadge(
   return null;
 }
 
-export type FeaturedBadge = { icon: string; name: string; color: string };
+export type FeaturedBadge = { key?: string; icon: string; name: string; color: string };
 
 type FeaturedRow = {
   id: string;
@@ -131,9 +131,9 @@ export async function getFeaturedBadges(
   const supabase = await createClient();
   const resolve = (row: FeaturedRow): FeaturedBadge | null => {
     if (!row.featured) return null;
-    if (row.featured.def) return row.featured.def;
+    if (row.featured.def) return { key: row.featured.badge_key, ...row.featured.def };
     const auto = autoBadgeByKey(row.featured.badge_key);
-    return auto ? { icon: auto.icon, name: auto.name, color: auto.color } : null;
+    return auto ? { key: row.featured.badge_key, icon: auto.icon, name: auto.name, color: auto.color } : null;
   };
   const select = "id, featured:featured_badge_id(badge_key, def:def_id(name, icon, color))";
   const [chars, users] = await Promise.all([
