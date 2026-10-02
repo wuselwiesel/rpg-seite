@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { MAX_PROFILE_FIELDS, type ProfileField } from "@/lib/profile-fields";
+import { MAX_PROFILE_FIELDS, cleanFieldIcon, type ProfileField } from "@/lib/profile-fields";
+import { CustomEmojiPicker } from "./custom-emoji-picker";
+import { EmojiText } from "./custom-emoji-provider";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent";
 
@@ -40,6 +42,18 @@ export function ProfileFieldsEditor({ initial }: { initial: ProfileField[] }) {
               aria-label="Symbol"
               className={`w-14 text-center ${field}`}
             />
+            <div className="flex shrink-0 items-center gap-1">
+              <CustomEmojiPicker
+                direction="down"
+                onPick={(token) => update(row.key, { icon: cleanFieldIcon(token) })}
+                className="flex h-full items-center justify-center rounded-md border border-line px-2 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+              />
+              {row.icon.startsWith(":") && (
+                <span className="flex h-6 w-6 items-center justify-center text-lg" aria-hidden>
+                  <EmojiText text={row.icon} />
+                </span>
+              )}
+            </div>
             <input
               name="field_title"
               value={row.title}
