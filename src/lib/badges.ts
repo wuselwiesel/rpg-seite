@@ -375,6 +375,8 @@ export type BadgeView = {
   color: string;
   awardedAt: string;
   awardedByName?: string | null;
+  // Der Verleihende ist ein Charakter (nicht der Account).
+  awardedByCharacter?: boolean;
   defId?: string | null;
   // Vom Besitzer ausgeblendet: nicht im Profil, nicht in der Sammlung anderer, nicht im Verlauf.
   hidden?: boolean;

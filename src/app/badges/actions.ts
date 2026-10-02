@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getActiveCharacter } from "@/lib/active-character";
 import { createNotification } from "@/lib/notifications";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -41,7 +42,8 @@ export async function deleteBadgeDef(defId: string): Promise<string | null> {
   return null;
 }
 
-export async function awardBadge(defId: string, characterId: string): Promise<string | null> {
+// Verleiht ein Welt-Badge. `asCharacterId` = der Charakter, der es verleiht (muss dir gehören); ohne Angabe der aktive.
+export async function awardBadge(defId: string, characterId: string, asCharacterId?: string | null): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -49,24 +51,46 @@ export async function awardBadge(defId: string, characterId: string): Promise<st
   if (!user) return "Nicht angemeldet.";
 
   const [{ data: def }, { data: character }] = await Promise.all([
-    supabase.from("badge_defs").select("name, icon").eq("id", defId).maybeSingle(),
+    supabase.from("badge_defs").select("name, icon, world_id").eq("id", defId).maybeSingle(),
     supabase.from("characters").select("name, owner_id").eq("id", characterId).maybeSingle(),
   ]);
   if (!def || !character) return "Badge oder Charakter nicht gefunden.";
 
-  const { error } = await supabase
+  // Verleihender Charakter: gewählt oder aktiv; muss dem eigenen Account gehören.
+  let awarder: { id: string; name: string; avatar_url: string | null } | null = null;
+  if (asCharacterId) {
+    const { data } = await supabase
+      .from("characters")
+      .select("id, name, avatar_url, owner_id")
+      .eq("id", asCharacterId)
+      .maybeSingle();
+    if (!data || data.owner_id !== user.id) return "Du kannst nur mit deinen eigenen Charakteren verleihen.";
+    awarder = { id: data.id, name: data.name, avatar_url: data.avatar_url };
+  } else {
+    const active = await getActiveCharacter(user.id, def.world_id);
+    if (active) awarder = { id: active.id, name: active.name, avatar_url: active.avatar_url };
+  }
+  if (awarder && awarder.id === characterId) return "Ein Charakter kann sich nicht selbst ein Badge verleihen.";
+
+  const base: Record<string, string> = { badge_key: `custom:${defId}`, character_id: characterId, def_id: defId, awarded_by: user.id };
+  let { error } = await supabase
     .from("badge_awards")
-    .insert({ badge_key: `custom:${defId}`, character_id: characterId, def_id: defId, awarded_by: user.id });
+    .insert(awarder ? { ...base, awarded_by_character_id: awarder.id } : base);
+  // Solange die Migration für awarded_by_character_id fehlt, ohne diese Angabe verleihen.
+  if (error && /awarded_by_character_id/.test(error.message)) {
+    ({ error } = await supabase.from("badge_awards").insert(base));
+  }
   if (error) return error.code === "23505" ? `${character.name} hat dieses Badge schon.` : "Keine Berechtigung, dieses Badge zu verleihen.";
 
+  // Benachrichtigung an die Besitzer:in des Charakters: "<Verleihender Charakter> hat dir das Badge … verliehen".
   if (character.owner_id !== user.id) {
     const { data: me } = await supabase.from("profiles").select("username, nickname, avatar_url").eq("id", user.id).maybeSingle();
     await createNotification(supabase, {
       userId: character.owner_id,
       type: "badge",
-      actorName: me?.nickname || me?.username || "Jemand",
-      actorAvatarUrl: me?.avatar_url ?? null,
-      link: `/characters/${characterId}`,
+      actorName: awarder?.name ?? (me?.nickname || me?.username || "Jemand"),
+      actorAvatarUrl: awarder?.avatar_url ?? me?.avatar_url ?? null,
+      link: `/badges/sammlung/${characterId}?badge=${encodeURIComponent(`custom:${defId}`)}`,
       message: `hat dir das Badge ${def.icon} ${def.name} verliehen`,
       recipientName: character.name,
     }).catch(() => {});
@@ -80,8 +104,8 @@ export async function revokeBadge(awardId: string): Promise<string | null> {
   const supabase = await createClient();
   const { error, count } = await supabase.from("badge_awards").delete({ count: "exact" }).eq("id", awardId);
   if (error) return error.message;
-  if (!count) return "Konnte nicht entzogen werden.";
-  revalidatePath("/badges", "layout");
+  if (!count) return "Konnte nicht entfernt werden.";
+  revalidatePath("/", "layout");
   return null;
 }
 

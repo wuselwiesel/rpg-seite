@@ -89,7 +89,14 @@ export default async function ManageBadgesPage({ searchParams }: PageProps<"/bad
             Ausgeblendete Badges erscheinen nicht im Profil, nicht in deiner Sammlung für andere und nicht im Verlauf.
           </p>
           <VisibilityList
-            items={charBadges.map((b) => ({ awardId: b.awardId, icon: b.icon, name: b.name, hidden: !!b.hidden }))}
+            items={charBadges.map((b) => ({
+              awardId: b.awardId,
+              icon: b.icon,
+              name: b.name,
+              hidden: !!b.hidden,
+              removable: b.kind === "custom",
+              from: b.kind === "custom" ? b.awardedByName : null,
+            }))}
           />
         </section>
       )}

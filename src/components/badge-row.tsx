@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { BADGE_PREF_EVENT, BADGE_PROFILE_KEY, type BadgeView } from "@/lib/badges";
-import { setBadgeHidden } from "@/app/badges/actions";
+import { revokeBadge, setBadgeHidden } from "@/app/badges/actions";
 import { BadgeChip } from "./badge-chip";
 import { EmojiText } from "./custom-emoji-provider";
 
@@ -39,10 +39,22 @@ export function BadgeRow({
   const enabled = useSyncExternalStore(subscribe, () => badgePrefEnabled(BADGE_PROFILE_KEY), () => true);
   const [editing, setEditing] = useState(false);
   const [hidden, setHidden] = useState(() => new Set(badges.filter((b) => b.hidden).map((b) => b.awardId)));
+  const [removed, setRemoved] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   if (!enabled || badges.length === 0) return null;
+
+  // Verliehene (besondere) Badges lassen sich ganz entfernen.
+  function remove(b: BadgeView) {
+    if (!confirm(`${b.name} endgültig entfernen? Wer es verliehen hat, kann es dir erneut geben.`)) return;
+    setError(null);
+    startTransition(async () => {
+      const err = await revokeBadge(b.awardId);
+      if (err) setError(err);
+      else setRemoved((cur) => new Set(cur).add(b.awardId));
+    });
+  }
 
   function toggle(id: string) {
     const show = hidden.has(id);
@@ -66,10 +78,10 @@ export function BadgeRow({
   return (
     <div className="mt-3 flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        {badges.map((b) =>
+        {badges.filter((b) => !removed.has(b.awardId)).map((b) =>
           editing ? (
+            <span key={b.awardId} className="inline-flex items-center gap-1">
             <button
-              key={b.awardId}
               type="button"
               onClick={() => toggle(b.awardId)}
               aria-pressed={!hidden.has(b.awardId)}
@@ -82,6 +94,18 @@ export function BadgeRow({
               <span aria-hidden>{hidden.has(b.awardId) ? "🙈" : "👁"}</span>
               <EmojiText text={`${b.icon} ${b.name}`} />
             </button>
+            {b.kind === "custom" && (
+              <button
+                type="button"
+                onClick={() => remove(b)}
+                aria-label={`${b.name} entfernen`}
+                title="Verliehenes Badge entfernen"
+                className="rounded-full p-0.5 text-xs text-muted transition hover:text-red-500"
+              >
+                ✕
+              </button>
+            )}
+            </span>
           ) : hidden.has(b.awardId) ? (
             // Nur für die Besitzer:in sichtbar: ausgeblendete Badges, abgeblendet.
             <span key={b.awardId} className="opacity-50" title="Nur für dich sichtbar (ausgeblendet)">
