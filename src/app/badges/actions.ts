@@ -28,7 +28,7 @@ export async function createBadgeDef(_prev: string | null, formData: FormData): 
     .from("badge_defs")
     .insert({ world_id: world.id, name, description: description || null, icon, color, created_by: user.id });
   if (error) return error.message;
-  revalidatePath("/badges");
+  revalidatePath("/badges", "layout");
   return null;
 }
 
@@ -37,7 +37,7 @@ export async function deleteBadgeDef(defId: string): Promise<string | null> {
   const { error, count } = await supabase.from("badge_defs").delete({ count: "exact" }).eq("id", defId);
   if (error) return error.message;
   if (!count) return "Konnte nicht gelöscht werden.";
-  revalidatePath("/badges");
+  revalidatePath("/badges", "layout");
   return null;
 }
 
@@ -71,7 +71,7 @@ export async function awardBadge(defId: string, characterId: string): Promise<st
       recipientName: character.name,
     }).catch(() => {});
   }
-  revalidatePath("/badges");
+  revalidatePath("/badges", "layout");
   revalidatePath(`/characters/${characterId}`);
   return null;
 }
@@ -81,7 +81,7 @@ export async function revokeBadge(awardId: string): Promise<string | null> {
   const { error, count } = await supabase.from("badge_awards").delete({ count: "exact" }).eq("id", awardId);
   if (error) return error.message;
   if (!count) return "Konnte nicht entzogen werden.";
-  revalidatePath("/badges");
+  revalidatePath("/badges", "layout");
   return null;
 }
 

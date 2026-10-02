@@ -266,7 +266,7 @@ export default async function CharacterProfilePage({
             </dl>
           )}
 
-          <BadgeRow badges={badges} />
+          <BadgeRow badges={badges} collectionHref={`/badges/sammlung/${character.id}`} />
         </header>
 
         <div className="mt-4 flex gap-2 sm:hidden">

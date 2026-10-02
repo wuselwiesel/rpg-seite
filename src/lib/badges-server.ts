@@ -75,25 +75,65 @@ async function count(q: PromiseLike<{ count: number | null }>): Promise<number> 
 
 export async function characterMetrics(supabase: Supabase, characterId: string) {
   const head = { count: "exact", head: true } as const;
-  const [posts, comments, story, followers, likes] = await Promise.all([
-    count(supabase.from("posts").select("id", head).eq("character_id", characterId)),
-    count(supabase.from("comments").select("id", head).eq("character_id", characterId)),
-    count(supabase.from("story_entries").select("id", head).eq("character_id", characterId)),
-    count(supabase.from("character_follows").select("follower_id", head).eq("followed_id", characterId)),
-    count(
+  const [posts, mediaPosts, comments, story, rolls, rollsWon, messages, followers, following, likes, reactions, likesGiven, relationships, stories, charRow] =
+    await Promise.all([
+      count(supabase.from("posts").select("id", head).eq("character_id", characterId)),
+      count(supabase.from("posts").select("id", head).eq("character_id", characterId).not("media_type", "is", null)),
+      count(supabase.from("comments").select("id", head).eq("character_id", characterId)),
+      count(supabase.from("story_entries").select("id", head).eq("character_id", characterId)),
+      count(supabase.from("story_entries").select("id", head).eq("character_id", characterId).not("roll_die", "is", null)),
+      count(supabase.from("story_entries").select("id", head).eq("character_id", characterId).eq("roll_success", true)),
+      count(supabase.from("messages").select("id", head).eq("character_id", characterId)),
+      count(supabase.from("character_follows").select("follower_id", head).eq("followed_id", characterId)),
+      count(supabase.from("character_follows").select("followed_id", head).eq("follower_id", characterId)),
+      count(supabase.from("likes").select("id, posts!inner(character_id)", head).eq("posts.character_id", characterId)),
+      count(supabase.from("reactions").select("id, posts!inner(character_id)", head).eq("posts.character_id", characterId)),
+      count(supabase.from("likes").select("id", head).eq("character_id", characterId)),
+      count(
+        supabase
+          .from("character_relationships")
+          .select("id", head)
+          .or(`character_a_id.eq.${characterId},character_b_id.eq.${characterId}`),
+      ),
+      count(supabase.from("stories").select("id", head).eq("character_id", characterId)),
       supabase
-        .from("reactions")
-        .select("id, posts!inner(character_id)", head)
-        .eq("emoji", "❤️")
-        .eq("posts.character_id", characterId),
-    ),
-  ]);
-  return { posts, comments, story, followers, likes } as Record<string, number>;
+        .from("characters")
+        .select("created_at, avatar_url, banner_url, bio, status_text")
+        .eq("id", characterId)
+        .maybeSingle(),
+    ]);
+  const c = charRow.data as {
+    created_at: string;
+    avatar_url: string | null;
+    banner_url: string | null;
+    bio: string | null;
+    status_text: string | null;
+  } | null;
+  const days = c ? Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86_400_000) : 0;
+  const profile = c && c.avatar_url && c.banner_url && c.bio?.trim() && c.status_text?.trim() ? 1 : 0;
+  return {
+    posts,
+    media_posts: mediaPosts,
+    comments,
+    story,
+    rolls,
+    rolls_won: rollsWon,
+    messages,
+    followers,
+    following,
+    likes,
+    reactions,
+    likes_given: likesGiven,
+    relationships,
+    stories,
+    days,
+    profile,
+  } as Record<string, number>;
 }
 
 export async function accountMetrics(supabase: Supabase, userId: string) {
   const head = { count: "exact", head: true } as const;
-  const [redPosts, redComments, redReactions, pollRows] = await Promise.all([
+  const [redPosts, redComments, redReactions, pollRows, given, votes, friends, characters, wiki, defs, prof] = await Promise.all([
     count(supabase.from("redaktion_posts").select("id", head).eq("author_id", userId)),
     count(supabase.from("redaktion_comments").select("id", head).eq("author_id", userId)),
     count(
@@ -103,9 +143,35 @@ export async function accountMetrics(supabase: Supabase, userId: string) {
         .eq("redaktion_posts.author_id", userId),
     ),
     supabase.from("redaktion_poll_options").select("post_id, redaktion_posts!inner(author_id)").eq("redaktion_posts.author_id", userId),
+    count(supabase.from("redaktion_reactions").select("id", head).eq("user_id", userId)),
+    count(supabase.from("redaktion_poll_votes").select("id", head).eq("voter_id", userId)),
+    count(
+      supabase
+        .from("friendships")
+        .select("id", head)
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`),
+    ),
+    count(supabase.from("characters").select("id", head).eq("owner_id", userId)),
+    count(supabase.from("wiki_pages").select("id", head).eq("created_by", userId)),
+    count(supabase.from("badge_defs").select("id", head).eq("created_by", userId)),
+    supabase.from("profiles").select("created_at").eq("id", userId).maybeSingle(),
   ]);
   const polls = new Set((pollRows.data ?? []).map((r) => r.post_id as string)).size;
-  return { red_posts: redPosts, red_comments: redComments, red_reactions: redReactions, red_polls: polls } as Record<string, number>;
+  const createdAt = (prof.data as { created_at: string } | null)?.created_at;
+  return {
+    red_posts: redPosts,
+    red_comments: redComments,
+    red_reactions: redReactions,
+    red_polls: polls,
+    red_reactions_given: given,
+    red_votes: votes,
+    friends,
+    characters,
+    wiki,
+    badge_defs: defs,
+    acc_days: createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000) : 0,
+  } as Record<string, number>;
 }
 
 function earned(defs: AutoBadgeDef[], metrics: Record<string, number>) {
@@ -148,7 +214,7 @@ export async function syncCharacterBadges(characterId: string): Promise<string[]
       type: "badge",
       actorName: "Neues Badge",
       actorAvatarUrl: null,
-      link: "/badges",
+      link: `/badges/sammlung/${characterId}`,
       message: `${b.icon} ${b.name} – ${b.description}`,
       recipientName: character.name,
     }).catch(() => {});
@@ -181,7 +247,7 @@ export async function syncAccountBadges(): Promise<string[]> {
       type: "badge",
       actorName: "Neues Redaktions-Abzeichen",
       actorAvatarUrl: null,
-      link: "/badges",
+      link: `/badges/konto/${user.id}`,
       message: `${b.icon} ${b.name} – ${b.description}`,
     }).catch(() => {});
   }

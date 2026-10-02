@@ -2,6 +2,8 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
+import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
+import { EmojiText } from "@/components/custom-emoji-provider";
 import { awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setFeaturedBadge } from "./actions";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent";
@@ -9,12 +11,25 @@ const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-f
 export function CreateBadgeForm() {
   const [error, formAction, pending] = useActionState(createBadgeDef, null);
   const [color, setColor] = useState("#96565d");
+  const [icon, setIcon] = useState("🏅");
 
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded-2xl border border-line p-4">
-      <p className="text-sm font-medium text-fg">Neues Badge gestalten</p>
       <div className="flex gap-2">
-        <input name="icon" required maxLength={40} placeholder="🏅" aria-label="Symbol" className={`w-20 text-center ${field}`} />
+        <input type="hidden" name="icon" value={icon} />
+        <div className="flex shrink-0 items-stretch gap-1">
+          <span
+            className="flex h-10 w-12 items-center justify-center rounded-md border border-line bg-surface text-2xl"
+            aria-label="Gewähltes Symbol"
+          >
+            <EmojiText text={icon} />
+          </span>
+          <CustomEmojiPicker
+            direction="down"
+            onPick={(t) => setIcon(t.trim())}
+            className="flex h-10 items-center justify-center rounded-md border border-line px-2.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          />
+        </div>
         <input name="name" required minLength={2} maxLength={40} placeholder="Name, z. B. Ritter des Nebelhafens" aria-label="Name" className={`min-w-0 flex-1 ${field}`} />
         <input
           type="color"
@@ -27,7 +42,7 @@ export function CreateBadgeForm() {
       </div>
       <input name="description" maxLength={200} placeholder="Wofür gibt es das Badge? (optional)" className={field} />
       <p className="text-xs text-muted">
-        Als Symbol geht ein Emoji oder ein eigenes Emoji der Welt, z. B. <code>:wappen:</code>.
+        Als Symbol wählst du ein Emoji aus dem Katalog – auch die eigenen Emojis der Welt.
       </p>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <button

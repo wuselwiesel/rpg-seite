@@ -38,11 +38,16 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Im Test-Account liegt ein Selbsttest-Chat (`00000000-0000-4000-8000-0000000000c1`, nur `logotestuser` als Teilnehmer) – darf gelöscht werden.
 
 ## Badges und Verlauf (live)
-- Entscheidungen der Nutzerin: automatische Erfolge + Spielleitungs-Titel + eigene Badges aller Mitglieder + Redaktions-Abzeichen (Account); Anzeige im Profil und neben Namen (je pro Gerät abschaltbar), Benachrichtigung beim Erhalt, eigene Seite `/badges`; Charakter-Timeline automatisch.
-- DB `supabase/migration_badges.sql` (Tabellen `badge_defs`, `badge_awards`, Spalten `characters.featured_badge_id` / `profiles.featured_badge_id`) ist im SQL-Editor **ausgeführt**. Schlüssel: `auto:*` (Charakter), `account:*` (Account), `custom:<def-id>`.
-- Code: Katalog `lib/badges.ts` (`AUTO_BADGES`), Server-Logik `lib/badges-server.ts` (`syncCharacterBadges`, `syncAccountBadges`, Metriken), Aktionen `app/badges/actions.ts`, Seite `app/badges/*`, Anzeige `components/badge-row.tsx` (Profil), `components/name-badge.tsx` (Haupt-Badge neben Namen, lädt gesammelt per Server Action nach), Schalter `components/badge-prefs.tsx` (Einstellungen → Aussehen), Benachrichtigungstyp `badge`.
-- Vergabe-Zeitpunkt: nach Beitrag/Kommentar/Story-Eintrag/Redaktions-Beitrag/-Kommentar per `after()`, außerdem beim Öffnen von `/badges` und des eigenen Profils. „Herzen erhalten“ und „Follower“ werden daher erst beim nächsten Sync erkannt.
-- Mini-Timeline `components/character-timeline.tsx` („Verlauf“ im Charakterprofil): Ankunft, Beitrags-Meilensteine, erste Story-Szene, Beziehungsverläufe, erhaltene Badges.
+- **Katalog** `/badges` (3 Reiter, `?bereich=charakter|redaktion|welt`): zeigt alle Badges mit „so erreichst du es“ (`description`) und „was es bedeutet“ (`meaning`), Fortschrittsbalken für den aktiven Charakter bzw. den eigenen Account. Reiter „Welt-Badges“ = eigene Badges der Welt: hier werden sie gestaltet (`CreateBadgeForm`), verliehen, entzogen und gelöscht (`src/app/badges/badge-controls.tsx`).
+- **Sammlung** pro Charakter `/badges/sammlung/[characterId]` und pro Account `/badges/konto/[userId]` (Klick auf Badge-Chips im Charakter-/Redaktions-Profil). Charakter- und Account-Badges sind überall getrennt (Profil, Katalog, Verwalten, Namens-Badge).
+- **Verwalten** `/badges/verwalten` (Reiter Charakter | Account): nur Haupt-Badge wählen.
+- Katalog in `src/lib/badges.ts` (`AUTO_BADGES`, ~56 Charakter- + ~24 Account-Badges, per `ladder()` erzeugt; neue Metriken in `badges-server.ts` `characterMetrics`/`accountMetrics` ergänzen). Bereits vergebene Schlüssel dürfen nicht umbenannt werden (Test in `badges.test.ts`). Keine DB-Migration nötig.
+- Vergabe: `after(() => syncCharacterBadges/syncAccountBadges)` nach Beitrag/Kommentar/Story-Eintrag/Redaktion sowie beim Öffnen von Katalog und Sammlung (Herzen/Follower fallen erst dann auf). Benachrichtigung führt in die Sammlung.
+- Anzeige abschaltbar pro Gerät: Einstellungen → Aussehen (`badge-prefs.tsx`). Verlauf im Charakterprofil: `character-timeline.tsx`.
+
+## Emoji-Katalog (live)
+- `CustomEmojiPicker` (`src/components/custom-emoji-picker.tsx`) öffnet jetzt den vollen Katalog (`emoji-picker-react`, `emoji-catalog*.tsx`) mit der Kategorie „Eigene Emojis“ (Notion-Stil). Liefert Unicode-Emoji oder `:name: `. Genutzt in Chats, Mention-Textarea, Editor-Toolbar und beim Badge-Symbol. Am Handy als festes Fenster über der Tab-Leiste.
+- Offen: Reaktionsleisten (`reaction-bar.tsx`, `redaktion-reaction-bar.tsx`) nutzen noch den Picker ohne eigene Emojis (`redaktion_reactions.emoji` hat eine 16-Zeichen-Grenze).
 
 ## Gemerkte Auswahl (live)
 - Zuletzt gewählter Charakter und Welt bleiben nach dem Schließen der App erhalten: die Cookies `active_character_id` / `active_world_id` haben `maxAge` 1 Jahr (`SELECTION_COOKIE_OPTIONS` in `src/lib/types.ts`, an allen `set`-Stellen benutzt). `SelectionCookieKeeper` (`src/components/selection-cookie-keeper.tsx`, im Root-Layout) macht alte Session-Cookies beim Start dauerhaft. Neue Stellen, die diese Cookies setzen, müssen die Konstante nutzen.

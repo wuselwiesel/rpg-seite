@@ -117,7 +117,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
             </dl>
           )}
 
-          <BadgeRow badges={badges} />
+          <BadgeRow badges={badges} collectionHref={`/badges/konto/${userId}`} />
         </header>
 
         <div className="mt-6">
