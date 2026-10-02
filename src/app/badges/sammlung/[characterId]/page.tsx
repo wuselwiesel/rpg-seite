@@ -1,12 +1,15 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AUTO_BADGES, CHARACTER_CATEGORIES } from "@/lib/badges";
-import { characterMetrics, getCharacterBadges, syncCharacterBadges } from "@/lib/badges-server";
-import { BadgeSections, SpecialBadges } from "@/components/badge-sections";
+import { characterMetrics, getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/badges-server";
+import { BadgeFilterTabs, BadgeSections, FocusedBadge, SpecialBadges } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
-export default async function CharacterBadgeCollectionPage({ params }: PageProps<"/badges/sammlung/[characterId]">) {
+export default async function CharacterBadgeCollectionPage({ params, searchParams }: PageProps<"/badges/sammlung/[characterId]">) {
   const { characterId } = await params;
+  const sp = await searchParams;
+  const focusKey = Array.isArray(sp.badge) ? sp.badge[0] : sp.badge;
+  const showAll = (Array.isArray(sp.zeige) ? sp.zeige[0] : sp.zeige) === "alle";
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,7 +26,7 @@ export default async function CharacterBadgeCollectionPage({ params }: PageProps
   const isOwn = character.owner_id === user.id;
   if (isOwn) await syncCharacterBadges(character.id);
   const [badges, metrics] = await Promise.all([
-    getCharacterBadges(character.id),
+    getCharacterBadges(character.id).then((b) => (isOwn ? b : visibleBadges(b))),
     isOwn ? characterMetrics(supabase, character.id) : Promise.resolve(undefined),
   ]);
 
@@ -43,8 +46,10 @@ export default async function CharacterBadgeCollectionPage({ params }: PageProps
         total={defs.length}
         extra={special.length}
       />
+      <FocusedBadge badge={badges.find((b) => b.key === focusKey)} defs={defs} />
+      <BadgeFilterTabs basePath={`/badges/sammlung/${character.id}`} showAll={showAll} earned={autoEarned.length + special.length} total={defs.length + special.length} />
       <SpecialBadges badges={special} />
-      <BadgeSections defs={defs} categories={CHARACTER_CATEGORIES} earned={autoEarned} metrics={metrics} />
+      <BadgeSections defs={defs} categories={CHARACTER_CATEGORIES} earned={autoEarned} metrics={metrics} showAll={showAll} />
     </div>
   );
 }

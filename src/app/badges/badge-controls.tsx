@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { EmojiText } from "@/components/custom-emoji-provider";
-import { awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setFeaturedBadge } from "./actions";
+import { awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setBadgeHidden, setFeaturedBadge } from "./actions";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
@@ -56,15 +56,39 @@ export function CreateBadgeForm() {
   );
 }
 
-export function AwardControls({ defId, characters }: { defId: string; characters: { id: string; name: string }[] }) {
+export function AwardControls({
+  defId,
+  characters,
+  ownCharacters = [],
+  defaultAsId,
+}: {
+  defId: string;
+  characters: { id: string; name: string }[];
+  // Eigene Charaktere, mit denen man verleihen kann; defaultAsId = vorausgewählter (aktiver) Charakter.
+  ownCharacters?: { id: string; name: string }[];
+  defaultAsId?: string | null;
+}) {
   const [characterId, setCharacterId] = useState(characters[0]?.id ?? "");
+  const [asId, setAsId] = useState(defaultAsId ?? ownCharacters[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      <select value={characterId} onChange={(e) => setCharacterId(e.target.value)} className={`min-w-0 flex-1 ${field}`} aria-label="Charakter">
-        {characters.map((c) => (
+      {ownCharacters.length > 0 && (
+        <label className="flex w-full items-center gap-2 text-xs text-fg-soft">
+          Verleihen als
+          <select value={asId} onChange={(e) => setAsId(e.target.value)} className={`min-w-0 flex-1 ${field}`} aria-label="Verleihen als Charakter">
+            {ownCharacters.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <select value={characterId} onChange={(e) => setCharacterId(e.target.value)} className={`min-w-0 flex-1 ${field}`} aria-label="Charakter, der das Badge bekommt">
+        {characters.filter((c) => c.id !== asId).map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
           </option>
@@ -75,7 +99,7 @@ export function AwardControls({ defId, characters }: { defId: string; characters
         disabled={pending || !characterId}
         onClick={() =>
           startTransition(async () => {
-            setError(await awardBadge(defId, characterId));
+            setError(await awardBadge(defId, characterId, asId || null));
           })
         }
         className="rounded-md bg-surface-2 px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-3 disabled:opacity-50"
@@ -159,6 +183,106 @@ export function FeaturedPicker({
       </select>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       {saved && <p className="text-xs text-muted">Gespeichert.</p>}
+    </div>
+  );
+}
+
+// Pro Badge festlegen, ob es im Profil usw. angezeigt wird.
+export function VisibilityList({
+  items,
+}: {
+  items: { awardId: string; icon: string; name: string; hidden: boolean; removable?: boolean; from?: string | null }[];
+}) {
+  const [hidden, setHidden] = useState(() => new Set(items.filter((i) => i.hidden).map((i) => i.awardId)));
+  const [removed, setRemoved] = useState<Set<string>>(() => new Set());
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  // Mehrere Badges auf einmal: Zustand funktional fortschreiben, sonst überschreibt die letzte Änderung die anderen.
+  function apply(ids: string[], show: boolean) {
+    if (ids.length === 0) return;
+    const before = hidden;
+    setHidden((cur) => {
+      const next = new Set(cur);
+      for (const id of ids) {
+        if (show) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+    setError(null);
+    startTransition(async () => {
+      const results = await Promise.all(ids.map((id) => setBadgeHidden(id, !show)));
+      const err = results.find((r) => r);
+      if (err) {
+        setHidden(before);
+        setError(err);
+      }
+    });
+  }
+
+  const toggle = (id: string, show: boolean) => apply([id], show);
+
+  function remove(id: string, label: string) {
+    if (!confirm(`${label} endgültig entfernen? Wer es verliehen hat, kann es dir erneut geben.`)) return;
+    setError(null);
+    startTransition(async () => {
+      const err = await revokeBadge(id);
+      if (err) setError(err);
+      else setRemoved((cur) => new Set(cur).add(id));
+    });
+  }
+  const setAll = (show: boolean) => apply(items.filter((i) => hidden.has(i.awardId) === show).map((i) => i.awardId), show);
+
+  if (items.length === 0) return <p className="text-sm text-muted">Noch keine Badges erreicht.</p>;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-3 text-xs">
+        <button type="button" onClick={() => setAll(true)} disabled={pending} className="text-accent hover:underline">
+          Alle anzeigen
+        </button>
+        <button type="button" onClick={() => setAll(false)} disabled={pending} className="text-accent hover:underline">
+          Alle ausblenden
+        </button>
+      </div>
+      <ul className="flex flex-col gap-1">
+        {items.filter((i) => !removed.has(i.awardId)).map((i) => {
+          const shown = !hidden.has(i.awardId);
+          return (
+            <li key={i.awardId}>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={shown}
+                  onChange={(e) => toggle(i.awardId, e.target.checked)}
+                  className="h-4 w-4 accent-[var(--accent)]"
+                />
+                <span className={`min-w-0 flex-1 truncate ${shown ? "text-fg" : "text-muted line-through"}`}>
+                  <EmojiText text={`${i.icon} ${i.name}`} />
+                </span>
+                {i.from && <span className="hidden shrink-0 text-xs text-muted sm:inline">von {i.from}</span>}
+                <span className="shrink-0 text-xs text-muted">{shown ? "angezeigt" : "ausgeblendet"}</span>
+                {i.removable && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      remove(i.awardId, i.name);
+                    }}
+                    aria-label={`${i.name} entfernen`}
+                    title="Verliehenes Badge entfernen"
+                    className="shrink-0 rounded-full p-1 text-muted transition hover:text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                )}
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

@@ -21,6 +21,8 @@ self.addEventListener("push", (event) => {
     badge: "/icon-192",
     data: { url: data.url || "/" },
   };
+  // Gleiches Tag ersetzt die vorige Meldung (gebündelte Likes/Kommentare/Reaktionen).
+  if (data.tag) options.tag = data.tag;
 
   event.waitUntil(self.registration.showNotification(title, options));
 });

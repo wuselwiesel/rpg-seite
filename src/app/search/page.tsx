@@ -5,27 +5,37 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
 import { JoinWorldButton } from "@/app/worlds/join-world-button";
-import { escapePostgrestValue } from "@/lib/postgrest";
-import { stripHtml } from "@/lib/strip-html";
-import type { Character, Friendship, Profile, StoryPost, WikiPage, World } from "@/lib/types";
+import {
+  searchCharacters,
+  searchPosts,
+  searchScenes,
+  searchWiki,
+  type CharacterHit,
+  type PostHit,
+  type SceneHit,
+  type WikiHit,
+} from "@/lib/global-search";
+import type { Friendship, Profile, World } from "@/lib/types";
 import { AddFriendButton } from "./add-friend-button";
 import { FollowWorldButton } from "./follow-world-button";
 
 type WorldWithCreator = World & { creator: Pick<Profile, "username" | "nickname"> | null };
-type SearchTab = "characters" | "users" | "worlds" | "scenes" | "wiki";
+type SearchTab = "all" | "characters" | "users" | "worlds" | "scenes" | "wiki" | "posts";
 const TABS: { key: SearchTab; label: string; placeholder: string }[] = [
+  { key: "all", label: "Alles", placeholder: "Charaktere, Szenen, Wiki, Beiträge durchsuchen..." },
   { key: "characters", label: "Charaktere", placeholder: "Name oder @nutzername..." },
   { key: "users", label: "Nutzer:innen", placeholder: "Benutzername..." },
   { key: "worlds", label: "Welten", placeholder: "Weltname..." },
   { key: "scenes", label: "Szenen", placeholder: "Titel, Text oder Ort..." },
   { key: "wiki", label: "Wiki", placeholder: "Titel oder Text..." },
+  { key: "posts", label: "Beiträge", placeholder: "Titel, Text oder #Tag..." },
 ];
 const WIKI_CATEGORY_LABELS: Record<string, string> = { ort: "Ort", npc: "NPC", fraktion: "Fraktion", sonstiges: "Sonstiges" };
 
 export default async function SearchPage({ searchParams }: PageProps<"/search">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";
-  const tab: SearchTab = TABS.some((t) => t.key === params.tab) ? (params.tab as SearchTab) : "characters";
+  const tab: SearchTab = TABS.some((t) => t.key === params.tab) ? (params.tab as SearchTab) : "all";
   const isWelcome = params.welcome === "1";
 
   const supabase = await createClient();
@@ -35,7 +45,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   if (!user) redirect("/login");
 
-  let characterResults: (Character & { worlds: { name: string } | null })[] = [];
+  let characterResults: CharacterHit[] = [];
   let userResults: Profile[] = [];
   const friendStatus = new Map<string, { status: "accepted" | "pending"; direction: "incoming" | "outgoing" }>();
 
@@ -43,24 +53,24 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const memberWorldIds = new Set<string>();
   const followedWorldIds = new Set<string>();
 
-  let sceneResults: (Pick<StoryPost, "id" | "title" | "content" | "location" | "created_at"> & {
-    characters: { name: string; avatar_url: string | null } | null;
-    worlds: { name: string } | null;
-  })[] = [];
-  let wikiResults: (Pick<WikiPage, "id" | "title" | "content" | "category"> & { worlds: { name: string } | null })[] = [];
+  let sceneResults: SceneHit[] = [];
+  let wikiResults: WikiHit[] = [];
+  let postResults: PostHit[] = [];
 
-  if (tab === "characters") {
+  if (tab === "all") {
     if (q) {
-      const term = escapePostgrestValue(q.replace(/^@/, ""));
-      const { data } = await supabase
-        .from("characters")
-        .select("*, worlds(name)")
-        .or(`username.ilike.%${term}%,name.ilike.%${term}%`)
-        .order("name")
-        .limit(30)
-        .returns<(Character & { worlds: { name: string } | null })[]>();
-      characterResults = data ?? [];
+      [characterResults, sceneResults, wikiResults, postResults] = await Promise.all([
+        searchCharacters(supabase, q, 5),
+        searchScenes(supabase, q, 5),
+        searchWiki(supabase, q, 5),
+        searchPosts(supabase, q, 5),
+      ]);
     }
+  } else if (tab === "posts") {
+    if (q) postResults = await searchPosts(supabase, q, 30);
+  } else if (tab === "characters") {
+
+    if (q) characterResults = await searchCharacters(supabase, q, 30);
   } else if (tab === "users") {
     const [{ data: friendships }, { data: profiles }] = await Promise.all([
       supabase
@@ -87,29 +97,9 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
     }
     userResults = profiles ?? [];
   } else if (tab === "scenes") {
-    if (q) {
-      const term = escapePostgrestValue(q);
-      const { data } = await supabase
-        .from("story_posts")
-        .select("id, title, content, location, created_at, characters!story_posts_character_id_fkey(name, avatar_url), worlds(name)")
-        .or(`title.ilike.%${term}%,content.ilike.%${term}%,location.ilike.%${term}%`)
-        .order("created_at", { ascending: false })
-        .limit(30)
-        .returns<typeof sceneResults>();
-      sceneResults = data ?? [];
-    }
+    if (q) sceneResults = await searchScenes(supabase, q, 30);
   } else if (tab === "wiki") {
-    if (q) {
-      const term = escapePostgrestValue(q);
-      const { data } = await supabase
-        .from("wiki_pages")
-        .select("id, title, content, category, worlds(name)")
-        .or(`title.ilike.%${term}%,content.ilike.%${term}%`)
-        .order("title")
-        .limit(30)
-        .returns<typeof wikiResults>();
-      wikiResults = data ?? [];
-    }
+    if (q) wikiResults = await searchWiki(supabase, q, 30);
   } else {
     const [{ data: memberships }, { data: follows }, { data: worlds }] = await Promise.all([
       supabase.from("world_members").select("world_id").eq("user_id", user.id),
@@ -146,13 +136,15 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       .slice(0, 12);
   }
 
+  const tabHref = (t: SearchTab) => `/search?tab=${t}&q=${encodeURIComponent(q)}`;
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Suche</h1>
       <p className="mb-6 text-sm text-muted">
         {isWelcome
           ? "Tritt einer bestehenden Welt bei, um direkt mit einem Charakter loszulegen."
-          : "Finde Charaktere über Namen oder @Nutzernamen, Freund:innen über ihren Benutzernamen oder entdecke neue Welten."}
+          : "Durchsuche Charaktere, Szenen, Wiki und Beiträge auf einmal, finde Freund:innen über ihren Benutzernamen oder entdecke neue Welten."}
       </p>
       {isWelcome && (
         <p className="mb-6 text-sm text-muted">
@@ -217,29 +209,6 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       </form>
 
       {!q && <p className="text-sm text-muted">Gib einen Suchbegriff ein.</p>}
-
-      {q && tab === "characters" && (
-        <ul className="flex flex-col gap-2">
-          {characterResults.length === 0 && <p className="text-sm text-muted">Kein Charakter gefunden.</p>}
-          {characterResults.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/characters/${c.id}`}
-                className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
-              >
-                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={44} />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-fg">{c.username ?? c.name}</p>
-                  <p className="truncate text-xs text-muted">
-                    {c.username ? `${c.name} · ` : ""}
-                    {c.worlds?.name}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
 
       {q && tab === "users" && (
         <ul className="flex flex-col gap-2">
@@ -312,32 +281,52 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         </ul>
       )}
 
-      {q && tab === "scenes" && (
-        <ul className="flex flex-col gap-2">
-          {sceneResults.length === 0 && <p className="text-sm text-muted">Keine Szene gefunden.</p>}
-          {sceneResults.map((s) => (
-            <li key={s.id}>
+      {q && (tab === "characters" || tab === "all") && (
+        <ResultSection title={tab === "all" ? "Charaktere" : undefined} moreHref={tab === "all" && characterResults.length >= 5 ? tabHref("characters") : undefined} empty={tab !== "all" ? "Kein Charakter gefunden." : undefined} count={characterResults.length}>
+          {characterResults.map((c) => (
+            <li key={c.id}>
               <Link
-                href={`/story/${s.id}`}
-                className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
+                href={`/characters/${c.id}`}
+                className="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-semibold text-fg">{s.title}</p>
-                  {s.location && <span className="shrink-0 text-xs text-muted">{s.location}</span>}
+                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={44} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-fg">{c.username ?? c.name}</p>
+                  <p className="truncate text-xs text-muted">
+                    {c.username ? `${c.name} · ` : ""}
+                    {c.world}
+                  </p>
                 </div>
-                <p className="truncate text-xs text-muted">
-                  {s.characters?.name} · {s.worlds?.name}
-                </p>
-                <p className="line-clamp-2 text-xs text-fg-soft">{stripHtml(s.content)}</p>
               </Link>
             </li>
           ))}
-        </ul>
+        </ResultSection>
       )}
 
-      {q && tab === "wiki" && (
-        <ul className="flex flex-col gap-2">
-          {wikiResults.length === 0 && <p className="text-sm text-muted">Kein Wiki-Eintrag gefunden.</p>}
+      {q && (tab === "scenes" || tab === "all") && (
+        <ResultSection title={tab === "all" ? "Story-Szenen" : undefined} moreHref={tab === "all" && sceneResults.length >= 5 ? tabHref("scenes") : undefined} empty={tab !== "all" ? "Keine Szene gefunden." : undefined} count={sceneResults.length}>
+          {sceneResults.map((sc) => (
+            <li key={sc.id}>
+              <Link
+                href={`/story/${sc.id}`}
+                className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-fg">{sc.title}</p>
+                  {sc.location && <span className="shrink-0 text-xs text-muted">{sc.location}</span>}
+                </div>
+                <p className="truncate text-xs text-muted">
+                  {sc.character} · {sc.world}
+                </p>
+                <p className="line-clamp-2 text-xs text-fg-soft">{sc.snippet}</p>
+              </Link>
+            </li>
+          ))}
+        </ResultSection>
+      )}
+
+      {q && (tab === "wiki" || tab === "all") && (
+        <ResultSection title={tab === "all" ? "Wiki" : undefined} moreHref={tab === "all" && wikiResults.length >= 5 ? tabHref("wiki") : undefined} empty={tab !== "all" ? "Kein Wiki-Eintrag gefunden." : undefined} count={wikiResults.length}>
           {wikiResults.map((w) => (
             <li key={w.id}>
               <Link
@@ -348,13 +337,68 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
                   <p className="truncate text-sm font-semibold text-fg">{w.title}</p>
                   <span className="shrink-0 text-xs text-muted">{WIKI_CATEGORY_LABELS[w.category] ?? w.category}</span>
                 </div>
-                <p className="truncate text-xs text-muted">{w.worlds?.name}</p>
-                {w.content && <p className="line-clamp-2 text-xs text-fg-soft">{stripHtml(w.content)}</p>}
+                <p className="truncate text-xs text-muted">{w.world}</p>
+                {w.snippet && <p className="line-clamp-2 text-xs text-fg-soft">{w.snippet}</p>}
               </Link>
             </li>
           ))}
-        </ul>
+        </ResultSection>
+      )}
+
+      {q && (tab === "posts" || tab === "all") && (
+        <ResultSection title={tab === "all" ? "Beiträge" : undefined} moreHref={tab === "all" && postResults.length >= 5 ? tabHref("posts") : undefined} empty={tab !== "all" ? "Kein Beitrag gefunden." : undefined} count={postResults.length}>
+          {postResults.map((po) => (
+            <li key={po.id}>
+              <Link
+                href={`/posts/${po.id}`}
+                className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2"
+              >
+                <p className="truncate text-sm font-semibold text-fg">{po.title}</p>
+                <p className="truncate text-xs text-muted">
+                  {po.character} · {po.world}
+                </p>
+                {po.snippet && <p className="line-clamp-2 text-xs text-fg-soft">{po.snippet}</p>}
+              </Link>
+            </li>
+          ))}
+        </ResultSection>
+      )}
+
+      {q && tab === "all" && characterResults.length + sceneResults.length + wikiResults.length + postResults.length === 0 && (
+        <p className="text-sm text-muted">Nichts gefunden. Probier einen anderen Begriff oder die Reiter für Nutzer:innen und Welten.</p>
       )}
     </div>
+  );
+}
+
+// Ergebnisliste mit optionaler Überschrift ("Alles"-Reiter) und Link zum vollständigen Reiter.
+function ResultSection({
+  title,
+  moreHref,
+  empty,
+  count,
+  children,
+}: {
+  title?: string;
+  moreHref?: string;
+  empty?: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  if (count === 0 && !empty) return null;
+  return (
+    <section className="mb-6">
+      {title && (
+        <div className="mb-2 flex items-baseline justify-between">
+          <h2 className="font-serif text-lg text-fg">{title}</h2>
+          {moreHref && (
+            <Link href={moreHref} className="text-xs text-accent hover:underline">
+              Alle anzeigen
+            </Link>
+          )}
+        </div>
+      )}
+      {count === 0 ? <p className="text-sm text-muted">{empty}</p> : <ul className="flex flex-col gap-2">{children}</ul>}
+    </section>
   );
 }

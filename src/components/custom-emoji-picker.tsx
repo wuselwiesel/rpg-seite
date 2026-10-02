@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SmilePlus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { EmojiCatalog } from "./emoji-catalog";
+import { EmojiUploadForm } from "./emoji-upload-form";
 
 // Knopf + Fenster mit dem Emoji-Katalog (normale und eigene Emojis); onPick bekommt das Emoji bzw. `:name: `.
 export function CustomEmojiPicker({
@@ -15,6 +17,8 @@ export function CustomEmojiPicker({
   direction?: "up" | "down";
 }) {
   const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,13 +56,35 @@ export function CustomEmojiPicker({
             direction === "up" ? "sm:bottom-full sm:mb-2" : "sm:top-full sm:mt-2"
           }`}
         >
-          <EmojiCatalog
-            onPick={(token) => {
-              // Eigene Emojis bekommen ein Leerzeichen dahinter, damit man direkt weiterschreiben kann.
-              onPick(token.startsWith(":") ? `${token} ` : token);
-              setOpen(false);
-            }}
-          />
+          {adding ? (
+            <EmojiUploadForm
+              compact
+              title="Neues eigenes Emoji"
+              onDone={(name) => {
+                // Die Emoji-Liste kommt vom Server; nach dem Neuladen wird :name: als Bild angezeigt.
+                router.refresh();
+                onPick(`:${name}: `);
+                setAdding(false);
+                setOpen(false);
+              }}
+            />
+          ) : (
+            <EmojiCatalog
+              showUploadHint={false}
+              onPick={(token) => {
+                // Eigene Emojis bekommen ein Leerzeichen dahinter, damit man direkt weiterschreiben kann.
+                onPick(token.startsWith(":") ? `${token} ` : token);
+                setOpen(false);
+              }}
+            />
+          )}
+          <button
+            type="button"
+            onClick={() => setAdding((v) => !v)}
+            className="w-full border-t border-line px-3 py-2 text-left text-xs text-accent hover:underline"
+          >
+            {adding ? "← Zurück zum Katalog" : "＋ Eigenes Emoji hochladen (auch per Strg+V)"}
+          </button>
         </div>
       )}
     </div>

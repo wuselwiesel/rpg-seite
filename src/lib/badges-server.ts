@@ -47,6 +47,40 @@ function toView(row: AwardRow): BadgeView | null {
   };
 }
 
+// Welche der Badges sind ausgeblendet? Eigene Abfrage, damit alles weiterläuft, solange die Migration
+// `migration_badge_hidden.sql` noch nicht eingespielt ist (Fehler = nichts ausgeblendet).
+async function withHidden(supabase: Supabase, views: BadgeView[]): Promise<BadgeView[]> {
+  if (views.length === 0) return views;
+  const { data, error } = await supabase
+    .from("badge_awards")
+    .select("id")
+    .in("id", views.map((v) => v.awardId))
+    .eq("hidden", true);
+  if (error || !data?.length) return views;
+  const hidden = new Set(data.map((r: { id: string }) => r.id));
+  return views.map((v) => (hidden.has(v.awardId) ? { ...v, hidden: true } : v));
+}
+
+// Bei verliehenen Badges den Charakter nennen, der sie verliehen hat (eigene Abfrage, tolerant gegenüber fehlender Spalte).
+async function withAwarderCharacter(supabase: Supabase, views: BadgeView[]): Promise<BadgeView[]> {
+  const custom = views.filter((v) => v.kind === "custom");
+  if (custom.length === 0) return views;
+  const { data, error } = await supabase
+    .from("badge_awards")
+    .select("id, awarder_character:awarded_by_character_id(name)")
+    .in("id", custom.map((v) => v.awardId))
+    .not("awarded_by_character_id", "is", null);
+  if (error || !data?.length) return views;
+  const names = new Map<string, string>();
+  for (const r of data as unknown as { id: string; awarder_character: { name: string } | { name: string }[] | null }[]) {
+    const c = Array.isArray(r.awarder_character) ? r.awarder_character[0] : r.awarder_character;
+    if (c?.name) names.set(r.id, c.name);
+  }
+  return views.map((v) => (names.has(v.awardId) ? { ...v, awardedByName: names.get(v.awardId), awardedByCharacter: true } : v));
+}
+
+export const visibleBadges = (badges: BadgeView[]) => badges.filter((b) => !b.hidden);
+
 export async function getCharacterBadges(characterId: string): Promise<BadgeView[]> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -55,7 +89,7 @@ export async function getCharacterBadges(characterId: string): Promise<BadgeView
     .eq("character_id", characterId)
     .order("awarded_at", { ascending: true })
     .returns<AwardRow[]>();
-  return (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b));
+  return withAwarderCharacter(supabase, await withHidden(supabase, (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b))));
 }
 
 export async function getAccountBadges(userId: string): Promise<BadgeView[]> {
@@ -66,7 +100,7 @@ export async function getAccountBadges(userId: string): Promise<BadgeView[]> {
     .eq("user_id", userId)
     .order("awarded_at", { ascending: true })
     .returns<AwardRow[]>();
-  return (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b));
+  return withHidden(supabase, (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b)));
 }
 
 async function count(q: PromiseLike<{ count: number | null }>): Promise<number> {

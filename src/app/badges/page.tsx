@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Settings2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { ACCOUNT_CATEGORIES, AUTO_BADGES, CHARACTER_CATEGORIES } from "@/lib/badges";
 import {
   accountMetrics,
@@ -85,6 +85,7 @@ export default async function BadgesPage({ searchParams }: PageProps<"/badges">)
     let defs: DefRow[] = [];
     let awards: AwardLine[] = [];
     let worldCharacters: { id: string; name: string }[] = [];
+    const ownCharacters = world ? (await getOwnCharacters(user.id, world.id)).map((c) => ({ id: c.id, name: c.name })) : [];
     if (world) {
       const [defRes, charRes] = await Promise.all([
         supabase
@@ -146,7 +147,7 @@ export default async function BadgesPage({ searchParams }: PageProps<"/badges">)
                       ))}
                     </p>
                   )}
-                  {canAward && <AwardControls defId={d.id} characters={worldCharacters} />}
+                  {canAward && <AwardControls defId={d.id} characters={worldCharacters} ownCharacters={ownCharacters} defaultAsId={character?.id ?? null} />}
                   {canAward && (
                     <div className="mt-2">
                       <DeleteDefButton defId={d.id} name={d.name} />

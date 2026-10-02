@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { parseMentions } from "@/lib/mentions";
 import { sendPushToUser } from "@/lib/push";
 
+// Typen, deren Meldungen zum selben Ziel gebündelt werden (siehe migration_bundle_notifications.sql).
+const BUNDLED_TYPES = new Set(["like", "story_like", "comment", "redaktion_comment", "redaktion_reaction"]);
+
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 // Legt eine In-App-Benachrichtigung an und schickt - falls die Zielperson ein
@@ -36,6 +39,8 @@ export async function createNotification(
     title: params.actorName,
     body: params.recipientName ? `${params.recipientName}: ${params.message}` : params.message,
     url: params.link,
+    // Gleiche Art + Ziel ersetzt die vorige Push-Meldung, statt sich zu stapeln.
+    tag: BUNDLED_TYPES.has(params.type) ? `${params.type}:${params.link}` : undefined,
   }, { recipientName: params.recipientName, type: params.type });
 }
 

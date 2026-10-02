@@ -34,6 +34,8 @@ import { AppLogoSync } from "@/components/app-logo-sync";
 import { SelectionCookieKeeper } from "@/components/selection-cookie-keeper";
 import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { getEmojiMap } from "@/lib/custom-emoji-server";
+import { getAccountDefaultFont } from "@/lib/default-font-server";
+import { DefaultFontSync } from "@/components/default-font-sync";
 import { MobileMain } from "@/components/mobile-main";
 import { OfflineBanner } from "@/components/offline-banner";
 import { KeyboardFix } from "@/components/keyboard-fix";
@@ -145,7 +147,7 @@ if (location.pathname.indexOf('/redaktion') === 0) document.documentElement.setA
 `;
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const emojiMap = await getEmojiMap();
+  const [emojiMap, accountFont] = await Promise.all([getEmojiMap(), getAccountDefaultFont()]);
   return (
     <html
       lang="de"
@@ -161,6 +163,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ModeTheme />
         <AppLogoSync />
         <SelectionCookieKeeper />
+        <DefaultFontSync loggedIn={accountFont.loggedIn} accountFontId={accountFont.fontId} />
         <ServiceWorkerRegister />
         <PushSync />
         <WikiPreviewLayer />

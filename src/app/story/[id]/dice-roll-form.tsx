@@ -84,6 +84,7 @@ export function DiceRollForm({
   // Vor dem ersten Wurf schon anzeigen, wie viele Glückspunkte in dieser Szene noch übrig sind.
   useEffect(() => {
     if (!glueckOption || glueckOption.value <= 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Rücksetzen, wenn die Glücks-Option entfällt; die Abfrage darunter ist asynchron
       setLuckRemaining(null);
       return;
     }
@@ -107,6 +108,7 @@ export function DiceRollForm({
         die,
         targetCharacterId: target || null,
       });
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- gehört zum Abschluss der Server-Action (siehe oben)
       if (state.luckRemaining !== null) setLuckRemaining(state.luckRemaining);
       setLabel("");
       setStatName("");

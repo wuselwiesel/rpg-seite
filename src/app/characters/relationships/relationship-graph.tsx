@@ -4,7 +4,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force";
 import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
-import type { Character, CharacterRelationship } from "@/lib/types";
+import type { Character, CharacterRelationship, RelationshipHistoryEntry } from "@/lib/types";
+import { buildAdjacency, groupHistory, neighborhood, relationshipsAsOf } from "@/lib/relationship-graph";
 
 const W = 800;
 const H = 560;
@@ -59,10 +60,12 @@ export function RelationshipGraph({
   characters,
   relationships,
   initialFocusId,
+  history = [],
 }: {
   characters: Character[];
   relationships: CharacterRelationship[];
   initialFocusId?: string | null;
+  history?: RelationshipHistoryEntry[];
 }) {
   const clipBase = useId().replace(/:/g, "");
   const byId = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters]);
@@ -84,25 +87,10 @@ export function RelationshipGraph({
 
   // Welche Charaktere sind sichtbar?
   const { shownIds, linked } = useMemo(() => {
-    const adj = new Map<string, Set<string>>();
-    for (const r of relationships) {
-      if (!byId.has(r.character_a_id) || !byId.has(r.character_b_id)) continue;
-      (adj.get(r.character_a_id) ?? adj.set(r.character_a_id, new Set()).get(r.character_a_id)!).add(r.character_b_id);
-      (adj.get(r.character_b_id) ?? adj.set(r.character_b_id, new Set()).get(r.character_b_id)!).add(r.character_a_id);
-    }
+    const adj = buildAdjacency(relationships, new Set(byId.keys()));
     let ids: string[];
     if (focus) {
-      const seen = new Set([focus]);
-      let frontier = [focus];
-      for (let d = 0; d < depth; d++) {
-        const next: string[] = [];
-        for (const id of frontier) for (const n of adj.get(id) ?? []) if (!seen.has(n)) {
-            seen.add(n);
-            next.push(n);
-          }
-        frontier = next;
-      }
-      ids = Array.from(seen);
+      ids = neighborhood(adj, focus, depth);
     } else {
       ids = characters.filter((c) => adj.has(c.id)).map((c) => c.id);
     }
@@ -110,12 +98,53 @@ export function RelationshipGraph({
     return { shownIds: ids, linked: adj };
   }, [characters, relationships, byId, focus, depth, house]);
 
-  const shownRels = useMemo(() => {
+  const baseRels = useMemo(() => {
     const set = new Set(shownIds);
     return relationships.filter((r) => set.has(r.character_a_id) && set.has(r.character_b_id));
   }, [relationships, shownIds]);
 
-  const positions = useMemo(() => layout(shownIds, shownRels), [shownIds, shownRels]);
+  // Das Layout bleibt beim Zurückspulen stabil: es wird immer aus dem heutigen Stand berechnet.
+  const positions = useMemo(() => layout(shownIds, baseRels), [shownIds, baseRels]);
+
+  // --- Zeitleiste: Stand der Beziehungen zu einem früheren Zeitpunkt ---
+  const historyByRel = useMemo(() => groupHistory(history), [history]);
+  const minTs = useMemo(() => {
+    let min = Infinity;
+    for (const list of historyByRel.values()) if (list[0]) min = Math.min(min, list[0].at);
+    return min;
+  }, [historyByRel]);
+  const [now] = useState(() => Date.now());
+  const canTravel = Number.isFinite(minTs) && minTs < now - 60_000;
+  // 1000 = heute, 0 = erster Eintrag.
+  const [timePos, setTimePos] = useState(1000);
+  const [playing, setPlaying] = useState(false);
+  const asOf = canTravel && timePos < 1000 ? minTs + ((now - minTs) * timePos) / 1000 : null;
+
+  const shownRels = useMemo(
+    () => (asOf == null ? baseRels : relationshipsAsOf(baseRels, historyByRel, asOf)),
+    [baseRels, asOf, historyByRel],
+  );
+
+  // Zum gewählten Zeitpunkt sichtbare Charaktere: solche mit Beziehung (und der Fokus).
+  const renderIds = useMemo(() => {
+    if (asOf == null) return shownIds;
+    const withEdge = new Set(shownRels.flatMap((r) => [r.character_a_id, r.character_b_id]));
+    return shownIds.filter((id) => withEdge.has(id) || id === focus);
+  }, [asOf, shownIds, shownRels, focus]);
+
+  useEffect(() => {
+    if (!playing) return;
+    const timer = setInterval(() => {
+      setTimePos((p) => {
+        if (p >= 1000) {
+          setPlaying(false);
+          return 1000;
+        }
+        return Math.min(1000, p + 8);
+      });
+    }, 80);
+    return () => clearInterval(timer);
+  }, [playing]);
 
   const unconnected = useMemo(
     () => characters.filter((c) => !linked.has(c.id) && (!house || c.house === house)),
@@ -291,7 +320,71 @@ export function RelationshipGraph({
         )}
       </div>
 
-      {shownIds.length === 0 ? (
+      {canTravel && (
+        <div className="flex flex-col gap-1.5 rounded-xl bg-surface px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="font-medium text-fg">
+              {asOf == null ? "Stand: heute" : `Stand: ${new Date(asOf).toLocaleDateString("de-DE")}`}
+            </span>
+            <span className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (timePos >= 1000) setTimePos(0);
+                  setPlaying((v) => !v);
+                }}
+                className="rounded-full bg-surface-2 px-2.5 py-1 text-fg-soft hover:text-fg"
+              >
+                {playing ? "❚❚ Pause" : "▶ Abspielen"}
+              </button>
+              {[
+                { l: "vor 1 Monat", ms: 30 * 86400000 },
+                { l: "vor 3 Monaten", ms: 90 * 86400000 },
+              ].map((p) => (
+                <button
+                  key={p.l}
+                  type="button"
+                  onClick={() => {
+                    setPlaying(false);
+                    setTimePos(Math.max(0, Math.round(1000 - (p.ms / (now - minTs)) * 1000)));
+                  }}
+                  className="rounded-full bg-surface-2 px-2.5 py-1 text-fg-soft hover:text-fg"
+                >
+                  {p.l}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setPlaying(false);
+                  setTimePos(1000);
+                }}
+                className="rounded-full bg-surface-2 px-2.5 py-1 text-fg-soft hover:text-fg"
+              >
+                Heute
+              </button>
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1000}
+            value={timePos}
+            onChange={(e) => {
+              setPlaying(false);
+              setTimePos(Number(e.target.value));
+            }}
+            aria-label="Zeitpunkt der Beziehungen"
+            className="w-full accent-[var(--accent)]"
+          />
+          <div className="flex justify-between text-[11px] text-muted">
+            <span>{new Date(minTs).toLocaleDateString("de-DE")}</span>
+            <span>heute</span>
+          </div>
+        </div>
+      )}
+
+      {renderIds.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted">Keine Beziehungen in dieser Ansicht.</p>
       ) : (
         <div className="relative overflow-hidden rounded-xl bg-surface">
@@ -354,7 +447,7 @@ export function RelationshipGraph({
                   </g>
                 );
               })}
-              {shownIds.map((id) => {
+              {renderIds.map((id) => {
                 const c = byId.get(id);
                 const pos = positions.get(id);
                 if (!c || !pos) return null;

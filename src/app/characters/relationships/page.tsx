@@ -133,7 +133,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
 
       {view === "netz" && (
         <div className="mb-8 rounded-2xl bg-surface-2 p-6">
-          <RelationshipGraph characters={shownChars} relationships={shownRels} initialFocusId={activeCharacter?.id} />
+          <RelationshipGraph characters={shownChars} relationships={shownRels} initialFocusId={activeCharacter?.id} history={history ?? []} />
         </div>
       )}
 

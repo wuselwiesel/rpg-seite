@@ -1,30 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Trash2, Upload } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { EMOJI_NAME } from "@/lib/custom-emoji";
-import { createCustomEmoji, deleteCustomEmoji } from "./actions";
-
-const MAX_BYTES = 256 * 1024;
-const TARGET_SIZE = 128;
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
+import { EmojiUploadForm } from "@/components/emoji-upload-form";
+import { deleteCustomEmoji } from "./actions";
 
 type EmojiRow = { id: string; name: string; image_url: string; created_by: string };
-
-// Verkleinert Standbilder auf max. 128 px und behält Transparenz (PNG); GIFs bleiben unverändert.
-async function prepareImage(file: File): Promise<File> {
-  if (file.type === "image/gif") return file;
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, TARGET_SIZE / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-  if (!blob) return file;
-  return new File([blob], "emoji.png", { type: "image/png" });
-}
 
 export function EmojiManager({
   worldName,
@@ -37,50 +18,7 @@ export function EmojiManager({
   currentUserId: string;
   isWorldOwner: boolean;
 }) {
-  const [name, setName] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const clean = name.trim().toLowerCase().replace(/^:|:$/g, "");
-    if (!EMOJI_NAME.test(clean)) return setError("Name: 2–32 Zeichen, nur Kleinbuchstaben, Zahlen und Unterstrich.");
-    if (!file) return setError("Bitte ein Bild auswählen.");
-    if (!["image/png", "image/gif", "image/webp"].includes(file.type)) return setError("Erlaubt sind PNG, GIF und WebP.");
-    setBusy(true);
-    try {
-      const prepared = await prepareImage(file);
-      if (prepared.size > MAX_BYTES) {
-        setError("Das Bild ist zu groß (max. 256 KB).");
-        return;
-      }
-      const supabase = createClient();
-      const ext = prepared.type === "image/gif" ? "gif" : prepared.type === "image/webp" ? "webp" : "png";
-      const path = `emoji/${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, prepared, { contentType: prepared.type });
-      if (upErr) {
-        setError(upErr.message);
-        return;
-      }
-      const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
-      const err = await createCustomEmoji(clean, url);
-      if (err) {
-        setError(err);
-        return;
-      }
-      setName("");
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-      window.location.reload();
-    } catch {
-      setError("Das Bild konnte nicht verarbeitet werden.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function remove(id: string) {
     if (!confirm("Dieses Emoji wirklich löschen?")) return;
@@ -91,45 +29,10 @@ export function EmojiManager({
 
   return (
     <div className="flex flex-col gap-6">
-      <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl border border-line p-4">
-        <p className="text-sm font-medium text-fg">Neues Emoji für „{worldName}“</p>
-        <label className="flex flex-col gap-1 text-sm text-fg-soft">
-          Name
-          <div className="flex items-center rounded-md border border-line bg-surface focus-within:border-accent">
-            <span className="pl-3 text-muted">:</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={34}
-              placeholder="katze"
-              autoCapitalize="none"
-              className="min-w-0 flex-1 bg-transparent px-1 py-2 text-fg outline-none"
-            />
-            <span className="pr-3 text-muted">:</span>
-          </div>
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-fg-soft">
-          Bild (PNG, GIF oder WebP, höchstens 256 KB)
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/gif,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-sm text-fg-soft file:mr-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:text-fg"
-          />
-        </label>
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-        <button
-          type="submit"
-          disabled={busy}
-          className="flex items-center gap-1.5 self-start rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
-        >
-          <Upload className="h-4 w-4" strokeWidth={2} />
-          {busy ? "Lädt hoch..." : "Hinzufügen"}
-        </button>
-      </form>
+      <EmojiUploadForm title={`Neues Emoji für „${worldName}“`} onDone={() => window.location.reload()} />
 
       <div>
+        {error && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
         <p className="mb-2 text-sm font-medium text-fg">Emojis dieser Welt ({emojis.length})</p>
         {emojis.length === 0 ? (
           <p className="text-sm text-muted">Noch keine eigenen Emojis. Schreib später :name: in Beiträge, Kommentare und Chats.</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skull, X } from "lucide-react";
 import { previewFateAction, postFateResultAction, type FatePreview } from "./actions";
@@ -185,14 +185,11 @@ export function SchicksalForm({
     [allCharacterOptions, char1FilterWorld, char1FilterOwner],
   );
 
-  // Passt die aktuelle Auswahl nicht mehr zum Filter, automatisch auf den ersten
-  // verfügbaren Charakter wechseln, statt eine unsichtbare Auswahl stehen zu lassen.
-  useEffect(() => {
-    if (char1Mode !== "specific") return;
-    const stillVisible = filteredCharacterOptions.some((w) => w.characters.some((c) => c.id === char1Id));
-    if (!stillVisible) setChar1Id(filteredCharacterOptions[0]?.characters[0]?.id ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredCharacterOptions, char1Mode]);
+  // Passt die aktuelle Auswahl nicht mehr zum Filter, gilt automatisch der erste verfügbare Charakter,
+  // statt eine unsichtbare Auswahl stehen zu lassen.
+  const char1Visible = filteredCharacterOptions.some((w) => w.characters.some((c) => c.id === char1Id));
+  const effectiveChar1Id =
+    char1Mode !== "specific" || char1Visible ? char1Id : (filteredCharacterOptions[0]?.characters[0]?.id ?? "");
 
   const [extraEnabled, setExtraEnabled] = useState(false);
   const [slots, setSlots] = useState<SlotConfig[]>([]);
@@ -253,7 +250,7 @@ export function SchicksalForm({
     try {
       const char1Config: Char1Config =
         char1Mode === "specific"
-          ? { mode: "specific", characterId: char1Id }
+          ? { mode: "specific", characterId: effectiveChar1Id }
           : { mode: "pool", gender: char1Gender, ownerId: char1Owner };
       const result = await previewFateAction(
         char1Config,
@@ -336,7 +333,7 @@ export function SchicksalForm({
               <ProfilSelect owners={allOwners} value={char1FilterOwner} onChange={setChar1FilterOwner} />
             </div>
             <select
-              value={char1Id}
+              value={effectiveChar1Id}
               onChange={(e) => setChar1Id(e.target.value)}
               className="rounded-md border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
             >
@@ -353,7 +350,7 @@ export function SchicksalForm({
             {filteredCharacterOptions.length === 0 && (
               <p className="text-xs text-muted">Kein Charakter passt zu dieser Filterkombination.</p>
             )}
-            {!ownCharacters.some((c) => c.id === char1Id) && (
+            {!ownCharacters.some((c) => c.id === effectiveChar1Id) && (
               <p className="text-xs text-muted">
                 Kein eigener Charakter – die Szene wird als Erzähler:in gepostet (Autor:innenschaft bleibt technisch bei
                 dir).

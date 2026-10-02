@@ -2493,6 +2493,115 @@ alter table public.redaktion_reactions drop constraint if exists redaktion_react
 alter table public.redaktion_reactions
   add constraint redaktion_reactions_emoji_check check (char_length(emoji) between 1 and 40);
 
+-- ---------------------------------------------------------------------------
+-- Badges pro Stück ausblenden: ausgeblendete Badges erscheinen nicht im Profil, in der Sammlung anderer und im Verlauf.
+alter table public.badge_awards add column if not exists hidden boolean not null default false;
+
+-- Besitzer:innen (Charakter bzw. Account) dürfen nur die Spalte "hidden" ändern.
+revoke update on public.badge_awards from authenticated, anon;
+grant update (hidden) on public.badge_awards to authenticated;
+
+drop policy if exists "badge_awards_update_hidden" on public.badge_awards;
+create policy "badge_awards_update_hidden" on public.badge_awards
+  for update to authenticated
+  using (
+    user_id = auth.uid()
+    or exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  )
+  with check (
+    user_id = auth.uid()
+    or exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+  );
+
+
+-- ---------------------------------------------------------------------------
+-- Standard-Schrift im Konto (statt nur im Browser): gilt für neuen Text im Editor auf allen Geräten.
+alter table public.profiles add column if not exists default_font text;
+alter table public.profiles drop constraint if exists profiles_default_font_format;
+alter table public.profiles add constraint profiles_default_font_format check (default_font is null or default_font ~ '^[a-zA-Z0-9]{1,40}$');
+
+
+-- ---------------------------------------------------------------------------
+-- Benachrichtigungen bündeln: mehrere Kommentare, Story-Likes und Reaktionen auf dasselbe Ziel, solange die
+-- vorige noch ungelesen ist, ergeben eine Benachrichtigung ("X und 4 weitere ..."). Gefällt-mir-Meldungen
+-- wurden schon vorher gebündelt (migration_like_notifications.sql); diese Funktion übernimmt das und erweitert es.
+create or replace function public.create_notification(
+  p_user_id uuid,
+  p_type text,
+  p_actor_name text,
+  p_actor_avatar_url text,
+  p_link text,
+  p_message text,
+  p_recipient_name text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+begin
+  if p_type = 'like' then
+    insert into public.notifications (user_id, type, actor_name, actor_avatar_url, link, message, recipient_name, actor_count)
+    values (p_user_id, p_type, p_actor_name, p_actor_avatar_url, p_link, p_message, p_recipient_name, 1)
+    on conflict (user_id, link, type, message) where (type = 'like' and read_at is null)
+    do update set
+      actor_name = excluded.actor_name,
+      actor_avatar_url = excluded.actor_avatar_url,
+      recipient_name = excluded.recipient_name,
+      actor_count = case
+        when public.notifications.actor_name = excluded.actor_name then public.notifications.actor_count
+        else public.notifications.actor_count + 1
+      end,
+      created_at = now();
+  elsif p_type in ('story_like', 'comment', 'redaktion_comment', 'redaktion_reaction') then
+    -- Reaktionen mit unterschiedlichem Emoji gehören zusammen; die Meldung wird dann allgemein.
+    update public.notifications n set
+      actor_name = p_actor_name,
+      actor_avatar_url = p_actor_avatar_url,
+      recipient_name = p_recipient_name,
+      actor_count = case when n.actor_name = p_actor_name then n.actor_count else n.actor_count + 1 end,
+      message = case
+        when n.type = 'redaktion_reaction' and n.message <> p_message then 'hat auf deinen Redaktions-Beitrag reagiert'
+        else n.message
+      end,
+      created_at = now()
+    where n.id = (
+      select id from public.notifications
+      where user_id = p_user_id and link = p_link and type = p_type and read_at is null
+        and (p_type = 'redaktion_reaction' or message = p_message)
+      order by created_at desc
+      limit 1
+    )
+    returning n.id into v_id;
+    if v_id is null then
+      insert into public.notifications (user_id, type, actor_name, actor_avatar_url, link, message, recipient_name, actor_count)
+      values (p_user_id, p_type, p_actor_name, p_actor_avatar_url, p_link, p_message, p_recipient_name, 1);
+    end if;
+  else
+    insert into public.notifications (user_id, type, actor_name, actor_avatar_url, link, message, recipient_name)
+    values (p_user_id, p_type, p_actor_name, p_actor_avatar_url, p_link, p_message, p_recipient_name);
+  end if;
+end;
+$$;
+
+
+-- ---------------------------------------------------------------------------
+-- Welcher Charakter hat ein Badge verliehen? ("Verliehen von Mira", Benachrichtigung "Mira hat dir das Badge ... verliehen")
+alter table public.badge_awards add column if not exists awarded_by_character_id uuid references public.characters (id) on delete set null;
+
+
+-- ---------------------------------------------------------------------------
+-- Frei gewähltes Zeichen neben dem Namen (Emoji, Symbol oder eigenes Emoji :name:), pro Charakter und pro Redaktions-Profil.
+alter table public.characters add column if not exists name_symbol text;
+alter table public.redaktion_profiles add column if not exists name_symbol text;
+
+alter table public.characters drop constraint if exists characters_name_symbol_len;
+alter table public.characters add constraint characters_name_symbol_len check (name_symbol is null or char_length(name_symbol) <= 40);
+alter table public.redaktion_profiles drop constraint if exists redaktion_profiles_name_symbol_len;
+alter table public.redaktion_profiles add constraint redaktion_profiles_name_symbol_len check (name_symbol is null or char_length(name_symbol) <= 40);
+
 -- Sicherheits-Härtung (Oktober 2026)
 -- 1) Interne Funktionen waren ohne Login aufrufbar (Supabase gibt neuen Funktionen standardmäßig EXECUTE an anon).
 --    Jetzt nur noch angemeldet; ohne Login bleiben nur Registrierung (username_available), Login (get_email_for_username)

@@ -1,6 +1,6 @@
 import { BadgeRow } from "@/components/badge-row";
 import { CharacterTimeline } from "@/components/character-timeline";
-import { getCharacterBadges, syncCharacterBadges } from "@/lib/badges-server";
+import { getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/badges-server";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -78,7 +78,8 @@ export default async function CharacterProfilePage({
 
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
   if (character.owner_id === user.id) await syncCharacterBadges(character.id);
-  const badges = await getCharacterBadges(character.id);
+  const allBadges = await getCharacterBadges(character.id);
+  const badges = character.owner_id === user.id ? allBadges : visibleBadges(allBadges);
   const myCharacters = activeWorld
     ? (await getOwnCharacters(user.id, activeWorld.id)).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
     : [];
@@ -228,7 +229,13 @@ export default async function CharacterProfilePage({
             </div>
           </div>
 
-          <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}</h1>
+          <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}
+            {character.name_symbol && (
+              <span className="ml-1.5 inline-block align-middle" >
+                <EmojiText text={character.name_symbol} />
+              </span>
+            )}
+          </h1>
           <p className="text-sm text-muted">
             {character.username ? `@${character.username}` : isOwn ? "kein.nutzername" : null}
             {character.worlds?.name && <>{character.username || isOwn ? " · " : ""}in {character.worlds.name}</>}
@@ -266,7 +273,7 @@ export default async function CharacterProfilePage({
             </dl>
           )}
 
-          <BadgeRow badges={badges} collectionHref={`/badges/sammlung/${character.id}`} />
+          <BadgeRow badges={badges} collectionHref={`/badges/sammlung/${character.id}`} editable={isOwn} />
         </header>
 
         <div className="mt-4 flex gap-2 sm:hidden">

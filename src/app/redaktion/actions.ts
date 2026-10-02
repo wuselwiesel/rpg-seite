@@ -1,5 +1,6 @@
 "use server";
 
+import { cleanNameSymbol } from "@/lib/name-symbol";
 import { syncAccountBadges } from "@/lib/badges-server";
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
@@ -324,6 +325,15 @@ export async function saveRedaktionProfile(_prevState: string | null, formData: 
     updated_at: new Date().toISOString(),
   });
   if (error) return error.message;
+
+  // Zeichen neben dem Namen separat speichern (siehe updateCharacter).
+  const { error: symbolError } = await supabase
+    .from("redaktion_profiles")
+    .update({ name_symbol: cleanNameSymbol(String(formData.get("name_symbol") ?? "")) || null })
+    .eq("user_id", user.id);
+  if (symbolError && /name_symbol/.test(symbolError.message) && cleanNameSymbol(String(formData.get("name_symbol") ?? ""))) {
+    return "Gespeichert, aber das Zeichen neben dem Namen nicht: Die Datenbank-Spalte name_symbol fehlt noch (supabase/migration_name_symbol.sql).";
+  }
 
   revalidatePath(`/redaktion/profil/${user.id}`);
   redirect(`/redaktion/profil/${user.id}`);

@@ -1,5 +1,6 @@
 "use client";
 
+import { NameSymbolField } from "@/components/name-symbol-field";
 import { useActionState, useState } from "react";
 import { updateCharacter } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -60,6 +61,7 @@ export function EditCharacterForm({
         Banner (optional)
         <AvatarUpload name="banner_url" displayName={name || "?"} initialUrl={character.banner_url} variant="cover" />
       </div>
+      <NameSymbolField initial={character.name_symbol} />
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Status-Zeile (optional)
         <input
@@ -170,7 +172,7 @@ export function EditCharacterForm({
           ))}
         </select>
         <span className="text-xs text-muted">
-          Wird für logisch stimmige Schicksale genutzt (z. B. "wird von der Partnerin betrogen" zieht die echte Partnerin).
+          Wird für logisch stimmige Schicksale genutzt (z. B. &quot;wird von der Partnerin betrogen&quot; zieht die echte Partnerin).
         </span>
       </label>
 

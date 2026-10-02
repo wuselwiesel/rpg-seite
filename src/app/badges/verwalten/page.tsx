@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getAccountBadges, getCharacterBadges } from "@/lib/badges-server";
-import { FeaturedPicker } from "../badge-controls";
+import { FeaturedPicker, VisibilityList } from "../badge-controls";
 export default async function ManageBadgesPage({ searchParams }: PageProps<"/badges/verwalten">) {
   const sp = await searchParams;
   const rawTab = Array.isArray(sp.bereich) ? sp.bereich[0] : sp.bereich;
@@ -78,12 +78,26 @@ export default async function ManageBadgesPage({ searchParams }: PageProps<"/bad
             <FeaturedPicker
               target={{ characterId: character.id }}
               currentId={featuredChar}
-              options={charBadges.map((b) => ({
+              options={charBadges.filter((b) => !b.hidden).map((b) => ({
                 awardId: b.awardId,
                 label: `${b.icon} ${b.name}`,
               }))}
             />
           </div>
+          <h2 className="mb-1 mt-8 font-serif text-xl text-fg">Welche Badges anzeigen?</h2>
+          <p className="mb-2 text-sm text-fg-soft">
+            Ausgeblendete Badges erscheinen nicht im Profil, nicht in deiner Sammlung für andere und nicht im Verlauf.
+          </p>
+          <VisibilityList
+            items={charBadges.map((b) => ({
+              awardId: b.awardId,
+              icon: b.icon,
+              name: b.name,
+              hidden: !!b.hidden,
+              removable: b.kind === "custom",
+              from: b.kind === "custom" ? b.awardedByName : null,
+            }))}
+          />
         </section>
       )}
 
@@ -95,12 +109,17 @@ export default async function ManageBadgesPage({ searchParams }: PageProps<"/bad
             <FeaturedPicker
               target={{ account: true }}
               currentId={featuredAcc}
-              options={accBadges.map((b) => ({
+              options={accBadges.filter((b) => !b.hidden).map((b) => ({
                 awardId: b.awardId,
                 label: `${b.icon} ${b.name}`,
               }))}
             />
           </div>
+          <h2 className="mb-1 mt-8 font-serif text-xl text-fg">Welche Abzeichen anzeigen?</h2>
+          <p className="mb-2 text-sm text-fg-soft">Ausgeblendete Abzeichen erscheinen nicht in deinem Redaktions-Profil.</p>
+          <VisibilityList
+            items={accBadges.map((b) => ({ awardId: b.awardId, icon: b.icon, name: b.name, hidden: !!b.hidden }))}
+          />
         </section>
       )}
     </div>
