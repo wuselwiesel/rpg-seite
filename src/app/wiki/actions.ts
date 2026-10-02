@@ -81,7 +81,7 @@ export async function updateWikiPage(
 
   const coverImageUrl = String(formData.get("cover_image_url") ?? "").trim();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("wiki_pages")
     .update({
       title,
@@ -91,9 +91,12 @@ export async function updateWikiPage(
       cover_image_url: coverImageUrl || null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", wikiPageId);
+    .eq("id", wikiPageId)
+    .select("id");
 
   if (error) return error.message;
+  // RLS lehnt unberechtigte Änderungen ohne Fehler ab (0 Zeilen) – das soll nicht wie Erfolg aussehen.
+  if (!data?.length) return "Der Eintrag konnte nicht gespeichert werden (keine Berechtigung oder gelöscht).";
 
   revalidatePath("/wiki");
   revalidatePath(`/wiki/${wikiPageId}`);
