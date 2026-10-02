@@ -3,11 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { encodeMention } from "@/lib/mentions";
 import { CharacterAvatar } from "./character-avatar";
+import { CustomEmojiPicker } from "./custom-emoji-picker";
 import type { Character } from "@/lib/types";
 
 export type MentionQuery = { start: number; query: string };
 
-export function findMentionQuery(text: string, cursor: number): MentionQuery | null {
+export function findMentionQuery(
+  text: string,
+  cursor: number,
+): MentionQuery | null {
   const uptoCursor = text.slice(0, cursor);
   const atIndex = uptoCursor.lastIndexOf("@");
   if (atIndex === -1) return null;
@@ -16,7 +20,8 @@ export function findMentionQuery(text: string, cursor: number): MentionQuery | n
   if (!/\s/.test(charBefore)) return null;
 
   const query = uptoCursor.slice(atIndex + 1);
-  if (query.includes("\n") || query.length > 30 || /\s{2,}/.test(query)) return null;
+  if (query.includes("\n") || query.length > 30 || /\s{2,}/.test(query))
+    return null;
 
   return { start: atIndex, query };
 }
@@ -25,7 +30,10 @@ export function firstName(name: string) {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
-export function encodeMentionsInText(text: string, mentions: { name: string; id: string }[]) {
+export function encodeMentionsInText(
+  text: string,
+  mentions: { name: string; id: string }[],
+) {
   let result = text;
   for (const mention of mentions) {
     const token = `@${mention.name}`;
@@ -65,7 +73,8 @@ export function MentionTextarea({
   draftKey?: string;
 }) {
   const [text, setText] = useState(initialText);
-  const [mentions, setMentions] = useState<{ name: string; id: string }[]>(initialMentions);
+  const [mentions, setMentions] =
+    useState<{ name: string; id: string }[]>(initialMentions);
   const [query, setQuery] = useState<MentionQuery | null>(null);
   const [highlighted, setHighlighted] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -75,7 +84,10 @@ export function MentionTextarea({
     try {
       const raw = localStorage.getItem(draftKey);
       if (!raw) return;
-      const saved = JSON.parse(raw) as { text?: string; mentions?: { name: string; id: string }[] };
+      const saved = JSON.parse(raw) as {
+        text?: string;
+        mentions?: { name: string; id: string }[];
+      };
       Promise.resolve().then(() => {
         if (saved.text) setText(saved.text);
         if (saved.mentions) setMentions(saved.mentions);
@@ -90,7 +102,8 @@ export function MentionTextarea({
     if (!draftKey || initialText) return;
     const timer = setTimeout(() => {
       try {
-        if (text.trim()) localStorage.setItem(draftKey, JSON.stringify({ text, mentions }));
+        if (text.trim())
+          localStorage.setItem(draftKey, JSON.stringify({ text, mentions }));
         else localStorage.removeItem(draftKey);
       } catch {
         // ignore
@@ -103,7 +116,9 @@ export function MentionTextarea({
   const matches = useMemo(() => {
     if (!query) return [];
     const q = query.query.toLowerCase();
-    return characters.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6);
+    return characters
+      .filter((c) => c.name.toLowerCase().includes(q))
+      .slice(0, 6);
   }, [query, characters]);
 
   function selectCharacter(character: Character) {
@@ -123,6 +138,19 @@ export function MentionTextarea({
       const pos = before.length + inserted.length;
       textareaRef.current?.focus();
       textareaRef.current?.setSelectionRange(pos, pos);
+    });
+  }
+
+  // Eigenes Emoji (:name:) an der Cursorposition einfügen.
+  function insertToken(token: string) {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? start;
+    setText(text.slice(0, start) + token + text.slice(end));
+    requestAnimationFrame(() => {
+      const pos = start + token.length;
+      el?.focus();
+      el?.setSelectionRange(pos, pos);
     });
   }
 
@@ -150,7 +178,10 @@ export function MentionTextarea({
     }
   }
 
-  const encoded = useMemo(() => encodeMentionsInText(text, mentions), [text, mentions]);
+  const encoded = useMemo(
+    () => encodeMentionsInText(text, mentions),
+    [text, mentions],
+  );
 
   return (
     <div className="relative">
@@ -164,8 +195,14 @@ export function MentionTextarea({
         required={required}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className={`w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm ${className}`}
+        className={`w-full rounded-md border border-line bg-surface py-2 pl-3 pr-10 text-base text-fg outline-none focus:border-accent sm:text-sm ${className}`}
       />
+      <div className="absolute right-1 top-1">
+        <CustomEmojiPicker
+          onPick={insertToken}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
+        />
+      </div>
       {query && matches.length > 0 && (
         <div className="absolute z-10 mt-1 w-64 max-w-full overflow-hidden rounded-md border border-line bg-surface shadow-lg">
           {matches.map((character, index) => (
@@ -177,10 +214,16 @@ export function MentionTextarea({
                 selectCharacter(character);
               }}
               className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
-                index === highlighted ? "bg-surface-2 text-fg" : "text-fg-soft hover:bg-surface-2"
+                index === highlighted
+                  ? "bg-surface-2 text-fg"
+                  : "text-fg-soft hover:bg-surface-2"
               }`}
             >
-              <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={24} />
+              <CharacterAvatar
+                name={character.name}
+                avatarUrl={character.avatar_url}
+                size={24}
+              />
               {character.name}
             </button>
           ))}

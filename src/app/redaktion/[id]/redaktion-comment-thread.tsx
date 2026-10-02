@@ -1,5 +1,6 @@
 "use client";
 
+import { MentionTextarea } from "@/components/mention-textarea";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { useOptimistic, useState } from "react";
@@ -150,13 +151,7 @@ export function RedaktionCommentThread({
         )}
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <textarea
-              name="content"
-              required
-              rows={1}
-              placeholder="Kommentieren..."
-              className="w-full resize-none rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
-            />
+            <MentionTextarea name="content" characters={[]} required rows={1} placeholder="Kommentieren..." />
           </div>
           <button
             type="submit"
