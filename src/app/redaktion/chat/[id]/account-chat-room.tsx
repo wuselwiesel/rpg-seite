@@ -6,6 +6,9 @@ import { Bell, BellOff, Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } 
 import { CharacterAvatar } from "@/components/character-avatar";
 import { setAccountChatMuted } from "../actions";
 import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
+import { ChatThemePicker } from "@/components/chat-theme-picker";
+import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
+import { useIsDark } from "@/lib/use-dark";
 
 export type { AccountMessage };
 
@@ -22,6 +25,7 @@ export function AccountChatRoom({
   partnerLastRead,
   initialMessages,
   initialMuted,
+  initialTheme,
 }: {
   chatId: string;
   userId: string;
@@ -31,10 +35,13 @@ export function AccountChatRoom({
   partnerLastRead: string | null;
   initialMessages: AccountMessage[];
   initialMuted: boolean;
+  initialTheme: ChatTheme;
 }) {
   const { messages, partnerRead, error, send, edit, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
   const [draft, setDraft] = useState("");
   const [muted, setMuted] = useState(initialMuted);
+  const [theme, setTheme] = useState(initialTheme);
+  const dark = useIsDark();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -63,7 +70,10 @@ export function AccountChatRoom({
   const lastOwnId = [...messages].reverse().find((m) => m.sender_id === userId)?.id;
 
   return (
-    <div className="mx-auto flex h-dvh max-w-2xl flex-col px-4 lg:max-w-none lg:px-6">
+    <div
+      style={chatThemeStyle(theme, dark)}
+      className="mx-auto flex h-dvh max-w-2xl flex-col px-4 text-fg lg:max-w-none lg:px-6"
+    >
       <div className="flex items-center justify-between gap-3 border-b border-line py-3 lg:py-4">
         <div className="flex min-w-0 items-center gap-1">
           <Link
@@ -82,6 +92,8 @@ export function AccountChatRoom({
             <h1 className="truncate font-serif text-xl text-fg">{partnerName}</h1>
           )}
         </div>
+        <div className="flex shrink-0 items-center">
+        <ChatThemePicker kind="account" chatId={chatId} theme={theme} onChange={setTheme} />
         <button
           type="button"
           onClick={toggleMute}
@@ -91,6 +103,7 @@ export function AccountChatRoom({
         >
           {muted ? <BellOff className="h-4 w-4" strokeWidth={2} /> : <Bell className="h-4 w-4" strokeWidth={2} />}
         </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">

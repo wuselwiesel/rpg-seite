@@ -6,6 +6,31 @@ import { createClient } from "@/lib/supabase/client";
 import { sendMessage } from "@/app/chats/actions";
 import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
 import { messagePreview } from "@/lib/chat-preview";
+import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
+import { useIsDark } from "@/lib/use-dark";
+
+// Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
+function useChatThemeStyle(kind: "account" | "rp", chatId: string, userId: string) {
+  const [theme, setTheme] = useState<ChatTheme | null>(null);
+  const dark = useIsDark();
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .from("chat_themes")
+      .select("main, accent, bg")
+      .eq("user_id", userId)
+      .eq("chat_kind", kind)
+      .eq("chat_id", chatId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setTheme((data as ChatTheme | null) ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [kind, chatId, userId]);
+  return chatThemeStyle(theme, dark);
+}
 
 type ThreadItem = {
   id: string;
@@ -238,6 +263,7 @@ export function AccountMiniRoom({
   userId: string;
 }) {
   const [initial, setInitial] = useState<AccountMessage[] | null>(null);
+  const themeStyle = useChatThemeStyle("account", chatId, userId);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,12 +284,9 @@ export function AccountMiniRoom({
   if (!initial)
     return <p className="p-6 text-center text-xs text-muted">Lädt…</p>;
   return (
-    <AccountThread
-      key={chatId}
-      chatId={chatId}
-      userId={userId}
-      initial={initial}
-    />
+    <div style={themeStyle} className="flex min-h-0 flex-1 flex-col text-fg">
+      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} />
+    </div>
   );
 }
 
@@ -405,6 +428,7 @@ export function RpMiniRoom({
     rows: RpRow[];
     people: Record<string, Who>;
   } | null>(null);
+  const themeStyle = useChatThemeStyle("rp", chatId, userId);
 
   useEffect(() => {
     let cancelled = false;
@@ -437,13 +461,15 @@ export function RpMiniRoom({
   if (!state)
     return <p className="p-6 text-center text-xs text-muted">Lädt…</p>;
   return (
-    <RpThread
-      key={chatId}
-      chatId={chatId}
-      userId={userId}
-      activeCharacterId={activeCharacterId}
-      people={state.people}
-      initial={state.rows}
-    />
+    <div style={themeStyle} className="flex min-h-0 flex-1 flex-col text-fg">
+      <RpThread
+        key={chatId}
+        chatId={chatId}
+        userId={userId}
+        activeCharacterId={activeCharacterId}
+        people={state.people}
+        initial={state.rows}
+      />
+    </div>
   );
 }

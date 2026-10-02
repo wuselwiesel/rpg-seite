@@ -50,7 +50,7 @@ function mix(a: string, b: string, t: number): string {
   return toHex([ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t]);
 }
 
-function luminance(hex: string): number {
+export function luminance(hex: string): number {
   const [r, g, b] = toRgb(hex).map((v) => {
     const c = v / 255;
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;

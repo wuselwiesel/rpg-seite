@@ -201,8 +201,9 @@ function BubbleInner({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const total =
-    Object.values(rpUnread).reduce((a, b) => a + b, 0) + Object.values(accUnread).reduce((a, b) => a + b, 0);
+  // Am Knopf zählen nur neue Redaktions-Nachrichten; RPG-Nachrichten stehen nur in der Liste.
+  const total = Object.values(accUnread).reduce((a, b) => a + b, 0);
+  const rpTotal = Object.values(rpUnread).reduce((a, b) => a + b, 0);
 
   function openChat(kind: "account" | "rp", id: string) {
     setView({ kind, id });
@@ -283,7 +284,7 @@ function BubbleInner({
           )}
           <button
             type="button"
-            aria-label={total > 0 ? `Chats öffnen, ${total} ungelesen` : "Chats öffnen"}
+            aria-label={total > 0 ? `Chats öffnen, ${total} neue Redaktionsnachrichten` : "Chats öffnen"}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -389,29 +390,31 @@ function BubbleInner({
                     }`}
                   >
                     {label}
+                    {(id === "account" ? total : id === "rp" ? rpTotal : 0) > 0 && (
+                      <span className="ml-1.5 rounded-full bg-accent px-1.5 text-[10px] font-semibold text-on-accent-strong">
+                        {id === "account" ? total : rpTotal}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
               {filter === "rp" && data && data.characters.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto px-3 pb-2" role="radiogroup" aria-label="Charakter für RPG-Chats">
-                  {data.characters.map((c) => {
-                    const selected = c.id === data.activeCharacterId;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        onClick={() => chooseCharacter(c.id)}
-                        className={`flex shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-xs font-medium transition ${
-                          selected ? "border-accent bg-surface-2 text-fg" : "border-line text-fg-soft hover:border-accent"
-                        }`}
-                      >
-                        <CharacterAvatar name={c.name} avatarUrl={c.avatarUrl} size={22} />
-                        <span className="max-w-24 truncate">{c.name}</span>
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center gap-2 px-3 pb-2">
+                  <label htmlFor="bubble-character" className="shrink-0 text-xs text-muted">
+                    Als
+                  </label>
+                  <select
+                    id="bubble-character"
+                    value={data.activeCharacterId ?? ""}
+                    onChange={(e) => chooseCharacter(e.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
+                  >
+                    {data.characters.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
               <div className="flex-1 overflow-y-auto px-1 pb-2">

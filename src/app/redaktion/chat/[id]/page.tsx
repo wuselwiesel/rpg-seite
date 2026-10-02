@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
+import { EMPTY_CHAT_THEME, type ChatTheme } from "@/lib/chat-theme";
 import { AccountChatRoom, type AccountMessage } from "./account-chat-room";
 
 export default async function AccountChatPage({ params }: PageProps<"/redaktion/chat/[id]">) {
@@ -11,7 +12,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: participants }, { data: messages }] = await Promise.all([
+  const [{ data: participants }, { data: messages }, { data: themeRow }] = await Promise.all([
     supabase
       .from("account_chat_participants")
       .select("user_id, last_read_at, muted, profiles(*)")
@@ -23,6 +24,13 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       .eq("chat_id", id)
       .order("created_at", { ascending: true })
       .returns<AccountMessage[]>(),
+    supabase
+      .from("chat_themes")
+      .select("main, accent, bg")
+      .eq("user_id", user.id)
+      .eq("chat_kind", "account")
+      .eq("chat_id", id)
+      .maybeSingle<ChatTheme>(),
   ]);
   const me = participants?.find((p) => p.user_id === user.id);
   if (!me) notFound();
@@ -38,6 +46,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       partnerLastRead={partner?.last_read_at ?? null}
       initialMessages={messages ?? []}
       initialMuted={me.muted}
+      initialTheme={themeRow ?? EMPTY_CHAT_THEME}
     />
   );
 }

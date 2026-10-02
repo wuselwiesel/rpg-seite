@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import type { Character, Chat, Message } from "@/lib/types";
+import { EMPTY_CHAT_THEME, type ChatTheme } from "@/lib/chat-theme";
 import { ChatRoom } from "./chat-room";
 
 type ChatWithParticipants = Chat & {
@@ -51,7 +52,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
     }
   }
 
-  const [{ data: messages }, { data: myCharacters }, { data: reads }] = await Promise.all([
+  const [{ data: messages }, { data: myCharacters }, { data: reads }, { data: themeRow }] = await Promise.all([
     supabase
       .from("messages")
       .select(
@@ -62,6 +63,13 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       .returns<Message[]>(),
     supabase.from("characters").select("id").eq("owner_id", user.id),
     supabase.from("chat_reads").select("user_id, last_read_at").eq("chat_id", id).neq("user_id", user.id),
+    supabase
+      .from("chat_themes")
+      .select("main, accent, bg")
+      .eq("user_id", user.id)
+      .eq("chat_kind", "rp")
+      .eq("chat_id", id)
+      .maybeSingle<ChatTheme>(),
   ]);
   const myCharacterIds = (myCharacters ?? []).map((c) => c.id);
 
@@ -94,6 +102,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       activeCharacter={activeCharacter}
       myCharacterIds={myCharacterIds}
       initialReads={reads ?? []}
+      initialTheme={themeRow ?? EMPTY_CHAT_THEME}
       initialMuted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
     />
   );

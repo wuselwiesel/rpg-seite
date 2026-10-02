@@ -15,6 +15,9 @@ import { MENTION_REGEX, plainMentions } from "@/lib/mentions";
 import { usePresenceStatus } from "@/lib/presence-status";
 import { StatusList, StatusPicker } from "@/components/presence-status-ui";
 import { MessageBubble } from "./message-bubble";
+import { ChatThemePicker } from "@/components/chat-theme-picker";
+import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
+import { useIsDark } from "@/lib/use-dark";
 import type { Character, Message } from "@/lib/types";
 
 export function ChatRoom({
@@ -31,6 +34,7 @@ export function ChatRoom({
   myCharacterIds,
   initialReads,
   initialMuted,
+  initialTheme,
 }: {
   chatId: string;
   userId: string;
@@ -46,6 +50,7 @@ export function ChatRoom({
   // Lesezeitpunkte der anderen Teilnehmer:innen (für "Gelesen")
   initialReads: { user_id: string; last_read_at: string }[];
   initialMuted: boolean;
+  initialTheme: ChatTheme;
 }) {
   // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
   const myCharacterIdSet = new Set([activeCharacter.id]);
@@ -61,6 +66,8 @@ export function ChatRoom({
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [reads, setReads] = useState(initialReads);
   const [muted, setMuted] = useState(initialMuted);
+  const [theme, setTheme] = useState(initialTheme);
+  const dark = useIsDark();
   const [gifOpen, setGifOpen] = useState(false);
   const [mentions, setMentions] = useState<{ name: string; id: string }[]>([]);
   const [editMentions, setEditMentions] = useState<{ name: string; id: string }[]>([]);
@@ -425,7 +432,10 @@ export function ChatRoom({
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-2xl flex-col px-4 lg:h-dvh lg:max-w-none lg:px-6">
+    <div
+      style={chatThemeStyle(theme, dark)}
+      className="mx-auto flex h-dvh max-w-2xl flex-col px-4 text-fg lg:h-dvh lg:max-w-none lg:px-6"
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line py-3 lg:py-4">
         <div className="flex min-w-0 items-center gap-1">
           <Link
@@ -488,6 +498,7 @@ export function ChatRoom({
           <p className="min-w-0 truncate text-right text-xs text-muted">
             {participants.map((p) => p.name).join(", ")}
           </p>
+          <ChatThemePicker kind="rp" chatId={chatId} theme={theme} onChange={setTheme} />
           <button
             type="button"
             onClick={toggleMute}
