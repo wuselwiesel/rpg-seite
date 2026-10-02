@@ -36,12 +36,14 @@ export function DiceRollForm({
   sheetUrl,
   targets,
   writerId,
+  onTyping,
 }: {
   storyPostId: string;
   worldId: string;
   sheetUrl?: string | null;
   targets: Character[];
   writerId: string;
+  onTyping?: () => void;
 }) {
   const action = createDiceRoll.bind(null, storyPostId, worldId);
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
@@ -148,7 +150,10 @@ export function DiceRollForm({
           type="text"
           name="label"
           value={label}
-          onChange={(e) => setLabel(e.target.value)}
+          onChange={(e) => {
+            setLabel(e.target.value);
+            onTyping?.();
+          }}
           required
           placeholder="z. B. Überzeugen, Klettern, Sinnesschärfe..."
           className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
