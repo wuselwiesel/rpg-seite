@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { useOptimistic, useState } from "react";
 import { Trash2, X } from "lucide-react";
@@ -77,7 +78,9 @@ export function RedaktionCommentThread({
             <Link href={`/redaktion/profil/${c.author_id}`} className="font-semibold hover:underline">
               {name}
             </Link>{" "}
-            <span className="whitespace-pre-line text-fg-soft">{c.content}</span>
+            <span className="whitespace-pre-line text-fg-soft">
+              <EmojiText text={c.content} />
+            </span>
           </div>
           <div className="mt-0.5 flex items-center gap-3 text-xs text-muted">
             <span>{timeAgoShort(c.created_at)}</span>

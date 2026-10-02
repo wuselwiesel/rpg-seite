@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiText } from "@/components/custom-emoji-provider";
 import { useRef } from "react";
 import Link from "next/link";
 import { CornerUpLeft, Pencil, Play, Trash2 } from "lucide-react";
@@ -221,7 +222,7 @@ export function MessageBubble({
                         @{seg.name}
                       </span>
                     ) : (
-                      <span key={i}>{seg.value}</span>
+                      <EmojiText key={i} text={seg.value} />
                     ),
                   )}
                 </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
@@ -685,6 +686,7 @@ export function ChatRoom({
           >
             GIF
           </button>
+          <CustomEmojiPicker onPick={(t) => setDraft((d) => d + t)} />
           <input
             ref={inputRef}
             type="text"

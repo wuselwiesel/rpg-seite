@@ -1,3 +1,4 @@
+import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Pencil } from "lucide-react";
@@ -86,21 +87,27 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
 
           {redProfile?.status_text && (
             <p className="mt-3 inline-block rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft">
-              {redProfile.status_text}
+              <EmojiText text={redProfile.status_text} />
             </p>
           )}
 
-          {redProfile?.bio && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-fg">{redProfile.bio}</p>}
+          {redProfile?.bio && (
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-fg">
+              <EmojiText text={redProfile.bio} />
+            </p>
+          )}
 
           {fields.length > 0 && (
             <dl className="mt-4 grid gap-2 sm:grid-cols-2">
               {fields.map((f, i) => (
                 <div key={i} className="rounded-xl bg-surface-2 px-3 py-2.5">
                   <dt className="flex items-center gap-1.5 text-xs font-medium text-muted">
-                    {f.icon && <span aria-hidden>{f.icon}</span>}
+                    {f.icon && <EmojiText text={f.icon} />}
                     {f.title}
                   </dt>
-                  <dd className="mt-0.5 whitespace-pre-wrap break-words text-sm text-fg">{f.text}</dd>
+                  <dd className="mt-0.5 whitespace-pre-wrap break-words text-sm text-fg">
+                    <EmojiText text={f.text} />
+                  </dd>
                 </div>
               ))}
             </dl>

@@ -1,5 +1,7 @@
 "use client";
 
+import { EmojiText } from "@/components/custom-emoji-provider";
+import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
@@ -160,7 +162,7 @@ export function AccountChatRoom({
                           : "rounded-bl-md bg-surface-2 text-fg"
                       } ${m.pending ? "opacity-60" : ""}`}
                     >
-                      {m.content}
+                      <EmojiText text={m.content} />
                     </div>
                     <span className="shrink-0 pb-1 text-[10px] text-muted opacity-0 transition group-hover:opacity-100">
                       {time(m.created_at)}
@@ -213,6 +215,11 @@ export function AccountChatRoom({
         }}
         className="flex items-end gap-2 border-t border-line py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
+        <CustomEmojiPicker
+          direction="up"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          onPick={(t) => setDraft((d) => d + t)}
+        />
         <textarea
           ref={inputRef}
           value={draft}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEmojiMap } from "./custom-emoji-provider";
 import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent, type Editor, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -56,6 +57,8 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
+  const [emojisOpen, setEmojisOpen] = useState(false);
+  const emojiMap = useEmojiMap();
   const [fontsOpen, setFontsOpen] = useState(false);
   const [defaultFontId, setDefaultFontId] = useState<string | null>(loadDefaultFontId);
 
@@ -209,6 +212,9 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
         <ToolbarButton label="Markierten Text in » « setzen" onClick={wrapInGuillemets}>
           »…«
         </ToolbarButton>
+        <ToolbarButton label="Eigene Emojis einfügen" active={emojisOpen} onClick={() => setEmojisOpen((v) => !v)}>
+          🖼️
+        </ToolbarButton>
         <ToolbarButton label="Symbole einfügen" active={symbolsOpen} onClick={() => setSymbolsOpen((v) => !v)}>
           ✦ Symbole
         </ToolbarButton>
@@ -252,6 +258,31 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
           ↷
         </ToolbarButton>
       </div>
+      {emojisOpen && (
+        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-surface-2 p-2" role="group" aria-label="Eigene Emojis">
+          {Object.keys(emojiMap).length === 0 ? (
+            <p className="text-xs text-muted">
+              Noch keine eigenen Emojis in dieser Welt. Lade sie unter Einstellungen → Eigene Emojis hoch.
+            </p>
+          ) : (
+            Object.entries(emojiMap)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([name, url]) => (
+                <button
+                  key={name}
+                  type="button"
+                  title={`:${name}:`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => editor.chain().focus().insertContent(`:${name}: `).run()}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-surface"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`:${name}:`} className="h-7 w-7 object-contain" draggable={false} />
+                </button>
+              ))
+          )}
+        </div>
+      )}
       {symbolsOpen && (
         <SymbolPicker
           onPick={(symbol) => editor.chain().focus().insertContent(symbol).run()}

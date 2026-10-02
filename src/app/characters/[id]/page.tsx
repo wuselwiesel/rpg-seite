@@ -1,3 +1,4 @@
+import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AtSign, ChevronDown, Clock, Grid3x3, Images, MessageCircle, Pencil, Pin, Rows3 } from "lucide-react";
@@ -235,20 +236,26 @@ export default async function CharacterProfilePage({
           </div>
 
           {character.status_text && (
-            <p className="mt-3 inline-block rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft">{character.status_text}</p>
+            <p className="mt-3 inline-block rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft"><EmojiText text={character.status_text} /></p>
           )}
 
-          {character.bio && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg">{character.bio}</p>}
+          {character.bio && (
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg">
+              <EmojiText text={character.bio} />
+            </p>
+          )}
 
           {(character.custom_fields?.length ?? 0) > 0 && (
             <dl className="mt-4 grid gap-2 sm:grid-cols-2">
               {character.custom_fields!.map((f, i) => (
                 <div key={i} className="rounded-xl bg-surface-2 px-3 py-2.5">
                   <dt className="flex items-center gap-1.5 text-xs font-medium text-muted">
-                    {f.icon && <span aria-hidden>{f.icon}</span>}
+                    {f.icon && <EmojiText text={f.icon} />}
                     {f.title}
                   </dt>
-                  <dd className="mt-0.5 whitespace-pre-wrap break-words text-sm text-fg">{f.text}</dd>
+                  <dd className="mt-0.5 whitespace-pre-wrap break-words text-sm text-fg">
+                    <EmojiText text={f.text} />
+                  </dd>
                 </div>
               ))}
             </dl>

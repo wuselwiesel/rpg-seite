@@ -1,3 +1,4 @@
+import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { parseMentions } from "@/lib/mentions";
 
@@ -16,7 +17,7 @@ export function MentionText({ text, className }: { text: string; className?: str
             @{segment.name}
           </Link>
         ) : (
-          <span key={index}>{segment.value}</span>
+          <EmojiText key={index} text={segment.value} />
         ),
       )}
     </p>

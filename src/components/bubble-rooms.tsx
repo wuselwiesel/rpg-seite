@@ -1,5 +1,7 @@
 "use client";
 
+import { EmojiText } from "./custom-emoji-provider";
+import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { useEffect, useRef, useState } from "react";
 import { SendHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -139,7 +141,7 @@ function MiniThread({
                         : "rounded-bl-md bg-surface-2 text-fg"
                     } ${m.mine && onEdit ? "cursor-pointer" : ""} ${m.pending ? "opacity-60" : ""}`}
                   >
-                    {m.text}
+                    <EmojiText text={m.text} />
                   </div>
                 )}
                 {m.mine &&
@@ -187,6 +189,10 @@ function MiniThread({
         }}
         className="flex items-end gap-2 border-t border-line p-2"
       >
+        <CustomEmojiPicker
+          className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          onPick={(t) => setDraft((d) => d + t)}
+        />
         <textarea
           value={draft}
           rows={1}

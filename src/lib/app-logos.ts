@@ -31,8 +31,13 @@ export function getStoredLogoId(): AppLogoId {
 
 // Setzt Tab-Icon (und Apple-Touch-Icon fürs "Zum Home-Bildschirm") auf das gewählte Logo.
 // Das Original behält die helle/dunkle Variante; die installierte App (Manifest) bleibt beim Original.
-// Weitere Icon-Links (Next legt eigene an) werden entfernt, sonst wählt der Browser unter mehreren aus.
+// Next legt eigene Icon-Links an, die React verwaltet - sie dürfen nicht entfernt werden (sonst bricht die
+// Hydration ab). Deshalb zeigen ALLE Icon-Links auf dasselbe Bild, nur das href wird geändert.
 const FAVICON_VERSION = "3";
+
+function setHref(link: HTMLLinkElement, href: string) {
+  if (link.getAttribute("href") !== href) link.setAttribute("href", href);
+}
 
 export function applyAppLogo(id: AppLogoId, dark: boolean) {
   const href =
@@ -42,29 +47,30 @@ export function applyAppLogo(id: AppLogoId, dark: boolean) {
         : `/icon.png?v=${FAVICON_VERSION}`
       : `/icons/logos/${id}-64.png?v=${FAVICON_VERSION}`;
 
-  let favicon = document.getElementById("favicon") as HTMLLinkElement | null;
-  if (!favicon) {
-    favicon = document.createElement("link");
-    favicon.id = "favicon";
+  let found = false;
+  document.head.querySelectorAll<HTMLLinkElement>('link[rel~="icon"], link[rel="shortcut icon"]').forEach((l) => {
+    found = true;
+    setHref(l, href);
+    l.setAttribute("type", "image/png");
+    l.removeAttribute("sizes");
+  });
+  if (!found) {
+    const favicon = document.createElement("link");
     favicon.rel = "icon";
+    favicon.type = "image/png";
+    favicon.href = href;
     document.head.appendChild(favicon);
   }
-  favicon.type = "image/png";
-  if (!favicon.href.endsWith(href)) favicon.href = href;
-  document.head
-    .querySelectorAll<HTMLLinkElement>('link[rel~="icon"], link[rel="shortcut icon"]')
-    .forEach((l) => l !== favicon && l.remove());
 
-  document.head.querySelectorAll<HTMLLinkElement>('link[rel="apple-touch-icon"]').forEach((l, i) => {
-    if (i > 0) l.remove();
-  });
-  let apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
-  if (!apple) {
-    apple = document.createElement("link");
+  const appleHref = `/icons/logos/${id}-apple.png?v=${FAVICON_VERSION}`;
+  const apples = document.head.querySelectorAll<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+  if (apples.length) apples.forEach((l) => setHref(l, appleHref));
+  else {
+    const apple = document.createElement("link");
     apple.rel = "apple-touch-icon";
+    apple.href = appleHref;
     document.head.appendChild(apple);
   }
-  apple.href = `/icons/logos/${id}-apple.png?v=${FAVICON_VERSION}`;
 }
 
 export function setStoredLogoId(id: AppLogoId) {

@@ -29,11 +29,7 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
       <div className="flex gap-8 px-3 pb-4 pt-2 sm:px-6 sm:py-8 lg:px-10">
         <div className="mx-auto min-w-0 max-w-[470px] flex-1">
           <div className="relative">
-            <div className="mb-3 flex h-[44px] items-center">
-              <p className="min-w-0 flex-1 pr-12 text-sm text-fg-soft">
-                Beiträge, Umfragen und Diskussionen für dich und deine Freund:innen – unabhängig von Charakteren.
-              </p>
-            </div>
+            <div className="mb-3 h-[44px]" />
             <SearchFilterBar basePath="/redaktion" q={q} from={from} to={to} tag={tag} iconOnly />
           </div>
 
