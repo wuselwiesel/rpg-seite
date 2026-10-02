@@ -100,3 +100,26 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
   chats.sort((a, b) => (b.lastAt ?? "").localeCompare(a.lastAt ?? ""));
   return { chats, activeCharacterId, characters };
 }
+
+// Exakte ungelesene Zähler für die Blase: RPG-Chats aus der Sicht des gewählten (sonst aktiven) Charakters, dazu die
+// Redaktions-Chats (stummgeschaltete zählen nicht).
+export async function getBubbleUnread(characterId?: string | null): Promise<{ rp: Record<string, number>; account: Record<string, number> }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { rp: {}, account: {} };
+
+  const world = await getActiveWorld(user.id);
+  const own = world ? await getOwnCharacters(user.id, world.id) : [];
+  const chosen = characterId ? own.find((c) => c.id === characterId) : null;
+  const active = chosen ?? (world ? await getActiveCharacter(user.id, world.id) : null);
+
+  const [rp, accountChats] = await Promise.all([
+    active ? getUnreadCounts(user.id, own.map((c) => c.id), active.id) : Promise.resolve({} as Record<string, number>),
+    getAccountChats(user.id),
+  ]);
+  const account: Record<string, number> = {};
+  for (const c of accountChats) if (c.unread > 0 && !c.muted) account[c.id] = c.unread;
+  return { rp, account };
+}

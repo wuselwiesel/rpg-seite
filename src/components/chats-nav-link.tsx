@@ -9,12 +9,14 @@ export function ChatsNavLink({
   userId,
   myCharacterIds,
   initialUnreadCounts,
+  activeCharacterId,
 }: {
   userId: string;
   myCharacterIds: string[];
   initialUnreadCounts: Record<string, number>;
+  activeCharacterId?: string | null;
 }) {
-  const unread = useUnreadChatIds(userId, myCharacterIds, initialUnreadCounts);
+  const unread = useUnreadChatIds(userId, myCharacterIds, initialUnreadCounts, activeCharacterId);
   const pathname = usePathname();
   const isActive = pathname === "/chats" || pathname?.startsWith("/chats/");
 
