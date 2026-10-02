@@ -109,9 +109,32 @@ export function StoryComposer({
     channelRef.current?.send({
       type: "broadcast",
       event: "typing",
-      payload: { characterId: writerId, name: narrator ? "Erzähler:in" : (writer?.name ?? "Jemand"), kind },
+      payload: {
+        characterId: writerId,
+        name: kind === "write" && narrator ? "Erzähler:in" : (writer?.name ?? "Jemand"),
+        kind,
+      },
     });
   }
+
+  // Sobald der Reiter „Würfeln“ offen ist, sehen die anderen „… würfelt“ (statt „schreibt“) – nicht erst nach einer Eingabe.
+  const pauseStatus = presence.pauseFor;
+  const writerName = writer?.name ?? "Jemand";
+  useEffect(() => {
+    if (mode !== "roll") return;
+    const send = () => {
+      if (document.visibilityState !== "visible") return;
+      pauseStatus(6000);
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { characterId: writerId, name: writerName, kind: "roll" },
+      });
+    };
+    send();
+    const timer = setInterval(send, 3000);
+    return () => clearInterval(timer);
+  }, [mode, writerId, writerName, pauseStatus]);
 
   return (
     <div className="flex flex-col gap-3">

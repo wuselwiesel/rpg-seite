@@ -54,6 +54,7 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Story: gelöschte Beiträge verschwinden live bei allen, die die Szene offen haben (`story/[id]/entry-list.tsx`, Realtime-DELETE auf `story_entries`).
 
 - Status in Story/Chat (`lib/presence-status.ts`, `components/presence-status-ui.tsx`): In der Story wird der gesetzte Status pro Charakter auf dem Gerät gemerkt (`usePresenceStatus(…, { persist: true })`, localStorage `wortwinkel:status:<characterId>`) und beim Öffnen wieder gesetzt, bis man ihn entfernt (✕). Eigene Texte landen in einer Liste „Gespeichert“ (`wortwinkel:status-saved`, max. 6). Beim Schreiben/Würfeln wird er nur kurz ausgeblendet (`pauseFor(6000)` statt früher `clear()`) und kommt danach von selbst zurück; gilt auch im RPG-Chat (dort ohne Speichern).
+- Story: Sobald der Reiter „Würfeln“ offen ist, senden wir alle 3 s das Signal „würfelt“ (nur bei sichtbarem Tab) – andere sehen „… würfelt“ statt „schreibt“; beim Zurückwechseln endet es nach ~4 s.
 - Editor-Leiste: ein Smiley-Knopf „Emojis einfügen“ öffnet den vollen Katalog (`EmojiCatalog`), das Bild-Symbol bleibt nur für „Bild oder GIF einfügen“.
 
 ## Gemerkte Auswahl (live)
