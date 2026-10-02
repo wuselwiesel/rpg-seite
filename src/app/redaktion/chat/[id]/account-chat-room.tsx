@@ -4,6 +4,7 @@ import { EmojiText } from "@/components/custom-emoji-provider";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { setAccountChatMuted } from "../actions";
@@ -41,6 +42,7 @@ export function AccountChatRoom({
 }) {
   const { messages, partnerRead, error, send, edit, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
   const [draft, setDraft] = useState("");
+  const enterSends = useEnterSends();
   const [muted, setMuted] = useState(initialMuted);
   const [theme, setTheme] = useState(initialTheme);
   const dark = useIsDark();
@@ -227,7 +229,7 @@ export function AccountChatRoom({
           maxLength={4000}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(pointer: fine)").matches) {
+            if (isSendKey(e, enterSends)) {
               e.preventDefault();
               submit();
             }

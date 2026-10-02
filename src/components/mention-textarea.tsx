@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { encodeMention } from "@/lib/mentions";
 import { CharacterAvatar } from "./character-avatar";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
+import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import type { Character } from "@/lib/types";
 
 export type MentionQuery = { start: number; query: string };
@@ -73,6 +74,7 @@ export function MentionTextarea({
   draftKey?: string;
 }) {
   const [text, setText] = useState(initialText);
+  const enterSends = useEnterSends();
   const [mentions, setMentions] =
     useState<{ name: string; id: string }[]>(initialMentions);
   const [query, setQuery] = useState<MentionQuery | null>(null);
@@ -162,7 +164,13 @@ export function MentionTextarea({
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (!query || matches.length === 0) return;
+    const picking = query && matches.length > 0;
+    if (!picking && isSendKey(e, enterSends) && text.trim()) {
+      e.preventDefault();
+      e.currentTarget.form?.requestSubmit();
+      return;
+    }
+    if (!picking) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();

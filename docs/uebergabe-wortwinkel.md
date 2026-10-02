@@ -48,6 +48,11 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - `CustomEmojiPicker` (`src/components/custom-emoji-picker.tsx`) öffnet jetzt den vollen Katalog (`emoji-picker-react`, `emoji-catalog*.tsx`) mit der Kategorie „Eigene Emojis“ (Notion-Stil). Liefert Unicode-Emoji oder `:name: `. Genutzt in Chats, Mention-Textarea, Editor-Toolbar und beim Badge-Symbol. Am Handy als festes Fenster über der Tab-Leiste.
 - Auch die Reaktionsleisten (Ingame `reaction-bar.tsx`, Redaktion `redaktion-reaction-bar.tsx`) nutzen den Katalog; eigene Emojis werden als `:name:` gespeichert und per `EmojiText` gerendert. Migration `supabase/migration_reaction_custom_emoji.sql` (Grenze `redaktion_reactions.emoji` 16 → 40 Zeichen) ist in Supabase ausgeführt.
 
+## Senden mit Enter (live)
+- Einstellung pro Gerät unter Einstellungen → Aussehen → „Senden mit Enter“ (`components/send-key-pref.tsx`, Logik/Hook `src/lib/send-pref.ts`, localStorage `wortwinkel:enter-sends`, Standard: Enter sendet). Aus: Enter = neue Zeile, Strg/Cmd+Enter sendet (gilt in beiden Modi immer). Am Handy (kein feiner Zeiger) bleibt Enter = neue Zeile.
+- Eingebaut in: RPG-Chat (`chats/[id]/chat-room.tsx`, Eingabefeld ist jetzt eine mehrzeilige Textarea), Redaktions-Chat, Chat-Blase, Kommentare (`MentionTextarea` schickt das umgebende Formular per `requestSubmit` ab). Nicht in Rich-Text-Editoren (Beiträge, Story): dort bleibt Enter ein Absatz. Neue Nachrichtenfelder: `isSendKey(e, useEnterSends())` benutzen.
+- Story: gelöschte Beiträge verschwinden live bei allen, die die Szene offen haben (`story/[id]/entry-list.tsx`, Realtime-DELETE auf `story_entries`).
+
 ## Gemerkte Auswahl (live)
 - Zuletzt gewählter Charakter und Welt bleiben nach dem Schließen der App erhalten: die Cookies `active_character_id` / `active_world_id` haben `maxAge` 1 Jahr (`SELECTION_COOKIE_OPTIONS` in `src/lib/types.ts`, an allen `set`-Stellen benutzt). `SelectionCookieKeeper` (`src/components/selection-cookie-keeper.tsx`, im Root-Layout) macht alte Session-Cookies beim Start dauerhaft. Neue Stellen, die diese Cookies setzen, müssen die Konstante nutzen.
 

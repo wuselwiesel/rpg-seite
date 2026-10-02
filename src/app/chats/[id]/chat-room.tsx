@@ -11,6 +11,7 @@ import { resizeImage } from "@/lib/image-resize";
 import { aggregateReactions } from "@/lib/reactions";
 import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, setChatMuted, updateMessage } from "../actions";
 import { GifPicker } from "@/components/gif-picker";
+import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
 import { MENTION_REGEX, plainMentions } from "@/lib/mentions";
 import { usePresenceStatus } from "@/lib/presence-status";
@@ -57,6 +58,7 @@ export function ChatRoom({
   const myCharacterIdSet = new Set([activeCharacter.id]);
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
+  const enterSends = useEnterSends();
   const [sending, setSending] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -74,7 +76,7 @@ export function ChatRoom({
   const [editMentions, setEditMentions] = useState<{ name: string; id: string }[]>([]);
   const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Entwurf pro Chat im Browser merken (übersteht Tab-Wechsel und Neuladen).
   const draftKey = `draft:chat:${chatId}`;
@@ -687,9 +689,9 @@ export function ChatRoom({
             GIF
           </button>
           <CustomEmojiPicker onPick={(t) => setDraft((d) => d + t)} />
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
+            rows={1}
             value={draft}
             onChange={(e) => {
               setDraft(e.target.value);
@@ -698,19 +700,25 @@ export function ChatRoom({
               if (e.target.value) announceTyping();
             }}
             onKeyDown={(e) => {
-              if (!mentionQuery || mentionMatches.length === 0) return;
-              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              if (mentionQuery && mentionMatches.length > 0) {
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setMentionIndex((i) => (i + (e.key === "ArrowDown" ? 1 : mentionMatches.length - 1)) % mentionMatches.length);
+                } else if (e.key === "Enter" || e.key === "Tab") {
+                  e.preventDefault();
+                  pickMention(mentionMatches[mentionIndex]);
+                } else if (e.key === "Escape") {
+                  setMentionQuery(null);
+                }
+                return;
+              }
+              if (isSendKey(e, enterSends)) {
                 e.preventDefault();
-                setMentionIndex((i) => (i + (e.key === "ArrowDown" ? 1 : mentionMatches.length - 1)) % mentionMatches.length);
-              } else if (e.key === "Enter" || e.key === "Tab") {
-                e.preventDefault();
-                pickMention(mentionMatches[mentionIndex]);
-              } else if (e.key === "Escape") {
-                setMentionQuery(null);
+                e.currentTarget.form?.requestSubmit();
               }
             }}
             placeholder={`Schreib als ${activeCharacter.name}... (@ zum Erwähnen)`}
-            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
+            className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none [field-sizing:content] focus:border-accent sm:text-sm"
           />
           <button
             type="submit"

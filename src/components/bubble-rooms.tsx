@@ -10,6 +10,7 @@ import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
 import { messagePreview } from "@/lib/chat-preview";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
+import { isSendKey, useEnterSends } from "@/lib/send-pref";
 
 // Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
 function useChatThemeStyle(kind: "account" | "rp", chatId: string, userId: string) {
@@ -59,6 +60,7 @@ function MiniThread({
   onDelete?: (id: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const enterSends = useEnterSends();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -199,11 +201,7 @@ function MiniThread({
           maxLength={4000}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (
-              e.key === "Enter" &&
-              !e.shiftKey &&
-              window.matchMedia("(pointer: fine)").matches
-            ) {
+            if (isSendKey(e, enterSends)) {
               e.preventDefault();
               submit();
             }
