@@ -1,4 +1,4 @@
-# Übergabe Wortwinkel (rpg-seite) – Stand 2. Oktober 2026
+# Übergabe Wortwinkel (rpg-seite) – Stand 2. Oktober 2026 (main = 47f245b, Vercel grün)
 
 Von: Agent A (Sitzung im Ordner `~/Desktop/coding`). An: den anderen Agent (Branch `claude/modest-bardeen-q29kyy`, PRs in `wuselwiesel/rpg-seite`).
 Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind v4, Vercel. Sprache der App und aller Antworten an die Nutzerin: **Deutsch**.
@@ -7,10 +7,10 @@ Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind
 - Verifizierte Änderungen ohne Rückfrage committen und pushen. Danach Vercel-Status prüfen: `gh api repos/wuselwiesel/rpg-seite/commits/<sha>/status --jq .state`.
 - Supabase-Migrationen führt der Agent selbst im SQL-Editor des Browser-Panes aus (Projekt `vdflmmdmezaersrssdci`; die Nutzerin loggt sich selbst ein, nie Zugangsdaten tippen). Danach per `pg_policies` / `pg_get_constraintdef` prüfen. `supabase/schema.sql` ist ein Append-only-Log: neue Blöcke vor das abschließende `notify pgrst, 'reload schema'` setzen.
 - Testaccount für localhost:3000: `logotestuser` (Welt „Testwelt“); das Passwort steht bewusst nicht im Repo, sondern in der Agent-Memory bzw. bei der Nutzerin.
-- Zuerst Desktop testen, dann Handy. Badges nur nach Rücksprache mit der Nutzerin.
+- Zuerst Desktop testen, dann Handy. Neue Badges/Erfolge sind inzwischen gewünscht und gebaut (siehe unten); weitere Ideen kurz mit der Nutzerin abstimmen.
 - **Vor dem Limit dieses Protokoll aktualisieren. Vor neuer Arbeit `git fetch` und prüfen, ob der andere Agent es schon gebaut hat** (Schrift-Vorschau und Status-Menü wurden doppelt gebaut).
 
-## Live auf main (Commit-Stand 1bf8714 und früher)
+## Live auf main (Grundlage, Stand 1bf8714)
 - Redaktion als eigener Modus: 3-teiliger Schalter Ingame · Story · Redaktion (`src/components/mode-switch.tsx`, Handy: Menü am Modus-Knopf), eigene Seitenleiste/Tabs (`sidebar-nav.tsx`, `mobile-nav.tsx`), eigenes Farbschema `html[data-mode="redaktion"]` (`globals.css`, `mode-theme.tsx`, Init-Script in `layout.tsx`).
 - Ingame hat links immer „Profil“ (aktiver Charakter).
 - Verlauf im Beziehungsnetz: Beziehungen bearbeiten/löschen/hinzufügen (`relationship-timeline.tsx` ist jetzt Client-Component, `EditForm` aus `relationship-list.tsx` exportiert).
@@ -52,11 +52,18 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 ## Gemerkte Auswahl (live)
 - Zuletzt gewählter Charakter und Welt bleiben nach dem Schließen der App erhalten: die Cookies `active_character_id` / `active_world_id` haben `maxAge` 1 Jahr (`SELECTION_COOKIE_OPTIONS` in `src/lib/types.ts`, an allen `set`-Stellen benutzt). `SelectionCookieKeeper` (`src/components/selection-cookie-keeper.tsx`, im Root-Layout) macht alte Session-Cookies beim Start dauerhaft. Neue Stellen, die diese Cookies setzen, müssen die Konstante nutzen.
 
-## Nächste Schritte (Wünsche der Nutzerin, Reihenfolge offen)
+## Wünsche der Nutzerin: Stand
 1. (erledigt) Redaktions-Feed hat jetzt den Aufbau des Ingame-Feeds: gleiche Spalte/Seitenleiste (`redaktion-sidebar.tsx`), Filterleiste, Pull-to-Refresh, unendliches Scrollen (`redaktion-feed-list.tsx`, `lib/redaktion-feed.ts`), randlose Insta-Karten in `redaktion-post-card.tsx`.
 2. (erledigt) Charakterprofile im Stil des Redaktions-Profils: Banner, überlappender Avatar, Status-Zeile, Bio, eigene Felder, Raster/Liste (`?ansicht=liste`), Charakterbogen-Bereich, Highlights und Tabs bleiben. Migration `supabase/migration_character_profile.sql` (Spalten `banner_url`, `status_text`, `custom_fields` an `characters`) ist im SQL-Editor **ausgeführt**. Bearbeiten unter `/characters/[id]/edit` (gemeinsamer Editor `components/profile-fields-editor.tsx`, Parser `lib/profile-fields.ts`, auch vom Redaktions-Profil genutzt).
-3. Eigene Emojis pro Welt (Upload PNG/GIF/WebP max. 256 KB, `:name:`-Kürzel, Picker; Orte: Beiträge/Kommentare, Chats, Story/Wiki, Profile inkl. Feld-Symbole). Noch nicht gebaut.
-4. (erledigt) Badges und Mini-Timeline – siehe Abschnitt unten.
+3. (erledigt) Eigene Emojis pro Welt inkl. Notion-artigem Katalog – siehe „Emoji-Katalog“ oben.
+4. (erledigt) Badges, Katalog, Sammlungen und Mini-Timeline – siehe „Badges und Verlauf“.
+
+## Offene Ideen / bekannte Lücken
+- Redaktions-Profil: Highlight-Kreise unter der Bio, Sichtbarkeit pro Feld; Zähler „Freund:innen“ nur im eigenen Profil (RLS auf Freundschaften nicht geprüft).
+- Badges: Herzen/Follower werden erst beim nächsten Sync erkannt (kein Trigger bei Erhalt); Namens-Badge nur das gewählte Haupt-Badge.
+- Emoji-Katalog: Emoji-Upload-Verwaltung liegt weiter unter Einstellungen → Eigene Emojis; eigene Emojis in Feld-Symbolen der Profile werden per `EmojiText` angezeigt, aber dort gibt es noch keinen Katalog-Picker (nur Texteingabe `:name:`).
+- Testdaten im Test-Account (darf die Nutzerin löschen): Selbsttest-Chat `00000000-0000-4000-8000-0000000000c1`, Emoji `:testgesicht:` (+ eine Redaktions-Reaktion damit), Welt-Badge „Ritter des Nebelhafens“, ein Test-Like.
+- Bestehende ESLint-Fehler (siehe Fallstricke) sind nicht von den neuen Dateien.
 
 ## Fallstricke
 - `tsconfig.tsbuildinfo` kann Typfehler verdecken: löschen und `npx tsc --noEmit; echo $?` ohne Pipe. Der Vercel-Build ist die Instanz, die zählt.
