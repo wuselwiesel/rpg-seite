@@ -225,6 +225,9 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
             >
               Erweiterte Suche mit Filtern
             </Link>
+            <Link href="/wiki/karten" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Karten
+            </Link>
 
             <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">
             {q ? (

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, Search, Shuffle, Star } from "lucide-react";
+import { Map as MapIcon, Plus, Search, Shuffle, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWikiMaps } from "@/lib/wiki-map-data";
 import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
 import { buildWikiTree, folderPath, type PageRow } from "@/lib/wiki-tree";
 import { tagCounts } from "@/lib/wiki-tags";
@@ -49,11 +50,12 @@ export default async function WikiHomePage() {
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [folders, pageRows, linkPages, favoriteIds] = await Promise.all([
+  const [folders, pageRows, linkPages, favoriteIds, maps] = await Promise.all([
     getWikiFolders(world.id),
     getWikiPageRows(world.id),
     getWikiLinkPages(world.id),
     getWikiFavoriteIds(user.id),
+    getWikiMaps(world.id),
   ]);
   const tree = buildWikiTree(folders, pageRows);
   const published = pageRows.filter((p) => !p.is_draft);
@@ -79,6 +81,13 @@ export default async function WikiHomePage() {
       >
         <Shuffle className="h-4 w-4" strokeWidth={2} />
         Zufällige Seite
+      </Link>
+      <Link
+        href="/wiki/karten"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <MapIcon className="h-4 w-4" strokeWidth={2} />
+        Karten{maps.length > 0 ? ` (${maps.length})` : ""}
       </Link>
     </div>
   );
@@ -145,6 +154,30 @@ export default async function WikiHomePage() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {maps.length > 0 && (
+        <section aria-labelledby="karten">
+          <h2 id="karten" className={sectionTitle}>
+            Karten
+          </h2>
+          <ul className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
+            {maps.slice(0, 3).map((m) => (
+              <li key={m.id}>
+                <Link href={`/wiki/karten/${m.id}`} className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-accent/50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={m.image_url} alt="" loading="lazy" className="aspect-[16/9] w-full bg-surface-2 object-cover" />
+                  <span className="p-3 font-serif text-lg text-fg">{m.title}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {maps.length > 3 && (
+            <Link href="/wiki/karten" className="mt-3 inline-block text-sm text-accent hover:underline">
+              Alle {maps.length} Karten
+            </Link>
+          )}
         </section>
       )}
 
