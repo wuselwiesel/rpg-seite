@@ -16,16 +16,15 @@ export function ModeSwitch() {
   const mode = getAppMode(usePathname());
 
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-2 p-1 text-[13px] font-medium" data-tour="mode-switch">
-      {MODES.map(({ id, href, label, Icon }) => (
+    <div className="flex gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium" data-tour="mode-switch">
+      {MODES.map(({ id, href, label }) => (
         <Link
           key={id}
           href={href}
-          className={`flex items-center justify-center gap-1 rounded-lg px-1.5 py-2 transition ${
-            mode === id ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg"
-          }`}
+          className={`flex flex-1 items-center justify-center whitespace-nowrap rounded-lg px-2 py-2 transition ${
+            id === "redaktion" ? "flex-[1.35]" : ""
+          } ${mode === id ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg"}`}
         >
-          <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
           {label}
         </Link>
       ))}

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { CharacterAvatar } from "@/components/character-avatar";
-import { RedaktionPostCard } from "../../redaktion-post-card";
+import { getAcceptedFriends } from "@/lib/friends";
+import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { formatDate } from "@/lib/format";
-import type { Profile, RedaktionPost } from "@/lib/types";
+import { ProfilePosts, type ProfilePost } from "./profile-posts";
+import type { Profile, RedaktionPost, RedaktionProfile } from "@/lib/types";
 
 type FeedRow = Omit<RedaktionPost, "poll_options"> & {
   poll_options?: { count: number }[];
@@ -25,56 +26,115 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
 
   const isOwn = userId === user.id;
 
-  const { data: posts } = await supabase
-    .from("redaktion_posts")
-    .select(
-      "*, author:author_id(id, username, nickname, avatar_url), story_post:story_post_id(id, title), poll_options:redaktion_poll_options(count), comments:redaktion_comments(count)",
-    )
-    .eq("author_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(50)
-    .returns<FeedRow[]>();
+  const [{ data: redProfile }, { data: rows }, friends] = await Promise.all([
+    supabase.from("redaktion_profiles").select("*").eq("user_id", userId).maybeSingle<RedaktionProfile>(),
+    supabase
+      .from("redaktion_posts")
+      .select(
+        "*, author:author_id(id, username, nickname, avatar_url), story_post:story_post_id(id, title), poll_options:redaktion_poll_options(count), comments:redaktion_comments(count)",
+      )
+      .eq("author_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(60)
+      .returns<FeedRow[]>(),
+    isOwn ? getAcceptedFriends(userId) : Promise.resolve(null),
+  ]);
+
+  const posts: ProfilePost[] = (rows ?? []).map(({ poll_options, comments, ...post }) => ({
+    ...post,
+    pollOptionCount: poll_options?.[0]?.count ?? 0,
+    commentCount: comments?.[0]?.count ?? 0,
+  }));
 
   const displayName = profile.nickname || profile.username;
+  const fields = redProfile?.custom_fields ?? [];
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
-      <div className="mb-6 flex items-center gap-4">
-        <CharacterAvatar name={displayName} avatarUrl={profile.avatar_url} size={72} />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate font-serif text-2xl text-fg">{displayName}</h1>
+    <ProfileThemeWrapper
+      theme={{ font: redProfile?.theme_font, accent: redProfile?.theme_accent, bg: redProfile?.theme_bg }}
+    >
+      <div className="mx-auto max-w-[935px] pb-10 sm:px-4 sm:pt-6">
+        <div className="h-32 overflow-hidden bg-gradient-to-br from-accent/40 to-accent-strong/40 sm:h-52 sm:rounded-2xl">
+          {redProfile?.banner_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={redProfile.banner_url} alt="" className="h-full w-full object-cover" />
+          )}
+        </div>
+
+        <header className="px-4 sm:px-6">
+          <div className="-mt-10 flex items-end gap-4 sm:-mt-14">
+            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-app bg-surface-2 sm:h-28 sm:w-28">
+              {profile.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-muted sm:text-5xl">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            {isOwn && (
+              <div className="ml-auto flex shrink-0 gap-2 pb-1">
+                <Link
+                  href="/redaktion/profil/bearbeiten"
+                  className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-4 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface-3"
+                >
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                  Profil bearbeiten
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{displayName}</h1>
           <p className="text-sm text-muted">
             @{profile.username} · dabei seit {formatDate(profile.created_at.slice(0, 10))}
           </p>
-        </div>
-        {isOwn && (
-          <Link
-            href="/profile"
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium text-fg-soft transition hover:bg-surface-3 hover:text-fg"
-          >
-            <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-            Profil bearbeiten
-          </Link>
-        )}
-      </div>
 
-      {!posts || posts.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-line px-4 py-10 text-center text-sm text-muted">
-          {isOwn ? "Du hast hier noch nichts gepostet." : "Noch nichts zu sehen."}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {posts.map((post) => (
-            <RedaktionPostCard
-              key={post.id}
-              post={post}
-              isOwn={post.author_id === user.id}
-              pollOptionCount={post.poll_options?.[0]?.count ?? 0}
-              commentCount={post.comments?.[0]?.count ?? 0}
-            />
-          ))}
+          <ul className="mt-4 flex gap-6 text-sm text-fg-soft">
+            <li>
+              <span className="font-semibold text-fg">{posts.length}</span> Beiträge
+            </li>
+            {friends && (
+              <li>
+                <span className="font-semibold text-fg">{friends.length}</span> Freund:innen
+              </li>
+            )}
+          </ul>
+
+          {redProfile?.status_text && (
+            <p className="mt-3 inline-block rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft">
+              {redProfile.status_text}
+            </p>
+          )}
+
+          {redProfile?.bio && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-fg">{redProfile.bio}</p>}
+
+          {fields.length > 0 && (
+            <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+              {fields.map((f, i) => (
+                <div key={i} className="rounded-xl bg-surface-2 px-3 py-2.5">
+                  <dt className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                    {f.icon && <span aria-hidden>{f.icon}</span>}
+                    {f.title}
+                  </dt>
+                  <dd className="mt-0.5 whitespace-pre-wrap break-words text-sm text-fg">{f.text}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </header>
+
+        <div className="mt-6">
+          {posts.length === 0 ? (
+            <p className="mx-4 rounded-xl border border-dashed border-line px-4 py-10 text-center text-sm text-muted">
+              {isOwn ? "Du hast hier noch nichts gepostet." : "Noch nichts zu sehen."}
+            </p>
+          ) : (
+            <ProfilePosts posts={posts} pinnedIds={redProfile?.pinned_post_ids ?? []} currentUserId={user.id} />
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </ProfileThemeWrapper>
   );
 }

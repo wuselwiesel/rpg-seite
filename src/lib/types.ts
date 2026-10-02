@@ -320,3 +320,18 @@ export type RedaktionComment = {
   updated_at: string | null;
   author?: Pick<Profile, "id" | "username" | "nickname" | "avatar_url"> | null;
 };
+
+export type RedaktionProfileField = { icon: string; title: string; text: string };
+
+export type RedaktionProfile = {
+  user_id: string;
+  bio: string | null;
+  status_text: string | null;
+  banner_url: string | null;
+  theme_font: string | null;
+  theme_accent: string | null;
+  theme_bg: string | null;
+  custom_fields: RedaktionProfileField[];
+  pinned_post_ids: string[];
+  updated_at: string;
+};

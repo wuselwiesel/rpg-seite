@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
@@ -269,4 +270,64 @@ export async function deleteRedaktionComment(commentId: string, postId: string):
 
   revalidatePath(`/redaktion/${postId}`);
   return null;
+}
+
+export async function saveRedaktionProfile(_prevState: string | null, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const bannerRaw = String(formData.get("banner_url") ?? "").trim();
+  const bannerUrl = supabaseUrl && bannerRaw.startsWith(`${supabaseUrl}/storage/`) ? bannerRaw : null;
+
+  const bio = String(formData.get("bio") ?? "").trim().slice(0, 600);
+  const statusText = String(formData.get("status_text") ?? "").trim().slice(0, 80);
+
+  const hex = /^#[0-9a-fA-F]{6}$/;
+  const font = String(formData.get("theme_font") ?? "").trim();
+  const accent = String(formData.get("theme_accent") ?? "").trim();
+  const bg = String(formData.get("theme_bg") ?? "").trim();
+
+  const icons = formData.getAll("field_icon").map(String);
+  const titles = formData.getAll("field_title").map(String);
+  const texts = formData.getAll("field_text").map(String);
+  const fields = titles
+    .map((title, i) => ({
+      icon: Array.from((icons[i] ?? "").trim()).slice(0, 2).join(""),
+      title: title.trim().slice(0, 40),
+      text: (texts[i] ?? "").trim().slice(0, 300),
+    }))
+    .filter((f) => f.title && f.text)
+    .slice(0, 12);
+
+  const pinned = Array.from(new Set(formData.getAll("pinned").map(String))).slice(0, 3);
+  if (pinned.length > 0) {
+    const { data: own } = await supabase
+      .from("redaktion_posts")
+      .select("id")
+      .eq("author_id", user.id)
+      .in("id", pinned);
+    const ownIds = new Set((own ?? []).map((p) => p.id as string));
+    for (let i = pinned.length - 1; i >= 0; i--) if (!ownIds.has(pinned[i])) pinned.splice(i, 1);
+  }
+
+  const { error } = await supabase.from("redaktion_profiles").upsert({
+    user_id: user.id,
+    bio: bio || null,
+    status_text: statusText || null,
+    banner_url: bannerUrl,
+    theme_font: font && /^[a-zA-Z0-9]{1,40}$/.test(font) ? font : null,
+    theme_accent: hex.test(accent) ? accent : null,
+    theme_bg: hex.test(bg) ? bg : null,
+    custom_fields: fields,
+    pinned_post_ids: pinned,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) return error.message;
+
+  revalidatePath(`/redaktion/profil/${user.id}`);
+  redirect(`/redaktion/profil/${user.id}`);
 }
