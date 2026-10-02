@@ -13,6 +13,7 @@ import { AccountMiniRoom, RpMiniRoom } from "./bubble-rooms";
 export const BUBBLE_ENABLED_KEY = "wortwinkel:chat-bubble";
 export const BUBBLE_CHANGE_EVENT = "wortwinkel:chat-bubble-change";
 const POS_KEY = "wortwinkel:chat-bubble-pos";
+const CHARACTER_KEY = "wortwinkel:chat-bubble-character";
 const SIZE = 56;
 const HIDDEN_PATHS = /^\/(?:chats|redaktion\/chat|login|signup)(?:\/|$)/;
 
@@ -85,6 +86,14 @@ function BubbleInner({
   const [view, setView] = useState<{ kind: "account" | "rp"; id: string } | null>(null);
   const [data, setData] = useState<BubbleData | null>(null);
   const [filter, setFilter] = useState<"all" | "account" | "rp">("all");
+  const [rpCharacterId, setRpCharacterId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(CHARACTER_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const rpCharacterRef = useRef(rpCharacterId);
   const [rpUnread, setRpUnread] = useState(initialRpUnread);
   const [accUnread, setAccUnread] = useState(initialAccountUnread);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -98,10 +107,11 @@ function BubbleInner({
     dataRef.current = data;
     myIdsRef.current = myCharacterIds;
     pathRef.current = pathname;
+    rpCharacterRef.current = rpCharacterId;
   });
 
   const refresh = useCallback(async () => {
-    const next = await getBubbleChats();
+    const next = await getBubbleChats(rpCharacterRef.current);
     setData(next);
     dataRef.current = next;
     return next;
@@ -110,7 +120,7 @@ function BubbleInner({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    getBubbleChats().then((next) => {
+    getBubbleChats(rpCharacterId).then((next) => {
       if (cancelled) return;
       setData(next);
       dataRef.current = next;
@@ -118,7 +128,7 @@ function BubbleInner({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, rpCharacterId]);
 
   // Live: neue Nachrichten zählen als ungelesen und lösen die kleine Vorschau aus.
   useEffect(() => {
@@ -228,6 +238,16 @@ function BubbleInner({
     } else {
       setOpen((v) => !v);
       setPreview(null);
+    }
+  }
+
+  function chooseCharacter(id: string) {
+    setRpCharacterId(id);
+    setView(null);
+    try {
+      localStorage.setItem(CHARACTER_KEY, id);
+    } catch {
+      /* egal */
     }
   }
 
@@ -357,7 +377,7 @@ function BubbleInner({
                   [
                     ["all", "Alle"],
                     ["account", "Redaktion"],
-                    ["rp", "Rollenspiel"],
+                    ["rp", "RPG"],
                   ] as const
                 ).map(([id, label]) => (
                   <button
@@ -372,6 +392,28 @@ function BubbleInner({
                   </button>
                 ))}
               </div>
+              {filter === "rp" && data && data.characters.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto px-3 pb-2" role="radiogroup" aria-label="Charakter für RPG-Chats">
+                  {data.characters.map((c) => {
+                    const selected = c.id === data.activeCharacterId;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => chooseCharacter(c.id)}
+                        className={`flex shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-xs font-medium transition ${
+                          selected ? "border-accent bg-surface-2 text-fg" : "border-line text-fg-soft hover:border-accent"
+                        }`}
+                      >
+                        <CharacterAvatar name={c.name} avatarUrl={c.avatarUrl} size={22} />
+                        <span className="max-w-24 truncate">{c.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex-1 overflow-y-auto px-1 pb-2">
                 {!data && <p className="p-6 text-center text-xs text-muted">Lädt…</p>}
                 {data && visibleChats.length === 0 && (

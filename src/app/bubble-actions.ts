@@ -19,15 +19,18 @@ export type BubbleChat = {
   unread: number;
 };
 
-export type BubbleData = { chats: BubbleChat[]; activeCharacterId: string | null };
+export type BubbleCharacter = { id: string; name: string; avatarUrl: string | null };
 
-// Alle Chats für die schwebende Chat-Blase: Redaktions-Chats (Account) und Rollenspiel-Chats des aktiven Charakters.
-export async function getBubbleChats(): Promise<BubbleData> {
+// activeCharacterId = der Charakter, mit dem die RPG-Chats gelesen und geschrieben werden.
+export type BubbleData = { chats: BubbleChat[]; activeCharacterId: string | null; characters: BubbleCharacter[] };
+
+// Alle Chats für die schwebende Chat-Blase: Redaktions-Chats (Account) und RPG-Chats des gewählten Charakters.
+export async function getBubbleChats(characterId?: string | null): Promise<BubbleData> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { chats: [], activeCharacterId: null };
+  if (!user) return { chats: [], activeCharacterId: null, characters: [] };
 
   const chats: BubbleChat[] = (await getAccountChats(user.id)).map((c) => ({
     kind: "account",
@@ -42,13 +45,16 @@ export async function getBubbleChats(): Promise<BubbleData> {
 
   let activeCharacterId: string | null = null;
   const world = await getActiveWorld(user.id);
-  const active = world ? await getActiveCharacter(user.id, world.id) : null;
+  const ownCharacters = world ? await getOwnCharacters(user.id, world.id) : [];
+  const characters: BubbleCharacter[] = ownCharacters.map((c) => ({ id: c.id, name: c.name, avatarUrl: c.avatar_url }));
+  const chosen = characterId ? ownCharacters.find((c) => c.id === characterId) : null;
+  const active = chosen ?? (world ? await getActiveCharacter(user.id, world.id) : null);
   if (world && active) {
     activeCharacterId = active.id;
     const { data: mine } = await supabase.from("chat_participants").select("chat_id").eq("character_id", active.id);
     const ids = (mine ?? []).map((r) => r.chat_id);
     if (ids.length) {
-      const own = await getOwnCharacters(user.id, world.id);
+      const own = ownCharacters;
       const [{ data: rpChats }, unread, { data: recent }] = await Promise.all([
         supabase
           .from("chats")
@@ -92,5 +98,5 @@ export async function getBubbleChats(): Promise<BubbleData> {
   }
 
   chats.sort((a, b) => (b.lastAt ?? "").localeCompare(a.lastAt ?? ""));
-  return { chats, activeCharacterId };
+  return { chats, activeCharacterId, characters };
 }
