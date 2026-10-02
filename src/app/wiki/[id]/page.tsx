@@ -22,6 +22,7 @@ import type { WikiPage } from "@/lib/types";
 import { stripHtml } from "@/lib/strip-html";
 import { WikiTile } from "@/components/wiki-tile";
 import { WikiTypeBadge } from "@/components/wiki-type-icon";
+import { usesPortraitImage } from "@/lib/wiki-types";
 import { PageCard } from "../wiki-cards";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { DeleteWikiPageButton } from "./delete-wiki-page-button";
@@ -100,6 +101,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     ...folderTrail.map((f) => ({ href: `/wiki/ordner/${f.id}`, label: f.name })),
     ...pageTrail.map((p) => ({ href: `/wiki/${p.id}`, label: p.title })),
   ];
+  const portrait = usesPortraitImage(page.page_type);
   const sectionHead = "mb-4 flex items-baseline gap-2 font-serif text-2xl text-fg";
 
   return (
@@ -107,7 +109,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
       <header className="flex flex-col gap-5">
         <WikiCrumbs crumbs={crumbs} />
 
-        {page.cover_image_url && (
+        {page.cover_image_url && !portrait && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={page.cover_image_url} alt="" className="aspect-[2/1] max-h-[22rem] w-full rounded-2xl bg-surface-2 object-cover @3xl:aspect-[21/9]" />
         )}
@@ -122,7 +124,13 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         )}
 
         <div className="flex items-start gap-4 @xl:gap-5">
-          {!page.cover_image_url && <WikiTile id={page.id} title={page.title} size="lg" />}
+          {portrait && page.cover_image_url ? (
+            // Person: normales Hochformat-Bild neben dem Namen statt eines breiten Banners
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={page.cover_image_url} alt={page.title} className="aspect-[4/5] w-28 shrink-0 rounded-2xl bg-surface-2 object-cover shadow-sm @xl:w-40 @4xl:w-52" />
+          ) : (
+            !page.cover_image_url && <WikiTile id={page.id} title={page.title} size="lg" />
+          )}
           <div className="min-w-0 flex-1">
             {page.page_type && (
               <p className="mb-2">

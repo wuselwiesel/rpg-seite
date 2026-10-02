@@ -116,3 +116,10 @@ export function wikiTypeColor(id: string | null | undefined): string {
   const t = wikiTypeOf(id);
   return t ? `hsl(${TYPE_HUE[t.id]} 50% 42%)` : "var(--muted)";
 }
+
+// Typen, bei denen das Bild ein normales Hochformat-Bild (wie ein Charakterbild) neben dem Namen ist statt eines breiten Titelbilds.
+export const PORTRAIT_TYPES: readonly WikiTypeId[] = ["person"];
+
+export function usesPortraitImage(type: string | null | undefined): boolean {
+  return PORTRAIT_TYPES.some((t) => t === type);
+}

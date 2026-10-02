@@ -8,7 +8,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { GalleryUpload } from "@/components/gallery-upload";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import { useDraft } from "@/lib/use-draft";
-import { WIKI_TYPES, mergeFields, outlineHtml, wikiTypeOf } from "@/lib/wiki-types";
+import { WIKI_TYPES, mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf } from "@/lib/wiki-types";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { stripHtml } from "@/lib/strip-html";
 import { DEFAULT_CALENDAR, daysInMonth, datesFromRow, type EventDate, type WikiCalendar } from "@/lib/wiki-calendar";
@@ -288,13 +288,13 @@ export function WikiForm({
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Bilder</h2>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
-          Titelbild
+          {usesPortraitImage(pageType) ? "Bild (Hochformat, wie ein Charakterbild)" : "Titelbild"}
           <AvatarUpload
             name="cover_image_url"
             initialUrl={page?.cover_image_url}
             displayName={page?.title ?? "Wiki-Seite"}
             bucket="wiki-covers"
-            variant="cover"
+            variant={usesPortraitImage(pageType) ? "portrait" : "cover"}
           />
         </div>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
