@@ -231,6 +231,12 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
             <Link href="/wiki/graph" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
               Graph
             </Link>
+            <Link href="/wiki/zeitleiste" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Zeitleiste
+            </Link>
+            <Link href="/wiki/kalender" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Kalender
+            </Link>
 
             <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">
             {q ? (

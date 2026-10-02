@@ -2,7 +2,7 @@ import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Network, Pencil, Plus } from "lucide-react";
+import { Clock, MapPin, Network, Pencil, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -11,6 +11,8 @@ import { escapeHtml, linkCharacterMentions } from "@/lib/character-links";
 import { getWorldCharacterTerms } from "@/lib/wiki-characters";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import { getMapsForPage } from "@/lib/wiki-map-data";
+import { getWikiCalendar } from "@/lib/wiki-calendar-data";
+import { datesFromRow, formatRange } from "@/lib/wiki-calendar";
 import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
 import { buildWikiTree, folderPath, pageAncestors, type TreePage } from "@/lib/wiki-tree";
 import { findBacklinks } from "@/lib/wiki-links";
@@ -44,7 +46,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
       : (await supabase.from("worlds").select("created_by").eq("id", page.world_id).maybeSingle()).data?.created_by;
   const canDelete = page.created_by === user.id || worldOwnerId === user.id;
 
-  const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps, characters] = await Promise.all([
+  const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps, characters, calendar] = await Promise.all([
     getWikiTerms(page.world_id),
     getWikiFolders(page.world_id),
     getWikiPageRows(page.world_id),
@@ -52,7 +54,9 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     getWikiFavoriteIds(user.id),
     getMapsForPage(page.id),
     getWorldCharacterTerms(page.world_id),
+    getWikiCalendar(page.world_id),
   ]);
+  const pageDates = datesFromRow(page);
 
   const tree = buildWikiTree(folders, pageRows);
   const findNode = (list: TreePage[]): TreePage | null => {
@@ -133,6 +137,19 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
             )}
           </div>
         </div>
+
+        {pageDates.start && (
+          <p>
+            <Link
+              href={`/wiki/zeitleiste#jahr-${pageDates.start.year}`}
+              title="In der Zeitleiste ansehen"
+              className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-sm font-medium text-fg-soft transition hover:text-accent"
+            >
+              <Clock className="h-3.5 w-3.5" strokeWidth={2} />
+              {formatRange(calendar, pageDates)}
+            </Link>
+          </p>
+        )}
 
         {(page.tags ?? []).length > 0 && (
           <ul className="flex flex-wrap gap-1.5" aria-label="Tags">

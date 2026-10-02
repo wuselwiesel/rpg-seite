@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Map as MapIcon, Network, Plus, Search, Shuffle, Star } from "lucide-react";
+import { CalendarDays, Clock, Map as MapIcon, Network, Plus, Search, Shuffle, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiMaps } from "@/lib/wiki-map-data";
@@ -97,6 +97,20 @@ export default async function WikiHomePage() {
       >
         <Network className="h-4 w-4" strokeWidth={2} />
         Graph
+      </Link>
+      <Link
+        href="/wiki/zeitleiste"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <Clock className="h-4 w-4" strokeWidth={2} />
+        Zeitleiste
+      </Link>
+      <Link
+        href="/wiki/kalender"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <CalendarDays className="h-4 w-4" strokeWidth={2} />
+        Kalender
       </Link>
     </div>
   );

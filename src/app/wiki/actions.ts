@@ -9,6 +9,8 @@ import { parseProfileFields } from "@/lib/profile-fields";
 import { pageSubtreeIds } from "@/lib/wiki-tree";
 import { parseWikiType } from "@/lib/wiki-types";
 import { parseTags } from "@/lib/wiki-tags";
+import { columnsFromDates, parsePageDates, type EventColumns } from "@/lib/wiki-calendar";
+import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -51,7 +53,7 @@ type PageInput = {
   page_type: string | null;
   tags: string[];
   is_draft: boolean;
-};
+} & Required<EventColumns>;
 
 // Liest und prüft das Formular. Eine Oberseite bestimmt den Ordner (Unterseiten liegen im Ordner ihrer Oberseite).
 async function readPageForm(
@@ -84,8 +86,17 @@ async function readPageForm(
     if (!folder) return { error: "Der gewählte Ordner existiert nicht mehr." };
   }
 
+  // Zeitpunkt (optional): wird gegen den Kalender der Welt geprüft
+  const calendar = await loadWikiCalendar(worldId);
+  const dates = parsePageDates(calendar, {
+    start: { year: String(formData.get("date_year") ?? ""), month: String(formData.get("date_month") ?? ""), day: String(formData.get("date_day") ?? "") },
+    end: { year: String(formData.get("date_end_year") ?? ""), month: String(formData.get("date_end_month") ?? ""), day: String(formData.get("date_end_day") ?? "") },
+  });
+  if ("error" in dates) return { error: dates.error };
+
   return {
     input: {
+      ...columnsFromDates(dates),
       title,
       lead: String(formData.get("lead") ?? "").replace(/\s+/g, " ").trim().slice(0, 300) || null,
       content: sanitizePostHtml(String(formData.get("content") ?? "").trim()),

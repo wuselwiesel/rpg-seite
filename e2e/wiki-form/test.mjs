@@ -77,6 +77,25 @@ const fieldTitles = (page) => page.locator('input[name$="title"], input[placehol
   await ctx.close();
 }
 
+// 5. Zeitpunkt: Monate des Kalenders, Tag erst nach Monatswahl, Zeitraum
+{
+  const { ctx, page } = await fresh();
+  const month = page.locator('select[name="date_month"]');
+  check("Monatsliste hat die 12 gewöhnlichen Monate", (await month.locator("option").count()) === 13);
+  const day = page.locator('input[name="date_day"]');
+  check("Tag ist ohne Monat gesperrt", await day.isDisabled());
+  await page.locator('input[name="date_year"]').fill("1432");
+  await month.selectOption("2");
+  check("Tag wird nach Monatswahl frei, Obergrenze = Tage des Monats", !(await day.isDisabled()) && (await day.getAttribute("max")) === "28");
+  await day.fill("12");
+  check("Zeitraum lässt sich ein- und ausblenden", (await page.locator('input[name="date_end_year"]').count()) === 0);
+  await page.getByRole("button", { name: "+ Zeitraum (mit Ende)" }).click();
+  check("Ende-Felder erscheinen", (await page.locator('input[name="date_end_year"]').count()) === 1);
+  await page.getByRole("button", { name: "Zeitraum entfernen" }).click();
+  check("Ende-Felder verschwinden wieder (und werden nicht gesendet)", (await page.locator('input[name="date_end_year"]').count()) === 0);
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);
