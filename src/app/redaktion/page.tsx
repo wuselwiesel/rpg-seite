@@ -1,17 +1,18 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Newspaper, PenLine, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { RedaktionPostCard } from "./redaktion-post-card";
-import type { RedaktionPost } from "@/lib/types";
-
-type FeedRow = Omit<RedaktionPost, "poll_options"> & {
-  poll_options?: { count: number }[];
-  comments?: { count: number }[];
-};
+import { fetchRedaktionPage } from "@/lib/redaktion-feed";
+import { PullToRefresh } from "@/components/pull-to-refresh";
+import { SearchFilterBar } from "@/components/search-filter-bar";
+import { RedaktionFeedList } from "./redaktion-feed-list";
+import { RedaktionSidebar } from "./redaktion-sidebar";
 
 export default async function RedaktionPage({ searchParams }: PageProps<"/redaktion">) {
   const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q.trim() : "";
+  const from = typeof params.from === "string" ? params.from : "";
+  const to = typeof params.to === "string" ? params.to : "";
   const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
 
   const supabase = await createClient();
@@ -20,73 +21,48 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  let query = supabase
-    .from("redaktion_posts")
-    .select(
-      "*, author:author_id(id, username, nickname, avatar_url), story_post:story_post_id(id, title), poll_options:redaktion_poll_options(count), comments:redaktion_comments(count)",
-    )
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (tag) query = query.contains("tags", [tag]);
-
-  const { data: posts } = await query.returns<FeedRow[]>();
+  const filters = { q, from, to, tag };
+  const initialPosts = await fetchRedaktionPage(filters);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 font-serif text-3xl text-fg">
-          <Newspaper className="h-7 w-7 text-fg-soft" strokeWidth={1.75} />
-          Redaktion
-        </h1>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/redaktion/profil/${user.id}`}
-            className="flex items-center gap-1.5 rounded-md bg-surface-2 px-4 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-3 hover:text-fg"
-          >
-            <UserRound className="h-4 w-4" strokeWidth={2} />
-            Mein Profil
-          </Link>
-          <Link
-            href="/redaktion/new"
-            className="flex items-center gap-1.5 rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
-          >
-            <PenLine className="h-4 w-4" strokeWidth={2} />
-            Neu
-          </Link>
+    <PullToRefresh>
+      <div className="flex gap-8 px-3 pb-4 pt-2 sm:px-6 sm:py-8 lg:px-10">
+        <div className="mx-auto min-w-0 max-w-[470px] flex-1">
+          <div className="relative">
+            <div className="mb-3 flex h-[44px] items-center">
+              <p className="min-w-0 flex-1 pr-12 text-sm text-fg-soft">
+                Beiträge, Umfragen und Diskussionen für dich und deine Freund:innen – unabhängig von Charakteren.
+              </p>
+            </div>
+            <SearchFilterBar basePath="/redaktion" q={q} from={from} to={to} tag={tag} iconOnly />
+          </div>
+
+          <RedaktionFeedList
+            initialPosts={initialPosts}
+            filters={filters}
+            currentUserId={user.id}
+            emptyState={
+              q || tag || from || to ? (
+                <p className="text-muted">Keine Beiträge gefunden.</p>
+              ) : (
+                <p className="text-muted">
+                  Noch nichts in der Redaktion.{" "}
+                  <Link href="/redaktion/new" className="text-accent hover:underline">
+                    Starte den ersten Beitrag
+                  </Link>
+                  .
+                </p>
+              )
+            }
+          />
         </div>
+
+        <aside className="hidden w-48 shrink-0 xl:block">
+          <Suspense fallback={null}>
+            <RedaktionSidebar userId={user.id} />
+          </Suspense>
+        </aside>
       </div>
-      <p className="mb-6 text-sm text-fg-soft">
-        Beiträge, Umfragen und Diskussionen vom Account selbst - sichtbar für dich und deine Freund:innen, losgelöst von Charakteren und Welten.
-      </p>
-
-      {tag && (
-        <div className="mb-4 flex items-center gap-2 text-sm">
-          <span className="text-fg-soft">Gefiltert nach</span>
-          <span className="rounded-full bg-surface-2 px-2.5 py-0.5 font-medium text-fg">#{tag}</span>
-          <Link href="/redaktion" className="text-accent hover:underline">
-            Zurücksetzen
-          </Link>
-        </div>
-      )}
-
-      {!posts || posts.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-line px-4 py-10 text-center text-sm text-muted">
-          {tag ? "Keine Beiträge mit diesem Tag." : "Noch nichts in der Redaktion. Starte den ersten Beitrag."}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {posts.map((post) => (
-            <RedaktionPostCard
-              key={post.id}
-              post={post}
-              isOwn={post.author_id === user.id}
-              pollOptionCount={post.poll_options?.[0]?.count ?? 0}
-              commentCount={post.comments?.[0]?.count ?? 0}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    </PullToRefresh>
   );
 }

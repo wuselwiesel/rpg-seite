@@ -10,6 +10,8 @@ import { getAcceptedFriends } from "@/lib/friends";
 import { createNotification } from "@/lib/notifications";
 import { isAllowedGifUrl } from "@/lib/gif";
 import { getAllMentionableCharacters } from "@/lib/redaktion";
+import { fetchRedaktionPage } from "@/lib/redaktion-feed";
+import type { RedaktionFeedPost, RedaktionFilters } from "@/lib/redaktion-feed-types";
 
 function escapeHtml(text: string) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -330,4 +332,8 @@ export async function saveRedaktionProfile(_prevState: string | null, formData: 
 
   revalidatePath(`/redaktion/profil/${user.id}`);
   redirect(`/redaktion/profil/${user.id}`);
+}
+
+export async function loadMoreRedaktionPosts(filters: RedaktionFilters, before: string): Promise<RedaktionFeedPost[]> {
+  return fetchRedaktionPage(filters, before);
 }

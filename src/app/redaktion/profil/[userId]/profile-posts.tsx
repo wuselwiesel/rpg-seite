@@ -85,7 +85,7 @@ export function ProfilePosts({
           ))}
         </div>
       ) : (
-        <div className="mt-4 flex flex-col gap-4">
+        <div className="mt-4 flex flex-col gap-2 px-3 sm:px-0">
           {ordered.map((post) => (
             <div key={post.id}>
               {pinnedSet.has(post.id) && (

@@ -35,7 +35,7 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Im Test-Account liegt ein Selbsttest-Chat (`00000000-0000-4000-8000-0000000000c1`, nur `logotestuser` als Teilnehmer) – darf gelöscht werden.
 
 ## Nächste Schritte (Wünsche der Nutzerin, Reihenfolge offen)
-1. Redaktions-Feed soll von der Struktur her wie der Ingame-Feed aussehen (Beitragskarten, Layout, ggf. rechte Seitenleiste).
+1. (erledigt) Redaktions-Feed hat jetzt den Aufbau des Ingame-Feeds: gleiche Spalte/Seitenleiste (`redaktion-sidebar.tsx`), Filterleiste, Pull-to-Refresh, unendliches Scrollen (`redaktion-feed-list.tsx`, `lib/redaktion-feed.ts`), randlose Insta-Karten in `redaktion-post-card.tsx`.
 2. Charakterprofile im Stil des Redaktions-Profils (Banner, Status-Zeile, Bio, eigene Felder, angeheftete Beiträge, Raster/Liste), **mit der bisherigen Charakterbogen-Ansicht**. Bisher nur Redaktions-Profil gebaut.
 3. Eigene Emojis pro Welt (Upload PNG/GIF/WebP max. 256 KB, `:name:`-Kürzel, Picker; Orte: Beiträge/Kommentare, Chats, Story/Wiki, Profile inkl. Feld-Symbole). Noch nicht gebaut.
 4. Älteres Backlog: Mini-Timeline bei Charakterprofilen; Badges (erst mit der Nutzerin besprechen).
