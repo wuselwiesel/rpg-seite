@@ -9,6 +9,12 @@ export type PageRow = {
   lead?: string | null;
   page_type?: string | null;
   tags?: string[] | null;
+  event_year?: number | null;
+  event_month?: number | null;
+  event_day?: number | null;
+  event_end_year?: number | null;
+  event_end_month?: number | null;
+  event_end_day?: number | null;
   is_draft?: boolean;
   created_at?: string;
   cover_image_url?: string | null;
