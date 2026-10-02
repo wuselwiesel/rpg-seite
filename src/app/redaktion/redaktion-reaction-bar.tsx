@@ -1,21 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Heart, SmilePlus, X } from "lucide-react";
-import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
+import { EmojiCatalog } from "@/components/emoji-catalog";
+import { EmojiText } from "@/components/custom-emoji-provider";
 import { getRedaktionReactors, toggleRedaktionReaction, type RedaktionReactor } from "./actions";
 import { CharacterAvatar } from "@/components/character-avatar";
 import type { ReactionSummary } from "@/lib/reactions";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
-
-function subscribe(callback: () => void) {
-  const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => observer.disconnect();
-}
 
 // Likes (Herz) und Emoji-Reaktionen auf Redaktions-Beiträge – pro Account, nicht pro Charakter.
 export function RedaktionReactionBar({
@@ -33,7 +28,6 @@ export function RedaktionReactionBar({
   const [reactors, setReactors] = useState<RedaktionReactor[] | null>(null);
   const [beat, setBeat] = useState(0);
   const [, startTransition] = useTransition();
-  const isDark = useSyncExternalStore(subscribe, () => document.documentElement.classList.contains("dark"), () => false);
 
   const heart = reactions.find((r) => r.emoji === "❤️");
   const liked = Boolean(heart?.reactedByMe);
@@ -122,7 +116,7 @@ export function RedaktionReactionBar({
                 r.reactedByMe ? "bg-accent-strong/20 text-accent" : "bg-surface-2 text-fg-soft hover:bg-surface-3"
               }`}
             >
-              <span>{r.emoji}</span>
+              <span><EmojiText text={r.emoji} /></span>
               <span>{r.count}</span>
             </button>
           ))}
@@ -159,7 +153,7 @@ export function RedaktionReactionBar({
                       <span className="min-w-0 flex-1 truncate text-sm font-semibold text-fg">
                         {r.user.nickname || r.user.username}
                       </span>
-                      <span className="text-xl">{r.emoji}</span>
+                      <span className="text-xl"><EmojiText text={r.emoji} /></span>
                     </Link>
                   </li>
                 ))}
@@ -196,15 +190,7 @@ export function RedaktionReactionBar({
                   <X className="h-4 w-4" strokeWidth={2} />
                 </button>
               </div>
-              <EmojiPicker
-                onEmojiClick={(data: EmojiClickData) => toggle(data.emoji)}
-                theme={isDark ? Theme.DARK : Theme.LIGHT}
-                searchPlaceholder="Emoji suchen..."
-                width={320}
-                height={400}
-                previewConfig={{ showPreview: false }}
-                lazyLoadEmojis
-              />
+              <EmojiCatalog onPick={toggle} height={400} />
             </div>
           </div>,
           document.body,

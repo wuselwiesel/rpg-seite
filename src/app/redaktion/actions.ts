@@ -336,7 +336,7 @@ export async function loadMoreRedaktionPosts(filters: RedaktionFilters, before: 
 // Like/Emoji-Reaktion eines Accounts auf einen Redaktions-Beitrag umschalten.
 export async function toggleRedaktionReaction(postId: string, emoji: string): Promise<string | null> {
   const clean = emoji.trim();
-  if (!clean || clean.length > 16) return "Ungültiges Emoji.";
+  if (!clean || clean.length > 40) return "Ungültiges Emoji.";
   const supabase = await createClient();
   const {
     data: { user },

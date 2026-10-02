@@ -47,7 +47,7 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 
 ## Emoji-Katalog (live)
 - `CustomEmojiPicker` (`src/components/custom-emoji-picker.tsx`) öffnet jetzt den vollen Katalog (`emoji-picker-react`, `emoji-catalog*.tsx`) mit der Kategorie „Eigene Emojis“ (Notion-Stil). Liefert Unicode-Emoji oder `:name: `. Genutzt in Chats, Mention-Textarea, Editor-Toolbar und beim Badge-Symbol. Am Handy als festes Fenster über der Tab-Leiste.
-- Offen: Reaktionsleisten (`reaction-bar.tsx`, `redaktion-reaction-bar.tsx`) nutzen noch den Picker ohne eigene Emojis (`redaktion_reactions.emoji` hat eine 16-Zeichen-Grenze).
+- Auch die Reaktionsleisten (Ingame `reaction-bar.tsx`, Redaktion `redaktion-reaction-bar.tsx`) nutzen den Katalog; eigene Emojis werden als `:name:` gespeichert und per `EmojiText` gerendert. Migration `supabase/migration_reaction_custom_emoji.sql` (Grenze `redaktion_reactions.emoji` 16 → 40 Zeichen) ist in Supabase ausgeführt.
 
 ## Gemerkte Auswahl (live)
 - Zuletzt gewählter Charakter und Welt bleiben nach dem Schließen der App erhalten: die Cookies `active_character_id` / `active_world_id` haben `maxAge` 1 Jahr (`SELECTION_COOKIE_OPTIONS` in `src/lib/types.ts`, an allen `set`-Stellen benutzt). `SelectionCookieKeeper` (`src/components/selection-cookie-keeper.tsx`, im Root-Layout) macht alte Session-Cookies beim Start dauerhaft. Neue Stellen, die diese Cookies setzen, müssen die Konstante nutzen.
