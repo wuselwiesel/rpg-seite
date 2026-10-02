@@ -1,4 +1,4 @@
-# Übergabe Wortwinkel (rpg-seite) – Stand 2. Oktober 2026 (main = 47f245b, Vercel grün)
+# Übergabe Wortwinkel (rpg-seite) – Stand 2. Oktober 2026 (letzte Code-Änderung 47f245b, Vercel grün)
 
 Von: Agent A (Sitzung im Ordner `~/Desktop/coding`). An: den anderen Agent (Branch `claude/modest-bardeen-q29kyy`, PRs in `wuselwiesel/rpg-seite`).
 Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind v4, Vercel. Sprache der App und aller Antworten an die Nutzerin: **Deutsch**.
@@ -34,8 +34,7 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Chat-Blase: Zahl am Knopf zählt **nur neue Redaktions-Nachrichten** (Wunsch der Nutzerin); RPG-Ungelesenes steht nur in der Liste/auf dem Filter. Charakterwahl unter „RPG“ ist ein Dropdown.
 - Chat-Menü: Drei-Punkte-Button in der Chat-Kopfzeile (`components/chat-theme-picker.tsx`, enthält „Chat-Farben“ aufklappbar und „Stumm schalten“).
 - Redaktion: Likes (Herz) und Emoji-Reaktionen auf Beiträge pro Account: Tabelle `redaktion_reactions` (`supabase/migration_redaktion_reactions.sql`, im SQL-Editor **ausgeführt**), `app/redaktion/redaktion-reaction-bar.tsx`, Actions `toggleRedaktionReaction`/`getRedaktionReactors`, Benachrichtigungstyp `redaktion_reaction`. Umfragen sind im Feed direkt ausgeklappt und einklappbar (Karte holt Umfragedaten über `lib/redaktion-feed.ts`).
-- Eigene Emojis pro Welt: Tabelle `custom_emojis` (`supabase/migration_custom_emojis.sql`, im SQL-Editor **ausgeführt**), Verwaltung unter Einstellungen → Eigene Emojis (`app/profile/emojis/*`, Upload in Bucket `avatars/emoji/`), Anzeige von `:name:` über `CustomEmojiProvider` im Root-Layout (`components/custom-emoji-provider.tsx`: `EmojiText` für Klartext, `EmojiHtml` für HTML), Picker `components/custom-emoji-picker.tsx` in Chats und Editor-Toolbar (🖼️). Auch `MentionTextarea` (Kommentare) hat den Picker; die Redaktions-Kommentare nutzen jetzt ebenfalls `MentionTextarea` (ohne Charaktere).
-- Im Test-Account liegt ein Selbsttest-Chat (`00000000-0000-4000-8000-0000000000c1`, nur `logotestuser` als Teilnehmer) – darf gelöscht werden.
+- Eigene Emojis pro Welt: Tabelle `custom_emojis` (`supabase/migration_custom_emojis.sql`, im SQL-Editor **ausgeführt**), Verwaltung unter Einstellungen → Eigene Emojis (`app/profile/emojis/*`, Upload in Bucket `avatars/emoji/`), Anzeige von `:name:` über `CustomEmojiProvider` im Root-Layout (`components/custom-emoji-provider.tsx`: `EmojiText` für Klartext, `EmojiHtml` für HTML), Der Picker (`components/custom-emoji-picker.tsx`, inzwischen voller Katalog, siehe „Emoji-Katalog“) steckt in Chats, Editor-Toolbar und `MentionTextarea`; die Redaktions-Kommentare nutzen ebenfalls `MentionTextarea` (ohne Charaktere).
 
 ## Badges und Verlauf (live)
 - **Katalog** `/badges` (3 Reiter, `?bereich=charakter|redaktion|welt`): zeigt alle Badges mit „so erreichst du es“ (`description`) und „was es bedeutet“ (`meaning`), Fortschrittsbalken für den aktiven Charakter bzw. den eigenen Account. Reiter „Welt-Badges“ = eigene Badges der Welt: hier werden sie gestaltet (`CreateBadgeForm`), verliehen, entzogen und gelöscht (`src/app/badges/badge-controls.tsx`).
@@ -64,6 +63,13 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Emoji-Katalog: Emoji-Upload-Verwaltung liegt weiter unter Einstellungen → Eigene Emojis; eigene Emojis in Feld-Symbolen der Profile werden per `EmojiText` angezeigt, aber dort gibt es noch keinen Katalog-Picker (nur Texteingabe `:name:`).
 - Testdaten im Test-Account (darf die Nutzerin löschen): Selbsttest-Chat `00000000-0000-4000-8000-0000000000c1`, Emoji `:testgesicht:` (+ eine Redaktions-Reaktion damit), Welt-Badge „Ritter des Nebelhafens“, ein Test-Like.
 - Bestehende ESLint-Fehler (siehe Fallstricke) sind nicht von den neuen Dateien.
+
+## Sicherheit und Datenschutz (Audit 2. Oktober 2026)
+- **Das GitHub-Repo ist öffentlich.** Nie committen: `.env*` (ist per `.gitignore` ausgeschlossen, nur `.env.example` mit Platzhaltern), Schlüssel, Passwörter, echte E-Mail-Adressen, Nutzerdaten. Geprüft: aktueller Stand enthält keine Geheimnisse; `NEXT_PUBLIC_*` (Supabase-URL, Anon-Key, VAPID-Public-Key) sind öffentlich gedacht, `VAPID_PRIVATE_KEY` und `CRON_SECRET` nur als Vercel-/lokale Umgebungsvariablen.
+- Datenbank: RLS ist auf **allen** Tabellen aktiv, keine Policies für `anon`, `app_secrets` hat bewusst keine Policy (nur über `security definer`-Funktionen lesbar).
+- `supabase/migration_security_hardening.sql` (im SQL-Editor **ausgeführt**): `anon` darf nur noch `username_available`, `digest_due` (mit Geheimnis) und `get_email_for_username` aufrufen; alle anderen Funktionen nur angemeldet. **Neue Funktionen sind per Default-Privileges nicht für `anon` freigegeben** und bekommen automatisch `execute` für `authenticated`; soll eine Funktion ohne Login laufen, explizit `grant execute … to anon`. Storage: Ändern/Löschen nur an eigenen Dateien (`owner_id = auth.uid()`).
+- **Offen:** `get_email_for_username(text)` (alte Variante ohne Geheimnis) gibt jeder Person die E-Mail zu einem Benutzernamen preis. Der Login nutzt schon die neue Variante mit `CRON_SECRET` und fällt nur bei Fehler auf die alte zurück. Sobald bestätigt ist, dass `CRON_SECRET` in Vercel gesetzt ist: `drop function public.get_email_for_username(text);` ausführen und den Fallback in `src/app/login/actions.ts` entfernen. Lokal braucht der Login per Benutzername dafür `CRON_SECRET` in `.env.local` (sonst E-Mail nutzen).
+- Bekannte Eigenheiten (bewusst, Freundeskreis-App): Storage-Buckets sind öffentlich lesbar (Dateinamen sind zufällig, aber wer die URL kennt, sieht das Bild – auch in `chat-media`); `create_notification` kann jede angemeldete Person für beliebige Empfänger:innen auslösen.
 
 ## Fallstricke
 - `tsconfig.tsbuildinfo` kann Typfehler verdecken: löschen und `npx tsc --noEmit; echo $?` ohne Pipe. Der Vercel-Build ist die Instanz, die zählt.
