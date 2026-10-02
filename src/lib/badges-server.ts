@@ -47,6 +47,22 @@ function toView(row: AwardRow): BadgeView | null {
   };
 }
 
+// Welche der Badges sind ausgeblendet? Eigene Abfrage, damit alles weiterläuft, solange die Migration
+// `migration_badge_hidden.sql` noch nicht eingespielt ist (Fehler = nichts ausgeblendet).
+async function withHidden(supabase: Supabase, views: BadgeView[]): Promise<BadgeView[]> {
+  if (views.length === 0) return views;
+  const { data, error } = await supabase
+    .from("badge_awards")
+    .select("id")
+    .in("id", views.map((v) => v.awardId))
+    .eq("hidden", true);
+  if (error || !data?.length) return views;
+  const hidden = new Set(data.map((r: { id: string }) => r.id));
+  return views.map((v) => (hidden.has(v.awardId) ? { ...v, hidden: true } : v));
+}
+
+export const visibleBadges = (badges: BadgeView[]) => badges.filter((b) => !b.hidden);
+
 export async function getCharacterBadges(characterId: string): Promise<BadgeView[]> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -55,7 +71,7 @@ export async function getCharacterBadges(characterId: string): Promise<BadgeView
     .eq("character_id", characterId)
     .order("awarded_at", { ascending: true })
     .returns<AwardRow[]>();
-  return (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b));
+  return withHidden(supabase, (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b)));
 }
 
 export async function getAccountBadges(userId: string): Promise<BadgeView[]> {
@@ -66,7 +82,7 @@ export async function getAccountBadges(userId: string): Promise<BadgeView[]> {
     .eq("user_id", userId)
     .order("awarded_at", { ascending: true })
     .returns<AwardRow[]>();
-  return (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b));
+  return withHidden(supabase, (data ?? []).map(toView).filter((b): b is BadgeView => Boolean(b)));
 }
 
 async function count(q: PromiseLike<{ count: number | null }>): Promise<number> {

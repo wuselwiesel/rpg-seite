@@ -305,7 +305,7 @@ export const AUTO_BADGES: AutoBadgeDef[] = [
     [
       "Redaktion",
       "red_votes",
-      (n) => `Bei ${nx(n, "Umfrage", "Umfragen")} abstimmen.`,
+      (n) => (n === 1 ? "Bei einer Umfrage abstimmen." : `Bei ${n} Umfragen abstimmen.`),
       [
         ["vote_1", "Stimme erhoben", "✅", 1, "Deine Meinung zählt."],
         ["vote_10", "Wahlberechtigt", "🏷️", 10, "Bei keiner Abstimmung fehlst du."],
@@ -402,6 +402,8 @@ export type BadgeView = {
   awardedAt: string;
   awardedByName?: string | null;
   defId?: string | null;
+  // Vom Besitzer ausgeblendet: nicht im Profil, nicht in der Sammlung anderer, nicht im Verlauf.
+  hidden?: boolean;
 };
 
 export const BADGE_PROFILE_KEY = "wortwinkel:badges-profile";

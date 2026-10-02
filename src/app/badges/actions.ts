@@ -155,3 +155,25 @@ export async function getFeaturedBadges(
   }
   return out;
 }
+
+// Badge ein-/ausblenden (Profil, Sammlung anderer, Verlauf). Ein ausgeblendetes Haupt-Badge wird auch neben dem Namen entfernt.
+export async function setBadgeHidden(awardId: string, hidden: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase.from("badge_awards").update({ hidden }, { count: "exact" }).eq("id", awardId);
+  if (error) return error.message;
+  if (!count) return "Keine Berechtigung.";
+
+  if (hidden) {
+    await Promise.all([
+      supabase.from("characters").update({ featured_badge_id: null }).eq("featured_badge_id", awardId).eq("owner_id", user.id),
+      supabase.from("profiles").update({ featured_badge_id: null }).eq("featured_badge_id", awardId).eq("id", user.id),
+    ]);
+  }
+  revalidatePath("/", "layout");
+  return null;
+}

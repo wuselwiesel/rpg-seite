@@ -1,7 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
-import { getCharacterBadges } from "@/lib/badges-server";
+import { getCharacterBadges, visibleBadges } from "@/lib/badges-server";
 import type { Character } from "@/lib/types";
 import { EmojiText } from "./custom-emoji-provider";
 
@@ -46,7 +46,7 @@ export async function CharacterTimeline({ character }: { character: Character })
       .select("id, character_a_id, character_b_id, a:character_a_id(name), b:character_b_id(name)")
       .or(`character_a_id.eq.${character.id},character_b_id.eq.${character.id}`)
       .returns<RelRow[]>(),
-    getCharacterBadges(character.id),
+    getCharacterBadges(character.id).then(visibleBadges),
   ]);
 
   const list = posts ?? [];
