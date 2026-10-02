@@ -7,6 +7,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { parseProfileFields } from "@/lib/profile-fields";
 import { pageSubtreeIds } from "@/lib/wiki-tree";
+import { parseWikiType } from "@/lib/wiki-types";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -46,6 +47,7 @@ type PageInput = {
   fields: { icon: string; title: string; text: string }[];
   folder_id: string | null;
   parent_page_id: string | null;
+  page_type: string | null;
 };
 
 // Liest und prüft das Formular. Eine Oberseite bestimmt den Ordner (Unterseiten liegen im Ordner ihrer Oberseite).
@@ -90,6 +92,7 @@ async function readPageForm(
       fields: parseProfileFields(formData),
       folder_id: folderId,
       parent_page_id: parentId,
+      page_type: parseWikiType(formData.get("page_type")),
     },
   };
 }

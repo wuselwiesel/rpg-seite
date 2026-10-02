@@ -8,7 +8,9 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { GalleryUpload } from "@/components/gallery-upload";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import { useDraft } from "@/lib/use-draft";
-import { WIKI_TEMPLATES } from "@/lib/wiki-templates";
+import { WIKI_TYPES, mergeFields, outlineHtml, wikiTypeOf } from "@/lib/wiki-types";
+import { WikiTypeIcon } from "@/components/wiki-type-icon";
+import { stripHtml } from "@/lib/strip-html";
 import type { ProfileField } from "@/lib/profile-fields";
 import type { FolderOption, PageOption } from "@/lib/wiki-tree";
 import type { WikiPage } from "@/lib/types";
@@ -27,7 +29,7 @@ export function WikiForm({
   folders: FolderOption[];
   parentChoices: PageOption[];
   linkTargets: { id: string; title: string }[];
-  defaults?: { title?: string; folder?: string; parent?: string };
+  defaults?: { title?: string; folder?: string; parent?: string; type?: string };
 }) {
   const action = page ? updateWikiPage.bind(null, page.id) : createWikiPage;
   const [error, formAction, pending] = useActionState(action, null);
@@ -44,15 +46,67 @@ export function WikiForm({
   const [fieldRows, setFieldRows] = useState<ProfileField[]>(page?.fields ?? []);
   const [fieldsKey, setFieldsKey] = useState(0);
 
-  function applyTemplate(titles: string[]) {
-    setFieldRows(titles.map((title) => ({ icon: "", title, text: "" })));
-    setFieldsKey((k) => k + 1);
+  const [pageType, setPageType] = useState(wikiTypeOf(page?.page_type ?? defaults?.type)?.id ?? "");
+  const [bodyHtml, setBodyHtml] = useState(page?.content ?? "");
+  const [editorKey, setEditorKey] = useState(0);
+  const [seed, setSeed] = useState<string | null>(null);
+  const currentBody = isNew ? draft.content : bodyHtml;
+
+  // Typ wählen: leere Felder und eine leere Gliederung werden vorbereitet. Was schon geschrieben steht, bleibt unberührt.
+  function chooseType(id: string) {
+    setPageType(id);
+    const type = wikiTypeOf(id);
+    if (!type) return;
+    if (!fieldRows.some((f) => f.title.trim() || f.text.trim())) {
+      setFieldRows(mergeFields(fieldRows, type));
+      setFieldsKey((k) => k + 1);
+    }
+    if (stripHtml(currentBody).trim() === "" && !/<img\b/i.test(currentBody)) {
+      const html = outlineHtml(type);
+      setSeed(html);
+      setBodyHtml(html);
+      if (isNew) update({ content: html });
+      setEditorKey((k) => k + 1);
+    }
   }
 
   const parentTitle = parentChoices.find((p) => p.id === parent)?.label;
 
   return (
     <form action={formAction} onSubmit={() => isNew && clear()} className="flex flex-col gap-5">
+      <input type="hidden" name="page_type" value={pageType} />
+      <section className={card}>
+        <div>
+          <h2 className="font-serif text-xl text-fg">Art der Seite</h2>
+          <p className="text-sm text-muted">Der Typ bereitet Steckbrief und Gliederung vor. Beides kannst du frei ändern.</p>
+        </div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Art der Seite">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={pageType === ""}
+            onClick={() => setPageType("")}
+            className={`rounded-full border px-3 py-1.5 text-sm transition ${pageType === "" ? "border-accent bg-accent/10 text-fg" : "border-line text-fg-soft hover:border-accent hover:text-accent"}`}
+          >
+            Keine
+          </button>
+          {WIKI_TYPES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="radio"
+              aria-checked={pageType === t.id}
+              title={t.hint}
+              onClick={() => chooseType(t.id)}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ${pageType === t.id ? "border-accent bg-accent/10 text-fg" : "border-line text-fg-soft hover:border-accent hover:text-accent"}`}
+            >
+              <WikiTypeIcon type={t.id} className="h-4 w-4" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className={card}>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Titel
@@ -123,21 +177,6 @@ export function WikiForm({
           <h2 className="font-serif text-xl text-fg">Steckbrief</h2>
           <p className="text-sm text-muted">Die wichtigsten Fakten als Tabelle neben dem Text. Felder ohne Titel oder Inhalt werden nicht gespeichert.</p>
         </div>
-        {fieldRows.length === 0 && (
-          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Vorlage für den Steckbrief">
-            <span className="text-sm text-muted">Vorlage:</span>
-            {WIKI_TEMPLATES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => applyTemplate(t.fields)}
-                className="rounded-full border border-line bg-surface px-3 py-1 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
         <ProfileFieldsEditor key={fieldsKey} initial={fieldRows} />
       </section>
 
@@ -151,9 +190,13 @@ export function WikiForm({
         </p>
         {(restored || !isNew) && (
           <RichTextEditor
+            key={editorKey}
             name="content"
-            initialContent={isNew ? draft.content : page?.content}
-            onChange={isNew ? (html) => update({ content: html }) : undefined}
+            initialContent={seed ?? (isNew ? draft.content : page?.content)}
+            onChange={(html) => {
+              setBodyHtml(html);
+              if (isNew) update({ content: html });
+            }}
             placeholder="Beschreibung, Hintergrund, Regeln …"
             allowFontSelection
             wikiPages={linkTargets}

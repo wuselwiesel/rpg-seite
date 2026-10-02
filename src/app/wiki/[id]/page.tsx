@@ -16,6 +16,7 @@ import { formatDateTime } from "@/lib/format";
 import type { WikiPage } from "@/lib/types";
 import { stripHtml } from "@/lib/strip-html";
 import { WikiTile } from "@/components/wiki-tile";
+import { WikiTypeBadge } from "@/components/wiki-type-icon";
 import { PageCard } from "../wiki-cards";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { DeleteWikiPageButton } from "./delete-wiki-page-button";
@@ -98,6 +99,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         <div className="flex items-start gap-4 @xl:gap-5">
           {!page.cover_image_url && <WikiTile id={page.id} title={page.title} size="lg" />}
           <div className="min-w-0 flex-1">
+            {page.page_type && (
+              <p className="mb-2">
+                <WikiTypeBadge type={page.page_type} />
+              </p>
+            )}
             <h1 className="font-serif text-4xl leading-[1.05] text-fg [overflow-wrap:anywhere] @xl:text-5xl @4xl:text-6xl">{page.title}</h1>
             {page.lead && (
               <p className="mt-3 max-w-[56ch] font-serif text-xl italic leading-snug text-fg-soft @xl:text-2xl">
