@@ -1,19 +1,24 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { EMOJI_NAME } from "@/lib/custom-emoji";
+import { isAnimatedImage } from "@/lib/image-animation";
 import { createCustomEmoji, deleteCustomEmoji } from "./actions";
 
 const MAX_BYTES = 256 * 1024;
+const MAX_BYTES_ANIMATED = 1024 * 1024;
+const ALLOWED = ["image/png", "image/gif", "image/webp"];
 const TARGET_SIZE = 128;
 
 type EmojiRow = { id: string; name: string; image_url: string; created_by: string };
 
-// Verkleinert Standbilder auf max. 128 px und behält Transparenz (PNG); GIFs bleiben unverändert.
-async function prepareImage(file: File): Promise<File> {
-  if (file.type === "image/gif") return file;
+// Verkleinert Standbilder auf max. 128 px und behält Transparenz (PNG).
+// Animierte Bilder (GIF, animiertes WebP, APNG) bleiben unverändert, sonst gingen sie als Standbild verloren.
+async function prepareImage(file: File): Promise<{ file: File; animated: boolean }> {
+  const animated = isAnimatedImage(new Uint8Array(await file.arrayBuffer()));
+  if (animated || file.type === "image/gif") return { file, animated };
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, TARGET_SIZE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
@@ -22,8 +27,15 @@ async function prepareImage(file: File): Promise<File> {
   canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-  if (!blob) return file;
-  return new File([blob], "emoji.png", { type: "image/png" });
+  if (!blob) return { file, animated: false };
+  return { file: new File([blob], "emoji.png", { type: "image/png" }), animated: false };
+}
+
+// Aus einem Dateinamen wie "Süße Katze 2.png" einen gültigen Emoji-Namen vorschlagen.
+function suggestName(filename: string) {
+  const base = filename.replace(/\.[^.]+$/, "").toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+  const slug = base.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32);
+  return EMOJI_NAME.test(slug) && !/^(image|bild|screenshot|unbenannt)/.test(slug) ? slug : "";
 }
 
 export function EmojiManager({
@@ -41,7 +53,58 @@ export function EmojiManager({
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  function chooseFile(f: File | null) {
+    setError(null);
+    if (f && !ALLOWED.includes(f.type)) {
+      setError("Erlaubt sind PNG, GIF und WebP.");
+      return;
+    }
+    setFile(f);
+    if (f && !name.trim()) setName(suggestName(f.name));
+  }
+
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  // Strg+V / Cmd+V: Bild direkt aus der Zwischenablage einfügen (z. B. Screenshot oder kopiertes Bild).
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.kind === "file" && i.type.startsWith("image/"));
+      const f = item?.getAsFile();
+      if (!f) return;
+      e.preventDefault();
+      chooseFile(f);
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name]);
+
+  // Für Geräte ohne Tastenkürzel (Handy): Zwischenablage per Knopf lesen.
+  async function pasteFromClipboard() {
+    setError(null);
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (type) {
+          const blob = await item.getType(type);
+          chooseFile(new File([blob], `einfuegen.${type.split("/")[1]}`, { type }));
+          return;
+        }
+      }
+      setError("In der Zwischenablage liegt kein Bild.");
+    } catch {
+      setError("Zugriff auf die Zwischenablage nicht möglich. Probier Strg+V (Cmd+V) oder wähle eine Datei.");
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,12 +112,13 @@ export function EmojiManager({
     const clean = name.trim().toLowerCase().replace(/^:|:$/g, "");
     if (!EMOJI_NAME.test(clean)) return setError("Name: 2–32 Zeichen, nur Kleinbuchstaben, Zahlen und Unterstrich.");
     if (!file) return setError("Bitte ein Bild auswählen.");
-    if (!["image/png", "image/gif", "image/webp"].includes(file.type)) return setError("Erlaubt sind PNG, GIF und WebP.");
+    if (!ALLOWED.includes(file.type)) return setError("Erlaubt sind PNG, GIF und WebP.");
     setBusy(true);
     try {
-      const prepared = await prepareImage(file);
-      if (prepared.size > MAX_BYTES) {
-        setError("Das Bild ist zu groß (max. 256 KB).");
+      const { file: prepared, animated } = await prepareImage(file);
+      const limit = animated ? MAX_BYTES_ANIMATED : MAX_BYTES;
+      if (prepared.size > limit) {
+        setError(`Das Bild ist zu groß (max. ${limit / 1024} KB${animated ? " für animierte Emojis" : ""}).`);
         return;
       }
       const supabase = createClient();
@@ -108,16 +172,69 @@ export function EmojiManager({
             <span className="pr-3 text-muted">:</span>
           </div>
         </label>
-        <label className="flex flex-col gap-1 text-sm text-fg-soft">
-          Bild (PNG, GIF oder WebP, höchstens 256 KB)
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            chooseFile(e.dataTransfer.files?.[0] ?? null);
+          }}
+          className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-4 text-center text-sm transition ${
+            dragOver ? "border-accent bg-accent/10" : "border-line"
+          }`}
+        >
+          {preview ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="Vorschau" className="h-16 w-16 object-contain" />
+              <span className="text-xs text-muted">{file?.name}</span>
+            </>
+          ) : (
+            <span className="text-fg-soft">
+              Bild hier ablegen, mit <kbd className="rounded bg-surface-2 px-1">Strg</kbd>+<kbd className="rounded bg-surface-2 px-1">V</kbd> einfügen oder Datei wählen
+            </span>
+          )}
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="rounded-full bg-surface-2 px-3 py-1 text-xs text-fg hover:bg-surface-3"
+            >
+              Datei wählen
+            </button>
+            <button
+              type="button"
+              onClick={pasteFromClipboard}
+              className="rounded-full bg-surface-2 px-3 py-1 text-xs text-fg hover:bg-surface-3"
+            >
+              Aus Zwischenablage
+            </button>
+            {file && (
+              <button
+                type="button"
+                onClick={() => {
+                  chooseFile(null);
+                  if (fileRef.current) fileRef.current.value = "";
+                }}
+                className="rounded-full px-3 py-1 text-xs text-muted hover:text-fg"
+              >
+                Entfernen
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted">PNG, GIF oder WebP, auch animiert. Standbilder bis 256 KB, animierte bis 1 MB.</p>
           <input
             ref={fileRef}
             type="file"
             accept="image/png,image/gif,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-sm text-fg-soft file:mr-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:text-fg"
+            onChange={(e) => chooseFile(e.target.files?.[0] ?? null)}
+            className="hidden"
           />
-        </label>
+        </div>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
