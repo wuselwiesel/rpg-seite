@@ -15,6 +15,7 @@ import { FontFamily } from "@tiptap/extension-font-family";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { createMentionSuggestion } from "@/lib/mention-suggestion";
+import { wikiMentionExtension } from "@/lib/wiki-mention-suggestion";
 import { SymbolPicker } from "./symbol-picker";
 import { PROFILE_FONTS } from "@/lib/profile-theme";
 import { loadDefaultFontId, saveDefaultFontId } from "@/lib/default-font";
@@ -456,7 +457,9 @@ export function RichTextEditor({
               suggestion: createMentionSuggestion(mentionCharacters),
             }),
           ]
-        : []),
+        : wikiPages
+          ? [wikiMentionExtension(wikiPages)]
+          : []),
     ] satisfies Extensions,
     content: initialContent ?? "",
     editorProps: {
