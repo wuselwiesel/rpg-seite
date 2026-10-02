@@ -1,6 +1,6 @@
 import { BadgeRow } from "@/components/badge-row";
 import { CharacterTimeline } from "@/components/character-timeline";
-import { getCharacterBadges, syncCharacterBadges } from "@/lib/badges-server";
+import { getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/badges-server";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -78,7 +78,7 @@ export default async function CharacterProfilePage({
 
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
   if (character.owner_id === user.id) await syncCharacterBadges(character.id);
-  const badges = await getCharacterBadges(character.id);
+  const badges = visibleBadges(await getCharacterBadges(character.id));
   const myCharacters = activeWorld
     ? (await getOwnCharacters(user.id, activeWorld.id)).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
     : [];

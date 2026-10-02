@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_CATEGORIES, AUTO_BADGES } from "@/lib/badges";
-import { accountMetrics, getAccountBadges, syncAccountBadges } from "@/lib/badges-server";
+import { accountMetrics, getAccountBadges, syncAccountBadges, visibleBadges } from "@/lib/badges-server";
 import { BadgeSections } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
@@ -23,7 +23,7 @@ export default async function AccountBadgeCollectionPage({ params }: PageProps<"
   const isOwn = userId === user.id;
   if (isOwn) await syncAccountBadges();
   const [badges, metrics] = await Promise.all([
-    getAccountBadges(userId),
+    getAccountBadges(userId).then((b) => (isOwn ? b : visibleBadges(b))),
     isOwn ? accountMetrics(supabase, userId) : Promise.resolve(undefined),
   ]);
   const earned = badges.filter((b) => b.kind === "account");

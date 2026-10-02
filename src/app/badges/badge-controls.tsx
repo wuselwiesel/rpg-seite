@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { EmojiText } from "@/components/custom-emoji-provider";
-import { awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setFeaturedBadge } from "./actions";
+import { awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setBadgeHidden, setFeaturedBadge } from "./actions";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
@@ -159,6 +159,70 @@ export function FeaturedPicker({
       </select>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       {saved && <p className="text-xs text-muted">Gespeichert.</p>}
+    </div>
+  );
+}
+
+// Pro Badge festlegen, ob es im Profil usw. angezeigt wird.
+export function VisibilityList({ items }: { items: { awardId: string; icon: string; name: string; hidden: boolean }[] }) {
+  const [hidden, setHidden] = useState(() => new Set(items.filter((i) => i.hidden).map((i) => i.awardId)));
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function toggle(id: string, show: boolean) {
+    const prev = new Set(hidden);
+    const next = new Set(hidden);
+    if (show) next.delete(id);
+    else next.add(id);
+    setHidden(next);
+    setError(null);
+    startTransition(async () => {
+      const err = await setBadgeHidden(id, !show);
+      if (err) {
+        setHidden(prev);
+        setError(err);
+      }
+    });
+  }
+
+  function setAll(show: boolean) {
+    for (const i of items) if (hidden.has(i.awardId) === show) toggle(i.awardId, show);
+  }
+
+  if (items.length === 0) return <p className="text-sm text-muted">Noch keine Badges erreicht.</p>;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-3 text-xs">
+        <button type="button" onClick={() => setAll(true)} disabled={pending} className="text-accent hover:underline">
+          Alle anzeigen
+        </button>
+        <button type="button" onClick={() => setAll(false)} disabled={pending} className="text-accent hover:underline">
+          Alle ausblenden
+        </button>
+      </div>
+      <ul className="flex flex-col gap-1">
+        {items.map((i) => {
+          const shown = !hidden.has(i.awardId);
+          return (
+            <li key={i.awardId}>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={shown}
+                  onChange={(e) => toggle(i.awardId, e.target.checked)}
+                  className="h-4 w-4 accent-[var(--accent)]"
+                />
+                <span className={`min-w-0 flex-1 truncate ${shown ? "text-fg" : "text-muted line-through"}`}>
+                  <EmojiText text={`${i.icon} ${i.name}`} />
+                </span>
+                <span className="shrink-0 text-xs text-muted">{shown ? "angezeigt" : "ausgeblendet"}</span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

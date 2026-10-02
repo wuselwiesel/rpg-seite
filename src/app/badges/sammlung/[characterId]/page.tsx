@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AUTO_BADGES, CHARACTER_CATEGORIES } from "@/lib/badges";
-import { characterMetrics, getCharacterBadges, syncCharacterBadges } from "@/lib/badges-server";
+import { characterMetrics, getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/badges-server";
 import { BadgeSections, SpecialBadges } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
@@ -23,7 +23,7 @@ export default async function CharacterBadgeCollectionPage({ params }: PageProps
   const isOwn = character.owner_id === user.id;
   if (isOwn) await syncCharacterBadges(character.id);
   const [badges, metrics] = await Promise.all([
-    getCharacterBadges(character.id),
+    getCharacterBadges(character.id).then((b) => (isOwn ? b : visibleBadges(b))),
     isOwn ? characterMetrics(supabase, character.id) : Promise.resolve(undefined),
   ]);
 
