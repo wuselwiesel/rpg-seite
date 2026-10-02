@@ -96,6 +96,17 @@ const fieldTitles = (page) => page.locator('input[name$="title"], input[placehol
   await ctx.close();
 }
 
+// 6. Person: Bild im Hochformat statt breitem Titelbild
+{
+  const { ctx, page } = await fresh();
+  check("Ohne Typ heißt es Titelbild", (await page.getByText("Titelbild", { exact: true }).count()) === 1);
+  await page.getByRole("radio", { name: "Person" }).click();
+  check("Bei Person: Bild im Hochformat", (await page.getByText("Bild (Hochformat, wie ein Charakterbild)").count()) === 1 && (await page.getByText("Titelbild", { exact: true }).count()) === 0);
+  await page.getByRole("radio", { name: "Ort" }).click();
+  check("Bei Ort wieder Titelbild", (await page.getByText("Titelbild", { exact: true }).count()) === 1);
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);

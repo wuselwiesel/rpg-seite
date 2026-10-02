@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WIKI_TYPES, WIKI_TYPE_IDS, mergeFields, outlineHtml, parseWikiType, wikiTypeOf } from "./wiki-types";
+import { WIKI_TYPES, WIKI_TYPE_IDS, mergeFields, outlineHtml, parseWikiType, usesPortraitImage, wikiTypeOf } from "./wiki-types";
 
 describe("Wiki-Typen", () => {
   it("hat zu jeder Kennung genau einen Typ, passend zur Datenbank-Regel", () => {
@@ -29,5 +29,14 @@ describe("Wiki-Typen", () => {
     expect(merged.map((f) => f.title)).toEqual(["Datum", "Ort", "Beteiligte", "Folgen"]);
     expect(merged[0].text).toBe("1. Mai");
     expect(mergeFields([], type).length).toBe(4);
+  });
+});
+
+describe("Bildform", () => {
+  it("Personen bekommen ein Hochformat-Bild, alle anderen das breite Titelbild", () => {
+    expect(usesPortraitImage("person")).toBe(true);
+    expect(usesPortraitImage("ort")).toBe(false);
+    expect(usesPortraitImage(null)).toBe(false);
+    expect(usesPortraitImage(undefined)).toBe(false);
   });
 });
