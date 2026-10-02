@@ -250,6 +250,8 @@ export type RelationshipHistoryEntry = {
 };
 
 export const ACTIVE_CHARACTER_COOKIE = "active_character_id";
+// Auswahl von Welt und Charakter soll das Schließen der App überdauern (sonst Session-Cookie).
+export const SELECTION_COOKIE_OPTIONS = { path: "/", httpOnly: false, sameSite: "lax" as const, maxAge: 60 * 60 * 24 * 365 };
 export const ACTIVE_WORLD_COOKIE = "active_world_id";
 
 export type Story = {

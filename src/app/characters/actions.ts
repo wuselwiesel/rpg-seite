@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
+import { ACTIVE_CHARACTER_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
@@ -96,11 +96,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_CHARACTER_COOKIE, data.id, {
-    path: "/",
-    httpOnly: false,
-    sameSite: "lax",
-  });
+  cookieStore.set(ACTIVE_CHARACTER_COOKIE, data.id, SELECTION_COOKIE_OPTIONS);
 
   revalidatePath("/", "layout");
   redirect("/");
@@ -216,11 +212,7 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
 
 export async function setActiveCharacter(characterId: string) {
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_CHARACTER_COOKIE, characterId, {
-    path: "/",
-    httpOnly: false,
-    sameSite: "lax",
-  });
+  cookieStore.set(ACTIVE_CHARACTER_COOKIE, characterId, SELECTION_COOKIE_OPTIONS);
   revalidatePath("/", "layout");
 }
 

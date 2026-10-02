@@ -31,6 +31,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
 import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
 import { AppLogoSync } from "@/components/app-logo-sync";
+import { SelectionCookieKeeper } from "@/components/selection-cookie-keeper";
 import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { getEmojiMap } from "@/lib/custom-emoji-server";
 import { MobileMain } from "@/components/mobile-main";
@@ -159,6 +160,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
         <ModeTheme />
         <AppLogoSync />
+        <SelectionCookieKeeper />
         <ServiceWorkerRegister />
         <PushSync />
         <WikiPreviewLayer />

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE } from "@/lib/types";
+import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 
 export async function createWorld(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -33,7 +33,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
   if (memberError) return memberError.message;
 
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_WORLD_COOKIE, world.id, { path: "/", httpOnly: false, sameSite: "lax" });
+  cookieStore.set(ACTIVE_WORLD_COOKIE, world.id, SELECTION_COOKIE_OPTIONS);
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
 
   revalidatePath("/", "layout");
@@ -42,7 +42,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
 
 export async function setActiveWorld(worldId: string) {
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, { path: "/", httpOnly: false, sameSite: "lax" });
+  cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
   revalidatePath("/", "layout");
   redirect("/");
@@ -71,7 +71,7 @@ export async function joinWorld(worldId: string): Promise<string | null> {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, { path: "/", httpOnly: false, sameSite: "lax" });
+  cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
 
   revalidatePath("/", "layout");
