@@ -12,6 +12,8 @@ import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage,
 import { GifPicker } from "@/components/gif-picker";
 import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
 import { MENTION_REGEX, plainMentions } from "@/lib/mentions";
+import { usePresenceStatus } from "@/lib/presence-status";
+import { StatusList, StatusPicker } from "@/components/presence-status-ui";
 import { MessageBubble } from "./message-bubble";
 import type { Character, Message } from "@/lib/types";
 
@@ -214,10 +216,13 @@ export function ChatRoom({
     return () => clearInterval(timer);
   }, [typing]);
 
+  const presence = usePresenceStatus(`chat-${chatId}`, { characterId: activeCharacter.id, name: activeCharacter.name });
+
   function announceTyping() {
     const now = Date.now();
     if (now - lastTypingSent.current < 2500) return;
     lastTypingSent.current = now;
+    presence.clear(); // wer schreibt, ist offensichtlich da
     channelRef.current?.send({
       type: "broadcast",
       event: "typing",
@@ -592,6 +597,7 @@ export function ChatRoom({
               {Object.values(typing).map((t) => t.name).join(", ")} schreibt…
             </div>
           )}
+          <StatusList others={presence.others} hideIds={Object.keys(typing)} />
           <div ref={bottomRef} />
         </div>
       </div>
@@ -601,6 +607,7 @@ export function ChatRoom({
         className="flex flex-col gap-2 border-t border-line pt-4"
         style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
+        <StatusPicker presence={presence} />
         {replyTo && (
           <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
             <CornerUpLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />

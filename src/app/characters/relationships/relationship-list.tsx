@@ -8,7 +8,7 @@ import type { Character, CharacterRelationship, RelationshipCategory } from "@/l
 
 const field = "rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent";
 
-function EditForm({ rel, onDone }: { rel: CharacterRelationship; onDone: () => void }) {
+export function EditForm({ rel, onDone }: { rel: CharacterRelationship; onDone: () => void }) {
   const [category, setCategory] = useState<RelationshipCategory>(rel.category);
   const [color, setColor] = useState(rel.color);
   const [error, setError] = useState<string | null>(null);

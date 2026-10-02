@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { useEditor, EditorContent, type Editor, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -16,30 +15,10 @@ import { resizeImage } from "@/lib/image-resize";
 import { createMentionSuggestion } from "@/lib/mention-suggestion";
 import { SymbolPicker } from "./symbol-picker";
 import { PROFILE_FONTS } from "@/lib/profile-theme";
+import { loadDefaultFontId, saveDefaultFontId } from "@/lib/default-font";
 import type { Character } from "@/lib/types";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-
-// Zuletzt gewählte Schriftart (geräteweit, nicht pro Beitrag) - neue, leere Editoren starten
-// damit automatisch, statt bei jedem neuen Beitrag/Kommentar/Story-Eintrag wieder bei "Standard".
-const PREFERRED_FONT_KEY = "wortwinkel:preferred-font";
-
-function getPreferredFontId(): string | null {
-  try {
-    return localStorage.getItem(PREFERRED_FONT_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function setPreferredFontId(id: string | null) {
-  try {
-    if (id) localStorage.setItem(PREFERRED_FONT_KEY, id);
-    else localStorage.removeItem(PREFERRED_FONT_KEY);
-  } catch {
-    // ignore
-  }
-}
 
 function ToolbarButton({
   onClick,
@@ -77,34 +56,19 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
-  const [fontMenuOpen, setFontMenuOpen] = useState(false);
-  const fontMenuRef = useRef<HTMLDivElement>(null);
+  const [fontsOpen, setFontsOpen] = useState(false);
+  const [defaultFontId, setDefaultFontId] = useState<string | null>(loadDefaultFontId);
 
-  useEffect(() => {
-    if (!fontMenuOpen) return;
-    function onDown(e: PointerEvent) {
-      if (fontMenuRef.current && !fontMenuRef.current.contains(e.target as Node)) setFontMenuOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setFontMenuOpen(false);
-    }
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [fontMenuOpen]);
-
+  // Ohne Markierung gilt die Wahl als Standard für neuen Text und wird gemerkt;
+  // mit Markierung ändert sie nur den markierten Text.
   function pickFont(font: (typeof PROFILE_FONTS)[number] | null) {
-    if (font) {
-      editor.chain().focus().setFontFamily(font.family).run();
-      setPreferredFontId(font.id);
-    } else {
-      editor.chain().focus().unsetFontFamily().run();
-      setPreferredFontId(null);
+    const chain = editor.chain().focus();
+    if (font) chain.setFontFamily(font.family).run();
+    else chain.unsetFontFamily().run();
+    if (editor.state.selection.empty) {
+      saveDefaultFontId(font?.id ?? null);
+      setDefaultFontId(font?.id ?? null);
     }
-    setFontMenuOpen(false);
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -252,56 +216,9 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
         {allowFontSelection && (
           <>
             <span className="mx-1 h-5 w-px bg-line" />
-            <div className="relative" ref={fontMenuRef}>
-              <button
-                type="button"
-                onClick={() => setFontMenuOpen((v) => !v)}
-                aria-expanded={fontMenuOpen}
-                aria-label="Schriftart für die Auswahl setzen"
-                title="Schriftart für die Auswahl setzen - markiere Text (auch einzelne Wörter/Buchstaben) und wähle eine Schrift"
-                className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-1 text-xs text-fg-soft outline-none hover:text-fg focus:border-accent"
-              >
-                {(() => {
-                  const active = PROFILE_FONTS.find((f) => editor.isActive("textStyle", { fontFamily: f.family }));
-                  return (
-                    <span className="max-w-[7rem] truncate" style={active ? { fontFamily: active.family } : undefined}>
-                      {active?.name ?? "Schriftart…"}
-                    </span>
-                  );
-                })()}
-                <ChevronDown className="h-3 w-3 shrink-0" strokeWidth={2} />
-              </button>
-              {fontMenuOpen && (
-                <div
-                  role="listbox"
-                  className="absolute left-0 top-full z-30 mt-1 max-h-60 w-48 overflow-y-auto rounded-lg border border-line bg-surface p-1 shadow-lg"
-                >
-                  <button
-                    type="button"
-                    onClick={() => pickFont(null)}
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm text-fg-soft hover:bg-surface-2 hover:text-fg"
-                  >
-                    Standard
-                  </button>
-                  {PROFILE_FONTS.map((f) => {
-                    const active = editor.isActive("textStyle", { fontFamily: f.family });
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => pickFont(f)}
-                        style={{ fontFamily: f.family }}
-                        className={`block w-full rounded px-2 py-1.5 text-left text-base transition ${
-                          active ? "bg-accent-strong text-on-accent-strong" : "text-fg hover:bg-surface-2"
-                        }`}
-                      >
-                        {f.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <ToolbarButton label="Schriftart wählen" active={fontsOpen} onClick={() => setFontsOpen((v) => !v)}>
+              Aa Schriftart
+            </ToolbarButton>
           </>
         )}
 
@@ -341,6 +258,50 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
           onClose={() => setSymbolsOpen(false)}
         />
       )}
+      {fontsOpen && (
+        <div className="flex flex-col gap-2 rounded-xl bg-surface-2 p-2" role="group" aria-label="Schriftarten">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted">
+              Ohne Markierung: Standard für neuen Text (wird gemerkt). Mit Markierung: nur der markierte Text.
+            </p>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setFontsOpen(false)}
+              className="shrink-0 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface hover:text-fg"
+            >
+              Schließen
+            </button>
+          </div>
+          <div className="grid max-h-56 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pickFont(null)}
+              className={`rounded-lg border px-2.5 py-2 text-left text-sm transition ${
+                !defaultFontId ? "border-accent bg-accent/10 text-fg" : "border-line bg-surface text-fg-soft hover:text-fg"
+              }`}
+            >
+              Standard
+            </button>
+            {PROFILE_FONTS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pickFont(f)}
+                style={{ fontFamily: f.family }}
+                className={`rounded-lg border px-2.5 py-2 text-left text-base transition ${
+                  defaultFontId === f.id ? "border-accent bg-accent/10 text-fg" : "border-line bg-surface text-fg-soft hover:text-fg"
+                }`}
+              >
+                <span className="block truncate">{f.name}</span>
+                <span className="block truncate text-xs opacity-70">Der Mond steigt auf</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <input
         ref={fileInputRef}
@@ -375,7 +336,14 @@ export function RichTextEditor({
   allowFontSelection?: boolean;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
-  const [, setRerenderTick] = useState(0);
+
+  // Gemerkte Standard-Schriftart auf neuen, leeren Text anwenden.
+  function applyDefaultFont(ed: Editor) {
+    if (!allowFontSelection || !ed.isEmpty) return;
+    if (ed.state.storedMarks?.some((m) => m.type.name === "textStyle")) return;
+    const font = PROFILE_FONTS.find((f) => f.id === loadDefaultFontId());
+    if (font) ed.commands.setFontFamily(font.family);
+  }
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -402,26 +370,14 @@ export function RichTextEditor({
         style: `min-height: ${minHeight}px`,
       },
     },
+    onCreate: ({ editor }) => applyDefaultFont(editor),
+    onFocus: ({ editor }) => applyDefaultFont(editor),
+    onSelectionUpdate: ({ editor }) => applyDefaultFont(editor),
     onUpdate: ({ editor }) => {
+      applyDefaultFont(editor);
       const nextHtml = editor.getHTML();
       setHtml(nextHtml);
       onChange?.(nextHtml);
-    },
-    // Neuer, leerer Editor: zuletzt gewählte Schriftart automatisch übernehmen, statt bei jedem
-    // Beitrag/Kommentar/Story-Eintrag erneut "Standard" zu zeigen. Bei vorhandenem Inhalt (z.B.
-    // beim Bearbeiten) bleibt dessen eigene Formatierung unangetastet.
-    onCreate: ({ editor }) => {
-      if (!allowFontSelection || initialContent) return;
-      const preferredId = getPreferredFontId();
-      const font = preferredId && PROFILE_FONTS.find((f) => f.id === preferredId);
-      if (font) {
-        editor.chain().setFontFamily(font.family).run();
-        // Ist die Toolbar von Anfang an sichtbar (z.B. Feed/Redaktion, anders als im eingeklappten
-        // Story-Editor), bekäme sie von dieser allerersten Transaktion sonst nichts mit, weil Tiptaps
-        // eigenes Update-Abo erst nach dem ersten Render zu laufen beginnt - deshalb hier zusätzlich
-        // einen echten React-Rerender erzwingen, damit die Schriftart-Anzeige sofort stimmt.
-        setRerenderTick((t) => t + 1);
-      }
     },
   });
 
