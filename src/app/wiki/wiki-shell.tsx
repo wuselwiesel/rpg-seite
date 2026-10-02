@@ -218,6 +218,14 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
               </button>
             </div>
 
+            <Link
+              href={q ? `/wiki/suche?q=${encodeURIComponent(query.trim())}` : "/wiki/suche"}
+              onClick={() => setNavOpen(false)}
+              className="-mt-1 px-1 text-xs text-muted transition hover:text-accent"
+            >
+              Erweiterte Suche mit Filtern
+            </Link>
+
             <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">
             {q ? (
               <ul className="flex flex-col">
@@ -554,6 +562,7 @@ function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; dep
         >
           <WikiTypeIcon type={page.page_type} className="h-3.5 w-3.5 shrink-0 text-muted" />
           <span className="truncate">{page.title}</span>
+          {page.is_draft && <span className="shrink-0 rounded bg-accent/10 px-1.5 text-[10px] text-accent">Entwurf</span>}
         </Link>
       </div>
       {open && (

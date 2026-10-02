@@ -24,6 +24,7 @@ export default async function EditWikiPagePage({ params }: PageProps<"/wiki/[id]
       <h1 className="mb-6 font-serif text-4xl text-fg">Eintrag bearbeiten</h1>
       <WikiForm
         page={page}
+        canSetDraft={page.created_by === user.id}
         folders={folderOptions(tree.folders)}
         // Eine Seite darf weder unter sich selbst noch unter ihren eigenen Unterseiten liegen.
         parentChoices={pageOptions(tree, pageSubtreeIds(pages, page.id))}

@@ -8,6 +8,7 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { parseProfileFields } from "@/lib/profile-fields";
 import { pageSubtreeIds } from "@/lib/wiki-tree";
 import { parseWikiType } from "@/lib/wiki-types";
+import { parseTags } from "@/lib/wiki-tags";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -48,6 +49,8 @@ type PageInput = {
   folder_id: string | null;
   parent_page_id: string | null;
   page_type: string | null;
+  tags: string[];
+  is_draft: boolean;
 };
 
 // Liest und prüft das Formular. Eine Oberseite bestimmt den Ordner (Unterseiten liegen im Ordner ihrer Oberseite).
@@ -93,6 +96,8 @@ async function readPageForm(
       folder_id: folderId,
       parent_page_id: parentId,
       page_type: parseWikiType(formData.get("page_type")),
+      tags: parseTags(String(formData.get("tags") ?? "")),
+      is_draft: formData.get("is_draft") === "on",
     },
   };
 }
@@ -127,15 +132,19 @@ export async function updateWikiPage(wikiPageId: string, _prevState: string | nu
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const { data: existing } = await supabase.from("wiki_pages").select("world_id").eq("id", wikiPageId).maybeSingle();
+  const { data: existing } = await supabase.from("wiki_pages").select("world_id, created_by").eq("id", wikiPageId).maybeSingle();
   if (!existing) return "Der Eintrag konnte nicht gefunden werden.";
 
   const parsed = await readPageForm(supabase, existing.world_id, formData);
   if ("error" in parsed) return parsed.error;
 
+  // Nur wer die Seite angelegt hat, darf sie zum Entwurf machen oder veröffentlichen (sonst könnte man fremde Seiten verstecken).
+  const { is_draft, ...rest } = parsed.input;
+  const patch = existing.created_by === user.id ? { ...rest, is_draft } : rest;
+
   const { data, error } = await supabase
     .from("wiki_pages")
-    .update({ ...parsed.input, updated_at: new Date().toISOString() })
+    .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", wikiPageId)
     .select("id");
 
@@ -216,4 +225,47 @@ export async function moveWikiPage(
 
   revalidatePath("/wiki", "layout");
   return null;
+}
+
+// Entwurf veröffentlichen: ab jetzt sehen alle Mitglieder der Welt die Seite. Nur für die Autorin (zusätzlich per Datenbank).
+export async function publishWikiPage(wikiPageId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data, error } = await supabase
+    .from("wiki_pages")
+    .update({ is_draft: false, updated_at: new Date().toISOString() })
+    .eq("id", wikiPageId)
+    .eq("created_by", user.id)
+    .select("id");
+  if (error) return error.message;
+  if (!data?.length) return "Nur wer die Seite angelegt hat, kann sie veröffentlichen.";
+  revalidatePath("/wiki", "layout");
+  return null;
+}
+
+// Favorit an- oder ausschalten. Gibt den neuen Zustand zurück.
+export async function toggleWikiFavorite(wikiPageId: string): Promise<{ favorite: boolean } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { data: existing } = await supabase
+    .from("wiki_favorites")
+    .select("page_id")
+    .eq("user_id", user.id)
+    .eq("page_id", wikiPageId)
+    .maybeSingle();
+  if (existing) {
+    const { error } = await supabase.from("wiki_favorites").delete().eq("user_id", user.id).eq("page_id", wikiPageId);
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("wiki_favorites").insert({ user_id: user.id, page_id: wikiPageId });
+    if (error) return { error: error.message };
+  }
+  revalidatePath("/wiki", "layout");
+  return { favorite: !existing };
 }

@@ -65,6 +65,18 @@ const fieldTitles = (page) => page.locator('input[name$="title"], input[placehol
   await ctx.close();
 }
 
+// 4. Tags und Entwurf-Schalter
+{
+  const { ctx, page } = await fresh();
+  await page.locator('input[name="tags"]').fill("Magie, Küste");
+  check("Tags-Feld nimmt Text an", (await page.locator('input[name="tags"]').inputValue()) === "Magie, Küste");
+  const draft = page.locator('input[name="is_draft"]');
+  check("Entwurf-Schalter ist anfangs aus", (await draft.count()) === 1 && !(await draft.isChecked()));
+  await draft.check();
+  check("Entwurf-Schalter lässt sich setzen", await draft.isChecked());
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);

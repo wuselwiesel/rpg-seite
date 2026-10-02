@@ -59,9 +59,10 @@ export function PageCard({ page, showChildren = true }: { page: TreePage; showCh
         >
           {page.title}
         </Link>
-        {page.page_type && (
-          <p className="mt-1">
+        {(page.page_type || page.is_draft) && (
+          <p className="mt-1 flex flex-wrap items-center gap-1.5">
             <WikiTypeBadge type={page.page_type} />
+            {page.is_draft && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">Entwurf</span>}
           </p>
         )}
         {page.lead && <p className="mt-0.5 line-clamp-2 text-sm text-fg-soft">{page.lead}</p>}
