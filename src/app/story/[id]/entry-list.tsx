@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AtSign, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
@@ -49,6 +50,9 @@ export function EntryList({
   // Neue Beiträge anderer, die diese Szene offen haben, kommen per Realtime dazu – kein Neuladen nötig.
   const [live, setLive] = useState<StoryEntry[]>([]);
   const seenIds = useRef<Set<string>>(new Set(items.map((i) => i.id)));
+  // Gelöschte Beiträge (auch die von anderen) verschwinden sofort bei allen, die die Szene offen haben.
+  const router = useRouter();
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
   // Wenn der eigene Beitrag (Fortsetzung/Wurf/Kapitel) durch revalidatePath() serverseitig neu
   // in `items` auftaucht, muss das hier nachgezogen werden - sonst hält der Realtime-Listener
@@ -83,6 +87,14 @@ export function EntryList({
           ]);
         },
       )
+      // DELETE-Ereignisse lassen sich nicht nach Szene filtern; die ID reicht, fremde IDs sind hier wirkungslos.
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "story_entries" }, (payload) => {
+        const id = (payload.old as { id?: string }).id;
+        if (!id || !seenIds.current.has(id)) return;
+        setDeletedIds((prev) => new Set(prev).add(id));
+        // Serverseitig gerenderte Teile (z. B. die Vorschau des letzten Beitrags) mitziehen.
+        router.refresh();
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -127,7 +139,8 @@ export function EntryList({
       />
     ),
   }));
-  const allItems = liveEntries.length > 0 ? [...items, ...liveListItems] : items;
+  const mergedItems = liveEntries.length > 0 ? [...items, ...liveListItems] : items;
+  const allItems = deletedIds.size > 0 ? mergedItems.filter((i) => !deletedIds.has(i.id)) : mergedItems;
 
   const filter = filterId ? characters.find((c) => c.id === filterId) ?? null : null;
   const shown = filter ? allItems.filter((i) => matches(i, filter.id, mode)) : allItems;
