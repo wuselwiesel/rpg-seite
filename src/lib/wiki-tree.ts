@@ -7,6 +7,7 @@ export type PageRow = {
   folder_id: string | null;
   parent_page_id: string | null;
   lead?: string | null;
+  cover_image_url?: string | null;
   updated_at?: string;
   created_by?: string | null;
 };

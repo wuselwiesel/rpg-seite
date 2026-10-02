@@ -1040,3 +1040,46 @@ a.wiki-missing,
 .dark .wiki-missing-text {
   color: #e0a56a;
 }
+
+/* Wiki-Artikel: größere, ruhigere Leseschrift mit Initiale und hervorgehobenen Zitaten. */
+.wiki-prose {
+  max-width: 68ch;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: var(--fg-soft);
+}
+.wiki-prose h2 {
+  margin: 1.8em 0 0.4em;
+  font-size: 1.85rem;
+  line-height: 1.2;
+}
+.wiki-prose h3 {
+  margin: 1.5em 0 0.35em;
+  font-size: 1.4rem;
+}
+.wiki-prose > :first-child {
+  margin-top: 0;
+}
+.wiki-prose blockquote {
+  margin: 1.25em 0;
+  border-left-width: 4px;
+  border-radius: 0 0.75rem 0.75rem 0;
+  background: var(--surface-3);
+  padding: 0.75em 1.1em;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.2em;
+  line-height: 1.5;
+  color: var(--fg);
+}
+.wiki-prose blockquote p {
+  margin: 0;
+}
+.wiki-dropcap > p:first-child::first-letter {
+  float: left;
+  margin: 0.06em 0.1em 0 0;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 3.7em;
+  font-weight: 600;
+  line-height: 0.8;
+  color: var(--accent);
+}

@@ -18,7 +18,7 @@ export const getWikiPageRows = cache(async (worldId: string): Promise<PageRow[]>
   const supabase = await createClient();
   const { data } = await supabase
     .from("wiki_pages")
-    .select("id, title, folder_id, parent_page_id, lead, updated_at, created_by")
+    .select("id, title, folder_id, parent_page_id, lead, cover_image_url, updated_at, created_by")
     .eq("world_id", worldId)
     .returns<PageRow[]>();
   return data ?? [];

@@ -49,3 +49,31 @@ export function useOpenState(worldId: string) {
 
   return { state, save };
 }
+
+// Ob die Ordnerleiste am großen Bildschirm ausgeblendet ist (mehr Platz zum Lesen), pro Gerät gemerkt.
+const NAV_KEY = "wortwinkel:wiki-nav-hidden";
+const NAV_EVENT = "wortwinkel:wiki-nav";
+
+export function useNavHidden() {
+  const hidden = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener(NAV_EVENT, cb);
+      window.addEventListener("storage", cb);
+      return () => {
+        window.removeEventListener(NAV_EVENT, cb);
+        window.removeEventListener("storage", cb);
+      };
+    },
+    () => read(NAV_KEY) === "1",
+    () => false,
+  );
+  const setHidden = useCallback((next: boolean) => {
+    try {
+      localStorage.setItem(NAV_KEY, next ? "1" : "0");
+    } catch {
+      /* egal */
+    }
+    window.dispatchEvent(new Event(NAV_EVENT));
+  }, []);
+  return { hidden, setHidden };
+}

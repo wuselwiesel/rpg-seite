@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, FolderPlus, MoreHorizontal } from "lucide-react";
+import { ChevronRight, Folder, FolderOpen, FolderPlus, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { FolderDialog, type FolderDialogState } from "./folder-dialog";
-import { useOpenState } from "./use-open-folders";
+import { useNavHidden, useOpenState } from "./use-open-folders";
 import {
   buildWikiTree,
   folderPath,
@@ -38,6 +38,7 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
   const cur = currentFromPath(pathname);
   const tree = useMemo(() => buildWikiTree(folders, pages), [folders, pages]);
   const { state: stored, save } = useOpenState(worldId);
+  const { hidden: navHidden, setHidden: setNavHidden } = useNavHidden();
   const [query, setQuery] = useState("");
   const [navOpen, setNavOpen] = useState(false);
   const [dialog, setDialog] = useState<FolderDialogState | null>(null);
@@ -70,58 +71,59 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
     ? pages.filter((p) => `${p.title} ${p.lead ?? ""}`.toLowerCase().includes(q)).slice(0, 12)
     : [];
 
-  const newHref = `/wiki/new${cur.folder ? `?folder=${cur.folder}` : ""}`;
   const canDelete = (f: TreeFolder) => f.created_by === userId || isWorldOwner;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
-      <header className="mb-5 flex items-center justify-between gap-3">
-        <Link href="/wiki" className="font-serif text-3xl text-accent">
-          Wiki
-        </Link>
-        <Link
-          href={newHref}
-          className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
-        >
-          Neuer Artikel
-        </Link>
-      </header>
-
-      <div className="grid gap-5 lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-10">
-        <div>
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8 lg:px-0">
+      <div className={`grid gap-6 ${navHidden ? "lg:grid-cols-1" : "lg:grid-cols-[236px_minmax(0,1fr)] lg:gap-8"}`}>
+        <div className={navHidden ? "lg:hidden" : ""}>
           <button
             type="button"
             onClick={() => setNavOpen((v) => !v)}
             aria-expanded={navOpen}
-            className="flex w-full items-center justify-between rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg-soft lg:hidden"
+            className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-fg-soft lg:hidden"
           >
-            Ordner und Suche <span aria-hidden>▾</span>
+            Ordner und Suche
+            <ChevronRight aria-hidden className={`h-4 w-4 transition-transform ${navOpen ? "rotate-90" : ""}`} strokeWidth={2} />
           </button>
 
           <nav
             aria-label="Wiki-Ordner"
-            className={`${navOpen ? "mt-3 flex" : "hidden"} flex-col gap-3 lg:sticky lg:top-4 lg:mt-0 lg:flex lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto`}
+            className={`${navOpen ? "mt-3 flex" : "hidden"} flex-col gap-3 lg:sticky lg:top-4 lg:mt-0 lg:flex lg:max-h-[calc(100vh-2rem)]`}
           >
             <div className="flex gap-1.5">
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Suchen"
-                aria-label="Wiki durchsuchen"
-                className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
-              />
+              <div className="relative min-w-0 flex-1">
+                <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={2} />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Suchen"
+                  aria-label="Wiki durchsuchen"
+                  className="w-full rounded-xl border border-line bg-surface py-2 pl-9 pr-3 text-sm text-fg outline-none placeholder:text-muted focus:border-accent"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => setDialog({ kind: "new", parent: null })}
                 title="Neuer Ordner"
                 aria-label="Neuen Ordner anlegen"
-                className="flex w-10 items-center justify-center rounded-lg border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+                className="flex w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
               >
                 <FolderPlus className="h-4 w-4" strokeWidth={2} />
               </button>
+              <button
+                type="button"
+                onClick={() => setNavHidden(true)}
+                title="Ordnerleiste ausblenden"
+                aria-label="Ordnerleiste ausblenden"
+                className="hidden w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg lg:flex"
+              >
+                <PanelLeftClose className="h-4 w-4" strokeWidth={2} />
+              </button>
             </div>
 
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">
             {q ? (
               <ul className="flex flex-col">
                 {hits.length === 0 && (
@@ -177,19 +179,32 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                   )}
                 </ul>
                 {folders.length + pages.length > 0 && (
-                  <button type="button" onClick={toggleAll} className="self-start px-2 text-xs text-muted underline underline-offset-2 hover:text-fg">
+                  <button type="button" onClick={toggleAll} className="mt-2 w-full rounded-lg px-2 py-1.5 text-left text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
                     {anyOpen ? "Alle zuklappen" : "Alle aufklappen"}
                   </button>
                 )}
                 {folders.length === 0 && pages.length === 0 && (
-                  <p className="px-2 text-sm text-muted">Noch nichts in {worldName}. Leg den ersten Ordner oder Artikel an.</p>
+                  <p className="px-2 py-1 text-sm text-muted">Noch nichts in {worldName}. Leg den ersten Ordner oder Artikel an.</p>
                 )}
               </>
             )}
+            </div>
           </nav>
         </div>
 
-        <main className="@container min-w-0">{children}</main>
+        <main className="@container min-w-0">
+          {navHidden && (
+            <button
+              type="button"
+              onClick={() => setNavHidden(false)}
+              className="mb-4 hidden items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-fg-soft transition hover:text-fg lg:flex"
+            >
+              <PanelLeftOpen className="h-4 w-4" strokeWidth={2} />
+              Ordnerleiste einblenden
+            </button>
+          )}
+          {children}
+        </main>
       </div>
 
       {dialog && (
@@ -260,7 +275,7 @@ function FolderNode({
 
   return (
     <li role="treeitem" aria-selected={active} aria-expanded={hasContent ? open : undefined}>
-      <div ref={ref} className={`group relative flex items-center rounded-lg ${active ? "bg-accent/10" : "hover:bg-surface-2"}`}>
+      <div ref={ref} className={`group relative flex items-center rounded-lg ${active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"}`}>
         {hasContent ? (
           <Chevron open={open} label={`${folder.name} ${open ? "einklappen" : "aufklappen"}`} onClick={() => toggle(folder.id)} />
         ) : (
@@ -269,11 +284,16 @@ function FolderNode({
         <Link
           href={`/wiki/ordner/${folder.id}`}
           onClick={onNavigate}
-          className={`min-w-0 flex-1 truncate py-1.5 text-sm ${active ? "font-semibold text-accent" : "text-fg-soft"}`}
+          className={`flex min-w-0 flex-1 items-center gap-2 py-1.5 text-sm ${active ? "font-semibold text-accent" : "font-medium text-fg"}`}
         >
-          {folder.name}
+          {open ? (
+            <FolderOpen className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
+          ) : (
+            <Folder className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
+          )}
+          <span className="truncate">{folder.name}</span>
         </Link>
-        <span className="pr-1 text-xs text-muted group-hover:hidden group-focus-within:hidden">{folder.total}</span>
+        <span className="pr-2 text-xs text-muted group-hover:hidden group-focus-within:hidden">{folder.total}</span>
         <button
           type="button"
           onClick={() => setMenu((v) => !v)}
@@ -307,7 +327,7 @@ function FolderNode({
         )}
       </div>
       {open && (
-        <ul role="group" className="ml-3 border-l border-line pl-1.5">
+        <ul role="group" className="ml-[19px] border-l border-line pl-1">
           {folder.children.map((c) => (
             <FolderNode key={c.id} folder={c} canDelete={canDelete} onDialog={onDialog} {...common} />
           ))}
@@ -327,7 +347,7 @@ function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; dep
   const active = cur.page === page.id;
   return (
     <li role="treeitem" aria-selected={active} aria-expanded={hasKids ? open : undefined}>
-      <div className={`flex items-center rounded-lg ${active ? "bg-accent/10" : "hover:bg-surface-2"}`}>
+      <div className={`flex items-center rounded-lg ${active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"}`}>
         {hasKids ? (
           <Chevron open={open} label={`${page.title} ${open ? "einklappen" : "aufklappen"}`} onClick={() => toggle(page.id)} />
         ) : (
@@ -336,13 +356,13 @@ function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; dep
         <Link
           href={`/wiki/${page.id}`}
           onClick={onNavigate}
-          className={`min-w-0 flex-1 truncate py-1.5 pr-2 text-sm ${active ? "font-semibold text-accent" : "text-fg-soft"}`}
+          className={`min-w-0 flex-1 truncate py-1.5 pr-2 text-sm ${active ? "font-semibold text-accent" : "text-fg-soft hover:text-fg"}`}
         >
           {page.title}
         </Link>
       </div>
       {open && (
-        <ul role="group" className="ml-3 border-l border-line pl-1.5">
+        <ul role="group" className="ml-[19px] border-l border-line pl-1">
           {page.children.map((c) => (
             <PageNode key={c.id} page={c} depth={depth + 1} {...common} />
           ))}

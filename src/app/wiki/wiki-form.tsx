@@ -13,7 +13,8 @@ import type { ProfileField } from "@/lib/profile-fields";
 import type { FolderOption, PageOption } from "@/lib/wiki-tree";
 import type { WikiPage } from "@/lib/types";
 
-const input = "rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent";
+const input = "rounded-lg border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent";
+const card = "flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 @xl:p-6";
 
 export function WikiForm({
   page,
@@ -51,8 +52,8 @@ export function WikiForm({
   const parentTitle = parentChoices.find((p) => p.id === parent)?.label;
 
   return (
-    <form action={formAction} onSubmit={() => isNew && clear()} className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={() => isNew && clear()} className="flex flex-col gap-5">
+      <section className={card}>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Titel
           <input
@@ -63,7 +64,7 @@ export function WikiForm({
             {...(isNew
               ? { value: draft.title, onChange: (e: React.ChangeEvent<HTMLInputElement>) => update({ title: e.target.value }) }
               : { defaultValue: page?.title })}
-            className={input}
+            className={`${input} font-serif text-2xl`}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
@@ -81,7 +82,7 @@ export function WikiForm({
         </label>
       </section>
 
-      <section className="flex flex-col gap-4">
+      <section className={card}>
         <h2 className="font-serif text-xl text-fg">Wo liegt die Seite?</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm text-fg-soft">
@@ -117,7 +118,7 @@ export function WikiForm({
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className={card}>
         <div>
           <h2 className="font-serif text-xl text-fg">Steckbrief</h2>
           <p className="text-sm text-muted">Die wichtigsten Fakten als Tabelle neben dem Text. Felder ohne Titel oder Inhalt werden nicht gespeichert.</p>
@@ -140,7 +141,7 @@ export function WikiForm({
         <ProfileFieldsEditor key={fieldsKey} initial={fieldRows} />
       </section>
 
-      <section className="flex flex-col gap-2">
+      <section className={card}>
         <h2 className="font-serif text-xl text-fg">Text</h2>
         <p className="text-sm text-muted">
           Mit <code className="rounded bg-surface-2 px-1">[[Titel]]</code> verlinkst du andere Seiten. Gibt es die Seite noch nicht, wird der Link
@@ -159,7 +160,7 @@ export function WikiForm({
         )}
       </section>
 
-      <section className="flex flex-col gap-4">
+      <section className={card}>
         <h2 className="font-serif text-xl text-fg">Bilder</h2>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
           Titelbild
@@ -178,7 +179,7 @@ export function WikiForm({
         </div>
       </section>
 
-      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+      <label className={`${card} gap-1 text-sm text-fg-soft`}>
         Alternative Namen (optional)
         <input
           type="text"
@@ -196,11 +197,11 @@ export function WikiForm({
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="flex items-center gap-3">
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 -mx-4 flex items-center gap-3 border-t border-line bg-app/90 px-4 py-3 backdrop-blur lg:bottom-0 lg:mx-0 lg:rounded-xl lg:border lg:px-4">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-accent-strong px-5 py-2 font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-accent-strong px-5 py-2 font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
         >
           {pending ? "Speichere …" : page ? "Speichern" : "Seite erstellen"}
         </button>
