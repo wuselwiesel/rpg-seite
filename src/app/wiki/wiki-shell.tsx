@@ -321,9 +321,6 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                 {folders.length === 0 && pages.length === 0 && (
                   <p className="px-2 py-1 text-sm text-muted">Noch nichts in {worldName}. Leg den ersten Ordner oder Artikel an.</p>
                 )}
-                {folders.length + pages.length > 1 && !activeItem && (
-                  <p className="mt-1 px-2 text-[11px] text-muted">Tipp: Ordner und Seiten lassen sich zum Verschieben ziehen (am Handy lange gedrückt halten).</p>
-                )}
               </>
             )}
             </div>
