@@ -2,12 +2,13 @@ import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { MapPin, Pencil, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
 import { getWikiTerms } from "@/lib/wiki-terms";
+import { getMapsForPage } from "@/lib/wiki-map-data";
 import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
 import { buildWikiTree, folderPath, pageAncestors, type TreePage } from "@/lib/wiki-tree";
 import { findBacklinks } from "@/lib/wiki-links";
@@ -41,12 +42,13 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
       : (await supabase.from("worlds").select("created_by").eq("id", page.world_id).maybeSingle()).data?.created_by;
   const canDelete = page.created_by === user.id || worldOwnerId === user.id;
 
-  const [wikiTerms, folders, pageRows, linkPages, favoriteIds] = await Promise.all([
+  const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps] = await Promise.all([
     getWikiTerms(page.world_id),
     getWikiFolders(page.world_id),
     getWikiPageRows(page.world_id),
     getWikiLinkPages(page.world_id),
     getWikiFavoriteIds(user.id),
+    getMapsForPage(page.id),
   ]);
 
   const tree = buildWikiTree(folders, pageRows);
@@ -232,6 +234,27 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
             {node.children.map((c) => (
               <li key={c.id}>
                 <PageCard page={c} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {onMaps.length > 0 && (
+        <section aria-labelledby="auf-karte">
+          <h2 id="auf-karte" className={sectionHead}>
+            Auf der Karte <span className="text-base text-muted">{onMaps.length}</span>
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {onMaps.map((m) => (
+              <li key={m.pinId}>
+                <Link
+                  href={`/wiki/karten/${m.mapId}?pin=${m.pinId}`}
+                  className="flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft transition hover:text-accent"
+                >
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
+                  {m.mapTitle}
+                </Link>
               </li>
             ))}
           </ul>

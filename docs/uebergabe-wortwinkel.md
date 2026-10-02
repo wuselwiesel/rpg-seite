@@ -160,3 +160,11 @@ Alles in `main` gemergt. Nicht im Browser getestet (nur `tsc`/ESLint/vitest).
 - Startseite (`wiki/page.tsx`): Suchfeld, „Zufällige Seite“ (`wiki/zufall/route.ts`), Entwürfe, Favoriten, Nach Art, Ordner, Zuletzt bearbeitet, Neu im Wiki, Tags, Fehlende Artikel.
 - Suche mit Filtern: `/wiki/suche` (`lib/wiki-search.ts`, Tests): Text in Titel, Alternativnamen, Kurztext und Artikeltext, Filter Art, Tag, Ordner (samt Unterordnern); Link „Erweiterte Suche“ in der Seitenleiste.
 - Brotkrumen und Inhaltsverzeichnis gab es schon.
+
+### Agent B: Wiki Runde 4 – Karten mit Pins
+- **DB (live per MCP, Datei `supabase/migration_wiki_maps.sql`, auch in `schema.sql`):** `wiki_maps` (Welt, Titel, Beschreibung, `image_url`, Ersteller) und `wiki_map_pins` (`x`/`y` in Prozent 0–100, Name, Symbol, `page_id`, `target_map_id`). RLS: Mitglieder der Welt lesen/legen an/ändern Karten und Pins (wie Wiki-Seiten); Karten löschen nur Ersteller:in und Welt-Besitzer:in; Pins löschen alle Mitglieder. Trigger `wiki_map_pin_check`: Pin zeigt nur auf Seiten/Karten derselben Welt, nicht auf die eigene Karte. Gegen die Live-DB geprüft (DO-Block mit Abbruch = Rollback). Die Datei enthält `drop … if exists`; live wurde ohne DROP eingespielt (der MCP hängt bei DROP, siehe Runde 3).
+- Bilder: Bucket `wiki-covers`, Pfad `maps/<uuid>.<ext>`, bis 3200 px (`resizeImage`) und 8 MB.
+- Oberfläche: `/wiki/karten` (Übersicht + Upload `new-map-form.tsx`), `/wiki/karten/[id]` (`map-viewer.tsx`: Zoom per Mausrad, Pinch und Knöpfen, Ziehen, Pins mit konstanter Größe; „Pins bearbeiten“: Tippen setzt einen Pin, Ziehen verschiebt ihn, Formular mit Name, Symbol (`SymbolPicker`), Wiki-Seite und Zielkarte; Karte umbenennen/löschen). Pin → Seite oder weitere Karte. Seiten zeigen „Auf der Karte“ (Link `?pin=<id>` zoomt zum Pin). Links in Startseite (Knopf und Abschnitt) und Seitenleiste.
+- Reine Logik `lib/wiki-map.ts` (Prozent-Umrechnung, Zoom-Mathe, Pin-Bereinigung; Tests), Daten `lib/wiki-map-data.ts`, Aktionen `wiki/karten/actions.ts` (Ergebnis `{ ok, … }`).
+- Browser-Test `e2e/wiki-map/` (20 Prüfungen inkl. Pinch per CDP-Touch; baut das echte `globals.css` per `@tailwindcss/postcss`).
+- Nicht umgesetzt: mehrere Pin-Arten/Farben, Karten-Ebenen, Entfernungen.
