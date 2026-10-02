@@ -3,5 +3,5 @@
 // Navigation (Topbar + Tabbar) einzublenden.
 export function isImmersiveChatPath(pathname: string | null): boolean {
   if (!pathname) return false;
-  return /^\/chats\/(?!new(?:\/|$))[^/]+/.test(pathname);
+  return /^\/(?:chats|redaktion\/chat)\/(?!new(?:\/|$))[^/]+/.test(pathname);
 }
