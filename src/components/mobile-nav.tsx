@@ -136,7 +136,7 @@ export function MobileNav({
             <MobileTabLink href="/" icon={<House className="h-[26px] w-[26px]" strokeWidth={2} />} label="Feed" exact showLabel={false} />
             <MobileTabLink href="/search" icon={<Search className="h-[26px] w-[26px]" strokeWidth={2} />} label="Suche" showLabel={false} />
             <MobileCreateTab href="/posts/new" label="Neuer Beitrag" />
-            <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} />
+            <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
           </>
         )}
         {mode === "ingame" && activeCharacter ? (

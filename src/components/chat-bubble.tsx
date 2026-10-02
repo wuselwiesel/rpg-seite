@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ExternalLink, MessageCircle, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getBubbleChats, type BubbleChat, type BubbleData } from "@/app/bubble-actions";
+import { getBubbleChats, getBubbleUnread, type BubbleChat, type BubbleData } from "@/app/bubble-actions";
 import { chatTime } from "@/lib/chat-preview";
 import { CharacterAvatar } from "./character-avatar";
 import { AccountMiniRoom, RpMiniRoom } from "./bubble-rooms";
@@ -117,6 +117,27 @@ function BubbleInner({
     return next;
   }, []);
 
+  // Zähler exakt vom Server holen (statt blind hochzuzählen): richtiger Charakter, Lesezeitpunkte, keine eigenen Nachrichten.
+  const refreshCounts = useCallback(async () => {
+    const next = await getBubbleUnread(rpCharacterRef.current);
+    setRpUnread(next.rp);
+    setAccUnread(next.account);
+  }, []);
+
+  // Beim Start, bei Rückkehr zur App und regelmäßig abgleichen, damit nie eine Meldung "hängen bleibt" oder fehlt.
+  useEffect(() => {
+    void refreshCounts();
+    const interval = setInterval(() => void refreshCounts(), 45_000);
+    const onVisible = () => document.visibilityState === "visible" && void refreshCounts();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [refreshCounts, rpCharacterId]);
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -134,6 +155,12 @@ function BubbleInner({
   useEffect(() => {
     const supabase = createClient();
     let previewKey = 0;
+    let countsTimer: ReturnType<typeof setTimeout> | null = null;
+    // Mehrere Nachrichten kurz hintereinander ergeben nur eine Abfrage.
+    const scheduleCounts = () => {
+      if (countsTimer) clearTimeout(countsTimer);
+      countsTimer = setTimeout(() => void refreshCounts(), 400);
+    };
 
     async function showPreview(kind: "account" | "rp", id: string, text: string) {
       let info = dataRef.current?.chats.find((c) => c.kind === kind && c.id === id);
@@ -149,7 +176,7 @@ function BubbleInner({
         if (myIdsRef.current.includes(row.character_id)) return;
         const here = openViewRef.current;
         if ((here?.kind === "rp" && here.id === row.chat_id) || pathRef.current === `/chats/${row.chat_id}`) return;
-        setRpUnread((prev) => ({ ...prev, [row.chat_id]: (prev[row.chat_id] ?? 0) + 1 }));
+        scheduleCounts();
         void showPreview("rp", row.chat_id, row.content.replace(/\s+/g, " ").trim() || "Neue Nachricht");
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "account_messages" }, (payload) => {
@@ -157,7 +184,7 @@ function BubbleInner({
         if (row.sender_id === userId) return;
         const here = openViewRef.current;
         if ((here?.kind === "account" && here.id === row.chat_id) || pathRef.current === `/redaktion/chat/${row.chat_id}`) return;
-        setAccUnread((prev) => ({ ...prev, [row.chat_id]: (prev[row.chat_id] ?? 0) + 1 }));
+        scheduleCounts();
         void showPreview("account", row.chat_id, row.content.replace(/\s+/g, " ").trim());
       })
       .on(
@@ -178,9 +205,10 @@ function BubbleInner({
       )
       .subscribe();
     return () => {
+      if (countsTimer) clearTimeout(countsTimer);
       supabase.removeChannel(channel);
     };
-  }, [userId, refresh]);
+  }, [userId, refresh, refreshCounts]);
 
   useEffect(() => {
     if (!preview) return;
@@ -201,9 +229,10 @@ function BubbleInner({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Am Knopf zählen nur neue Redaktions-Nachrichten; RPG-Nachrichten stehen nur in der Liste.
-  const total = Object.values(accUnread).reduce((a, b) => a + b, 0);
+  // Am Knopf zählen alle neuen Nachrichten: Redaktion und RPG (aus Sicht des gewählten Charakters).
+  const accTotal = Object.values(accUnread).reduce((a, b) => a + b, 0);
   const rpTotal = Object.values(rpUnread).reduce((a, b) => a + b, 0);
+  const total = accTotal + rpTotal;
 
   function openChat(kind: "account" | "rp", id: string) {
     setView({ kind, id });
@@ -284,7 +313,7 @@ function BubbleInner({
           )}
           <button
             type="button"
-            aria-label={total > 0 ? `Chats öffnen, ${total} neue Redaktionsnachrichten` : "Chats öffnen"}
+            aria-label={total > 0 ? `Chats öffnen, ${total} neue Nachrichten` : "Chats öffnen"}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -390,9 +419,9 @@ function BubbleInner({
                     }`}
                   >
                     {label}
-                    {(id === "account" ? total : id === "rp" ? rpTotal : 0) > 0 && (
+                    {(id === "account" ? accTotal : id === "rp" ? rpTotal : 0) > 0 && (
                       <span className="ml-1.5 rounded-full bg-accent px-1.5 text-[10px] font-semibold text-on-accent-strong">
-                        {id === "account" ? total : rpTotal}
+                        {id === "account" ? accTotal : rpTotal}
                       </span>
                     )}
                   </button>

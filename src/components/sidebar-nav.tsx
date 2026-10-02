@@ -91,7 +91,7 @@ export function SidebarNav({
         <NavLink href="/search" icon={<Search className={ICON} strokeWidth={2} />}>
           Suche
         </NavLink>
-        <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} />
+        <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
         {activeCharacter && (
           <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
             Profil

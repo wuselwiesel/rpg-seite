@@ -90,7 +90,8 @@ export async function Sidebar() {
   ]);
 
   const myCharacterIds = characters.map((c) => c.id);
-  const unreadCounts = await getUnreadCounts(user.id, myCharacterIds);
+  // Wie in der Chatliste aus der Sicht des aktiven Charakters zählen.
+  const unreadCounts = await getUnreadCounts(user.id, myCharacterIds, activeCharacter?.id);
   const isOwner = activeWorld.created_by === user.id;
 
   return (
