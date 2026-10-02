@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { FileText } from "lucide-react";
+import { CharacterAvatar } from "./character-avatar";
 import type { MentionListHandle } from "./mention-list";
 
 import type { WikiMentionItem } from "@/lib/wiki-mention";
@@ -45,7 +46,7 @@ export const WikiMentionList = forwardRef<
     <div className="max-h-60 w-64 overflow-y-auto rounded-md border border-line bg-surface p-1 shadow-lg" role="listbox" aria-label="Wiki-Seite verlinken">
       {items.map((item, index) => (
         <button
-          key={item.id || `neu-${item.title}`}
+          key={`${item.kind ?? "page"}-${item.id || `neu-${item.title}`}`}
           type="button"
           role="option"
           aria-selected={index === selectedIndex}
@@ -55,8 +56,13 @@ export const WikiMentionList = forwardRef<
             index === selectedIndex ? "bg-accent-strong text-on-accent-strong" : "text-fg hover:bg-surface-2"
           }`}
         >
-          <FileText className="h-4 w-4 shrink-0" strokeWidth={2} />
+          {item.kind === "character" ? (
+            <CharacterAvatar name={item.title} avatarUrl={item.avatarUrl ?? null} size={20} />
+          ) : (
+            <FileText className="h-4 w-4 shrink-0" strokeWidth={2} />
+          )}
           <span className="min-w-0 flex-1 truncate">{item.id ? item.title : `Neue Seite „${item.title}“`}</span>
+          {item.kind === "character" && <span className="shrink-0 text-xs opacity-70">Figur</span>}
         </button>
       ))}
     </div>

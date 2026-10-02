@@ -20,6 +20,17 @@ function createSuggestion(pages: WikiMentionItem[]): Omit<SuggestionOptions<Wiki
     allowSpaces: true,
     items: ({ query }) => matchWikiPages(pages, query),
     command: ({ editor, range, props }: { editor: Editor; range: Range; props: WikiMentionItem }) => {
+      if (props.kind === "character") {
+        editor
+          .chain()
+          .focus()
+          .insertContentAt(range, [
+            { type: "mention", attrs: { id: props.id, label: props.title } },
+            { type: "text", text: " " },
+          ])
+          .run();
+        return;
+      }
       editor.chain().focus().insertContentAt(range, `${wikiLinkText(props.title)} `).run();
     },
     render: () => {

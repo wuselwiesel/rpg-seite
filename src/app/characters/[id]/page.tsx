@@ -17,7 +17,9 @@ import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
 import { storyBackground } from "@/lib/stories";
 import { PostMedia } from "@/components/post-media";
 import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
-import { Plus } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
+import { getWikiPagesAboutCharacter } from "@/lib/wiki-characters";
+import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import type { Character, Highlight, Post, Story } from "@/lib/types";
 
 export default async function CharacterProfilePage({
@@ -79,6 +81,7 @@ export default async function CharacterProfilePage({
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
   if (character.owner_id === user.id) await syncCharacterBadges(character.id);
   const allBadges = await getCharacterBadges(character.id);
+  const wikiAbout = await getWikiPagesAboutCharacter(character).catch(() => []);
   const badges = character.owner_id === user.id ? allBadges : visibleBadges(allBadges);
   const myCharacters = activeWorld
     ? (await getOwnCharacters(user.id, activeWorld.id)).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
@@ -271,6 +274,29 @@ export default async function CharacterProfilePage({
                 </div>
               ))}
             </dl>
+          )}
+
+          {wikiAbout.length > 0 && (
+            <section aria-label="Im Wiki" className="mt-4">
+              <h2 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <BookOpen className="h-3.5 w-3.5" strokeWidth={2} />
+                Im Wiki
+              </h2>
+              <ul className="flex flex-wrap gap-1.5">
+                {wikiAbout.map((w) => (
+                  <li key={w.id}>
+                    <Link
+                      href={`/wiki/${w.id}`}
+                      title={w.reason === "title" ? "Eigene Seite" : "Erwähnt in dieser Seite"}
+                      className="flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft transition hover:text-accent"
+                    >
+                      <WikiTypeIcon type={w.page_type} className="h-3.5 w-3.5" />
+                      {w.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           <BadgeRow badges={badges} collectionHref={`/badges/sammlung/${character.id}`} editable={isOwn} />

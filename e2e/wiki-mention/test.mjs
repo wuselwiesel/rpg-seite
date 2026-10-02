@@ -84,6 +84,26 @@ async function fresh() {
   await ctx.close();
 }
 
+// 6. Figuren: @ zeigt sie neben den Seiten, die Auswahl fügt eine Erwähnung ein
+{
+  const { ctx, page, ed, out, errors } = await fresh();
+  await ed.pressSequentially("Mit @luc");
+  const opt = page.locator('[data-mention-popup] [role="option"]');
+  await opt.first().waitFor();
+  const texts = await opt.allInnerTexts();
+  check("Figur steht in der Liste", texts[0].includes("Lucian") && texts[0].includes("Figur") && !texts.some((t) => t.includes("Neue Seite") && t.includes("luc") === false), JSON.stringify(texts));
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(100);
+  const o = await out();
+  check("Erwähnung als Knoten mit Kennung", /data-type="mention"/.test(o) && o.includes('data-id="11111111-1111-4111-8111-111111111111"') && o.includes("@Lucian"), o);
+  await ed.pressSequentially("und @vamp");
+  await page.locator('[data-mention-popup] [role="option"]').first().waitFor();
+  await page.keyboard.press("Enter");
+  check("Seite und Figur lassen sich mischen", (await out()).includes("[[Vampire]]") && (await out()).includes("@Lucian"), await out());
+  check("keine Seitenfehler", errors.length === 0, errors.join("|"));
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);

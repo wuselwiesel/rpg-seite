@@ -56,14 +56,15 @@ export function findBacklinks(pages: LinkPage[], targetId: string): string[] {
 export type MissingLink = { title: string; count: number; from: string[] };
 
 // Begriffe in [[…]], zu denen es noch keine Seite gibt, mit Zahl der Seiten, die sie erwähnen.
-export function findMissingLinks(pages: LinkPage[]): MissingLink[] {
+export function findMissingLinks(pages: LinkPage[], knownNames: Iterable<string> = []): MissingLink[] {
   const index = titleIndex(pages);
+  const known = new Set(Array.from(knownNames, (n) => n.trim().toLowerCase()));
   const found = new Map<string, MissingLink>();
   for (const p of pages) {
     const seen = new Set<string>();
     for (const t of bracketTargets(p.content)) {
       const key = t.toLowerCase();
-      if (index.has(key) || seen.has(key)) continue;
+      if (index.has(key) || known.has(key) || seen.has(key)) continue;
       seen.add(key);
       const entry = found.get(key) ?? { title: t, count: 0, from: [] };
       entry.count += 1;

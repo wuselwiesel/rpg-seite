@@ -13,7 +13,12 @@ function App() {
   const [html, setHtml] = useState("");
   return (
     <div style={{ padding: 20, maxWidth: 700 }}>
-      <RichTextEditor name="content" wikiPages={pages} onChange={setHtml} />
+      <RichTextEditor
+        name="content"
+        wikiPages={pages}
+        wikiCharacters={[{ id: "11111111-1111-4111-8111-111111111111", name: "Lucian", avatar_url: null }]}
+        onChange={setHtml}
+      />
       <pre id="out">{html}</pre>
     </div>
   );
