@@ -5,6 +5,7 @@ import Link from "next/link";
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force";
 import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 import type { Character, CharacterRelationship, RelationshipHistoryEntry } from "@/lib/types";
+import { buildAdjacency, groupHistory, neighborhood, relationshipsAsOf } from "@/lib/relationship-graph";
 
 const W = 800;
 const H = 560;
@@ -86,25 +87,10 @@ export function RelationshipGraph({
 
   // Welche Charaktere sind sichtbar?
   const { shownIds, linked } = useMemo(() => {
-    const adj = new Map<string, Set<string>>();
-    for (const r of relationships) {
-      if (!byId.has(r.character_a_id) || !byId.has(r.character_b_id)) continue;
-      (adj.get(r.character_a_id) ?? adj.set(r.character_a_id, new Set()).get(r.character_a_id)!).add(r.character_b_id);
-      (adj.get(r.character_b_id) ?? adj.set(r.character_b_id, new Set()).get(r.character_b_id)!).add(r.character_a_id);
-    }
+    const adj = buildAdjacency(relationships, new Set(byId.keys()));
     let ids: string[];
     if (focus) {
-      const seen = new Set([focus]);
-      let frontier = [focus];
-      for (let d = 0; d < depth; d++) {
-        const next: string[] = [];
-        for (const id of frontier) for (const n of adj.get(id) ?? []) if (!seen.has(n)) {
-            seen.add(n);
-            next.push(n);
-          }
-        frontier = next;
-      }
-      ids = Array.from(seen);
+      ids = neighborhood(adj, focus, depth);
     } else {
       ids = characters.filter((c) => adj.has(c.id)).map((c) => c.id);
     }
@@ -121,16 +107,7 @@ export function RelationshipGraph({
   const positions = useMemo(() => layout(shownIds, baseRels), [shownIds, baseRels]);
 
   // --- Zeitleiste: Stand der Beziehungen zu einem früheren Zeitpunkt ---
-  const historyByRel = useMemo(() => {
-    const m = new Map<string, { at: number; h: RelationshipHistoryEntry }[]>();
-    for (const h of history) {
-      const list = m.get(h.relationship_id) ?? [];
-      list.push({ at: new Date(h.created_at).getTime(), h });
-      m.set(h.relationship_id, list);
-    }
-    for (const list of m.values()) list.sort((a, b) => a.at - b.at);
-    return m;
-  }, [history]);
+  const historyByRel = useMemo(() => groupHistory(history), [history]);
   const minTs = useMemo(() => {
     let min = Infinity;
     for (const list of historyByRel.values()) if (list[0]) min = Math.min(min, list[0].at);
@@ -143,19 +120,10 @@ export function RelationshipGraph({
   const [playing, setPlaying] = useState(false);
   const asOf = canTravel && timePos < 1000 ? minTs + ((now - minTs) * timePos) / 1000 : null;
 
-  const shownRels = useMemo(() => {
-    if (asOf == null) return baseRels;
-    return baseRels.flatMap((rel) => {
-      const steps = historyByRel.get(rel.id);
-      if (!steps) return [];
-      let state: RelationshipHistoryEntry | null = null;
-      for (const step of steps) {
-        if (step.at <= asOf) state = step.h;
-        else break;
-      }
-      return state ? [{ ...rel, type: state.type, color: state.color, category: state.category, label: state.label }] : [];
-    });
-  }, [baseRels, asOf, historyByRel]);
+  const shownRels = useMemo(
+    () => (asOf == null ? baseRels : relationshipsAsOf(baseRels, historyByRel, asOf)),
+    [baseRels, asOf, historyByRel],
+  );
 
   // Zum gewählten Zeitpunkt sichtbare Charaktere: solche mit Beziehung (und der Fokus).
   const renderIds = useMemo(() => {
