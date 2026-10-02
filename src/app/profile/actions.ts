@@ -42,7 +42,7 @@ export async function updateProfile(_prevState: string | null, formData: FormDat
   if (error) return error.message;
 
   revalidatePath("/", "layout");
-  redirect("/profile?saved=1");
+  redirect("/profile/konto?saved=1");
 }
 
 // Benachrichtigungs-Einstellungen speichern (Nicht stören, Zusammenfassung, stumme Welten/Charaktere).
@@ -86,6 +86,6 @@ export async function saveNotificationPrefs(input: {
     updated_at: new Date().toISOString(),
   });
   if (error) return error.message;
-  revalidatePath("/profile");
+  revalidatePath("/profile/benachrichtigungen");
   return null;
 }

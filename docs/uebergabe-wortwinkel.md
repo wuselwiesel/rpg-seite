@@ -27,8 +27,10 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Noch offen: Highlight-Kreise unter der Bio, Sichtbarkeit pro Feld, Zähler „Freund:innen“ nur im eigenen Profil (RLS auf Freundschaften nicht geprüft).
 
 ## Nächste Schritte
-1. Einstellungen (`/profile`) in klickbare Unterseiten gliedern wie bei Instagram (Wunsch der Nutzerin, noch offen).
-2. Älteres Backlog: Charakterprofile mit Banner/Cover, Steckbrief-Feldern, Status-Zeile, Mini-Timeline; Badges (erst besprechen).
+1. (erledigt) Einstellungen sind in Unterseiten gegliedert: `/profile` (Liste), `/profile/konto`, `/profile/aussehen`, `/profile/benachrichtigungen`; Shell in `src/app/profile/settings-shell.tsx`, Kopf `components/settings-back.tsx`.
+2. Redaktions-Chat (Account-Chats, eigene Tabellen) plus schwebende, verschiebbare Chat-Blase (Profilbild, Ungelesen-Badge, Mini-Fenster, Vorschau-Pop-up, auch Rollenspiel-Chats, pro Gerät abschaltbar). Entscheidungen der Nutzerin, noch nicht gebaut.
+3. Eigene Emojis pro Welt (Upload PNG/GIF/WebP max. 256 KB, `:name:`-Kürzel, Picker; Orte: Beiträge/Kommentare, Chats, Story/Wiki, Profile). Noch nicht gebaut.
+4. Älteres Backlog: Charakterprofile mit Banner/Cover, Steckbrief-Feldern, Status-Zeile, Mini-Timeline; Badges (erst besprechen).
 
 ## Fallstricke
 - `tsconfig.tsbuildinfo` kann Typfehler verdecken: löschen und `npx tsc --noEmit; echo $?` ohne Pipe. Der Vercel-Build ist die Instanz, die zählt.
