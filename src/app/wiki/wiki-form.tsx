@@ -144,7 +144,8 @@ export function WikiForm({
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Text</h2>
         <p className="text-sm text-muted">
-          Mit <code className="rounded bg-surface-2 px-1">[[Titel]]</code> verlinkst du andere Seiten. Gibt es die Seite noch nicht, wird der Link
+          Tippe <code className="rounded bg-surface-2 px-1">@</code> und wähle eine Seite, oder schreibe{" "}
+          <code className="rounded bg-surface-2 px-1">[[Titel]]</code>, um Seiten zu verlinken. Gibt es die Seite noch nicht, wird der Link
           rot und lässt sich mit einem Klick anlegen. Mit <code className="rounded bg-surface-2 px-1">[[Titel|Text]]</code> bestimmst du den
           angezeigten Text.
         </p>
