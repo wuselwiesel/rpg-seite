@@ -16,6 +16,10 @@ import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { createMentionSuggestion } from "@/lib/mention-suggestion";
 import { wikiMentionExtension } from "@/lib/wiki-mention-suggestion";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
+import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
+import { Callout } from "@/lib/tiptap-callout";
+import { BlockTools } from "@/components/editor-blocks";
 import { SymbolPicker } from "./symbol-picker";
 import { PROFILE_FONTS } from "@/lib/profile-theme";
 import { loadDefaultFontId, saveDefaultFontId } from "@/lib/default-font";
@@ -57,10 +61,12 @@ function ToolbarButton({
 function Toolbar({
   editor,
   allowFontSelection,
+  allowBlocks,
   wikiPages,
 }: {
   editor: Editor;
   allowFontSelection?: boolean;
+  allowBlocks?: boolean;
   wikiPages?: { id: string; title: string }[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -294,6 +300,8 @@ function Toolbar({
           />
         </div>
       )}
+      {allowBlocks && <BlockTools editor={editor} />}
+
       {wikiOpen && wikiPages && (
         <div className="flex flex-col gap-2 rounded-xl bg-surface-2 p-2" role="group" aria-label="Wiki-Link einfügen">
           <input
@@ -409,6 +417,7 @@ export function RichTextEditor({
   onSubmitKey,
   wikiPages,
   wikiCharacters,
+  allowBlocks = false,
 }: {
   name: string;
   initialContent?: string;
@@ -426,6 +435,8 @@ export function RichTextEditor({
   wikiPages?: { id: string; title: string }[];
   // Charaktere der Welt: im Wiki mit @ erwähnen (neben den Seiten).
   wikiCharacters?: { id: string; name: string; avatar_url: string | null }[];
+  // Textbausteine (Hinweis-Kasten, Spoiler, Tabelle): bisher nur im Wiki.
+  allowBlocks?: boolean;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
   const enterSends = useEnterSends();
@@ -453,6 +464,9 @@ export function RichTextEditor({
       Image,
       Placeholder.configure({ placeholder: placeholder ?? "Schreib deine Geschichte..." }),
       ...(allowFontSelection ? [TextStyle, FontFamily] : []),
+      ...(allowBlocks
+        ? [Callout, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
+        : []),
       ...(mentionCharacters
         ? [
             Mention.configure({
@@ -505,7 +519,7 @@ export function RichTextEditor({
   return (
     <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
-      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} wikiPages={wikiPages} />}
+      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} wikiPages={wikiPages} />}
       <EditorContent editor={editor} />
     </div>
   );

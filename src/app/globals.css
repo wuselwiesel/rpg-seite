@@ -1083,3 +1083,107 @@ a.wiki-missing,
   line-height: 0.8;
   color: var(--accent);
 }
+
+/* Textbausteine im Wiki: Hinweis-Kasten, Spoiler, Tabelle (Editor und Anzeige) */
+.post-content [data-callout] {
+  --callout: var(--accent);
+  margin: 1em 0;
+  padding: 0.65em 1em;
+  border-left: 4px solid var(--callout);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--callout) 10%, var(--surface));
+}
+.post-content [data-callout] > :first-child { margin-top: 0; }
+.post-content [data-callout] > :last-child { margin-bottom: 0; }
+.post-content [data-callout="tipp"] { --callout: #2f9e6b; }
+.post-content [data-callout="achtung"] { --callout: #d99a1b; }
+.post-content [data-callout="gefahr"] { --callout: #d64545; }
+.post-content [data-callout]::before {
+  display: block;
+  margin-bottom: 0.2em;
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--callout);
+}
+.post-content [data-callout="info"]::before { content: "Info"; }
+.post-content [data-callout="tipp"]::before { content: "Tipp"; }
+.post-content [data-callout="achtung"]::before { content: "Achtung"; }
+.post-content [data-callout="gefahr"]::before { content: "Gefahr"; }
+
+.post-content details {
+  margin: 1em 0;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+}
+.post-content details > summary {
+  cursor: pointer;
+  padding: 0.5em 0.9em;
+  font-weight: 600;
+  list-style-position: inside;
+}
+.post-content details > div[data-type="detailsContent"] {
+  padding: 0 0.9em 0.6em;
+  border-top: 1px solid var(--line);
+}
+.post-content details > div[data-type="detailsContent"] > :first-child { margin-top: 0.6em; }
+
+.post-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1em 0;
+  border-collapse: collapse;
+}
+.post-content th,
+.post-content td {
+  min-width: 4.5rem;
+  padding: 0.4em 0.7em;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.post-content th { background: var(--surface-2); font-weight: 600; }
+.post-content td > p,
+.post-content th > p { margin: 0; }
+.post-content .selectedCell { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+
+/* Spoiler im Editor: Tiptap baut ihn aus div, Knopf und Zusammenfassung auf (die fertige Seite nutzt <details>) */
+.post-content div[data-type="details"] {
+  display: flex;
+  gap: 0.4rem;
+  margin: 1em 0;
+  padding: 0.4em 0.7em;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+}
+.post-content div[data-type="details"] > button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.15rem;
+  border: 0;
+  background: transparent;
+  color: var(--fg-soft);
+  cursor: pointer;
+}
+.post-content div[data-type="details"] > button::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid currentColor;
+  transition: transform 0.15s;
+}
+.post-content div[data-type="details"].is-open > button::before { transform: rotate(90deg); }
+.post-content div[data-type="details"] > div { flex: 1 1 auto; min-width: 0; }
+.post-content div[data-type="details"] summary { display: block; list-style: none; font-weight: 600; }
+.post-content div[data-type="details"] summary::-webkit-details-marker { display: none; }
+.post-content div[data-type="details"] [data-type="detailsContent"] { padding: 0; border: 0; }

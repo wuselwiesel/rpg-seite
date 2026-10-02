@@ -176,3 +176,10 @@ Alles in `main` gemergt. Nicht im Browser getestet (nur `tsc`/ESLint/vitest).
 - **Steckbrief:** Feldtexte laufen durch `autolinkHtml(escapeHtml(text), …)`: `[[Seite]]`, `[[Figur]]` und Alias-Namen werden zu Links (Klartext bleibt maskiert).
 - **Charakterprofil:** Abschnitt „Im Wiki“ (Seiten, die die Figur erwähnen, per `[[Name]]` verlinken oder genauso heißen).
 - Browser-Test `e2e/wiki-mention/` um Figuren erweitert (16 Prüfungen). Nicht getestet: Hover-Vorschau und Profilabschnitt gegen echte Daten.
+
+### Agent B: Wiki Runde 6 – Textbausteine (Hinweis-Kasten, Spoiler, Tabelle)
+- Keine Datenbankänderung. Neue Pakete: `@tiptap/extension-table`, `@tiptap/extension-details` (Version 3.31.3, passend zu `@tiptap/pm`; `3.31.4` ließ sich nicht installieren).
+- Editor (`rich-text-editor.tsx`, neue Prop `allowBlocks`, bisher nur im Wiki-Formular): zweite Werkzeugzeile `components/editor-blocks.tsx` mit **Hinweis** (Info/Tipp/Achtung/Gefahr; eigener Knoten `lib/tiptap-callout.ts`, gespeichert als `<div data-callout="…">`), **Spoiler** (`<details><summary>…</summary><div data-type="detailsContent">…</div></details>`) und **Tabelle** (3×3 mit Kopfzeile; solange der Cursor in der Tabelle steht: Zeile/Spalte einfügen und löschen, Tabelle löschen). Das Zitat gab es schon.
+- Sanitizer: Kern in `lib/sanitize-core.ts` (ohne `server-only`, mit Tests), `lib/sanitize.ts` ruft ihn auf. Neu erlaubt: `div` (nur `data-callout` mit bekannter Art oder `data-type="detailsContent"`), `details` (`open`), `summary`, Tabellen-Tags, `colspan`/`rowspan` (Zahl 2–20). Gilt für alle Texte (Beiträge, Szenen, Wiki); die Werkzeuge gibt es nur im Wiki. Tiptap-Hilfen (`colgroup`, `style` an Tabellen) fallen weg.
+- Darstellung: `globals.css` (Abschnitte „Textbausteine im Wiki“ und „Spoiler im Editor“); Tabellen scrollen auf dem Handy seitlich.
+- Browser-Test `e2e/wiki-mention/` (28 Prüfungen; baut jetzt das echte `globals.css`): Tabelle bearbeiten, Hinweis-Art ändern/entfernen, Spoiler, Laden gespeicherter Bausteine, Auf-/Zuklappen im Editor.

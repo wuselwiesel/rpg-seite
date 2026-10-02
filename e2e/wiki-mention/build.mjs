@@ -2,6 +2,8 @@ import { build } from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import postcss from "postcss";
+import tailwind from "@tailwindcss/postcss";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
@@ -21,7 +23,11 @@ await build({
   loader: { ".svg": "dataurl", ".png": "dataurl" },
   logLevel: "error",
 });
+// Echtes Stylesheet der App (Tailwind), damit Darstellung und Überlagerungen wie in der App sind.
+const cssFile = path.join(root, "src", "app", "globals.css");
+const css = await postcss([tailwind()]).process(fs.readFileSync(cssFile, "utf8"), { from: cssFile });
+fs.writeFileSync(path.join(out, "style.css"), css.css);
 fs.writeFileSync(
   path.join(out, "index.html"),
-  `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}</style><div id="root"></div><script src="out.js"></script>`,
+  `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><body style="background:var(--app)"><div id="root"></div><script src="out.js"></script>`,
 );

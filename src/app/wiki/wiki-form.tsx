@@ -205,6 +205,7 @@ export function WikiForm({
             }}
             placeholder="Beschreibung, Hintergrund, Regeln …"
             allowFontSelection
+            allowBlocks
             wikiPages={linkTargets}
             wikiCharacters={characters}
           />
