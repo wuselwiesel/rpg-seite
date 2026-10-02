@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { getFeaturedBadges, type FeaturedBadge } from "@/app/badges/actions";
 import { BADGE_NAMES_KEY, BADGE_PREF_EVENT } from "@/lib/badges";
 import { badgePrefEnabled } from "./badge-row";
@@ -66,13 +67,16 @@ export function NameBadge({ characterId, userId }: { characterId?: string | null
   if (!enabled) return null;
   const badge = characterId ? cache.characters.get(characterId) : userId ? cache.users.get(userId) : null;
   if (!badge) return null;
+  // Klick führt in die Badge-Sammlung der Person.
+  const href = characterId ? `/badges/sammlung/${characterId}` : `/badges/konto/${userId}`;
   return (
-    <span
-      title={badge.name}
-      className="inline-flex shrink-0 items-center self-center rounded-full px-1 text-[11px] leading-none"
+    <Link
+      href={href}
+      title={`${badge.name} – Sammlung ansehen`}
+      className="inline-flex shrink-0 items-center self-center rounded-full px-1 text-[11px] leading-none transition hover:opacity-80"
       style={{ backgroundColor: `${badge.color}26` }}
     >
       <EmojiText text={badge.icon} />
-    </span>
+    </Link>
   );
 }
