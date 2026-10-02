@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, Folder, FolderOpen, FolderPlus, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import { Wordmark } from "@/components/wordmark";
 import { FolderDialog, type FolderDialogState } from "./folder-dialog";
 import { useNavHidden, useOpenState } from "./use-open-folders";
 import {
@@ -74,8 +75,25 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
   const canDelete = (f: TreeFolder) => f.created_by === userId || isWorldOwner;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8 lg:px-0">
-      <div className={`grid gap-6 ${navHidden ? "lg:grid-cols-1" : "lg:grid-cols-[236px_minmax(0,1fr)] lg:gap-8"}`}>
+    <div className="mx-auto max-w-[1800px] px-4 py-6 sm:py-8 lg:px-8">
+      <header className="mb-6 hidden items-center justify-between gap-4 border-b border-line pb-4 lg:flex">
+        <Link href="/" aria-label="Wortwinkel" className="block">
+          <Wordmark height={36} />
+        </Link>
+        <nav aria-label="Zurück in die App" className="flex items-center gap-1 text-sm">
+          {[
+            { href: "/story", label: "Story" },
+            { href: "/characters/relationships", label: "Beziehungen" },
+            { href: "/profile", label: "Profil" },
+          ].map((l) => (
+            <Link key={l.href} href={l.href} className="rounded-lg px-3 py-1.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      <div className={`grid gap-6 ${navHidden ? "lg:grid-cols-1" : "lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10"}`}>
         <div className={navHidden ? "lg:hidden" : ""}>
           <button
             type="button"

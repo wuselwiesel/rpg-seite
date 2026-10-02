@@ -36,6 +36,7 @@ import { ThemeColorSync } from "@/components/theme-color-sync";
 import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { getEmojiMap } from "@/lib/custom-emoji-server";
 import { getAccountDefaultFont } from "@/lib/default-font-server";
+import { AppFrame } from "@/components/app-frame";
 import { DefaultFontSync } from "@/components/default-font-sync";
 import { MobileMain } from "@/components/mobile-main";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -173,10 +174,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <OfflineBanner />
         <AppTour />
         <CustomEmojiProvider map={emojiMap}>
-          <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row min-[1440px]:max-w-[1360px] min-[1800px]:max-w-[1640px]">
-            <Sidebar />
+          <AppFrame sidebar={<Sidebar />}>
             <MobileMain>{children}</MobileMain>
-          </div>
+          </AppFrame>
           <ChatBubbleLoader />
         </CustomEmojiProvider>
       </body>
