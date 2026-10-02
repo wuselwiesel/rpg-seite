@@ -47,8 +47,6 @@ describe("renderFateText", () => {
 });
 
 describe("rollFate", () => {
-  const slots: SlotConfig[] = [{ worldId: "world-1", gender: "alle", ownerId: "alle" }];
-
   it("liefert einen Fehler, wenn kein Charakter zu Charakter-1-Filter passt", () => {
     const result = rollFate(
       [],

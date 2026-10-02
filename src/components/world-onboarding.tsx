@@ -35,6 +35,7 @@ export function WorldOnboarding({ worldId, worldName, autoOpen }: { worldId: str
     } catch {
       /* egal */
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Browser-Speicher ist erst nach dem Hydrieren lesbar
     setDismissed(wasDismissed);
     setOpen(autoOpen && !wasDismissed);
   }, [worldId, autoOpen]);

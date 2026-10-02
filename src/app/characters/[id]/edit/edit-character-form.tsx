@@ -170,7 +170,7 @@ export function EditCharacterForm({
           ))}
         </select>
         <span className="text-xs text-muted">
-          Wird für logisch stimmige Schicksale genutzt (z. B. "wird von der Partnerin betrogen" zieht die echte Partnerin).
+          Wird für logisch stimmige Schicksale genutzt (z. B. &quot;wird von der Partnerin betrogen&quot; zieht die echte Partnerin).
         </span>
       </label>
 

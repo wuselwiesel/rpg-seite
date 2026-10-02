@@ -201,6 +201,7 @@ export function AppTour() {
 
   useEffect(() => {
     if (!active) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Zielelement neu suchen, sobald sich der Tour-Schritt ändert
     setRect(null);
     setSearching(true);
     locate();
