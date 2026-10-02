@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { Clover, Dices } from "lucide-react";
 import { createDiceRoll, getLuckPointsRemaining, rerollWithLuck, type DiceRollState } from "../actions";
 import { parseSheetUrl, fetchPublicSheet } from "@/lib/charakterbogen";
-import { getStatOptions, type StatOption } from "@/lib/charakterbogen-stats";
+import { getStatOptions, luckPointsFromGl, type StatOption } from "@/lib/charakterbogen-stats";
 import type { Character } from "@/lib/types";
 
 const DICE_SIZES = [4, 6, 8, 10, 12, 20, 100];
@@ -62,6 +62,8 @@ export function DiceRollForm({
   const [rerollError, setRerollError] = useState<string | null>(null);
 
   const glueckOption = statOptions.find((o) => o.category === "Attribut" && o.name === "Glück");
+  // Anzahl der Glückspunkte pro Szene (nicht der Glück-Wert selbst).
+  const luckMax = glueckOption ? luckPointsFromGl(glueckOption.base ?? glueckOption.value) : 0;
 
   useEffect(() => {
     if (!sheetUrl) return;
@@ -83,20 +85,20 @@ export function DiceRollForm({
 
   // Vor dem ersten Wurf schon anzeigen, wie viele Glückspunkte in dieser Szene noch übrig sind.
   useEffect(() => {
-    if (!glueckOption || glueckOption.value <= 0) {
+    if (!glueckOption || luckMax <= 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Rücksetzen, wenn die Glücks-Option entfällt; die Abfrage darunter ist asynchron
       setLuckRemaining(null);
       return;
     }
     let cancelled = false;
-    getLuckPointsRemaining(storyPostId, writerId, glueckOption.value).then((remaining) => {
+    getLuckPointsRemaining(storyPostId, writerId, luckMax).then((remaining) => {
       if (!cancelled) setLuckRemaining(remaining);
     });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storyPostId, writerId, glueckOption?.value]);
+  }, [storyPostId, writerId, luckMax]);
 
   useEffect(() => {
     if (wasPending.current && !pending && !state.error) {
@@ -128,7 +130,7 @@ export function DiceRollForm({
       const result = await rerollWithLuck(storyPostId, worldId, {
         ...lastRoll,
         characterId: writerId,
-        luckMax: glueckOption.value,
+        luckMax,
       });
       if (result.error) setRerollError(result.error);
       if (result.luckRemaining !== null) setLuckRemaining(result.luckRemaining);
@@ -138,7 +140,7 @@ export function DiceRollForm({
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded-xl bg-surface-2 p-4">
       <input type="hidden" name="character_id" value={writerId} />
-      {glueckOption && glueckOption.value > 0 && <input type="hidden" name="luck_max" value={glueckOption.value} />}
+      {glueckOption && luckMax > 0 && <input type="hidden" name="luck_max" value={luckMax} />}
 
       {luckRemaining !== null && (
         <p className="flex items-center gap-2 text-xs text-muted">

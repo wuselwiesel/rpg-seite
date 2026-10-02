@@ -40,7 +40,20 @@ export function num(v: string | undefined) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export type StatOption = { name: string; value: number; category: "Attribut" | "Talent" };
+export type StatOption = {
+  name: string;
+  value: number;
+  category: "Attribut" | "Talent";
+  // Nur Attribute: Basiswert ohne Bonus (für die Glückspunkte).
+  base?: number;
+};
+
+// Glückspunkte aus dem Glück-Basiswert (GL): abgerundet(GL ÷ 5) + 1 → 1–4: 1, 5–9: 2, 10–14: 3, 15–19: 4 …
+// Ohne Glückswert (0 oder leer) gibt es keine Glückspunkte.
+export function luckPointsFromGl(glBase: number): number {
+  if (!Number.isFinite(glBase) || glBase <= 0) return 0;
+  return Math.floor(glBase / 5) + 1;
+}
 
 // Flache Liste aller würfelbaren Werte (Attribute + Talente) aus einem
 // geladenen Charakterbogen, für die Wert-Auswahl beim Würfeln.
@@ -49,6 +62,7 @@ export function getStatOptions(data: CharakterbogenData): StatOption[] {
     ...ATTR_TABLE.map((a) => ({
       name: a.name,
       value: num(data.attrBasis?.[a.code]) + num(data.attrBonus?.[a.code]),
+      base: num(data.attrBasis?.[a.code]),
       category: "Attribut" as const,
     })),
     ...TALENT_LIST.map((name) => {

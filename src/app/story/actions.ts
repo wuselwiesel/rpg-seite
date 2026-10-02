@@ -560,7 +560,8 @@ async function getLuckRemaining(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return data?.roll_luck_remaining ?? luckMax;
+  // Ältere Einträge können aus früherer Berechnung mehr Punkte enthalten als jetzt erlaubt.
+  return Math.min(data?.roll_luck_remaining ?? luckMax, luckMax);
 }
 
 // Würfelt, legt den story_entries-Eintrag an und benachrichtigt ein etwaiges Ziel - genutzt sowohl
