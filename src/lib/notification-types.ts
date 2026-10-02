@@ -10,5 +10,5 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "turn", label: "Du bist dran (Story)", types: ["turn"] },
   { key: "roll", label: "Würfe gegen dich", types: ["roll"] },
   { key: "friend", label: "Freundschaftsanfragen", types: ["friend_request", "friend_accept"] },
-  { key: "redaktion", label: "Redaktion", types: ["redaktion_post", "redaktion_comment"] },
+  { key: "redaktion", label: "Redaktion", types: ["redaktion_post", "redaktion_comment", "redaktion_reaction"] },
 ];

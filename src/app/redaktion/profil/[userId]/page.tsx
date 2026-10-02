@@ -5,13 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getAcceptedFriends } from "@/lib/friends";
 import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { formatDate } from "@/lib/format";
-import { ProfilePosts, type ProfilePost } from "./profile-posts";
-import type { Profile, RedaktionPost, RedaktionProfile } from "@/lib/types";
-
-type FeedRow = Omit<RedaktionPost, "poll_options"> & {
-  poll_options?: { count: number }[];
-  comments?: { count: number }[];
-};
+import { fetchRedaktionPage } from "@/lib/redaktion-feed";
+import { ProfilePosts } from "./profile-posts";
+import type { Profile, RedaktionProfile } from "@/lib/types";
 
 export default async function RedaktionProfilePage({ params }: PageProps<"/redaktion/profil/[userId]">) {
   const { userId } = await params;
@@ -26,25 +22,11 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
 
   const isOwn = userId === user.id;
 
-  const [{ data: redProfile }, { data: rows }, friends] = await Promise.all([
+  const [{ data: redProfile }, posts, friends] = await Promise.all([
     supabase.from("redaktion_profiles").select("*").eq("user_id", userId).maybeSingle<RedaktionProfile>(),
-    supabase
-      .from("redaktion_posts")
-      .select(
-        "*, author:author_id(id, username, nickname, avatar_url), story_post:story_post_id(id, title), poll_options:redaktion_poll_options(count), comments:redaktion_comments(count)",
-      )
-      .eq("author_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(60)
-      .returns<FeedRow[]>(),
+    fetchRedaktionPage({}, undefined, { authorId: userId, limit: 60 }),
     isOwn ? getAcceptedFriends(userId) : Promise.resolve(null),
   ]);
-
-  const posts: ProfilePost[] = (rows ?? []).map(({ poll_options, comments, ...post }) => ({
-    ...post,
-    pollOptionCount: poll_options?.[0]?.count ?? 0,
-    commentCount: comments?.[0]?.count ?? 0,
-  }));
 
   const displayName = profile.nickname || profile.username;
   const fields = redProfile?.custom_fields ?? [];

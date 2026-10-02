@@ -5,9 +5,9 @@ import { useState } from "react";
 import { BarChart3, Grid3x3, MessageCircle, Pin, Play, Rows3 } from "lucide-react";
 import { RedaktionPostCard } from "../../redaktion-post-card";
 import { stripHtml } from "@/lib/strip-html";
-import type { RedaktionPost } from "@/lib/types";
+import type { RedaktionFeedPost } from "@/lib/redaktion-feed-types";
 
-export type ProfilePost = Omit<RedaktionPost, "poll_options"> & { pollOptionCount: number; commentCount: number };
+export type ProfilePost = RedaktionFeedPost;
 
 function Tile({ post, pinned }: { post: ProfilePost; pinned: boolean }) {
   const cover = post.media_urls?.[0] ?? post.media_url;
@@ -97,8 +97,6 @@ export function ProfilePosts({
               <RedaktionPostCard
                 post={post}
                 isOwn={post.author_id === currentUserId}
-                pollOptionCount={post.pollOptionCount}
-                commentCount={post.commentCount}
               />
             </div>
           ))}

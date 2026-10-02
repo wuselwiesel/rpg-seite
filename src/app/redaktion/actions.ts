@@ -337,3 +337,63 @@ export async function saveRedaktionProfile(_prevState: string | null, formData: 
 export async function loadMoreRedaktionPosts(filters: RedaktionFilters, before: string): Promise<RedaktionFeedPost[]> {
   return fetchRedaktionPage(filters, before);
 }
+
+// Like/Emoji-Reaktion eines Accounts auf einen Redaktions-Beitrag umschalten.
+export async function toggleRedaktionReaction(postId: string, emoji: string): Promise<string | null> {
+  const clean = emoji.trim();
+  if (!clean || clean.length > 16) return "Ungültiges Emoji.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: existing } = await supabase
+    .from("redaktion_reactions")
+    .select("id")
+    .eq("post_id", postId)
+    .eq("user_id", user.id)
+    .eq("emoji", clean)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from("redaktion_reactions").delete().eq("id", existing.id);
+    return error?.message ?? null;
+  }
+  const { error } = await supabase.from("redaktion_reactions").insert({ post_id: postId, user_id: user.id, emoji: clean });
+  if (error) return error.message;
+
+  const { data: target } = await supabase.from("redaktion_posts").select("author_id").eq("id", postId).maybeSingle();
+  if (target && target.author_id !== user.id) {
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("username, nickname, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    await createNotification(supabase, {
+      userId: target.author_id,
+      type: "redaktion_reaction",
+      actorName: me?.nickname || me?.username || "Jemand",
+      actorAvatarUrl: me?.avatar_url ?? null,
+      link: `/redaktion/${postId}`,
+      message: `hat mit ${clean} auf deinen Redaktions-Beitrag reagiert`,
+    }).catch(() => {});
+  }
+  return null;
+}
+
+export type RedaktionReactor = {
+  emoji: string;
+  user: { id: string; username: string; nickname: string | null; avatar_url: string | null };
+};
+
+export async function getRedaktionReactors(postId: string): Promise<RedaktionReactor[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("redaktion_reactions")
+    .select("emoji, user:user_id(id, username, nickname, avatar_url)")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true })
+    .returns<RedaktionReactor[]>();
+  return data ?? [];
+}

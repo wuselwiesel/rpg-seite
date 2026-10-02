@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BarChart3, BookOpen, MessageCircle, Trash2 } from "lucide-react";
+import { BarChart3, BookOpen, ChevronDown, MessageCircle, Trash2 } from "lucide-react";
 import { deleteRedaktionPost } from "./actions";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { PostMedia } from "@/components/post-media";
@@ -10,24 +10,25 @@ import { MediaCarousel } from "@/components/media-carousel";
 import { autolinkHtml } from "@/lib/autolink";
 import { stripHtml } from "@/lib/strip-html";
 import { timeAgoShort } from "@/lib/format";
-import type { RedaktionPost } from "@/lib/types";
+import { RedaktionReactionBar } from "./redaktion-reaction-bar";
+import { RedaktionPoll } from "./[id]/redaktion-poll";
+import type { RedaktionFeedPost } from "@/lib/redaktion-feed-types";
 
 // Gleicher Aufbau wie die Ingame-Beitragskarte (Kopfzeile mit Avatar-Ring, Medien randlos, Aktionsleiste,
 // Bildunterschrift, Kommentar-Link). Reine Text-Beiträge bleiben einfacher Text (wie bei Threads/Reddit).
 export function RedaktionPostCard({
   post,
   isOwn,
-  pollOptionCount,
-  commentCount,
   priority = false,
 }: {
-  post: Omit<RedaktionPost, "poll_options">;
+  post: RedaktionFeedPost;
   isOwn: boolean;
-  pollOptionCount: number;
-  commentCount: number;
   priority?: boolean;
 }) {
   const [removed, setRemoved] = useState(false);
+  // Umfragen sind im Feed direkt sichtbar und lassen sich bei Bedarf einklappen.
+  const [pollOpen, setPollOpen] = useState(true);
+  const commentCount = post.commentCount;
   const [error, setError] = useState<string | null>(null);
   if (removed) return null;
 
@@ -124,20 +125,48 @@ export function RedaktionPostCard({
         </Link>
       )}
 
-      <div className="flex items-center gap-4 px-3 pt-3 text-fg sm:px-1">
-        <Link href={detailHref} aria-label="Kommentieren" className="transition duration-150 hover:text-muted active:scale-75">
-          <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
-        </Link>
-        {pollOptionCount > 0 && (
-          <Link
-            href={detailHref}
-            aria-label="Zur Umfrage"
-            className="flex items-center gap-1.5 text-sm font-medium transition hover:text-muted"
+      {post.poll && (
+        <div className="mx-3 mt-3 sm:mx-1">
+          <button
+            type="button"
+            onClick={() => setPollOpen((v) => !v)}
+            aria-expanded={pollOpen}
+            className="mb-2 flex w-full items-center justify-between text-sm font-medium text-fg"
           >
-            <BarChart3 className="h-6 w-6" strokeWidth={1.75} />
-            Umfrage
-          </Link>
-        )}
+            <span className="flex items-center gap-1.5">
+              <BarChart3 className="h-4 w-4" strokeWidth={2} />
+              Umfrage
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-muted transition-transform ${pollOpen ? "rotate-180" : ""}`}
+              strokeWidth={2}
+            />
+          </button>
+          {pollOpen && (
+            <RedaktionPoll
+              postId={post.id}
+              options={post.poll.options}
+              multiSelect={post.poll_multi_select}
+              showVoterNames={post.poll_show_voters}
+              myVoteOptionIds={post.poll.myVoteOptionIds}
+              showResults={post.poll.showResults}
+              closed={post.poll.closed}
+              closesAt={post.poll_closes_at}
+            />
+          )}
+        </div>
+      )}
+
+      <div className="px-3 pt-3 sm:px-1">
+        <RedaktionReactionBar
+          postId={post.id}
+          initialReactions={post.reactions}
+          commentSlot={
+            <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition duration-150 hover:text-muted active:scale-75">
+              <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
+            </Link>
+          }
+        />
       </div>
 
       {hasMedia && preview && (

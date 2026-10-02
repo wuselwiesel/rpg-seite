@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, BellOff, Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -498,16 +498,14 @@ export function ChatRoom({
           <p className="min-w-0 truncate text-right text-xs text-muted">
             {participants.map((p) => p.name).join(", ")}
           </p>
-          <ChatThemePicker kind="rp" chatId={chatId} theme={theme} onChange={setTheme} />
-          <button
-            type="button"
-            onClick={toggleMute}
-            aria-pressed={muted}
-            title={muted ? "Stumm: nur @-Erwähnungen melden sich. Tippen zum Aufheben" : "Stumm schalten (nur @-Erwähnungen melden sich)"}
-            className={`shrink-0 rounded-full p-1.5 transition hover:bg-surface-2 ${muted ? "text-accent" : "text-muted hover:text-fg"}`}
-          >
-            {muted ? <BellOff className="h-4 w-4" strokeWidth={2} /> : <Bell className="h-4 w-4" strokeWidth={2} />}
-          </button>
+          <ChatThemePicker
+            kind="rp"
+            chatId={chatId}
+            theme={theme}
+            onChange={setTheme}
+            muted={muted}
+            onToggleMute={toggleMute}
+          />
           {canDelete && (
             <button
               type="button"

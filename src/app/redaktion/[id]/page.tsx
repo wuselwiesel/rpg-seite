@@ -10,6 +10,8 @@ import { timeAgoShort } from "@/lib/format";
 import { DeleteRedaktionPostButton } from "./delete-redaktion-post-button";
 import { RedaktionPoll } from "./redaktion-poll";
 import { RedaktionCommentThread } from "./redaktion-comment-thread";
+import { RedaktionReactionBar } from "../redaktion-reaction-bar";
+import { summarizeReactions } from "@/lib/redaktion-feed";
 import type { RedaktionComment, RedaktionPost, RedaktionPollOption } from "@/lib/types";
 
 type OptionRow = RedaktionPollOption & {
@@ -34,7 +36,7 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
 
   const isOwn = post.author_id === user.id;
 
-  const [{ data: optionRows }, { data: comments }] = await Promise.all([
+  const [{ data: optionRows }, { data: comments }, { data: reactionRows }] = await Promise.all([
     supabase
       .from("redaktion_poll_options")
       .select("*, character:character_id(id, name, avatar_url), votes:redaktion_poll_votes(voter_id, voter:voter_id(id, username, nickname))")
@@ -47,6 +49,11 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
       .eq("post_id", id)
       .order("created_at", { ascending: true })
       .returns<RedaktionComment[]>(),
+    supabase
+      .from("redaktion_reactions")
+      .select("emoji, user_id, profiles:user_id(username, nickname)")
+      .eq("post_id", id)
+      .returns<{ emoji: string; user_id: string; profiles: { username: string; nickname: string | null } | null }[]>(),
   ]);
 
   const options = optionRows ?? [];
@@ -122,6 +129,10 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
             />
           </div>
         )}
+
+        <div className="mt-4 border-t border-line pt-3">
+          <RedaktionReactionBar postId={post.id} initialReactions={summarizeReactions(reactionRows ?? [], user.id)} />
+        </div>
       </article>
 
       <RedaktionCommentThread postId={post.id} comments={comments ?? []} currentUserId={user.id} />

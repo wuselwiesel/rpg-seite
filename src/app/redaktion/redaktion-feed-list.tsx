@@ -65,8 +65,6 @@ export function RedaktionFeedList({
             <RedaktionPostCard
               post={post}
               isOwn={post.author_id === currentUserId}
-              pollOptionCount={post.pollOptionCount}
-              commentCount={post.commentCount}
               priority={i === 0}
             />
           </div>

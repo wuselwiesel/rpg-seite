@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellOff, Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
+import { Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { setAccountChatMuted } from "../actions";
 import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
@@ -92,18 +92,14 @@ export function AccountChatRoom({
             <h1 className="truncate font-serif text-xl text-fg">{partnerName}</h1>
           )}
         </div>
-        <div className="flex shrink-0 items-center">
-        <ChatThemePicker kind="account" chatId={chatId} theme={theme} onChange={setTheme} />
-        <button
-          type="button"
-          onClick={toggleMute}
-          aria-pressed={muted}
-          title={muted ? "Stumm – tippen zum Aufheben" : "Stumm schalten"}
-          className={`shrink-0 rounded-full p-1.5 transition hover:bg-surface-2 ${muted ? "text-accent" : "text-muted hover:text-fg"}`}
-        >
-          {muted ? <BellOff className="h-4 w-4" strokeWidth={2} /> : <Bell className="h-4 w-4" strokeWidth={2} />}
-        </button>
-        </div>
+        <ChatThemePicker
+          kind="account"
+          chatId={chatId}
+          theme={theme}
+          onChange={setTheme}
+          muted={muted}
+          onToggleMute={toggleMute}
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
