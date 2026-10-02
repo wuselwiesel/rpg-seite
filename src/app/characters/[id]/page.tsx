@@ -229,7 +229,13 @@ export default async function CharacterProfilePage({
             </div>
           </div>
 
-          <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}</h1>
+          <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}
+            {character.name_symbol && (
+              <span className="ml-1.5 inline-block align-middle" >
+                <EmojiText text={character.name_symbol} />
+              </span>
+            )}
+          </h1>
           <p className="text-sm text-muted">
             {character.username ? `@${character.username}` : isOwn ? "kein.nutzername" : null}
             {character.worlds?.name && <>{character.username || isOwn ? " · " : ""}in {character.worlds.name}</>}

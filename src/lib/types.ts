@@ -46,6 +46,8 @@ export type Character = {
   sheet_url: string | null;
   gender?: CharacterGender | null;
   species?: CharacterSpecies;
+  // Frei gewähltes Zeichen neben dem Namen (Emoji, Symbol oder :eigenes-emoji:).
+  name_symbol?: string | null;
   relationship_status?: CharacterRelationshipStatus | null;
   partner_character_id?: string | null;
   best_friend_character_id?: string | null;
@@ -336,6 +338,7 @@ export type RedaktionProfile = {
   theme_font: string | null;
   theme_accent: string | null;
   theme_bg: string | null;
+  name_symbol?: string | null;
   custom_fields: RedaktionProfileField[];
   pinned_post_ids: string[];
   updated_at: string;

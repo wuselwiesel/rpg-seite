@@ -1,5 +1,6 @@
 "use server";
 
+import { cleanNameSymbol } from "@/lib/name-symbol";
 import { parseProfileFields } from "@/lib/profile-fields";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -180,6 +181,16 @@ export async function updateCharacter(
     .eq("owner_id", user.id);
 
   if (error) return usernameErrorMessage(error.message);
+
+  // Zeichen neben dem Namen separat speichern, damit alles andere auch ohne die zugehörige Spalte gespeichert wird.
+  const { error: symbolError } = await supabase
+    .from("characters")
+    .update({ name_symbol: cleanNameSymbol(String(formData.get("name_symbol") ?? "")) || null })
+    .eq("id", characterId)
+    .eq("owner_id", user.id);
+  if (symbolError && /name_symbol/.test(symbolError.message) && cleanNameSymbol(String(formData.get("name_symbol") ?? ""))) {
+    return "Gespeichert, aber das Zeichen neben dem Namen nicht: Die Datenbank-Spalte name_symbol fehlt noch (supabase/migration_name_symbol.sql).";
+  }
 
   revalidatePath("/", "layout");
   redirect(`/characters/${characterId}`);

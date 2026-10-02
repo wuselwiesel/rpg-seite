@@ -150,7 +150,11 @@ type FeaturedRow = {
 export async function getFeaturedBadges(
   characterIds: string[],
   userIds: string[],
-): Promise<{ characters: Record<string, FeaturedBadge>; users: Record<string, FeaturedBadge> }> {
+): Promise<{
+  characters: Record<string, FeaturedBadge>;
+  users: Record<string, FeaturedBadge>;
+  symbols: { characters: Record<string, string>; users: Record<string, string> };
+}> {
   const { autoBadgeByKey } = await import("@/lib/badges");
   const supabase = await createClient();
   const resolve = (row: FeaturedRow): FeaturedBadge | null => {
@@ -168,7 +172,22 @@ export async function getFeaturedBadges(
       ? supabase.from("profiles").select(select).in("id", userIds.slice(0, 100)).returns<FeaturedRow[]>()
       : Promise.resolve({ data: [] as FeaturedRow[] }),
   ]);
-  const out = { characters: {} as Record<string, FeaturedBadge>, users: {} as Record<string, FeaturedBadge> };
+  const out = {
+    characters: {} as Record<string, FeaturedBadge>,
+    users: {} as Record<string, FeaturedBadge>,
+    symbols: { characters: {} as Record<string, string>, users: {} as Record<string, string> },
+  };
+  // Frei gewähltes Zeichen neben dem Namen (eigene, tolerante Abfragen: ohne die Spalte einfach keine Zeichen).
+  const [charSymbols, userSymbols] = await Promise.all([
+    characterIds.length
+      ? supabase.from("characters").select("id, name_symbol").in("id", characterIds.slice(0, 100)).not("name_symbol", "is", null)
+      : Promise.resolve({ data: [] }),
+    userIds.length
+      ? supabase.from("redaktion_profiles").select("user_id, name_symbol").in("user_id", userIds.slice(0, 100)).not("name_symbol", "is", null)
+      : Promise.resolve({ data: [] }),
+  ]);
+  for (const r of (charSymbols.data ?? []) as { id: string; name_symbol: string }[]) out.symbols.characters[r.id] = r.name_symbol;
+  for (const r of (userSymbols.data ?? []) as { user_id: string; name_symbol: string }[]) out.symbols.users[r.user_id] = r.name_symbol;
   for (const r of chars.data ?? []) {
     const b = resolve(r);
     if (b) out.characters[r.id] = b;
