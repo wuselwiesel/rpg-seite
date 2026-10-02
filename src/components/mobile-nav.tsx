@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users, Newspaper } from "lucide-react";
+import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users, Newspaper, UserRound } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { ActiveCharacterMenu } from "./active-character-menu";
 import { InstallAppButton } from "./install-app-button";
@@ -96,7 +96,22 @@ export function MobileNav({
       </div>
 
       <nav className="mobile-bottom-nav transform-gpu fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
-        {mode === "story" ? (
+        {mode === "redaktion" ? (
+          <>
+            <MobileTabLink
+              href="/redaktion"
+              icon={<Newspaper className="h-5 w-5" strokeWidth={2} />}
+              label="Feed"
+              exact
+            />
+            <MobileCreateTab href="/redaktion/new" label="Neuer Beitrag" />
+            <MobileTabLink
+              href={`/redaktion/profil/${userId}`}
+              icon={<UserRound className="h-5 w-5" strokeWidth={2} />}
+              label="Profil"
+            />
+          </>
+        ) : mode === "story" ? (
           <>
             <MobileTabLink href="/story" icon={<BookOpen className="h-5 w-5" strokeWidth={2} />} label="Story" />
             <MobileTabLink href="/wiki" icon={<Library className="h-5 w-5" strokeWidth={2} />} label="Wiki" />

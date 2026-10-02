@@ -25,6 +25,29 @@ export function SidebarNav({
   const mode = getAppMode(pathname);
   const inWiki = pathname?.startsWith("/wiki");
 
+  if (mode === "redaktion") {
+    return (
+      <>
+        <nav className="flex flex-col gap-1">
+          <NavLink href="/redaktion" icon={<Newspaper className={ICON} strokeWidth={2} />} exact>
+            Redaktion-Feed
+          </NavLink>
+          <NavLink href={`/redaktion/profil/${userId}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
+            Profil
+          </NavLink>
+        </nav>
+        <Link
+          href="/redaktion/new"
+          data-tour="compose"
+          className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
+        >
+          <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
+          Neuer Beitrag
+        </Link>
+      </>
+    );
+  }
+
   if (mode === "story") {
     return (
       <>
@@ -37,9 +60,6 @@ export function SidebarNav({
           </NavLink>
           <NavLink href="/characters/relationships" icon={<Network className={ICON} strokeWidth={2} />}>
             Beziehungen
-          </NavLink>
-          <NavLink href="/redaktion" icon={<Newspaper className={ICON} strokeWidth={2} />}>
-            Redaktion
           </NavLink>
           {activeCharacter && (
             <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
@@ -69,9 +89,11 @@ export function SidebarNav({
           Suche
         </NavLink>
         <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} />
-        <NavLink href="/redaktion" icon={<Newspaper className={ICON} strokeWidth={2} />}>
-          Redaktion
-        </NavLink>
+        {activeCharacter && (
+          <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
+            Profil
+          </NavLink>
+        )}
       </nav>
       <Link
         href="/posts/new"
