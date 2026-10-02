@@ -78,7 +78,8 @@ export default async function CharacterProfilePage({
 
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
   if (character.owner_id === user.id) await syncCharacterBadges(character.id);
-  const badges = visibleBadges(await getCharacterBadges(character.id));
+  const allBadges = await getCharacterBadges(character.id);
+  const badges = character.owner_id === user.id ? allBadges : visibleBadges(allBadges);
   const myCharacters = activeWorld
     ? (await getOwnCharacters(user.id, activeWorld.id)).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
     : [];
@@ -266,7 +267,7 @@ export default async function CharacterProfilePage({
             </dl>
           )}
 
-          <BadgeRow badges={badges} collectionHref={`/badges/sammlung/${character.id}`} />
+          <BadgeRow badges={badges} collectionHref={`/badges/sammlung/${character.id}`} editable={isOwn} />
         </header>
 
         <div className="mt-4 flex gap-2 sm:hidden">

@@ -1,0 +1,9 @@
+-- OPTIONAL, nicht erforderlich: Aufräumen nach dem Umbau des Badge-Katalogs (strengere Schwellen, weniger Badges).
+-- Die App blendet Vergaben mit Schlüsseln, die es im Katalog nicht mehr gibt, ohnehin aus (autoBadgeByKey liefert undefined);
+-- diese Zeilen sind also nur toter Ballast. Wer sie entfernen will, führt das hier im SQL-Editor aus. Besondere Badges
+-- ('custom:...') bleiben unberührt. Neue Schwellen werden beim nächsten Sync automatisch (nach)vergeben.
+-- Die Liste der gültigen Schlüssel steht in src/lib/badges.ts (AUTO_BADGES).
+--
+-- delete from public.badge_awards
+-- where (badge_key like 'auto:%' or badge_key like 'account:%')
+--   and badge_key not in (<Liste der Schlüssel aus AUTO_BADGES>);

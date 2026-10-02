@@ -35,6 +35,7 @@ export function StoryComposer({
     try {
       const saved = localStorage.getItem(`wortwinkel:writer:${storyPostId}`);
       if (saved && saved !== writerId && ownCharacters.some((c) => c.id === saved)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Browser-Speicher ist erst nach dem Hydrieren lesbar
         setWriterId(saved);
       }
     } catch {

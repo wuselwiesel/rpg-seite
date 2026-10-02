@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AtSign, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
@@ -54,10 +54,13 @@ export function EntryList({
   // in `items` auftaucht, muss das hier nachgezogen werden - sonst hält der Realtime-Listener
   // ihn weiterhin für "noch nicht gesehen" und hängt ihn zusätzlich an `live` an (Duplikat).
   useEffect(() => {
-    const itemIds = new Set(items.map((i) => i.id));
-    for (const id of itemIds) seenIds.current.add(id);
-    setLive((prev) => prev.filter((entry) => !itemIds.has(entry.id)));
+    for (const item of items) seenIds.current.add(item.id);
   }, [items]);
+  // Was inzwischen serverseitig in `items` steht, wird aus `live` ausgeblendet (statt den Zustand nachzuziehen).
+  const liveEntries = useMemo(() => {
+    const itemIds = new Set(items.map((i) => i.id));
+    return live.filter((entry) => !itemIds.has(entry.id));
+  }, [live, items]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -110,7 +113,7 @@ export function EntryList({
     return m === "mentions" ? mentioned : m === "author" ? written : mentioned || written;
   }
 
-  const liveListItems: EntryListItem[] = live.map((entry) => ({
+  const liveListItems: EntryListItem[] = liveEntries.map((entry) => ({
     id: entry.id,
     kind: entry.kind ?? "entry",
     authorId: entry.character_id,
@@ -124,7 +127,7 @@ export function EntryList({
       />
     ),
   }));
-  const allItems = live.length > 0 ? [...items, ...liveListItems] : items;
+  const allItems = liveEntries.length > 0 ? [...items, ...liveListItems] : items;
 
   const filter = filterId ? characters.find((c) => c.id === filterId) ?? null : null;
   const shown = filter ? allItems.filter((i) => matches(i, filter.id, mode)) : allItems;
