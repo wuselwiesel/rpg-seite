@@ -167,7 +167,7 @@ export async function setBadgeHidden(awardId: string, hidden: boolean): Promise<
   const { error, count } = await supabase.from("badge_awards").update({ hidden }, { count: "exact" }).eq("id", awardId);
   if (error) {
     return /hidden|column|permission denied/i.test(error.message)
-      ? "Die Datenbank ist noch nicht vorbereitet: supabase/migration_badge_hidden.sql muss im Supabase-SQL-Editor ausgeführt werden."
+      ? `Die Datenbank ist noch nicht vorbereitet (supabase/migration_badge_hidden.sql im Supabase-SQL-Editor ausführen). Technisch: ${error.message}`
       : error.message;
   }
   if (!count) return "Keine Berechtigung.";

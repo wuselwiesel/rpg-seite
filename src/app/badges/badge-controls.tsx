@@ -169,25 +169,31 @@ export function VisibilityList({ items }: { items: { awardId: string; icon: stri
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function toggle(id: string, show: boolean) {
-    const prev = new Set(hidden);
-    const next = new Set(hidden);
-    if (show) next.delete(id);
-    else next.add(id);
-    setHidden(next);
+  // Mehrere Badges auf einmal: Zustand funktional fortschreiben, sonst überschreibt die letzte Änderung die anderen.
+  function apply(ids: string[], show: boolean) {
+    if (ids.length === 0) return;
+    const before = hidden;
+    setHidden((cur) => {
+      const next = new Set(cur);
+      for (const id of ids) {
+        if (show) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
     setError(null);
     startTransition(async () => {
-      const err = await setBadgeHidden(id, !show);
+      const results = await Promise.all(ids.map((id) => setBadgeHidden(id, !show)));
+      const err = results.find((r) => r);
       if (err) {
-        setHidden(prev);
+        setHidden(before);
         setError(err);
       }
     });
   }
 
-  function setAll(show: boolean) {
-    for (const i of items) if (hidden.has(i.awardId) === show) toggle(i.awardId, show);
-  }
+  const toggle = (id: string, show: boolean) => apply([id], show);
+  const setAll = (show: boolean) => apply(items.filter((i) => hidden.has(i.awardId) === show).map((i) => i.awardId), show);
 
   if (items.length === 0) return <p className="text-sm text-muted">Noch keine Badges erreicht.</p>;
 
