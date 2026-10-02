@@ -8,6 +8,7 @@ import {
   Compass,
   Newspaper,
   Palette,
+  SmilePlus,
   UserRound,
   Users,
   type LucideIcon,
@@ -30,6 +31,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     title: "App",
     items: [
       { href: "/profile/aussehen", label: "Aussehen", hint: "Farbpalette und App-Logo", Icon: Palette },
+      { href: "/profile/emojis", label: "Eigene Emojis", hint: "Bilder als :name: in Texten nutzen", Icon: SmilePlus },
       { href: "/profile/benachrichtigungen", label: "Benachrichtigungen", hint: "Push, Ruhezeiten, Stummschalten", Icon: Bell },
     ],
   },

@@ -1,3 +1,4 @@
+import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
@@ -107,7 +108,7 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
           )
         )}
 
-        <div className="post-content text-fg-soft" dangerouslySetInnerHTML={{ __html: contentHtml }} />
+        <EmojiHtml className="post-content text-fg-soft" html={contentHtml} />
 
         {hasPoll && (
           <div className="mt-4">

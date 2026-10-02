@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiHtml } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { useState } from "react";
 import { BarChart3, BookOpen, ChevronDown, MessageCircle, Trash2 } from "lucide-react";
@@ -114,10 +115,7 @@ export function RedaktionPostCard({
       ) : null}
 
       {!hasMedia && preview && (
-        <div
-          className="post-content px-3 pt-1 text-[15px] text-fg [&_p]:my-1.5 sm:px-1"
-          dangerouslySetInnerHTML={{ __html: contentHtml }}
-        />
+        <EmojiHtml className="post-content px-3 pt-1 text-[15px] text-fg [&_p]:my-1.5 sm:px-1" html={contentHtml} />
       )}
       {!hasMedia && preview.length > 320 && (
         <Link href={detailHref} className="mt-1 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1">

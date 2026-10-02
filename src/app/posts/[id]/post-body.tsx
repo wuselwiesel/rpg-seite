@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
@@ -43,7 +44,7 @@ export function PostBody({
   if (!editing) {
     return (
       <div>
-        <div className="post-content text-fg-soft" dangerouslySetInnerHTML={{ __html: contentHtml }} />
+        <EmojiHtml className="post-content text-fg-soft" html={contentHtml} />
         {isOwnPost && (
           <button
             type="button"

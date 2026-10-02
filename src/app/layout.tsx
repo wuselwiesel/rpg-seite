@@ -30,6 +30,9 @@ import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
 import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
+import { AppLogoSync } from "@/components/app-logo-sync";
+import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
+import { getEmojiMap } from "@/lib/custom-emoji-server";
 import { MobileMain } from "@/components/mobile-main";
 import { OfflineBanner } from "@/components/offline-banner";
 import { KeyboardFix } from "@/components/keyboard-fix";
@@ -129,18 +132,19 @@ try {
   document.documentElement.classList.toggle('dark', dark);
   var favicon = document.getElementById('favicon');
   var logo = localStorage.getItem('wortwinkel:app-logo');
-  if (logo && /^[a-z]+$/.test(logo) && logo !== 'rose') {
-    if (favicon) favicon.href = '/icons/logos/' + logo + '-64.png';
+  if (logo && /^[a-z]+$/.test(logo) && logo !== 'tinte') {
+    if (favicon) favicon.href = '/icons/logos/' + logo + '-64.png?v=3';
     var apple = document.querySelector('link[rel="apple-touch-icon"]');
-    if (apple) apple.href = '/icons/logos/' + logo + '-apple.png';
-  } else if (favicon) favicon.href = dark ? '/icons/icon-dark-32.png' : '/icon.png';
+    if (apple) apple.href = '/icons/logos/' + logo + '-apple.png?v=3';
+  } else if (favicon) favicon.href = dark ? '/icons/icon-dark-32.png?v=3' : '/icon.png?v=3';
   var palette = localStorage.getItem('palette');
   if (palette) document.documentElement.setAttribute('data-palette', palette);
 } catch (e) {}
 if (location.pathname.indexOf('/redaktion') === 0) document.documentElement.setAttribute('data-mode', 'redaktion');
 `;
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const emojiMap = await getEmojiMap();
   return (
     <html
       lang="de"
@@ -148,23 +152,26 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        <link id="favicon" rel="icon" href="/icon.png" />
+        <link id="favicon" rel="icon" href="/icon.png?v=3" />
         {process.env.NEXT_PUBLIC_SUPABASE_URL && <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
         <ModeTheme />
+        <AppLogoSync />
         <ServiceWorkerRegister />
         <PushSync />
         <WikiPreviewLayer />
         <KeyboardFix />
         <OfflineBanner />
         <AppTour />
-        <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row">
-          <Sidebar />
-          <MobileMain>{children}</MobileMain>
-        </div>
-        <ChatBubbleLoader />
+        <CustomEmojiProvider map={emojiMap}>
+          <div className="mx-auto flex min-h-full max-w-6xl flex-col lg:flex-row">
+            <Sidebar />
+            <MobileMain>{children}</MobileMain>
+          </div>
+          <ChatBubbleLoader />
+        </CustomEmojiProvider>
       </body>
     </html>
   );

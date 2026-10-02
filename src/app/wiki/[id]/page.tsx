@@ -1,3 +1,4 @@
+import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Pencil } from "lucide-react";
@@ -76,9 +77,9 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
       <h1 className="mb-1 font-serif text-3xl text-fg">{page.title}</h1>
       <p className="mb-4 text-xs text-muted">Zuletzt bearbeitet am {formatDateTime(page.updated_at)}</p>
 
-      <div
+      <EmojiHtml
         className="post-content text-fg-soft"
-        dangerouslySetInnerHTML={{ __html: autolinkHtml(sanitizePostHtml(page.content), { wiki: wikiTerms, excludeWikiId: page.id }) }}
+        html={autolinkHtml(sanitizePostHtml(page.content), { wiki: wikiTerms, excludeWikiId: page.id })}
       />
     </div>
   );

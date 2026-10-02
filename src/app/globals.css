@@ -1017,3 +1017,14 @@ html[data-mode="redaktion"].dark {
   --chip: #3a3d46;
   --on-chip: #eceae6;
 }
+
+/* Eigene Emojis (:name:) laufen mit der Textgröße mit. */
+.custom-emoji {
+  display: inline-block;
+  height: 1.4em;
+  width: auto;
+  max-width: 3em;
+  vertical-align: -0.3em;
+  object-fit: contain;
+  margin: 0 0.05em;
+}

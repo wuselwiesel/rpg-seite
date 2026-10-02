@@ -1,3 +1,4 @@
+import { EmojiHtml } from "@/components/custom-emoji-provider";
 import type { Book, BookEntry } from "@/lib/story-book";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { PrintButton } from "./print-button";
@@ -44,7 +45,7 @@ export function BookView({ book, epubHref }: { book: Book; epubHref: string }) {
           {(scene.location || scene.time) && (
             <p className="mb-4 text-sm italic text-muted">{[scene.location, scene.time].filter(Boolean).join(" · ")}</p>
           )}
-          <div className="post-content text-fg-soft print:text-black" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(scene.introHtml) }} />
+          <EmojiHtml className="post-content text-fg-soft print:text-black" html={sanitizePostHtml(scene.introHtml)} />
           <div className="mt-4 flex flex-col gap-3">
             {scene.entries.map((e, i) => (
               <Entry key={i} entry={e} n={scene.entries.slice(0, i).filter((x) => x.kind === "chapter").length + 1} />
@@ -67,12 +68,12 @@ function Entry({ entry, n }: { entry: BookEntry; n: number }) {
     );
   }
   if (entry.kind === "narrator") {
-    return <div className="post-content px-4 font-serif italic text-fg-soft print:text-black" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(entry.html) }} />;
+    return <EmojiHtml className="post-content px-4 font-serif italic text-fg-soft print:text-black" html={sanitizePostHtml(entry.html)} />;
   }
   return (
     <div className={entry.kind === "roll" ? "text-sm text-muted" : ""}>
       <p className="text-sm font-semibold text-accent print:text-black">{entry.author}</p>
-      <div className="post-content text-fg-soft print:text-black" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(entry.html) }} />
+      <EmojiHtml className="post-content text-fg-soft print:text-black" html={sanitizePostHtml(entry.html)} />
     </div>
   );
 }

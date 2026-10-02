@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteStoryPost, updateStoryPost } from "../actions";
@@ -120,10 +121,7 @@ export function StoryPostBody({
       </div>
       {deleteError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{deleteError}</p>}
       {metaSlot}
-      <div
-        className="post-content text-fg-soft"
-        dangerouslySetInnerHTML={{ __html: displayHtml }}
-      />
+      <EmojiHtml className="post-content text-fg-soft" html={displayHtml} />
     </>
   );
 }

@@ -17,7 +17,7 @@ Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind
 - „… würfelt gerade“ statt „schreibt gerade“ (Typing-Signal mit `kind`).
 - Schrift-Vorschau/gemerkte Schrift und Status-Menü: **Version des anderen Agents** (`default-font.ts`, `presence-status*.ts`) ist maßgeblich; meine Variante wurde beim Merge verworfen.
 - DB-Fix `characters_theme_format` (erlaubt beliebige Schrift-IDs `^[a-zA-Z0-9]{1,40}$`), live und in `schema.sql`.
-- App-Logo: Original-Favicon = „Rosé“ (braun auf rosa). Acht Varianten in `public/icons/logos/<id>-{64,256,apple}.png`, Auswahl unter Einstellungen → App-Logo (`app-logos.ts`, `app-logo-picker.tsx`), pro Gerät in `localStorage` (`wortwinkel:app-logo`). Das PWA-Manifest bleibt beim Original.
+- App-Logo: Original-Favicon = **„Schwarz-Weiß“ (`tinte`)** (Wunsch der Nutzerin, ersetzt das frühere Rosé-Icon; Dunkelmodus-Variante `public/icons/icon-dark-32.png` ist farbinvertiert). Tab-Icon wird über `lib/app-logos.ts` + `components/app-logo-sync.tsx` gesetzt; überzählige Icon-Links von Next werden entfernt (sonst wechselte das Icon nicht). Acht Varianten in `public/icons/logos/<id>-{64,256,apple}.png`, Auswahl unter Einstellungen → Aussehen → App-Logo (`app-logos.ts`, `app-logo-picker.tsx`), pro Gerät in `localStorage` (`wortwinkel:app-logo`). Das PWA-Manifest bleibt beim Original.
 
 ## Redaktions-Profil im Instagram-Stil (live, Stand Commit nach 1bf8714)
 Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Status-Zeile; freie Felder (Titel+Text, Symbol, sortierbar); eigene Akzentfarbe/Hintergrund/Schrift; angeheftete Beiträge (max. 3).

@@ -1,5 +1,6 @@
 "use client";
 
+import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import { Clover, Dices, Pencil, Trash2, Type } from "lucide-react";
 import { updateStoryEntry, deleteStoryEntry } from "../actions";
@@ -207,7 +208,7 @@ export function StoryEntryItem({
         ) : (
           // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -
           // Einträge kommen nie ungeprüft vom Client in die Datenbank.
-          <div className="post-content text-sm text-fg-soft" dangerouslySetInnerHTML={{ __html: displayHtml ?? entry.content }} />
+          <EmojiHtml className="post-content text-sm text-fg-soft" html={displayHtml ?? entry.content} />
         )}
       </div>
     </div>
