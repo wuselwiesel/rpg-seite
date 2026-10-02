@@ -37,7 +37,7 @@ export default async function WikiListPage({ searchParams }: PageProps<"/wiki">)
   const { data: pages } = await query.returns<WikiPage[]>();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <div className="mb-1 flex items-center gap-2">
         <BookOpen className="h-6 w-6 text-accent" strokeWidth={2} />
         <h1 className="font-serif text-3xl text-fg">Wiki</h1>

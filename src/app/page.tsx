@@ -45,7 +45,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   return (
     <PullToRefresh>
     <div className="flex gap-8 px-3 pb-4 pt-2 sm:px-6 sm:py-8 lg:px-10">
-      <div className="mx-auto min-w-0 max-w-[470px] flex-1">
+      <div className="mx-auto min-w-0 max-w-[470px] xl:max-w-[540px] 2xl:max-w-[600px] flex-1">
         <WorldOnboarding worldId={activeWorld.id} worldName={activeWorld.name} autoOpen={recentlyJoined} />
 
         <div className="relative">

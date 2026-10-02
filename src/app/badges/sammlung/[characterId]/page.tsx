@@ -35,7 +35,7 @@ export default async function CharacterBadgeCollectionPage({ params, searchParam
   const special = badges.filter((b) => b.kind === "custom");
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-3xl xl:max-w-4xl px-4 py-8 sm:py-10">
       <BadgeCollectionHeader
         name={character.name}
         avatarUrl={character.avatar_url}

@@ -49,7 +49,7 @@ export default async function SchicksalPage() {
     .map((p) => ({ worldId: p.world.id, worldName: p.world.name, characters: p.characters }));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Schicksalswürfel</h1>
       <p className="mb-6 text-sm text-muted">
         Würfle ein einschneidendes Schicksal für einen deiner Charaktere und poste es als neue Szene in der Story.

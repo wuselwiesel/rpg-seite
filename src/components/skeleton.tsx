@@ -4,7 +4,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function ListPageSkeleton() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <Skeleton className="mb-2 h-9 w-48" />
       <Skeleton className="mb-6 h-4 w-64" />
       <Skeleton className="mb-6 h-16 w-full rounded-2xl" />
@@ -24,7 +24,7 @@ export function ListPageSkeleton() {
 // Platzhalter in Form eines Feed-Beitrags: Kopfzeile, Bild, Aktionsleiste.
 export function FeedSkeleton() {
   return (
-    <div className="mx-auto max-w-[470px] px-3 pt-2" aria-busy="true" aria-label="Lädt">
+    <div className="mx-auto max-w-[470px] xl:max-w-[540px] 2xl:max-w-[600px] px-3 pt-2" aria-busy="true" aria-label="Lädt">
       <div className="mb-3 flex gap-3 overflow-hidden">
         {[0, 1, 2, 3, 4].map((i) => (
           <div key={i} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
@@ -57,7 +57,7 @@ export function FeedSkeleton() {
 // Platzhalter für Listen mit Avatar und zwei Textzeilen (Chats, kompakte Story-Liste).
 export function RowListSkeleton({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6" aria-busy="true" aria-label="Lädt">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6" aria-busy="true" aria-label="Lädt">
       <Skeleton className="mb-1.5 h-7 w-44" />
       <Skeleton className="mb-6 h-3 w-32" />
       <div className="flex flex-col gap-4">

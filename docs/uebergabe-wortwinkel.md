@@ -57,6 +57,9 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Story: Sobald der Reiter „Würfeln“ offen ist, senden wir alle 3 s das Signal „würfelt“ (nur bei sichtbarem Tab) – andere sehen „… würfelt“ statt „schreibt“; beim Zurückwechseln endet es nach ~4 s.
 - Editor-Leiste: ein Smiley-Knopf „Emojis einfügen“ öffnet den vollen Katalog (`EmojiCatalog`), das Bild-Symbol bleibt nur für „Bild oder GIF einfügen“.
 
+## Layout auf Laptop/großen Bildschirmen (live)
+- Außenrahmen (`app/layout.tsx`): `max-w-6xl` (1152) → ab 1440 px 1360, ab 1800 px 1640. Seitenspalten: `max-w-2xl` → `xl:max-w-3xl 2xl:max-w-4xl` (Lese-Seiten Story/Wiki/Beitrag nur bis 3xl), Feed-Spalte `470px` → `xl:540px 2xl:600px`, Profile `935px` → `xl:1040px`, Badge-Seiten `3xl` → `xl:4xl`. Neue Seiten sollten dasselbe Muster benutzen. Unter 1024 px bleibt das Handy-/Tablet-Layout unverändert.
+
 ## Gemerkte Auswahl (live)
 - Zuletzt gewählter Charakter und Welt bleiben nach dem Schließen der App erhalten: die Cookies `active_character_id` / `active_world_id` haben `maxAge` 1 Jahr (`SELECTION_COOKIE_OPTIONS` in `src/lib/types.ts`, an allen `set`-Stellen benutzt). `SelectionCookieKeeper` (`src/components/selection-cookie-keeper.tsx`, im Root-Layout) macht alte Session-Cookies beim Start dauerhaft. Neue Stellen, die diese Cookies setzen, müssen die Konstante nutzen.
 

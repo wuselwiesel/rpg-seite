@@ -139,7 +139,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const tabHref = (t: SearchTab) => `/search?tab=${t}&q=${encodeURIComponent(q)}`;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Suche</h1>
       <p className="mb-6 text-sm text-muted">
         {isWelcome

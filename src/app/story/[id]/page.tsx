@@ -143,7 +143,7 @@ export default async function StoryPostDetailPage({
     .sort((a, b) => Number(b.own) - Number(a.own));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl px-4 py-10">
       <article className="mb-8 rounded-lg border border-line bg-surface p-6">
         <StoryPostControls
           storyPostId={storyPost.id}

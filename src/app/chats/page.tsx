@@ -21,7 +21,7 @@ export default async function ChatsPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-2xl px-1 py-6 lg:hidden">
+      <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-1 py-6 lg:hidden">
         <ChatList />
       </div>
       <ChatsEmptyPane />

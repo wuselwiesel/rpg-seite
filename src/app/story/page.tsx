@@ -132,7 +132,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
           <h1 className="font-serif text-3xl text-fg">Story</h1>

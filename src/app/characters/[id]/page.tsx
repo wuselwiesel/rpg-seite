@@ -154,7 +154,7 @@ export default async function CharacterProfilePage({
     <ProfileThemeWrapper
       theme={{ font: character.theme_font, accent: character.theme_accent, bg: character.theme_bg }}
     >
-      <div className="mx-auto max-w-[935px] sm:px-4 sm:pt-6">
+      <div className="mx-auto max-w-[935px] xl:max-w-[1040px] sm:px-4 sm:pt-6">
         <div className="h-32 overflow-hidden bg-gradient-to-br from-accent/40 to-accent-strong/40 sm:h-52 sm:rounded-2xl">
           {character.banner_url && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -403,7 +403,7 @@ export default async function CharacterProfilePage({
         </div>
 
         {posts?.length && listView && activeCharacter && activeWorld ? (
-          <div className="mx-auto max-w-[470px] px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
+          <div className="mx-auto max-w-[470px] xl:max-w-[540px] 2xl:max-w-[600px] px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
             {posts.map((post, i) => (
               <SocialPostCard
                 key={post.id}

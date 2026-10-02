@@ -32,7 +32,7 @@ export default async function NewStoryPostPage() {
   const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <h1 className="mb-6 font-serif text-3xl text-fg">Neue Szene</h1>
       <NewStoryPostForm
         arcs={arcs ?? []}

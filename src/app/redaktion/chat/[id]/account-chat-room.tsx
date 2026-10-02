@@ -76,7 +76,7 @@ export function AccountChatRoom({
   return (
     <div
       style={chatThemeStyle(theme, dark)}
-      className="mx-auto flex h-dvh max-w-2xl flex-col px-4 text-fg lg:max-w-none lg:px-6"
+      className="mx-auto flex h-dvh max-w-2xl xl:max-w-3xl 2xl:max-w-4xl flex-col px-4 text-fg lg:max-w-none lg:px-6"
     >
       <div className="flex items-center justify-between gap-3 border-b border-line py-3 lg:py-4">
         <div className="flex min-w-0 items-center gap-1">

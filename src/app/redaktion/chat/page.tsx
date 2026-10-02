@@ -12,7 +12,7 @@ export default async function RedaktionChatPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-2xl px-1 py-6 lg:hidden">
+      <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-1 py-6 lg:hidden">
         <AccountChatList />
       </div>
       <div className="hidden h-full min-h-dvh flex-col items-center justify-center gap-3 text-muted lg:flex">

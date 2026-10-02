@@ -33,7 +33,7 @@ export default async function ManageBadgesPage({ searchParams }: PageProps<"/bad
   const featuredAcc = (featuredRows[1].data as { featured_badge_id: string | null } | null)?.featured_badge_id ?? null;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-8 sm:py-10">
       <Link href="/badges" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-fg">
         <ChevronLeft className="h-4 w-4" strokeWidth={2} />
         Alle Badges

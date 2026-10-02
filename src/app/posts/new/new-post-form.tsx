@@ -78,7 +78,7 @@ export function NewPostForm({ storyPosts, people }: { storyPosts: { id: string; 
   const canSubmit = (kind === "text" ? true : mediaUrls.length > 0) && !scheduleInvalid;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
       <h1 className="mb-4 font-serif text-3xl text-fg">Neuer Beitrag</h1>
 
       <div className="mb-5 flex gap-1 rounded-xl bg-surface-2 p-1" role="tablist" aria-label="Art des Beitrags">

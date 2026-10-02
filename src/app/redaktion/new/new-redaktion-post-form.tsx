@@ -107,7 +107,7 @@ export function NewRedaktionPostForm({
   const canSubmit = kind === "text" ? true : mediaUrls.length > 0;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
       <h1 className="mb-4 font-serif text-3xl text-fg">Neuer Redaktions-Beitrag</h1>
       <p className="mb-5 text-sm text-fg-soft">
         Sichtbar für dich und deine Freund:innen - unabhängig von Charakteren und Welten.

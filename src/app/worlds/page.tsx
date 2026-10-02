@@ -16,7 +16,7 @@ export default async function WorldsPage() {
   const worlds = await getUserWorlds(user.id);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div>
           <h1 className="font-serif text-3xl text-fg">Deine Welten</h1>

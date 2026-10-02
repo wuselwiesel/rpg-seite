@@ -33,7 +33,7 @@ export default async function AccountBadgeCollectionPage({ params, searchParams 
   const defs = AUTO_BADGES.filter((b) => b.scope === "account");
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-3xl xl:max-w-4xl px-4 py-8 sm:py-10">
       <BadgeCollectionHeader
         name={profile.nickname || profile.username}
         avatarUrl={profile.avatar_url}

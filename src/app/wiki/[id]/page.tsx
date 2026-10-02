@@ -42,7 +42,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   const canManage = page.created_by === user.id || world?.created_by === user.id;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl px-4 py-10">
       <Link href="/wiki" className="mb-4 inline-block text-xs text-muted hover:text-fg-soft">
         ← Zum Wiki
       </Link>

@@ -20,7 +20,7 @@ export default async function EditWikiPagePage({ params }: PageProps<"/wiki/[id]
   if (!page) notFound();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <h1 className="mb-6 font-serif text-3xl text-fg">Eintrag bearbeiten</h1>
       <WikiForm page={page} />
     </div>

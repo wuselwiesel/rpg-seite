@@ -169,7 +169,7 @@ export default async function BadgesPage({ searchParams }: PageProps<"/badges">)
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-3xl xl:max-w-4xl px-4 py-8 sm:py-10">
       <div className="mb-1 flex items-start justify-between gap-3">
         <h1 className="font-serif text-3xl text-fg">Alle Badges</h1>
         <Link

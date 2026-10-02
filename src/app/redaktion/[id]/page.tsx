@@ -69,7 +69,7 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
   const contentHtml = autolinkHtml(post.content, { tagHref: "/redaktion" });
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-2xl xl:max-w-3xl px-4 py-6 sm:py-10">
       <article className="mb-8 rounded-xl border border-line bg-surface p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-3">
           <Link href={`/redaktion/profil/${post.author_id}`}>

@@ -41,7 +41,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
     <ProfileThemeWrapper
       theme={{ font: redProfile?.theme_font, accent: redProfile?.theme_accent, bg: redProfile?.theme_bg }}
     >
-      <div className="mx-auto max-w-[935px] pb-10 sm:px-4 sm:pt-6">
+      <div className="mx-auto max-w-[935px] xl:max-w-[1040px] pb-10 sm:px-4 sm:pt-6">
         <div className="h-32 overflow-hidden bg-gradient-to-br from-accent/40 to-accent-strong/40 sm:h-52 sm:rounded-2xl">
           {redProfile?.banner_url && (
             // eslint-disable-next-line @next/next/no-img-element
