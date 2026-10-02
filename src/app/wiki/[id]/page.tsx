@@ -2,7 +2,7 @@ import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Pencil, Plus } from "lucide-react";
+import { MapPin, Network, Pencil, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -153,6 +153,14 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           <p className="text-xs text-muted">Zuletzt bearbeitet am {formatDateTime(page.updated_at)}</p>
           <div className="flex flex-wrap items-center gap-1">
             <FavoriteButton wikiPageId={page.id} initial={favoriteIds.includes(page.id)} />
+            <Link
+              href={`/wiki/graph?fokus=${page.id}`}
+              title="Verbindungen dieser Seite im Graph ansehen"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <Network className="h-3.5 w-3.5" strokeWidth={2} />
+              Graph
+            </Link>
             <Link
               href={`/wiki/${page.id}/edit`}
               className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:text-fg"

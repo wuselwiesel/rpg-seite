@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bracketTargets, findBacklinks, findMissingLinks, titleIndex, type LinkPage } from "./wiki-links";
+import { bracketTargets, buildLinkEdges, findBacklinks, findMissingLinks, titleIndex, type LinkPage } from "./wiki-links";
 
 const page = (id: string, title: string, content: string, aliases: string[] = []): LinkPage => ({ id, title, content, aliases });
 const pages = [
@@ -40,5 +40,35 @@ describe("findMissingLinks mit bekannten Namen", () => {
     const pages = [{ id: "1", title: "A", content: "<p>[[Lucian]] und [[Hexen]]</p>" }];
     expect(findMissingLinks(pages).map((m) => m.title)).toEqual(["Hexen", "Lucian"].sort());
     expect(findMissingLinks(pages, ["lucian"]).map((m) => m.title)).toEqual(["Hexen"]);
+  });
+});
+
+describe("buildLinkEdges", () => {
+  const pages = [
+    { id: "v", title: "Vampire", content: "<p>Leben in [[Nebelhafen]]. Sie jagen Werwölfe.</p>", aliases: ["Blutsauger"] },
+    { id: "n", title: "Nebelhafen", content: "<p>Hier wohnen Blutsauger.</p>" },
+    { id: "w", title: "Werwölfe", content: "<p>Nichts.</p>" },
+    { id: "s", title: "Sireline", content: "<p>Unterseite.</p>", parent_page_id: "v" },
+    { id: "x", title: "Allein", content: "<p>Niemand kennt mich.</p>" },
+  ];
+  const edges = buildLinkEdges(pages);
+  const find = (a: string, b: string) => edges.find((e) => [e.a, e.b].sort().join() === [a, b].sort().join());
+
+  it("findet [[Titel]] und Erwähnungen (auch über Alternativnamen), ohne Selbstverweise", () => {
+    expect(find("v", "n")).toBeTruthy();
+    expect(find("v", "w")).toBeTruthy();
+    expect(edges.some((e) => e.a === e.b)).toBe(false);
+  });
+  it("fasst Verweise in beide Richtungen zu einer Kante zusammen", () => {
+    expect(find("v", "n")).toMatchObject({ kind: "link", mutual: true });
+    expect(find("v", "w")).toMatchObject({ mutual: false });
+    expect(edges.filter((e) => [e.a, e.b].sort().join() === "n,v").length).toBe(1);
+  });
+  it("verbindet Unterseiten mit ihrer Oberseite", () => {
+    expect(find("v", "s")).toMatchObject({ kind: "child", a: "v", b: "s" });
+  });
+  it("lässt Seiten ohne Verbindung außen vor", () => {
+    expect(edges.some((e) => e.a === "x" || e.b === "x")).toBe(false);
+    expect(buildLinkEdges([])).toEqual([]);
   });
 });

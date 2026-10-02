@@ -152,7 +152,7 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
   const canDelete = (f: TreeFolder) => f.created_by === userId || isWorldOwner;
 
   return (
-    <div className="mx-auto max-w-[1800px] px-4 py-6 sm:py-8 lg:px-8">
+    <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-20">
       <header className="mb-6 hidden items-center justify-between gap-4 border-b border-line pb-4 lg:flex">
         <Link href="/" aria-label="Wortwinkel" className="block">
           <Wordmark height={36} />
@@ -227,6 +227,9 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
             </Link>
             <Link href="/wiki/karten" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
               Karten
+            </Link>
+            <Link href="/wiki/graph" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Graph
             </Link>
 
             <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">
