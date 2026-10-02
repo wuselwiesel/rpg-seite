@@ -172,3 +172,45 @@ export async function deleteWikiPage(wikiPageId: string): Promise<string | null>
   revalidatePath("/wiki", "layout");
   return null;
 }
+
+// Seite per Ziehen verschieben: in einen Ordner (folderId), unter eine andere Seite (parentPageId, dann gilt deren Ordner)
+// oder auf die oberste Ebene (beides null). Unterseiten ziehen in den neuen Ordner mit. Der „zuletzt bearbeitet“-Zeitpunkt
+// bleibt unverändert; Kreise und fremde Welten lehnt zusätzlich ein Datenbank-Trigger ab.
+export async function moveWikiPage(
+  wikiPageId: string,
+  folderId: string | null,
+  parentPageId: string | null,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: existing } = await supabase.from("wiki_pages").select("world_id").eq("id", wikiPageId).maybeSingle();
+  if (!existing) return "Der Eintrag konnte nicht gefunden werden.";
+
+  const { data: rows } = await supabase
+    .from("wiki_pages")
+    .select("id, parent_page_id")
+    .eq("world_id", existing.world_id);
+  const subtree = pageSubtreeIds(
+    (rows ?? []).map((r) => ({ id: r.id, title: "", folder_id: null, parent_page_id: r.parent_page_id })),
+    wikiPageId,
+  );
+  if (parentPageId && subtree.has(parentPageId)) return "Eine Seite kann nicht unter sich selbst oder ihre Unterseite.";
+
+  const { data, error } = await supabase
+    .from("wiki_pages")
+    .update({ folder_id: folderId, parent_page_id: parentPageId })
+    .eq("id", wikiPageId)
+    .select("id");
+  if (error) return error.message;
+  if (!data?.length) return "Verschieben nicht möglich (keine Berechtigung).";
+
+  subtree.delete(wikiPageId);
+  if (subtree.size) await supabase.from("wiki_pages").update({ folder_id: folderId }).in("id", [...subtree]);
+
+  revalidatePath("/wiki", "layout");
+  return null;
+}
