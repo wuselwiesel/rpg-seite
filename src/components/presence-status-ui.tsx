@@ -7,13 +7,18 @@ import { SymbolPicker } from "./symbol-picker";
 type Presence = {
   myStatus: PresenceStatusId | null;
   myCustom: string;
+  // Gerade pausiert (man schreibt oder würfelt), kommt danach von selbst wieder.
+  suspended?: boolean;
+  // Gespeicherte eigene Status zum schnellen Wiederverwenden.
+  saved?: string[];
+  forgetSaved?: (text: string) => void;
   toggle: (id: PresenceStatusId) => void;
   setCustom: (text: string) => void;
   clear: () => void;
 };
 
 export function StatusPicker({ presence }: { presence: Presence }) {
-  const { myStatus, myCustom, toggle, setCustom } = presence;
+  const { myStatus, myCustom, toggle, setCustom, suspended, saved = [], forgetSaved } = presence;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [symbols, setSymbols] = useState(false);
@@ -53,6 +58,7 @@ export function StatusPicker({ presence }: { presence: Presence }) {
           }`}
         >
           {current ? `Status: ${current}` : "Status setzen"}
+          {current && suspended && <span className="text-muted"> · pausiert, kommt gleich wieder</span>}
         </button>
         {current && (
           <button type="button" onClick={clear} aria-label="Status entfernen" className="text-muted hover:text-fg">
@@ -104,6 +110,35 @@ export function StatusPicker({ presence }: { presence: Presence }) {
               Setzen
             </button>
           </div>
+          {saved.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-muted">Gespeichert:</span>
+              {saved.map((text) => (
+                <span key={text} className="inline-flex items-center rounded-full border border-line text-fg-soft">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustom(text);
+                      close();
+                    }}
+                    className="rounded-l-full px-2.5 py-1 hover:text-fg"
+                  >
+                    {text}
+                  </button>
+                  {forgetSaved && (
+                    <button
+                      type="button"
+                      onClick={() => forgetSaved(text)}
+                      aria-label={`„${text}“ aus den gespeicherten Status entfernen`}
+                      className="rounded-r-full px-1.5 py-1 text-muted hover:text-fg"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
           {symbols && (
             <SymbolPicker
               onPick={(sym) => setDraft((d) => (d + sym).slice(0, CUSTOM_STATUS_MAX))}

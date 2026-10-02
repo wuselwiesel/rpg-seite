@@ -53,6 +53,9 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Eingebaut in: RPG-Chat (`chats/[id]/chat-room.tsx`, Eingabefeld ist jetzt eine mehrzeilige Textarea), Redaktions-Chat, Chat-Blase, Kommentare (`MentionTextarea` schickt das umgebende Formular per `requestSubmit` ab). Nicht in Rich-Text-Editoren (Beiträge, Story): dort bleibt Enter ein Absatz. Neue Nachrichtenfelder: `isSendKey(e, useEnterSends())` benutzen.
 - Story: gelöschte Beiträge verschwinden live bei allen, die die Szene offen haben (`story/[id]/entry-list.tsx`, Realtime-DELETE auf `story_entries`).
 
+- Status in Story/Chat (`lib/presence-status.ts`, `components/presence-status-ui.tsx`): In der Story wird der gesetzte Status pro Charakter auf dem Gerät gemerkt (`usePresenceStatus(…, { persist: true })`, localStorage `wortwinkel:status:<characterId>`) und beim Öffnen wieder gesetzt, bis man ihn entfernt (✕). Eigene Texte landen in einer Liste „Gespeichert“ (`wortwinkel:status-saved`, max. 6). Beim Schreiben/Würfeln wird er nur kurz ausgeblendet (`pauseFor(6000)` statt früher `clear()`) und kommt danach von selbst zurück; gilt auch im RPG-Chat (dort ohne Speichern).
+- Editor-Leiste: ein Smiley-Knopf „Emojis einfügen“ öffnet den vollen Katalog (`EmojiCatalog`), das Bild-Symbol bleibt nur für „Bild oder GIF einfügen“.
+
 ## Gemerkte Auswahl (live)
 - Zuletzt gewählter Charakter und Welt bleiben nach dem Schließen der App erhalten: die Cookies `active_character_id` / `active_world_id` haben `maxAge` 1 Jahr (`SELECTION_COOKIE_OPTIONS` in `src/lib/types.ts`, an allen `set`-Stellen benutzt). `SelectionCookieKeeper` (`src/components/selection-cookie-keeper.tsx`, im Root-Layout) macht alte Session-Cookies beim Start dauerhaft. Neue Stellen, die diese Cookies setzen, müssen die Konstante nutzen.
 

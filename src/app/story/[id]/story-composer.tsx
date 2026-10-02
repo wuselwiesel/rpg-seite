@@ -95,16 +95,17 @@ export function StoryComposer({
     return () => clearInterval(timer);
   }, [typing]);
 
-  const presence = usePresenceStatus(`story-${storyPostId}`, {
-    characterId: writerId,
-    name: narrator ? "Erzähler:in" : (writer?.name ?? "Jemand"),
-  });
+  const presence = usePresenceStatus(
+    `story-${storyPostId}`,
+    { characterId: writerId, name: narrator ? "Erzähler:in" : (writer?.name ?? "Jemand") },
+    { persist: true },
+  );
 
   function announceTyping(kind: "write" | "roll") {
     const now = Date.now();
     if (now - lastTypingSent.current < 2500) return;
     lastTypingSent.current = now;
-    presence.clear(); // wer schreibt, ist offensichtlich da
+    presence.pauseFor(6000); // beim Schreiben/Würfeln ausgeblendet, danach wieder da
     channelRef.current?.send({
       type: "broadcast",
       event: "typing",

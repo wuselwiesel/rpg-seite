@@ -232,7 +232,7 @@ export function ChatRoom({
     const now = Date.now();
     if (now - lastTypingSent.current < 2500) return;
     lastTypingSent.current = now;
-    presence.clear(); // wer schreibt, ist offensichtlich da
+    presence.pauseFor(6000); // beim Schreiben ausgeblendet, danach wieder da
     channelRef.current?.send({
       type: "broadcast",
       event: "typing",
