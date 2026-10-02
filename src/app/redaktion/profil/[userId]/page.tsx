@@ -32,7 +32,8 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
   ]);
 
   if (isOwn) await syncAccountBadges();
-  const badges = visibleBadges(await getAccountBadges(userId)).filter((b) => b.kind === "account");
+  const accountBadges = (await getAccountBadges(userId)).filter((b) => b.kind === "account");
+  const badges = isOwn ? accountBadges : visibleBadges(accountBadges);
   const displayName = profile.nickname || profile.username;
   const fields = redProfile?.custom_fields ?? [];
 
@@ -117,7 +118,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
             </dl>
           )}
 
-          <BadgeRow badges={badges} collectionHref={`/badges/konto/${userId}`} />
+          <BadgeRow badges={badges} collectionHref={`/badges/konto/${userId}`} editable={isOwn} />
         </header>
 
         <div className="mt-6">
