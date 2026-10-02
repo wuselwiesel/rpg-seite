@@ -25,6 +25,20 @@ describe("matchWikiPages", () => {
   });
 });
 
+describe("matchWikiPages mit Figuren", () => {
+  const items = [
+    { id: "1", title: "Vampire", kind: "page" as const },
+    { id: "c1", title: "Lucian", kind: "character" as const, avatarUrl: null },
+  ];
+  it("zeigt Seiten und Figuren gemeinsam", () => {
+    expect(matchWikiPages(items, "").map((p) => p.id)).toEqual(["c1", "1"]);
+    expect(matchWikiPages(items, "luc")[0]).toMatchObject({ id: "c1", kind: "character" });
+  });
+  it("bietet bei vorhandenem Figurennamen keine neue Seite an", () => {
+    expect(matchWikiPages(items, "lucian").some((p) => p.id === "")).toBe(false);
+  });
+});
+
 describe("wikiLinkText", () => {
   it("setzt den Titel in doppelte eckige Klammern und entfernt Störzeichen", () => {
     expect(wikiLinkText("Nebelhafen")).toBe("[[Nebelhafen]]");

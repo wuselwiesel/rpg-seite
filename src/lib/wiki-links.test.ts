@@ -34,3 +34,11 @@ describe("Wiki-Rückverweise", () => {
     expect(idx.get("vampire")?.id).toBe("v");
   });
 });
+
+describe("findMissingLinks mit bekannten Namen", () => {
+  it("ignoriert Namen, die zu Charakteren gehören", () => {
+    const pages = [{ id: "1", title: "A", content: "<p>[[Lucian]] und [[Hexen]]</p>" }];
+    expect(findMissingLinks(pages).map((m) => m.title)).toEqual(["Hexen", "Lucian"].sort());
+    expect(findMissingLinks(pages, ["lucian"]).map((m) => m.title)).toEqual(["Hexen"]);
+  });
+});

@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
+import { escapeHtml, linkCharacterMentions } from "@/lib/character-links";
+import { getWorldCharacterTerms } from "@/lib/wiki-characters";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import { getMapsForPage } from "@/lib/wiki-map-data";
 import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
@@ -42,13 +44,14 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
       : (await supabase.from("worlds").select("created_by").eq("id", page.world_id).maybeSingle()).data?.created_by;
   const canDelete = page.created_by === user.id || worldOwnerId === user.id;
 
-  const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps] = await Promise.all([
+  const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps, characters] = await Promise.all([
     getWikiTerms(page.world_id),
     getWikiFolders(page.world_id),
     getWikiPageRows(page.world_id),
     getWikiLinkPages(page.world_id),
     getWikiFavoriteIds(user.id),
     getMapsForPage(page.id),
+    getWorldCharacterTerms(page.world_id),
   ]);
 
   const tree = buildWikiTree(folders, pageRows);
@@ -76,7 +79,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     .map((bid) => pageRows.find((p) => p.id === bid))
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
-  const linked = autolinkHtml(sanitizePostHtml(page.content), { wiki: wikiTerms, excludeWikiId: page.id });
+  // Erwähnungen (@) werden zuerst zu Links, damit der Name darin nicht noch einmal automatisch verlinkt wird.
+  const withMentions = linkCharacterMentions(sanitizePostHtml(page.content), new Map(characters.map((c) => [c.id, c])));
+  const linked = autolinkHtml(withMentions, { wiki: wikiTerms, characters, excludeWikiId: page.id });
+  // Steckbrief-Texte: Klartext, aber [[Seite]], Alternativnamen und Charaktere werden zu Links.
+  const fieldHtml = (text: string) => autolinkHtml(escapeHtml(text), { wiki: wikiTerms, characters, excludeWikiId: page.id });
   const { html, headings } = addHeadingIds(linked);
   const fields = page.fields ?? [];
   const gallery = page.gallery ?? [];
@@ -191,7 +198,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
                         {f.title}
                       </dt>
                       <dd className="min-w-0 break-words text-fg">
-                        <EmojiText text={f.text} />
+                        <EmojiHtml html={fieldHtml(f.text)} />
                       </dd>
                     </div>
                   ))}

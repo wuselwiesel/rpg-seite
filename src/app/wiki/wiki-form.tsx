@@ -23,6 +23,7 @@ export function WikiForm({
   folders,
   parentChoices,
   linkTargets,
+  characters = [],
   defaults,
   canSetDraft = true,
 }: {
@@ -30,6 +31,7 @@ export function WikiForm({
   folders: FolderOption[];
   parentChoices: PageOption[];
   linkTargets: { id: string; title: string }[];
+  characters?: { id: string; name: string; avatar_url: string | null }[];
   defaults?: { title?: string; folder?: string; parent?: string; type?: string };
   // Entwurf nur für die, die die Seite angelegt haben.
   canSetDraft?: boolean;
@@ -179,7 +181,7 @@ export function WikiForm({
       <section className={card}>
         <div>
           <h2 className="font-serif text-xl text-fg">Steckbrief</h2>
-          <p className="text-sm text-muted">Die wichtigsten Fakten als Tabelle neben dem Text. Felder ohne Titel oder Inhalt werden nicht gespeichert.</p>
+          <p className="text-sm text-muted">Die wichtigsten Fakten als Tabelle neben dem Text. Mit [[Seite]] oder [[Figur]] verlinkst du auch hier. Felder ohne Titel oder Inhalt werden nicht gespeichert.</p>
         </div>
         <ProfileFieldsEditor key={fieldsKey} initial={fieldRows} />
       </section>
@@ -187,7 +189,7 @@ export function WikiForm({
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Text</h2>
         <p className="text-sm text-muted">
-          Tippe <code className="rounded bg-surface-2 px-1">@</code> und wähle eine Seite, oder schreibe{" "}
+          Tippe <code className="rounded bg-surface-2 px-1">@</code> und wähle eine Seite oder eine Figur, oder schreibe{" "}
           <code className="rounded bg-surface-2 px-1">[[Titel]]</code>, um Seiten zu verlinken. Gibt es die Seite noch nicht, wird der Link
           rot und lässt sich mit einem Klick anlegen. Mit <code className="rounded bg-surface-2 px-1">[[Titel|Text]]</code> bestimmst du den
           angezeigten Text.
@@ -204,6 +206,7 @@ export function WikiForm({
             placeholder="Beschreibung, Hintergrund, Regeln …"
             allowFontSelection
             wikiPages={linkTargets}
+            wikiCharacters={characters}
           />
         )}
       </section>

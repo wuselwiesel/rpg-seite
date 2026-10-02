@@ -408,6 +408,7 @@ export function RichTextEditor({
   allowFontSelection = false,
   onSubmitKey,
   wikiPages,
+  wikiCharacters,
 }: {
   name: string;
   initialContent?: string;
@@ -423,6 +424,8 @@ export function RichTextEditor({
   onSubmitKey?: () => void;
   // Wiki-Seiten zum Verlinken: zeigt in der Werkzeugleiste die Auswahl für [[Titel]].
   wikiPages?: { id: string; title: string }[];
+  // Charaktere der Welt: im Wiki mit @ erwähnen (neben den Seiten).
+  wikiCharacters?: { id: string; name: string; avatar_url: string | null }[];
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
   const enterSends = useEnterSends();
@@ -458,7 +461,14 @@ export function RichTextEditor({
             }),
           ]
         : wikiPages
-          ? [wikiMentionExtension(wikiPages)]
+          ? [
+              // Erwähnungs-Knoten ohne eigene @-Auswahl: die gemeinsame Liste (Seiten und Figuren) kommt aus wikiMentionExtension.
+              Mention.extend({ addProseMirrorPlugins: () => [] }).configure({ HTMLAttributes: { class: "mention", "data-type": "mention" } }),
+              wikiMentionExtension([
+                ...wikiPages.map((p) => ({ ...p, kind: "page" as const })),
+                ...(wikiCharacters ?? []).map((c) => ({ id: c.id, title: c.name, kind: "character" as const, avatarUrl: c.avatar_url })),
+              ]),
+            ]
           : []),
     ] satisfies Extensions,
     content: initialContent ?? "",

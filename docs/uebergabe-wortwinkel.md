@@ -168,3 +168,11 @@ Alles in `main` gemergt. Nicht im Browser getestet (nur `tsc`/ESLint/vitest).
 - Reine Logik `lib/wiki-map.ts` (Prozent-Umrechnung, Zoom-Mathe, Pin-Bereinigung; Tests), Daten `lib/wiki-map-data.ts`, Aktionen `wiki/karten/actions.ts` (Ergebnis `{ ok, … }`).
 - Browser-Test `e2e/wiki-map/` (20 Prüfungen inkl. Pinch per CDP-Touch; baut das echte `globals.css` per `@tailwindcss/postcss`).
 - Nicht umgesetzt: mehrere Pin-Arten/Farben, Karten-Ebenen, Entfernungen.
+
+### Agent B: Wiki Runde 5 – Charaktere verlinken, Links im Steckbrief
+- Keine Datenbankänderung. `lib/character-links.ts` (rein, Tests): `characterAnchor`, `linkCharacterMentions`, `characterIndex`, `escapeHtml`, `escapeLike`. Server: `lib/wiki-characters.ts` (`getWorldCharacterTerms(worldId)`, `getWikiPagesAboutCharacter`).
+- **Editor:** `@` im Wiki-Editor zeigt Seiten **und** Figuren der Welt (`lib/wiki-mention.ts` mit `kind`, `lib/wiki-mention-suggestion.tsx`, `components/wiki-mention-list.tsx`). Seite → Text `[[Titel]]`, Figur → Erwähnungs-Knoten (`<span data-type="mention" data-id=…>`, wie in Story/Feed; `RichTextEditor` bekommt `wikiCharacters` und registriert dafür `Mention` ohne eigenes @-Popup).
+- **Anzeige** (`wiki/[id]/page.tsx`): Erwähnungen werden vor dem Auto-Verlinken zu Links `a.wiki-link.wiki-char` mit Hover-Vorschau (Kategorie „Charakter“, Avatar, Auszug aus der Bio). `[[Name]]` verlinkt, wenn es keine Wiki-Seite dieses Namens gibt, die Figur (Seite hat Vorrang), sonst roter Link (`autolinkHtml(..., { characters })`). „Fehlende Artikel“ ignoriert Figurennamen (`findMissingLinks(pages, knownNames)`).
+- **Steckbrief:** Feldtexte laufen durch `autolinkHtml(escapeHtml(text), …)`: `[[Seite]]`, `[[Figur]]` und Alias-Namen werden zu Links (Klartext bleibt maskiert).
+- **Charakterprofil:** Abschnitt „Im Wiki“ (Seiten, die die Figur erwähnen, per `[[Name]]` verlinken oder genauso heißen).
+- Browser-Test `e2e/wiki-mention/` um Figuren erweitert (16 Prüfungen). Nicht getestet: Hover-Vorschau und Profilabschnitt gegen echte Daten.
