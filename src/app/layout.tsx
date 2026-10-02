@@ -29,6 +29,7 @@ import {
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
+import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
 import { MobileMain } from "@/components/mobile-main";
 import { OfflineBanner } from "@/components/offline-banner";
 import { KeyboardFix } from "@/components/keyboard-fix";
@@ -163,6 +164,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Sidebar />
           <MobileMain>{children}</MobileMain>
         </div>
+        <ChatBubbleLoader />
       </body>
     </html>
   );

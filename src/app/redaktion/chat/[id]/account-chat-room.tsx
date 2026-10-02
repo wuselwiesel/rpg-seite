@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellOff, ChevronLeft, SendHorizontal, Trash2 } from "lucide-react";
+import { Bell, BellOff, Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { setAccountChatMuted } from "../actions";
 import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
@@ -32,9 +32,12 @@ export function AccountChatRoom({
   initialMessages: AccountMessage[];
   initialMuted: boolean;
 }) {
-  const { messages, partnerRead, error, send, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
+  const { messages, partnerRead, error, send, edit, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
   const [draft, setDraft] = useState("");
   const [muted, setMuted] = useState(initialMuted);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -97,31 +100,94 @@ export function AccountChatRoom({
             const mine = m.sender_id === userId;
             const newDay = i === 0 || day(messages[i - 1].created_at) !== day(m.created_at);
             const seen = mine && m.id === lastOwnId && partnerRead && partnerRead >= m.created_at;
+            const showActions = mine && !m.pending && activeId === m.id && editingId !== m.id;
             return (
               <div key={m.id}>
                 {newDay && <p className="my-3 text-center text-xs text-muted">{day(m.created_at)}</p>}
-                <div className={`group flex items-end gap-1.5 ${mine ? "flex-row-reverse" : ""}`}>
-                  <div
-                    className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px] ${
-                      mine ? "rounded-br-md bg-accent-strong text-on-accent-strong" : "rounded-bl-md bg-surface-2 text-fg"
-                    } ${m.pending ? "opacity-60" : ""}`}
-                  >
-                    {m.content}
+                {editingId === m.id ? (
+                  <div className="ml-auto flex max-w-[85%] flex-col gap-1.5">
+                    <textarea
+                      value={editDraft}
+                      autoFocus
+                      rows={2}
+                      maxLength={4000}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      className="resize-none rounded-2xl border border-accent bg-surface px-3.5 py-2 text-[15px] text-fg outline-none"
+                    />
+                    <div className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="flex items-center gap-1 rounded-full px-3 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg"
+                      >
+                        <X className="h-3.5 w-3.5" strokeWidth={2} />
+                        Abbrechen
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!editDraft.trim()}
+                        onClick={() => {
+                          void edit(m.id, editDraft);
+                          setEditingId(null);
+                          setActiveId(null);
+                        }}
+                        className="flex items-center gap-1 rounded-full bg-accent-strong px-3 py-1 text-xs font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-40"
+                      >
+                        <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                        Speichern
+                      </button>
+                    </div>
                   </div>
-                  <span className="shrink-0 pb-1 text-[10px] text-muted opacity-0 transition group-hover:opacity-100">
-                    {time(m.created_at)}
-                  </span>
-                  {mine && !m.pending && (
-                    <button
-                      type="button"
-                      onClick={() => confirm("Diese Nachricht wirklich löschen?") && void remove(m.id)}
-                      aria-label="Nachricht löschen"
-                      className="shrink-0 pb-1 text-muted opacity-0 transition hover:text-red-500 group-hover:opacity-100"
+                ) : (
+                  <div className={`group flex items-end gap-1.5 ${mine ? "flex-row-reverse" : ""}`}>
+                    <div
+                      onClick={mine ? () => setActiveId(activeId === m.id ? null : m.id) : undefined}
+                      className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px] ${
+                        mine
+                          ? "cursor-pointer rounded-br-md bg-accent-strong text-on-accent-strong"
+                          : "rounded-bl-md bg-surface-2 text-fg"
+                      } ${m.pending ? "opacity-60" : ""}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-                    </button>
-                  )}
-                </div>
+                      {m.content}
+                    </div>
+                    <span className="shrink-0 pb-1 text-[10px] text-muted opacity-0 transition group-hover:opacity-100">
+                      {time(m.created_at)}
+                      {m.updated_at ? " · bearbeitet" : ""}
+                    </span>
+                    {mine && !m.pending && (
+                      <span
+                        className={`flex shrink-0 items-center pb-0.5 transition ${
+                          showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingId(m.id);
+                            setEditDraft(m.content);
+                          }}
+                          aria-label="Nachricht bearbeiten"
+                          title="Bearbeiten"
+                          className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+                        >
+                          <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => confirm("Diese Nachricht wirklich löschen?") && void remove(m.id)}
+                          aria-label="Nachricht löschen"
+                          title="Löschen"
+                          className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
                 {seen && <p className="mt-0.5 text-right text-[10px] text-muted">Gelesen</p>}
               </div>
             );

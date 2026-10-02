@@ -26,11 +26,17 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Die Modus-Umschaltung links ist auf dem Desktop jetzt reine Textleiste (ohne Icons), „Redaktion“ etwas breiter; auf dem Handy bleibt das Menü mit Icons.
 - Noch offen: Highlight-Kreise unter der Bio, Sichtbarkeit pro Feld, Zähler „Freund:innen“ nur im eigenen Profil (RLS auf Freundschaften nicht geprüft).
 
-## Nächste Schritte
-1. (erledigt) Einstellungen sind in Unterseiten gegliedert: `/profile` (Liste), `/profile/konto`, `/profile/aussehen`, `/profile/benachrichtigungen`; Shell in `src/app/profile/settings-shell.tsx`, Kopf `components/settings-back.tsx`.
-2. Redaktions-Chat (Account-Chats, eigene Tabellen) plus schwebende, verschiebbare Chat-Blase (Profilbild, Ungelesen-Badge, Mini-Fenster, Vorschau-Pop-up, auch Rollenspiel-Chats, pro Gerät abschaltbar). Entscheidungen der Nutzerin, noch nicht gebaut.
-3. Eigene Emojis pro Welt (Upload PNG/GIF/WebP max. 256 KB, `:name:`-Kürzel, Picker; Orte: Beiträge/Kommentare, Chats, Story/Wiki, Profile). Noch nicht gebaut.
-4. Älteres Backlog: Charakterprofile mit Banner/Cover, Steckbrief-Feldern, Status-Zeile, Mini-Timeline; Badges (erst besprechen).
+## Einstellungen, Redaktions-Chat und Chat-Blase (live)
+- Einstellungen sind gegliedert: `/profile` (Liste), `/profile/konto`, `/profile/aussehen` (Palette, App-Logo, Chat-Blase an/aus), `/profile/benachrichtigungen`; Shell `src/app/profile/settings-shell.tsx`.
+- Redaktions-Chat (Account-Chats): Migration `supabase/migration_redaktion_chat.sql` ist im Supabase-SQL-Editor **ausgeführt und verifiziert** (7 Policies, 2 Funktionen `is_account_chat_member` / `start_account_chat`, Realtime für `account_messages` und `account_chat_participants`). Seiten `src/app/redaktion/chat/*` (Liste, Raum, `mit/[userId]` startet Chat), Hook `src/lib/use-account-chat.ts`, Actions inkl. Bearbeiten/Löschen/Stumm/Push. Neuer Chat nur mit akzeptierten Freund:innen.
+- Chat-Blase `src/components/chat-bubble.tsx` (+ `bubble-rooms.tsx`, `chat-bubble-loader.tsx` im Root-Layout, `src/app/bubble-actions.ts`): runder, ziehbarer Knopf (rastet links/rechts ein, Position und An/Aus in `localStorage`: `wortwinkel:chat-bubble-pos`, `wortwinkel:chat-bubble`), Badge für Ungelesenes, Vorschau-Pop-up bei neuen Nachrichten, Mini-Fenster mit Redaktions- und Rollenspiel-Chats des aktiven Charakters. Auf `/chats`, `/redaktion/chat`, Login ausgeblendet.
+- Im Test-Account liegt ein Selbsttest-Chat (`00000000-0000-4000-8000-0000000000c1`, nur `logotestuser` als Teilnehmer) – darf gelöscht werden.
+
+## Nächste Schritte (Wünsche der Nutzerin, Reihenfolge offen)
+1. Redaktions-Feed soll von der Struktur her wie der Ingame-Feed aussehen (Beitragskarten, Layout, ggf. rechte Seitenleiste).
+2. Charakterprofile im Stil des Redaktions-Profils (Banner, Status-Zeile, Bio, eigene Felder, angeheftete Beiträge, Raster/Liste), **mit der bisherigen Charakterbogen-Ansicht**. Bisher nur Redaktions-Profil gebaut.
+3. Eigene Emojis pro Welt (Upload PNG/GIF/WebP max. 256 KB, `:name:`-Kürzel, Picker; Orte: Beiträge/Kommentare, Chats, Story/Wiki, Profile inkl. Feld-Symbole). Noch nicht gebaut.
+4. Älteres Backlog: Mini-Timeline bei Charakterprofilen; Badges (erst mit der Nutzerin besprechen).
 
 ## Fallstricke
 - `tsconfig.tsbuildinfo` kann Typfehler verdecken: löschen und `npx tsc --noEmit; echo $?` ohne Pipe. Der Vercel-Build ist die Instanz, die zählt.

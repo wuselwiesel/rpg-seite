@@ -49,6 +49,24 @@ async function pushToChatPartners(chatId: string, senderId: string, text: string
   );
 }
 
+export async function updateAccountMessage(messageId: string, content: string): Promise<string | null> {
+  const text = content.trim().slice(0, 4000);
+  if (!text) return "Nachricht darf nicht leer sein.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error, count } = await supabase
+    .from("account_messages")
+    .update({ content: text, updated_at: new Date().toISOString() }, { count: "exact" })
+    .eq("id", messageId)
+    .eq("sender_id", user.id);
+  if (error) return error.message;
+  if (!count) return "Konnte nicht geändert werden.";
+  return null;
+}
+
 export async function deleteAccountMessage(messageId: string): Promise<string | null> {
   const supabase = await createClient();
   const {

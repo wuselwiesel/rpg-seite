@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { deleteAccountMessage, sendAccountMessage } from "@/app/redaktion/chat/actions";
+import { deleteAccountMessage, sendAccountMessage, updateAccountMessage } from "@/app/redaktion/chat/actions";
 
-export type AccountMessage = { id: string; sender_id: string; content: string; created_at: string; pending?: boolean };
+export type AccountMessage = { id: string; sender_id: string; content: string; created_at: string; updated_at?: string | null; pending?: boolean };
 
 // Live-Nachrichten eines Redaktions-Chats (Realtime + optimistisches Senden); wird vom Chatfenster und von der Chat-Blase genutzt.
 export function useAccountChat(
@@ -50,6 +50,14 @@ export function useAccountChat(
             onIncomingRef.current?.(row);
             if (document.visibilityState === "visible") markRead();
           }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "account_messages", filter: `chat_id=eq.${chatId}` },
+        (payload) => {
+          const row = payload.new as AccountMessage;
+          setMessages((prev) => prev.map((m) => (m.id === row.id ? { ...m, ...row } : m)));
         },
       )
       .on(
@@ -101,5 +109,20 @@ export function useAccountChat(
     if (err) setError(err);
   }
 
-  return { messages, partnerRead, error, send, remove, markRead };
+  async function edit(messageId: string, content: string) {
+    const text = content.trim();
+    if (!text) return;
+    const before = messages.find((m) => m.id === messageId);
+    if (!before || before.content === text) return;
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, content: text, updated_at: new Date().toISOString() } : m)),
+    );
+    const err = await updateAccountMessage(messageId, text);
+    if (err) {
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, ...before } : m)));
+      setError(err);
+    }
+  }
+
+  return { messages, partnerRead, error, send, edit, remove, markRead };
 }
