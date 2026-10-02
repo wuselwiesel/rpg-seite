@@ -108,3 +108,11 @@ export function mergeFields(
   const added = type.fields.filter((t) => !have.has(t.toLowerCase())).map((title) => ({ icon: "", title, text: "" }));
   return [...filled, ...added];
 }
+
+// Farbe eines Typs im Wiki-Graph (Farbton; ohne Typ neutral). Feste Töne, damit Typen auch auf allen Themen unterscheidbar bleiben.
+const TYPE_HUE: Record<WikiTypeId, number> = { ort: 150, spezies: 25, organisation: 265, person: 200, ereignis: 350, mythos: 45, gegenstand: 300 };
+
+export function wikiTypeColor(id: string | null | undefined): string {
+  const t = wikiTypeOf(id);
+  return t ? `hsl(${TYPE_HUE[t.id]} 50% 42%)` : "var(--muted)";
+}

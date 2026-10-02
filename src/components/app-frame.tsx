@@ -2,8 +2,9 @@
 
 import { usePathname } from "next/navigation";
 
-// Rahmen um Seitenleiste und Inhalt. Das Wiki nutzt am großen Bildschirm die ganze Breite ohne App-Seitenleiste
-// (auf dem Handy bleibt die untere Leiste); alle anderen Seiten behalten die begrenzte Breite mit Seitenleiste.
+// Rahmen um Seitenleiste und Inhalt. Das Wiki nutzt am großen Bildschirm viel Breite ohne App-Seitenleiste, aber nicht alles:
+// Seitenränder und Höchstbreite setzt wiki-shell.tsx (auf dem Handy bleibt die untere Leiste); alle anderen Seiten behalten
+// die begrenzte Breite mit Seitenleiste.
 export function AppFrame({ sidebar, children }: { sidebar: React.ReactNode; children: React.ReactNode }) {
   const wide = /^\/wiki(\/|$)/.test(usePathname());
   return (
