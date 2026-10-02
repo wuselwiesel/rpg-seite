@@ -28,6 +28,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
+import { ModeTheme } from "@/components/mode-theme";
 import { MobileMain } from "@/components/mobile-main";
 import { OfflineBanner } from "@/components/offline-banner";
 import { KeyboardFix } from "@/components/keyboard-fix";
@@ -130,6 +131,7 @@ try {
   var palette = localStorage.getItem('palette');
   if (palette) document.documentElement.setAttribute('data-palette', palette);
 } catch (e) {}
+if (location.pathname.indexOf('/redaktion') === 0) document.documentElement.setAttribute('data-mode', 'redaktion');
 `;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -145,6 +147,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
+        <ModeTheme />
         <ServiceWorkerRegister />
         <PushSync />
         <WikiPreviewLayer />

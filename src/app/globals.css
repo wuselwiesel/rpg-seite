@@ -985,3 +985,35 @@ html.kb-open .mobile-bottom-nav {
 @media (prefers-reduced-motion: reduce) {
   .menu-pop, .feed-in { animation: none; }
 }
+
+/* Redaktion: eigenes, nüchternes Zeitungs-Schema (Papiergrau, Tintenschwarz, Redaktionsrot) - überschreibt die gewählte Palette. */
+html[data-mode="redaktion"] {
+  --app: #f3f3f0;
+  --surface: #ffffff;
+  --surface-2: #e9e9e4;
+  --surface-3: #e3e6ee;
+  --line: #d6d6d0;
+  --fg: #1f2125;
+  --fg-soft: #43464d;
+  --muted: #5c6068;
+  --accent: #b3261e;
+  --accent-strong: #1f2937;
+  --on-accent-strong: #ffffff;
+  --chip: #d9dde6;
+  --on-chip: #1f2937;
+}
+html[data-mode="redaktion"].dark {
+  --app: #121316;
+  --surface: #1b1c20;
+  --surface-2: #25272c;
+  --surface-3: #2a2c33;
+  --line: #34363d;
+  --fg: #eceae6;
+  --fg-soft: #cfcdc8;
+  --muted: #a3a3a8;
+  --accent: #ff8a80;
+  --accent-strong: #e8e6e1;
+  --on-accent-strong: #17181b;
+  --chip: #3a3d46;
+  --on-chip: #eceae6;
+}
