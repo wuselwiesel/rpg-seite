@@ -10,6 +10,7 @@ import { getAcceptedFriends } from "@/lib/friends";
 import { createNotification } from "@/lib/notifications";
 import { isAllowedGifUrl } from "@/lib/gif";
 import { getAllMentionableCharacters } from "@/lib/redaktion";
+import { parseProfileFields } from "@/lib/profile-fields";
 import { fetchRedaktionPage } from "@/lib/redaktion-feed";
 import type { RedaktionFeedPost, RedaktionFilters } from "@/lib/redaktion-feed-types";
 
@@ -293,17 +294,7 @@ export async function saveRedaktionProfile(_prevState: string | null, formData: 
   const accent = String(formData.get("theme_accent") ?? "").trim();
   const bg = String(formData.get("theme_bg") ?? "").trim();
 
-  const icons = formData.getAll("field_icon").map(String);
-  const titles = formData.getAll("field_title").map(String);
-  const texts = formData.getAll("field_text").map(String);
-  const fields = titles
-    .map((title, i) => ({
-      icon: Array.from((icons[i] ?? "").trim()).slice(0, 2).join(""),
-      title: title.trim().slice(0, 40),
-      text: (texts[i] ?? "").trim().slice(0, 300),
-    }))
-    .filter((f) => f.title && f.text)
-    .slice(0, 12);
+  const fields = parseProfileFields(formData);
 
   const pinned = Array.from(new Set(formData.getAll("pinned").map(String))).slice(0, 3);
   if (pinned.length > 0) {

@@ -1,17 +1,14 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { saveRedaktionProfile } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { ProfileThemeFields } from "@/components/profile-theme-fields";
-import type { RedaktionProfile, RedaktionProfileField } from "@/lib/types";
+import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
+import type { RedaktionProfile } from "@/lib/types";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent";
-const MAX_FIELDS = 12;
 const MAX_PINNED = 3;
-
-type Row = RedaktionProfileField & { key: number };
 
 export function EditRedaktionProfileForm({
   name,
@@ -25,24 +22,8 @@ export function EditRedaktionProfileForm({
   postChoices: { id: string; label: string }[];
 }) {
   const [error, formAction, pending] = useActionState(saveRedaktionProfile, null);
-  const [nextKey, setNextKey] = useState((initial?.custom_fields.length ?? 0) + 1);
-  const [rows, setRows] = useState<Row[]>(() => (initial?.custom_fields ?? []).map((f, i) => ({ ...f, key: i })));
   const [pinned, setPinned] = useState<string[]>(initial?.pinned_post_ids ?? []);
   const [bio, setBio] = useState(initial?.bio ?? "");
-
-  function update(key: number, patch: Partial<RedaktionProfileField>) {
-    setRows((r) => r.map((row) => (row.key === key ? { ...row, ...patch } : row)));
-  }
-
-  function move(index: number, dir: -1 | 1) {
-    setRows((r) => {
-      const target = index + dir;
-      if (target < 0 || target >= r.length) return r;
-      const copy = [...r];
-      [copy[index], copy[target]] = [copy[target], copy[index]];
-      return copy;
-    });
-  }
 
   function togglePinned(id: string) {
     setPinned((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= MAX_PINNED ? p : [...p, id]));
@@ -90,80 +71,7 @@ export function EditRedaktionProfileForm({
             gespeichert.
           </p>
         </div>
-        {rows.map((row, i) => (
-          <div key={row.key} className="flex flex-col gap-2 rounded-xl border border-line p-3">
-            <div className="flex gap-2">
-              <input
-                name="field_icon"
-                value={row.icon}
-                onChange={(e) => update(row.key, { icon: e.target.value })}
-                placeholder="🙂"
-                aria-label="Symbol"
-                className={`w-14 text-center ${field}`}
-              />
-              <input
-                name="field_title"
-                value={row.title}
-                maxLength={40}
-                onChange={(e) => update(row.key, { title: e.target.value })}
-                placeholder="Titel"
-                aria-label="Titel"
-                className={`min-w-0 flex-1 ${field}`}
-              />
-              <div className="flex shrink-0 items-center">
-                <button
-                  type="button"
-                  onClick={() => move(i, -1)}
-                  disabled={i === 0}
-                  aria-label="Nach oben"
-                  className="rounded p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-30"
-                >
-                  <ArrowUp className="h-4 w-4" strokeWidth={2} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => move(i, 1)}
-                  disabled={i === rows.length - 1}
-                  aria-label="Nach unten"
-                  className="rounded p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-30"
-                >
-                  <ArrowDown className="h-4 w-4" strokeWidth={2} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRows((r) => r.filter((x) => x.key !== row.key))}
-                  aria-label="Feld entfernen"
-                  className="rounded p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500"
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={2} />
-                </button>
-              </div>
-            </div>
-            <textarea
-              name="field_text"
-              rows={2}
-              maxLength={300}
-              value={row.text}
-              onChange={(e) => update(row.key, { text: e.target.value })}
-              placeholder="Inhalt"
-              aria-label="Inhalt"
-              className={field}
-            />
-          </div>
-        ))}
-        {rows.length < MAX_FIELDS && (
-          <button
-            type="button"
-            onClick={() => {
-              setRows((r) => [...r, { icon: "", title: "", text: "", key: nextKey }]);
-              setNextKey((k) => k + 1);
-            }}
-            className="flex w-fit items-center gap-1.5 rounded-md bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:text-fg"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Feld hinzufügen
-          </button>
-        )}
+        <ProfileFieldsEditor initial={initial?.custom_fields ?? []} />
       </section>
 
       <section className="flex flex-col gap-3">

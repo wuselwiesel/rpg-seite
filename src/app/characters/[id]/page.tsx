@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AtSign, ChevronDown, Clock, Grid3x3, Images, MessageCircle, Pencil, Pin } from "lucide-react";
+import { AtSign, ChevronDown, Clock, Grid3x3, Images, MessageCircle, Pencil, Pin, Rows3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { getActiveCharacter } from "@/lib/active-character";
+import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
+import { POST_SELECT, toFeedPost } from "@/lib/feed";
+import { SocialPostCard } from "@/components/social-post-card";
 import { FollowButton } from "@/components/follow-button";
 import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
@@ -19,7 +21,7 @@ export default async function CharacterProfilePage({
   searchParams,
 }: PageProps<"/characters/[id]">) {
   const { id } = await params;
-  const { tab: tabParam } = await searchParams;
+  const { tab: tabParam, ansicht } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,11 +39,12 @@ export default async function CharacterProfilePage({
 
   const isOwnerView = character.owner_id === user.id;
   const tab = tabParam === "tagged" ? "tagged" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
+  const listView = ansicht === "liste";
   const nowIso = new Date().toISOString();
 
   let postsQuery = supabase
     .from("posts")
-    .select("*, characters!posts_character_id_fkey(*), comments(count), reactions(emoji, character_id)")
+    .select(POST_SELECT)
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false });
   if (tab === "tagged") {
@@ -57,6 +60,7 @@ export default async function CharacterProfilePage({
   } else {
     postsQuery = postsQuery.eq("character_id", id).lte("publish_at", nowIso);
   }
+  if (listView) postsQuery = postsQuery.limit(30);
 
   const [{ data: posts }, { count: publishedCount }, activeWorld] = await Promise.all([
     postsQuery.returns<Post[]>(),
@@ -69,6 +73,9 @@ export default async function CharacterProfilePage({
   ]);
 
   const activeCharacter = activeWorld ? await getActiveCharacter(user.id, activeWorld.id) : null;
+  const myCharacters = activeWorld
+    ? (await getOwnCharacters(user.id, activeWorld.id)).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
+    : [];
 
   const [{ data: activeStories }, { data: highlightRows }] = await Promise.all([
     supabase
@@ -126,105 +133,127 @@ export default async function CharacterProfilePage({
     }))
     .filter((g) => g.stories.length > 0);
 
+  const profileHref = (tabId: string, list: boolean) => {
+    const q = new URLSearchParams();
+    if (tabId !== "posts") q.set("tab", tabId);
+    if (list) q.set("ansicht", "liste");
+    const qs = q.toString();
+    return `/characters/${id}${qs ? `?${qs}` : ""}`;
+  };
+
   const buttonBase = "flex flex-1 whitespace-nowrap items-center justify-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition";
 
   return (
     <ProfileThemeWrapper
       theme={{ font: character.theme_font, accent: character.theme_accent, bg: character.theme_bg }}
     >
-      <div className="mx-auto max-w-[935px] px-4 pt-6 sm:pt-10">
-        <header className="flex gap-5 sm:gap-20">
-          <div className="shrink-0 sm:px-6">
-            {(() => {
-              const avatar = (
-                <div className="h-[80px] w-[80px] overflow-hidden rounded-full bg-surface-2 sm:h-[150px] sm:w-[150px]">
-                  {character.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={character.avatar_url} alt={character.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-3xl font-semibold sm:text-6xl">
-                      {character.name.charAt(0).toUpperCase()}
-                    </div>
+      <div className="mx-auto max-w-[935px] sm:px-4 sm:pt-6">
+        <div className="h-32 overflow-hidden bg-gradient-to-br from-accent/40 to-accent-strong/40 sm:h-52 sm:rounded-2xl">
+          {character.banner_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={character.banner_url} alt="" className="h-full w-full object-cover" />
+          )}
+        </div>
+
+        <div className="px-4 sm:px-6">
+        <header>
+          <div className="-mt-12 flex items-end gap-4 sm:-mt-16">
+            <div className="shrink-0">
+              {(() => {
+                const avatar = (
+                  <div className="h-[88px] w-[88px] overflow-hidden rounded-full bg-surface-2 sm:h-[128px] sm:w-[128px]">
+                    {character.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={character.avatar_url} alt={character.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-3xl font-semibold sm:text-5xl">
+                        {character.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                );
+                return (
+                  <div className="relative">
+                    {storyGroups.length > 0 ? (
+                      <StoryLauncher groups={storyGroups} ringWidth={3} label="Story ansehen" viewerCharacterId={activeCharacter?.id}>
+                        {avatar}
+                      </StoryLauncher>
+                    ) : (
+                      <div className="rounded-full bg-app p-[4px]">{avatar}</div>
+                    )}
+                    {isActiveProfile && (
+                      <Link
+                        href="/stories/new"
+                        aria-label="Neue Story erstellen"
+                        className="absolute bottom-0.5 right-0.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong sm:bottom-2 sm:right-2 sm:h-8 sm:w-8"
+                      >
+                        <Plus className="h-4 w-4" strokeWidth={3} />
+                      </Link>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="ml-auto hidden gap-2 pb-1 sm:flex">
+              {isActiveProfile ? (
+                <Link href={`/characters/${character.id}/edit`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                  Profil bearbeiten
+                </Link>
+              ) : (
+                <>
+                  {activeCharacter && activeWorld?.id === character.world_id && (
+                    <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
                   )}
-                </div>
-              );
-              return (
-                <div className="relative">
-                  {storyGroups.length > 0 ? (
-                    <StoryLauncher groups={storyGroups} ringWidth={3} label="Story ansehen" viewerCharacterId={activeCharacter?.id}>
-                      {avatar}
-                    </StoryLauncher>
-                  ) : (
-                    <div className="rounded-full p-[3px]">
-                      <div className="rounded-full bg-app p-[3px]">{avatar}</div>
-                    </div>
-                  )}
-                  {isActiveProfile && (
-                    <Link
-                      href="/stories/new"
-                      aria-label="Neue Story erstellen"
-                      className="absolute bottom-0.5 right-0.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong sm:bottom-2 sm:right-2 sm:h-8 sm:w-8"
-                    >
-                      <Plus className="h-4 w-4" strokeWidth={3} />
+                  {canMessage && (
+                    <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
+                      <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
+                      Nachricht
                     </Link>
                   )}
+                  {isOwn && (
+                    <Link href={`/characters/${character.id}/edit`} aria-label="Bearbeiten" className={`${buttonBase} flex-none bg-surface-2 text-fg hover:bg-surface-3`}>
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                    </Link>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}</h1>
+          <p className="text-sm text-muted">
+            {character.username ? `@${character.username}` : isOwn ? "kein.nutzername" : null}
+            {character.worlds?.name && <>{character.username || isOwn ? " · " : ""}in {character.worlds.name}</>}
+          </p>
+
+          <div className="mt-4 flex gap-6 text-sm text-fg-soft">
+            <span><b className="font-semibold text-fg">{publishedCount ?? 0}</b> {publishedCount === 1 ? "Beitrag" : "Beiträge"}</span>
+            <Link href={`/characters/${character.id}/follows?tab=followers`} className="hover:opacity-70"><b className="font-semibold text-fg">{followerCount ?? 0}</b> Follower</Link>
+            <Link href={`/characters/${character.id}/follows?tab=following`} className="hover:opacity-70"><b className="font-semibold text-fg">{followingCount ?? 0}</b> Gefolgt</Link>
+          </div>
+
+          {character.status_text && (
+            <p className="mt-3 inline-block rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft">{character.status_text}</p>
+          )}
+
+          {character.bio && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg">{character.bio}</p>}
+
+          {(character.custom_fields?.length ?? 0) > 0 && (
+            <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+              {character.custom_fields!.map((f, i) => (
+                <div key={i} className="rounded-xl bg-surface-2 px-3 py-2.5">
+                  <dt className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                    {f.icon && <span aria-hidden>{f.icon}</span>}
+                    {f.title}
+                  </dt>
+                  <dd className="mt-0.5 whitespace-pre-wrap break-words text-sm text-fg">{f.text}</dd>
                 </div>
-              );
-            })()}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <h1 className="truncate text-xl font-normal text-fg">
-                {character.username ?? (isOwn ? "kein.nutzername" : character.name)}
-              </h1>
-              <div className="hidden w-full gap-2 sm:flex sm:w-auto">
-                {isActiveProfile ? (
-                  <Link href={`/characters/${character.id}/edit`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
-                    <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-                    Profil bearbeiten
-                  </Link>
-                ) : (
-                  <>
-                    {activeCharacter && activeWorld?.id === character.world_id && (
-                      <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
-                    )}
-                    {canMessage && (
-                      <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
-                        <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
-                        Nachricht
-                      </Link>
-                    )}
-                    {isOwn && (
-                      <Link href={`/characters/${character.id}/edit`} aria-label="Bearbeiten" className={`${buttonBase} flex-none bg-surface-2 text-fg hover:bg-surface-3`}>
-                        <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-                      </Link>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-3 flex justify-between gap-2 text-center text-sm sm:mt-4 sm:justify-start sm:gap-8 sm:text-left sm:text-base">
-              <span className="flex flex-col sm:block"><b className="font-semibold">{publishedCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">{publishedCount === 1 ? "Beitrag" : "Beiträge"}</span></span>
-              <Link href={`/characters/${character.id}/follows?tab=followers`} className="flex flex-col hover:opacity-70 sm:block"><b className="font-semibold">{followerCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">Follower</span></Link>
-              <Link href={`/characters/${character.id}/follows?tab=following`} className="flex flex-col hover:opacity-70 sm:block"><b className="font-semibold">{followingCount ?? 0}</b> <span className="text-fg-soft sm:text-fg">Gefolgt</span></Link>
-            </div>
-
-            <div className="mt-4 hidden text-sm sm:block">
-              <p className="font-semibold">{character.name}</p>
-              {character.worlds?.name && <p className="text-muted">in {character.worlds.name}</p>}
-              {character.bio && <p className="mt-1 whitespace-pre-line">{character.bio}</p>}
-            </div>
-          </div>
+              ))}
+            </dl>
+          )}
         </header>
-
-        <div className="mt-4 text-sm sm:hidden">
-          <p className="font-semibold">{character.name}</p>
-          {character.username && <p className="text-muted">@{character.username}</p>}
-          {character.worlds?.name && <p className="text-muted">in {character.worlds.name}</p>}
-          {character.bio && <p className="mt-1 whitespace-pre-line">{character.bio}</p>}
-        </div>
 
         <div className="mt-4 flex gap-2 sm:hidden">
           {isActiveProfile ? (
@@ -301,6 +330,8 @@ export default async function CharacterProfilePage({
           </details>
         )}
 
+        </div>
+
         <div className="mt-6 flex justify-center gap-2 border-t border-line sm:gap-6">
           {[
             { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
@@ -311,7 +342,7 @@ export default async function CharacterProfilePage({
             .map(({ id: tabId, label, icon: Icon }) => (
               <Link
                 key={tabId}
-                href={tabId === "posts" ? `/characters/${id}` : `/characters/${id}?tab=${tabId}`}
+                href={profileHref(tabId, listView)}
                 replace
                 scroll={false}
                 aria-current={tab === tabId ? "page" : undefined}
@@ -325,7 +356,43 @@ export default async function CharacterProfilePage({
             ))}
         </div>
 
-        {posts?.length ? (
+        <div className="flex justify-end gap-1 px-3 pt-2 sm:px-0" role="group" aria-label="Ansicht">
+          <Link
+            href={profileHref(tab, false)}
+            replace
+            scroll={false}
+            aria-label="Raster"
+            aria-current={!listView ? "true" : undefined}
+            className={`rounded-md p-1.5 transition ${!listView ? "bg-surface-2 text-fg" : "text-muted hover:text-fg"}`}
+          >
+            <Grid3x3 className="h-4 w-4" strokeWidth={2} />
+          </Link>
+          <Link
+            href={profileHref(tab, true)}
+            replace
+            scroll={false}
+            aria-label="Liste"
+            aria-current={listView ? "true" : undefined}
+            className={`rounded-md p-1.5 transition ${listView ? "bg-surface-2 text-fg" : "text-muted hover:text-fg"}`}
+          >
+            <Rows3 className="h-4 w-4" strokeWidth={2} />
+          </Link>
+        </div>
+
+        {posts?.length && listView && activeCharacter && activeWorld ? (
+          <div className="mx-auto max-w-[470px] px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
+            {posts.map((post, i) => (
+              <SocialPostCard
+                key={post.id}
+                post={toFeedPost(post, activeCharacter.id, activeWorld.id)}
+                activeCharacterId={activeCharacter.id}
+                myCharacters={myCharacters}
+                tagHrefBase="/"
+                priority={i === 0}
+              />
+            ))}
+          </div>
+        ) : posts?.length ? (
           <div className="grid grid-cols-3 gap-[3px] pb-24 sm:gap-1 lg:pb-10">
             {posts.map((post) => {
               const image = post.media_type === "image" ? post.media_url : post.media_type ? null : firstImageSrc(post.content);

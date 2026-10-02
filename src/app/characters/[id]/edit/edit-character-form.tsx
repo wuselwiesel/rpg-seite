@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { updateCharacter } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { ProfileThemeFields } from "@/components/profile-theme-fields";
+import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import type { Character } from "@/lib/types";
 
 export function EditCharacterForm({
@@ -55,6 +56,21 @@ export function EditCharacterForm({
           initialUrl={character.avatar_url}
         />
       </div>
+      <div className="flex flex-col gap-1 text-sm text-fg-soft">
+        Banner (optional)
+        <AvatarUpload name="banner_url" displayName={name || "?"} initialUrl={character.banner_url} variant="cover" />
+      </div>
+      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+        Status-Zeile (optional)
+        <input
+          type="text"
+          name="status_text"
+          maxLength={80}
+          defaultValue={character.status_text ?? ""}
+          placeholder="z. B. 🌙 unterwegs im Nebelhafen"
+          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+        />
+      </label>
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Kurzbeschreibung (optional)
         <textarea
@@ -64,6 +80,13 @@ export function EditCharacterForm({
           className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
         />
       </label>
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-fg">Eigene Felder</p>
+        <p className="text-xs text-muted">
+          Zum Beispiel „Alter“, „Beruf“ oder „Lieblingsort“. Felder ohne Titel oder Inhalt werden nicht gespeichert.
+        </p>
+        <ProfileFieldsEditor initial={character.custom_fields ?? []} />
+      </div>
       <ProfileThemeFields
         name={name}
         avatarUrl={character.avatar_url}

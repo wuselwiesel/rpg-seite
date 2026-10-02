@@ -1,5 +1,6 @@
 "use server";
 
+import { parseProfileFields } from "@/lib/profile-fields";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -132,6 +133,11 @@ export async function updateCharacter(
   const themeFont = String(formData.get("theme_font") ?? "").trim();
   const themeAccent = String(formData.get("theme_accent") ?? "").trim();
   const themeBg = String(formData.get("theme_bg") ?? "").trim();
+  const statusText = String(formData.get("status_text") ?? "").trim().slice(0, 80);
+  const customFields = parseProfileFields(formData);
+  const storage = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`;
+  const bannerRaw = String(formData.get("banner_url") ?? "").trim();
+  const bannerUrl = bannerRaw.startsWith(storage) ? bannerRaw : null;
 
   const supabase = await createClient();
   const {
@@ -162,6 +168,9 @@ export async function updateCharacter(
       theme_accent: themeAccent || null,
       theme_bg: themeBg || null,
       bio: bio || null,
+      status_text: statusText || null,
+      banner_url: bannerUrl,
+      custom_fields: customFields,
       house: house || null,
       gender,
       species,

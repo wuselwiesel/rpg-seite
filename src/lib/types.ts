@@ -39,6 +39,9 @@ export type Character = {
   theme_bg?: string | null;
   house?: string | null;
   avatar_url: string | null;
+  banner_url?: string | null;
+  status_text?: string | null;
+  custom_fields?: { icon: string; title: string; text: string }[];
   bio: string | null;
   sheet_url: string | null;
   gender?: CharacterGender | null;
