@@ -64,6 +64,10 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 ## Beziehungsnetz: eigene Daten (live)
 - Jeder Verlaufsschritt hat ein frei wählbares Datum „gilt seit“ (`relationship_history.occurred_on`, sonst Tag des Anlegens). Beim Anlegen („Seit wann?“) und Weiterentwickeln („Gilt seit“) per Datumsfeld; bestehende Schritte nachträglich über das Stift-Symbol im Reiter „Verlauf“ (Datum + Notiz, RPC `update_relationship_step`). Der Trigger übernimmt `character_relationships.change_date` in den Verlauf. Die Zeitleiste im Netz (`relationshipsAsOf`) und die Sortierung nutzen das Datum (`stepDate`/`stepTime`/`compareSteps` in `lib/relationship-graph.ts`). Migration `supabase/migration_relationship_dates.sql` im SQL-Editor **ausgeführt**.
 
+## Fehlerbehebungen und Fenster-Farbe (live)
+- Wiki-Seiten, in deren Text ein anderer Wiki-Begriff vorkam (z. B. „Vampire“ ↔ „Werwölfe“), stürzten ab: `autolinkHtml` (`lib/autolink.ts`) hatte ohne Hashtag-Modus nur eine Regex-Gruppe, wodurch im `replace`-Callback die Trefferposition statt des Begriffs ankam (`trim is not a function`). Jetzt haben beide Alternativen immer genau eine Gruppe (Platzhalter `(?!)()`); Tests in `lib/autolink.test.ts`.
+- Titelleiste der installierten App (und Statusleiste am Handy): `theme-color` folgt der Seitenfarbe (`components/theme-color-sync.tsx`, Manifest `theme_color` = Hintergrund), statt des rosa Akzents. Die Leiste selbst (App-Name, Menü) gehört dem Browser; ganz ausblenden ginge nur mit „Window Controls Overlay“ (Manifest `display_override`), bisher nicht gebaut.
+
 ## Wiki-Rechte (live)
 - Jedes Mitglied der Welt darf jeden Wiki-Eintrag bearbeiten (RLS-Policy `wiki_pages_update_member`, `supabase/migration_wiki_edit_all.sql`, im SQL-Editor **ausgeführt**; Bearbeiten-Knopf in `wiki/[id]/page.tsx` immer sichtbar). Löschen weiterhin nur Ersteller:in und Welt-Besitzer:in (`wiki_pages_delete_own_or_world_owner`).
 

@@ -31,13 +31,15 @@ export function autolinkHtml(
   const byLower = new Map<string, WikiTerm>();
   for (const n of names) if (!byLower.has(n.name.toLowerCase())) byLower.set(n.name.toLowerCase(), n.entry);
   const terms = names;
-  const parts: string[] = [];
-  if (options.tagHref) parts.push("(?<![\\p{L}\\p{N}_&])#([\\p{L}\\p{N}_]+)");
-  if (terms.length) {
-    parts.push(`(?<![\\p{L}\\p{N}_])(${Array.from(byLower.keys()).sort((a, b) => b.length - a.length).map(escapeRegex).join("|")})(?![\\p{L}\\p{N}_])`);
-  }
-  if (parts.length === 0) return html;
-  const regex = new RegExp(parts.join("|"), "giu");
+  if (!options.tagHref && terms.length === 0) return html;
+  // Beide Alternativen haben immer genau eine Gruppe (Hashtag, Begriff). Fehlt eine, steht ein nie passender
+  // Platzhalter "(?!)()" an ihrer Stelle – sonst verschieben sich die Callback-Argumente (Gruppe 1 wäre dann der Begriff).
+  const NEVER = "(?!)()";
+  const tagPart = options.tagHref ? "(?<![\\p{L}\\p{N}_&])#([\\p{L}\\p{N}_]+)" : NEVER;
+  const termPart = terms.length
+    ? `(?<![\\p{L}\\p{N}_])(${Array.from(byLower.keys()).sort((a, b) => b.length - a.length).map(escapeRegex).join("|")})(?![\\p{L}\\p{N}_])`
+    : NEVER;
+  const regex = new RegExp(`${tagPart}|${termPart}`, "giu");
   const linked = new Set<string>();
 
   let anchorDepth = 0;

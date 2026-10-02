@@ -32,6 +32,7 @@ import { ModeTheme } from "@/components/mode-theme";
 import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
 import { AppLogoSync } from "@/components/app-logo-sync";
 import { SelectionCookieKeeper } from "@/components/selection-cookie-keeper";
+import { ThemeColorSync } from "@/components/theme-color-sync";
 import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { getEmojiMap } from "@/lib/custom-emoji-server";
 import { getAccountDefaultFont } from "@/lib/default-font-server";
@@ -122,7 +123,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#a6646b",
+  themeColor: "#fbf5f0",
   // Ohne "cover" bleibt env(safe-area-inset-bottom) wirkungslos (0) und die untere Leiste
   // sitzt beim Scrollen nicht bündig am echten Bildschirmrand, sondern wirkt "hochgerutscht".
   viewportFit: "cover",
@@ -163,6 +164,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ModeTheme />
         <AppLogoSync />
         <SelectionCookieKeeper />
+        <ThemeColorSync />
         <DefaultFontSync loggedIn={accountFont.loggedIn} accountFontId={accountFont.fontId} />
         <ServiceWorkerRegister />
         <PushSync />
