@@ -8,6 +8,9 @@ export type PageRow = {
   parent_page_id: string | null;
   lead?: string | null;
   page_type?: string | null;
+  tags?: string[] | null;
+  is_draft?: boolean;
+  created_at?: string;
   cover_image_url?: string | null;
   updated_at?: string;
   created_by?: string | null;

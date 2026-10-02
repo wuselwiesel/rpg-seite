@@ -24,12 +24,15 @@ export function WikiForm({
   parentChoices,
   linkTargets,
   defaults,
+  canSetDraft = true,
 }: {
   page?: WikiPage;
   folders: FolderOption[];
   parentChoices: PageOption[];
   linkTargets: { id: string; title: string }[];
   defaults?: { title?: string; folder?: string; parent?: string; type?: string };
+  // Entwurf nur für die, die die Seite angelegt haben.
+  canSetDraft?: boolean;
 }) {
   const action = page ? updateWikiPage.bind(null, page.id) : createWikiPage;
   const [error, formAction, pending] = useActionState(action, null);
@@ -39,6 +42,7 @@ export function WikiForm({
     title: defaults?.title ?? "",
     lead: "",
     aliases: "",
+    tags: "",
     content: "",
   });
   const [parent, setParent] = useState(page?.parent_page_id ?? defaults?.parent ?? "");
@@ -238,6 +242,30 @@ export function WikiForm({
           Kommen diese Wörter in Beiträgen oder Szenen vor, werden sie automatisch mit dieser Seite verlinkt (mit Kommas trennen).
         </span>
       </label>
+
+      <label className={`${card} gap-1 text-sm text-fg-soft`}>
+        Tags (optional)
+        <input
+          type="text"
+          name="tags"
+          {...(isNew
+            ? { value: draft.tags ?? "", onChange: (e: React.ChangeEvent<HTMLInputElement>) => update({ tags: e.target.value }) }
+            : { defaultValue: page?.tags?.join(", ") })}
+          placeholder="z. B. Magie, Küste, Alte Zeit"
+          className={input}
+        />
+        <span className="text-xs text-muted">Stichwörter, mit Kommas getrennt. Über sie findet man Seiten aus verschiedenen Ordnern zusammen.</span>
+      </label>
+
+      {canSetDraft && (
+        <label className={`${card} flex-row items-start gap-3 text-sm text-fg-soft`}>
+          <input type="checkbox" name="is_draft" defaultChecked={Boolean(page?.is_draft)} className="mt-1 h-4 w-4 accent-[var(--accent)]" />
+          <span>
+            <span className="font-medium text-fg">Entwurf</span>
+            <span className="block text-xs text-muted">Nur du siehst die Seite. Mit „Veröffentlichen“ auf der Seite sehen sie alle in der Welt.</span>
+          </span>
+        </label>
+      )}
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

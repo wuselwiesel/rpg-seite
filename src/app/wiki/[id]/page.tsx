@@ -8,7 +8,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
 import { getWikiTerms } from "@/lib/wiki-terms";
-import { getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
+import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
 import { buildWikiTree, folderPath, pageAncestors, type TreePage } from "@/lib/wiki-tree";
 import { findBacklinks } from "@/lib/wiki-links";
 import { addHeadingIds } from "@/lib/wiki-html";
@@ -20,6 +20,8 @@ import { WikiTypeBadge } from "@/components/wiki-type-icon";
 import { PageCard } from "../wiki-cards";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { DeleteWikiPageButton } from "./delete-wiki-page-button";
+import { FavoriteButton } from "./favorite-button";
+import { PublishButton } from "./publish-button";
 
 export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[id]">) {
   const { id } = await params;
@@ -39,11 +41,12 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
       : (await supabase.from("worlds").select("created_by").eq("id", page.world_id).maybeSingle()).data?.created_by;
   const canDelete = page.created_by === user.id || worldOwnerId === user.id;
 
-  const [wikiTerms, folders, pageRows, linkPages] = await Promise.all([
+  const [wikiTerms, folders, pageRows, linkPages, favoriteIds] = await Promise.all([
     getWikiTerms(page.world_id),
     getWikiFolders(page.world_id),
     getWikiPageRows(page.world_id),
     getWikiLinkPages(page.world_id),
+    getWikiFavoriteIds(user.id),
   ]);
 
   const tree = buildWikiTree(folders, pageRows);
@@ -96,6 +99,15 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           <img src={page.cover_image_url} alt="" className="aspect-[2/1] max-h-[22rem] w-full rounded-2xl bg-surface-2 object-cover @3xl:aspect-[21/9]" />
         )}
 
+        {page.is_draft && (
+          <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-accent/60 bg-accent/5 px-4 py-3 text-sm text-fg-soft">
+            <span>
+              <strong className="font-semibold text-fg">Entwurf.</strong> Nur du siehst diese Seite, bis du sie veröffentlichst.
+            </span>
+            {page.created_by === user.id && <PublishButton wikiPageId={page.id} />}
+          </div>
+        )}
+
         <div className="flex items-start gap-4 @xl:gap-5">
           {!page.cover_image_url && <WikiTile id={page.id} title={page.title} size="lg" />}
           <div className="min-w-0 flex-1">
@@ -113,9 +125,25 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           </div>
         </div>
 
+        {(page.tags ?? []).length > 0 && (
+          <ul className="flex flex-wrap gap-1.5" aria-label="Tags">
+            {(page.tags ?? []).map((t) => (
+              <li key={t}>
+                <Link
+                  href={`/wiki/suche?tag=${encodeURIComponent(t)}`}
+                  className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs text-fg-soft transition hover:text-accent"
+                >
+                  #{t}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-y border-line py-2.5">
           <p className="text-xs text-muted">Zuletzt bearbeitet am {formatDateTime(page.updated_at)}</p>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            <FavoriteButton wikiPageId={page.id} initial={favoriteIds.includes(page.id)} />
             <Link
               href={`/wiki/${page.id}/edit`}
               className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:text-fg"

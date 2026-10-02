@@ -232,6 +232,9 @@ export type WikiPage = {
   cover_image_url?: string | null;
   gallery?: string[];
   page_type?: string | null;
+  tags?: string[];
+  // Entwurf: nur die Autorin sieht die Seite (Leseregel in der Datenbank).
+  is_draft?: boolean;
   // Steckbrief: Zeilen aus Symbol, Titel, Text (wie die Profilfelder).
   fields?: { icon: string; title: string; text: string }[];
   created_by: string;

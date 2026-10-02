@@ -150,3 +150,13 @@ Alles in `main` gemergt. Nicht im Browser getestet (nur `tsc`/ESLint/vitest).
 - Formular (`wiki/wiki-form.tsx`): Abschnitt „Art der Seite“ (Chips). Typ wählen füllt leeren Steckbrief mit den Feldern und einen leeren Text mit der Gliederung (Überschriften); Geschriebenes und ausgefüllte Felder werden nie ersetzt. `?type=` in `/wiki/new` wählt vorab. Server (`wiki/actions.ts`) speichert `page_type`.
 - Anzeige: Typ-Marke über dem Titel der Seite, auf `PageCard`, Symbol in der Seitenleiste und in den Suchtreffern. `PageRow`/`getWikiPageRows` enthalten `page_type`.
 - Browser-Test `e2e/wiki-form/` (Teil von `npm run test:e2e`; stubbt `next/navigation`, Aktionen, Uploads und `profile/emojis/actions`).
+
+### Agent B: Wiki Runde 3 – Tags, Entwürfe, Favoriten, Startseite, Suche
+- **DB (live per MCP, Datei `supabase/migration_wiki_tags_drafts_favorites.sql`, auch in `schema.sql`):** `wiki_pages.tags text[]` (GIN-Index), `wiki_pages.is_draft boolean`, Tabelle `wiki_favorites (user_id, page_id)` mit RLS (nur eigene Zeilen). Leseregel `wiki_pages_select_member` geändert: Mitglied der Welt **und** (kein Entwurf **oder** Autorin). Gegen die Live-DB geprüft (DO-Block mit Abbruch = Rollback): andere Person sieht Entwurf 0, Autorin 1.
+- **Wichtig:** Der Supabase-MCP hängt bei `DROP …` (Bestätigung kommt nie an, Timeout). Darum wurde die Regel per `ALTER POLICY` geändert; die vorher angelegte Kopie `wiki_pages_select_visible` (gleicher Inhalt) steht noch in der Live-DB und ist harmlos; man kann sie im SQL-Editor löschen: `drop policy "wiki_pages_select_visible" on public.wiki_pages;`.
+- Tags: `lib/wiki-tags.ts` (`parseTags`, `tagCounts`, `hasTag`, Tests); Feld im Formular, Chips auf der Seite (führen zur Suche), Tag-Wolke auf der Startseite.
+- Entwürfe: Schalter im Formular (nur für die, die die Seite angelegt haben; Server ignoriert die Änderung bei anderen, damit niemand fremde Seiten verstecken kann), Banner mit „Veröffentlichen“ (`publishWikiPage`), „Meine Entwürfe“ auf der Startseite, Marke in Seitenleiste und Karten.
+- Favoriten: Stern auf der Seite (`[id]/favorite-button.tsx`, `toggleWikiFavorite`), Abschnitt „Favoriten“ auf der Startseite.
+- Startseite (`wiki/page.tsx`): Suchfeld, „Zufällige Seite“ (`wiki/zufall/route.ts`), Entwürfe, Favoriten, Nach Art, Ordner, Zuletzt bearbeitet, Neu im Wiki, Tags, Fehlende Artikel.
+- Suche mit Filtern: `/wiki/suche` (`lib/wiki-search.ts`, Tests): Text in Titel, Alternativnamen, Kurztext und Artikeltext, Filter Art, Tag, Ordner (samt Unterordnern); Link „Erweiterte Suche“ in der Seitenleiste.
+- Brotkrumen und Inhaltsverzeichnis gab es schon.
