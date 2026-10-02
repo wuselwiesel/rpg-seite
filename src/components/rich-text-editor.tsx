@@ -53,13 +53,23 @@ function ToolbarButton({
   );
 }
 
-function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSelection?: boolean }) {
+function Toolbar({
+  editor,
+  allowFontSelection,
+  wikiPages,
+}: {
+  editor: Editor;
+  allowFontSelection?: boolean;
+  wikiPages?: { id: string; title: string }[];
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
   const [emojisOpen, setEmojisOpen] = useState(false);
   const [fontsOpen, setFontsOpen] = useState(false);
+  const [wikiOpen, setWikiOpen] = useState(false);
+  const [wikiQuery, setWikiQuery] = useState("");
   const [defaultFontId, setDefaultFontId] = useState<string | null>(loadDefaultFontId);
 
   // Ohne Markierung gilt die Wahl als Standard für neuen Text und wird gemerkt;
@@ -72,6 +82,16 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
       saveDefaultFontId(font?.id ?? null);
       setDefaultFontId(font?.id ?? null);
     }
+  }
+
+  // Fügt [[Titel]] ein; ist Text markiert, wird er zum Anzeigetext: [[Titel|markierter Text]].
+  function insertWikiLink(title: string) {
+    const { from, to, empty } = editor.state.selection;
+    const selected = empty ? "" : editor.state.doc.textBetween(from, to, " ").trim();
+    const token = selected && selected.toLowerCase() !== title.toLowerCase() ? `[[${title}|${selected}]]` : `[[${title}]]`;
+    editor.chain().focus().insertContent(token).run();
+    setWikiOpen(false);
+    setWikiQuery("");
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -230,6 +250,11 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
 
         <span className="mx-1 h-5 w-px bg-line" />
 
+        {wikiPages && (
+          <ToolbarButton label="Mit Wiki-Seite verlinken" active={wikiOpen} onClick={() => setWikiOpen((v) => !v)}>
+            [[ ]]
+          </ToolbarButton>
+        )}
         <ToolbarButton label="Link" active={editor.isActive("link")} onClick={setLink}>
           🔗
         </ToolbarButton>
@@ -266,6 +291,47 @@ function Toolbar({ editor, allowFontSelection }: { editor: Editor; allowFontSele
               editor.chain().focus().insertContent(token.startsWith(":") ? `${token} ` : token).run();
             }}
           />
+        </div>
+      )}
+      {wikiOpen && wikiPages && (
+        <div className="flex flex-col gap-2 rounded-xl bg-surface-2 p-2" role="group" aria-label="Wiki-Link einfügen">
+          <input
+            autoFocus
+            value={wikiQuery}
+            onChange={(e) => setWikiQuery(e.target.value)}
+            placeholder="Seite suchen oder neuen Titel eintippen"
+            aria-label="Wiki-Seite suchen"
+            className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+          />
+          <ul className="flex max-h-48 flex-col overflow-y-auto">
+            {wikiPages
+              .filter((p) => p.title.toLowerCase().includes(wikiQuery.trim().toLowerCase()))
+              .slice(0, 30)
+              .map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertWikiLink(p.title)}
+                    className="w-full rounded-md px-2 py-1.5 text-left text-sm text-fg transition hover:bg-surface"
+                  >
+                    {p.title}
+                  </button>
+                </li>
+              ))}
+            {wikiQuery.trim() && !wikiPages.some((p) => p.title.toLowerCase() === wikiQuery.trim().toLowerCase()) && (
+              <li>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => insertWikiLink(wikiQuery.trim())}
+                  className="w-full rounded-md px-2 py-1.5 text-left text-sm text-accent transition hover:bg-surface"
+                >
+                  „{wikiQuery.trim()}“ verlinken (Seite fehlt noch, roter Link)
+                </button>
+              </li>
+            )}
+          </ul>
         </div>
       )}
       {symbolsOpen && (
@@ -340,6 +406,7 @@ export function RichTextEditor({
   showToolbar = true,
   allowFontSelection = false,
   onSubmitKey,
+  wikiPages,
 }: {
   name: string;
   initialContent?: string;
@@ -353,6 +420,8 @@ export function RichTextEditor({
   allowFontSelection?: boolean;
   // Wenn gesetzt, schickt die Sende-Taste (Enter bzw. Strg/Cmd+Enter, siehe Einstellungen → Aussehen) den Text ab.
   onSubmitKey?: () => void;
+  // Wiki-Seiten zum Verlinken: zeigt in der Werkzeugleiste die Auswahl für [[Titel]].
+  wikiPages?: { id: string; title: string }[];
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
   const enterSends = useEnterSends();
@@ -423,7 +492,7 @@ export function RichTextEditor({
   return (
     <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
-      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} />}
+      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} wikiPages={wikiPages} />}
       <EditorContent editor={editor} />
     </div>
   );

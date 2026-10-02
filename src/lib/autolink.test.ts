@@ -39,3 +39,27 @@ describe("autolinkHtml", () => {
     expect(autolinkHtml("<p>Text</p>", {})).toBe("<p>Text</p>");
   });
 });
+
+describe("Wiki-Verlinkungen mit [[…]]", () => {
+  const wiki = [term("v", "Vampire"), term("h", "Die Hexen")];
+
+  it("verlinkt [[Titel]] und [[Titel|Anzeigetext]] auf vorhandene Seiten", () => {
+    const out = autolinkHtml("<p>Siehe [[Vampire]] und [[Hexen|die Magierinnen]].</p>", { wiki });
+    expect(out).toContain('href="/wiki/v"');
+    expect(out).toContain(">Vampire</a>");
+    expect(out).toContain('href="/wiki/h"');
+    expect(out).toContain(">die Magierinnen</a>");
+    expect(out).not.toContain("[[");
+  });
+
+  it("macht unbekannte Titel zu roten Links zum Anlegen", () => {
+    const out = autolinkHtml("<p>[[Daylight Ring]]</p>", { wiki });
+    expect(out).toContain('class="wiki-missing"');
+    expect(out).toContain("/wiki/new?title=Daylight%20Ring");
+  });
+
+  it("lässt Klammern in Links und ohne Begriffe unverändert", () => {
+    expect(autolinkHtml('<p><a href="/x">[[Vampire]]</a></p>', { wiki })).toContain("[[Vampire]]");
+    expect(autolinkHtml("<p>[[X]]</p>", {})).toBe("<p>[[X]]</p>");
+  });
+});

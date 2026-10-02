@@ -1028,3 +1028,15 @@ html[data-mode="redaktion"].dark {
   object-fit: contain;
   margin: 0 0.05em;
 }
+
+/* Wiki: Verweis auf eine Seite, die es noch nicht gibt (zum Anlegen). */
+a.wiki-missing,
+.wiki-missing-text {
+  color: #a8672a;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.dark a.wiki-missing,
+.dark .wiki-missing-text {
+  color: #e0a56a;
+}

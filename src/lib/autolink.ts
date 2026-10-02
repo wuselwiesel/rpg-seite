@@ -1,6 +1,9 @@
 // Verlinkt Wiki-Begriffe und #Hashtags im (bereits bereinigten) HTML eines Beitrags.
 // Arbeitet nur auf Textknoten und lässt Links und @-Erwähnungen unangetastet.
 
+import { BRACKET_LINK_SOURCE, escapeRegex, nameVariants } from "@/lib/wiki-links";
+
+// `category` ist die Beschriftung für die Vorschau (heute der Ordnername); ältere Schlüssel werden übersetzt.
 export type WikiTerm = { id: string; title: string; category: string; excerpt: string; aliases?: string[]; coverImageUrl?: string | null };
 
 const CATEGORY_LABELS: Record<string, string> = { ort: "Ort", npc: "NPC", fraktion: "Fraktion", sonstiges: "Sonstiges" };
@@ -9,23 +12,55 @@ function escapeAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function wikiAnchor(entry: WikiTerm, label: string): string {
+  return (
+    `<a class="wiki-link" href="/wiki/${entry.id}" data-wiki-title="${escapeAttr(entry.title)}"` +
+    ` data-wiki-cat="${escapeAttr(CATEGORY_LABELS[entry.category] ?? (entry.category || "Wiki"))}"` +
+    ` data-wiki-excerpt="${escapeAttr(entry.excerpt)}"` +
+    (entry.coverImageUrl ? ` data-wiki-cover="${escapeAttr(entry.coverImageUrl)}"` : "") +
+    `>${label}</a>`
+  );
+}
+
+// Ersetzt [[Titel]] und [[Titel|Anzeigetext]] in Textknoten durch Links; unbekannte Titel werden rote Links zum Anlegen.
+export function linkWikiBrackets(html: string, wiki: WikiTerm[] = []): string {
+  if (!html.includes("[[")) return html;
+  const byName = new Map<string, WikiTerm>();
+  for (const entry of wiki) for (const n of nameVariants(entry.title, entry.aliases)) if (!byName.has(n.toLowerCase())) byName.set(n.toLowerCase(), entry);
+  const re = new RegExp(BRACKET_LINK_SOURCE, "g");
+  let anchorDepth = 0;
+  return html
+    .split(/(<[^>]*>)/)
+    .map((segment) => {
+      if (segment.startsWith("<")) {
+        if (/^<a[\s>]/i.test(segment)) anchorDepth++;
+        else if (/^<\/a>/i.test(segment)) anchorDepth = Math.max(0, anchorDepth - 1);
+        return segment;
+      }
+      if (anchorDepth > 0 || !segment.includes("[[")) return segment;
+      return segment.replace(re, (_m, target: string, label?: string) => {
+        const name = target.trim();
+        const shown = (label ?? name).trim();
+        const entry = byName.get(name.toLowerCase());
+        if (entry) return wikiAnchor(entry, shown);
+        return `<a class="wiki-missing" href="/wiki/new?title=${encodeURIComponent(name)}" title="Noch keine Seite. Anlegen.">${shown}</a>`;
+      });
+    })
+    .join("");
 }
 
 export function autolinkHtml(
   html: string,
   options: { wiki?: WikiTerm[]; tagHref?: string; excludeWikiId?: string },
 ): string {
+  // [[…]] nur dort verlinken, wo das Wiki mitgegeben wird (Wiki-Seiten, Beiträge mit Verknüpfung), nicht in jedem Text.
+  if (options.wiki) html = linkWikiBrackets(html, options.wiki);
   // Jeder Eintrag ist unter seinem Titel, dem Titel ohne Artikel ("Die Kapelle von X" -> "Kapelle von X")
   // und seinen Alternativnamen auffindbar.
   const names: { name: string; entry: WikiTerm }[] = [];
   for (const entry of options.wiki ?? []) {
     if (entry.id === options.excludeWikiId) continue;
-    const title = entry.title.trim();
-    for (const name of [title, title.replace(/^(der|die|das|ein|eine)\s+/i, ""), ...(entry.aliases ?? [])]) {
-      if (name.trim().length >= 3) names.push({ name: name.trim(), entry });
-    }
+    for (const name of nameVariants(entry.title, entry.aliases)) names.push({ name, entry });
   }
   names.sort((a, b) => b.name.length - a.name.length);
   const byLower = new Map<string, WikiTerm>();
@@ -62,13 +97,7 @@ export function autolinkHtml(
         const entry = byLower.get((term ?? match).trim().toLowerCase());
         if (!entry || linked.has(entry.id)) return match;
         linked.add(entry.id);
-        return (
-          `<a class="wiki-link" href="/wiki/${entry.id}" data-wiki-title="${escapeAttr(entry.title)}"` +
-          ` data-wiki-cat="${escapeAttr(CATEGORY_LABELS[entry.category] ?? "Wiki")}"` +
-          ` data-wiki-excerpt="${escapeAttr(entry.excerpt)}"` +
-          (entry.coverImageUrl ? ` data-wiki-cover="${escapeAttr(entry.coverImageUrl)}"` : "") +
-          `>${match}</a>`
-        );
+        return wikiAnchor(entry, match);
       });
     })
     .join("");

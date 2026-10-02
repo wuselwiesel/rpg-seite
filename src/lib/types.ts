@@ -209,14 +209,30 @@ export type StoryPreview = {
 
 export type WikiCategory = "ort" | "npc" | "fraktion" | "sonstiges";
 
+export type WikiFolder = {
+  id: string;
+  world_id: string;
+  parent_id: string | null;
+  name: string;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type WikiPage = {
   id: string;
   world_id: string;
   category: WikiCategory;
+  folder_id?: string | null;
+  // Oberseite: macht diese Seite zur Unterseite.
+  parent_page_id?: string | null;
   title: string;
+  lead?: string | null;
   content: string;
   aliases?: string[];
   cover_image_url?: string | null;
+  gallery?: string[];
+  // Steckbrief: Zeilen aus Symbol, Titel, Text (wie die Profilfelder).
+  fields?: { icon: string; title: string; text: string }[];
   created_by: string;
   created_at: string;
   updated_at: string;

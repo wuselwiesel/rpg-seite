@@ -28,15 +28,22 @@ async function ensureLocationWikiPage(
 ) {
   const title = location?.trim();
   if (!title) return;
-  const { data: existing } = await supabase
-    .from("wiki_pages")
-    .select("title")
-    .eq("world_id", worldId)
-    .eq("category", "ort");
-  if ((existing ?? []).some((p) => p.title.toLowerCase() === title.toLowerCase())) return;
+  // Egal in welchem Ordner oder welcher Kategorie: gibt es eine Seite mit diesem Titel oder Alternativnamen, nichts anlegen.
+  const { data: existing } = await supabase.from("wiki_pages").select("title, aliases").eq("world_id", worldId);
+  const wanted = title.toLowerCase();
+  if (
+    (existing ?? []).some(
+      (p) => p.title.toLowerCase() === wanted || ((p.aliases as string[] | null) ?? []).some((a) => a.toLowerCase() === wanted),
+    )
+  )
+    return;
+  // Neue Orte landen im Ordner "Orte", falls es ihn gibt.
+  const { data: folders } = await supabase.from("wiki_folders").select("id, name").eq("world_id", worldId).is("parent_id", null);
+  const orte = (folders ?? []).find((f) => f.name.trim().toLowerCase() === "orte");
   await supabase.from("wiki_pages").insert({
     world_id: worldId,
     category: "ort",
+    folder_id: orte?.id ?? null,
     title,
     content: "",
     created_by: userId,

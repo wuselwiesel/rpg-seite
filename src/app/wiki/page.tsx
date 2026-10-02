@@ -1,121 +1,123 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { stripHtml } from "@/lib/strip-html";
-import type { WikiCategory, WikiPage } from "@/lib/types";
+import { getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
+import { buildWikiTree, folderPath } from "@/lib/wiki-tree";
+import { findMissingLinks } from "@/lib/wiki-links";
+import { formatDate } from "@/lib/format";
 
-const CATEGORY_LABELS: Record<WikiCategory, string> = {
-  ort: "Orte",
-  npc: "NPCs",
-  fraktion: "Fraktionen",
-  sonstiges: "Sonstiges",
-};
-
-export default async function WikiListPage({ searchParams }: PageProps<"/wiki">) {
-  const params = await searchParams;
-  const category = typeof params.category === "string" ? params.category : "";
-
+export default async function WikiHomePage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  const world = await getActiveWorld(user.id);
+  if (!world) redirect("/worlds");
 
-  const activeWorld = await getActiveWorld(user.id);
-  if (!activeWorld) redirect("/worlds");
+  const [folders, pageRows, linkPages] = await Promise.all([
+    getWikiFolders(world.id),
+    getWikiPageRows(world.id),
+    getWikiLinkPages(world.id),
+  ]);
+  const tree = buildWikiTree(folders, pageRows);
+  const recent = [...pageRows].sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")).slice(0, 6);
+  const missing = findMissingLinks(linkPages).slice(0, 8);
 
-  let query = supabase
-    .from("wiki_pages")
-    .select("*")
-    .eq("world_id", activeWorld.id)
-    .order("title");
-
-  if (category) query = query.eq("category", category);
-
-  const { data: pages } = await query.returns<WikiPage[]>();
+  if (pageRows.length === 0 && folders.length === 0) {
+    return (
+      <div>
+        <h1 className="font-serif text-4xl text-fg">{world.name}</h1>
+        <p className="mt-2 max-w-prose text-fg-soft">
+          Hier sammelt ihr Wissen über eure Welt: Orte, Wesen, Gruppen, Regeln. Lege Ordner an, um zu sortieren, und
+          verlinke Seiten untereinander mit [[Titel]].
+        </p>
+        <Link
+          href="/wiki/new"
+          className="mt-5 inline-block rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+        >
+          Ersten Artikel anlegen
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
-      <div className="mb-1 flex items-center gap-2">
-        <BookOpen className="h-6 w-6 text-accent" strokeWidth={2} />
-        <h1 className="font-serif text-3xl text-fg">Wiki</h1>
-      </div>
-      <p className="mb-6 text-sm text-muted">
-        Orte, NPCs und Fraktionen von {activeWorld.name}.
-      </p>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Link
-          href="/wiki"
-          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-            !category ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
-          }`}
-        >
-          Alle
-        </Link>
-        {(Object.keys(CATEGORY_LABELS) as WikiCategory[]).map((c) => (
-          <Link
-            key={c}
-            href={`/wiki?category=${c}`}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              category === c ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
-            }`}
-          >
-            {CATEGORY_LABELS[c]}
-          </Link>
-        ))}
+    <div className="flex flex-col gap-10">
+      <div>
+        <h1 className="font-serif text-4xl text-fg">{world.name}</h1>
+        <p className="mt-2 text-fg-soft">
+          {pageRows.length} {pageRows.length === 1 ? "Artikel" : "Artikel"} in {folders.length} {folders.length === 1 ? "Ordner" : "Ordnern"}.
+        </p>
       </div>
 
-      <Link
-        href="/wiki/new"
-        className="mb-6 flex items-center justify-center gap-2 rounded-xl border border-dashed border-line px-4 py-3 text-sm text-muted transition hover:border-accent hover:text-accent"
-      >
-        + Neuer Wiki-Eintrag
-      </Link>
-
-      <div className="flex flex-col gap-3">
-        {pages?.length ? (
-          pages.map((page) => (
-            <Link
-              key={page.id}
-              href={`/wiki/${page.id}`}
-              className="flex items-center gap-3 rounded-xl bg-surface-2 p-4 transition hover:bg-surface-3"
-            >
-              {page.cover_image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={page.cover_image_url}
-                  alt=""
-                  className="h-14 w-14 shrink-0 rounded-lg bg-surface-3 object-cover"
-                />
-              ) : (
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-muted">
-                  <BookOpen className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">
-                    {CATEGORY_LABELS[page.category]}
+      {tree.folders.length > 0 && (
+        <section>
+          <h2 className="mb-2 font-serif text-2xl text-fg">Ordner</h2>
+          <ul className="border-y border-line">
+            {tree.folders.map((f) => (
+              <li key={f.id} className="border-t border-line first:border-t-0">
+                <Link href={`/wiki/ordner/${f.id}`} className="flex items-baseline justify-between gap-4 px-1 py-3 transition hover:bg-surface-2">
+                  <span className="font-medium text-fg">{f.name}</span>
+                  <span className="text-sm text-muted">
+                    {f.total} {f.total === 1 ? "Artikel" : "Artikel"}
+                    {f.children.length > 0 && ` · ${f.children.length} ${f.children.length === 1 ? "Unterordner" : "Unterordner"}`}
                   </span>
-                  <h2 className="truncate font-serif text-lg text-fg">{page.title}</h2>
-                </div>
-                {stripHtml(page.content) && (
-                  <p className="line-clamp-2 text-sm text-fg-soft">{stripHtml(page.content)}</p>
-                )}
-              </div>
-            </Link>
-          ))
-        ) : (
-          <p className="text-muted">
-            Noch keine Einträge.{" "}
-            <Link href="/wiki/new" className="text-accent hover:underline">
-              Leg den ersten an.
-            </Link>
-          </p>
-        )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="grid gap-10 @2xl:grid-cols-2">
+        <section>
+          <h2 className="mb-2 font-serif text-2xl text-fg">Zuletzt bearbeitet</h2>
+          {recent.length === 0 ? (
+            <p className="text-sm text-muted">Noch nichts.</p>
+          ) : (
+            <ul className="border-y border-line">
+              {recent.map((p) => (
+                <li key={p.id} className="border-t border-line first:border-t-0">
+                  <Link href={`/wiki/${p.id}`} className="flex items-baseline justify-between gap-4 px-1 py-2.5 transition hover:bg-surface-2">
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-fg">{p.title}</span>
+                      <span className="block truncate text-xs text-muted">
+                        {folderPath(folders, p.folder_id).map((f) => f.name).join(" › ") || "Ohne Ordner"}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted">{p.updated_at ? formatDate(p.updated_at.slice(0, 10)) : ""}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section>
+          <h2 className="mb-1 font-serif text-2xl text-fg">Fehlende Artikel</h2>
+          <p className="mb-2 text-sm text-muted">Diese Begriffe sind mit [[…]] verlinkt, haben aber noch keine Seite.</p>
+          {missing.length === 0 ? (
+            <p className="text-sm text-muted">Alle Verlinkungen führen zu einer Seite.</p>
+          ) : (
+            <ul className="border-y border-line">
+              {missing.map((m) => (
+                <li key={m.title} className="border-t border-line first:border-t-0">
+                  <Link
+                    href={`/wiki/new?title=${encodeURIComponent(m.title)}`}
+                    className="flex items-baseline justify-between gap-4 px-1 py-2.5 transition hover:bg-surface-2"
+                  >
+                    <span className="wiki-missing-text font-medium">{m.title}</span>
+                    <span className="shrink-0 text-xs text-muted">
+                      {m.count} {m.count === 1 ? "Erwähnung" : "Erwähnungen"}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );
