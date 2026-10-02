@@ -104,6 +104,68 @@ async function fresh() {
   await ctx.close();
 }
 
+// 7. Textbausteine: Tabelle, Hinweis-Kasten, Spoiler
+{
+  const { ctx, page, ed, out, errors } = await fresh();
+  await ed.pressSequentially("Intro");
+  await page.getByRole("button", { name: "Tabelle einfügen" }).click();
+  let o = await out();
+  check("Tabelle mit Kopfzeile, 3 Spalten", (o.match(/<th/g) ?? []).length === 3 && (o.match(/<td/g) ?? []).length === 6, o.slice(0, 160));
+  await page.getByRole("button", { name: "Spalte rechts einfügen" }).click();
+  o = await out();
+  check("Spalte einfügen", (o.match(/<th/g) ?? []).length === 4);
+  await page.getByRole("button", { name: "Zeile löschen" }).click();
+  o = await out();
+  // Der Cursor steht in der Kopfzeile: sie verschwindet, die zwei Datenzeilen (je 4 Zellen) bleiben.
+  check("Zeile löschen", (o.match(/<th/g) ?? []).length === 0 && (o.match(/<td/g) ?? []).length === 8, `${(o.match(/<th/g) ?? []).length} th, ${(o.match(/<td/g) ?? []).length} td`);
+  await page.getByRole("button", { name: "Tabelle löschen" }).click();
+  o = await out();
+  check("Tabelle löschen", !o.includes("<table"));
+
+  await ed.click();
+  await page.keyboard.press("Control+End");
+  await page.getByRole("button", { name: "Hinweis-Kasten" }).click();
+  await page.getByRole("menuitem", { name: "Achtung" }).click();
+  o = await out();
+  check("Hinweis-Kasten (Achtung)", o.includes('data-callout="achtung"') && o.includes("Intro"), o);
+  await page.getByRole("button", { name: "Hinweis-Kasten" }).click();
+  await page.getByRole("menuitem", { name: "Gefahr" }).click();
+  check("Art lässt sich ändern", (await out()).includes('data-callout="gefahr"') && !(await out()).includes("achtung"));
+  await page.getByRole("button", { name: "Hinweis-Kasten" }).click();
+  await page.getByRole("menuitem", { name: "Kasten entfernen" }).click();
+  check("Kasten entfernen", !(await out()).includes("data-callout"));
+
+  await page.getByRole("button", { name: "Spoiler zum Aufklappen" }).click();
+  await page.waitForTimeout(150); // der Cursor springt erst danach in den Titel
+  await page.keyboard.type("Mehr lesen");
+  o = await out();
+  check("Spoiler mit Titel", /<details/.test(o) && /<summary/.test(o) && o.includes("Mehr lesen") && o.includes('data-type="detailsContent"'), o);
+  check("keine Seitenfehler", errors.length === 0, errors.join("|"));
+  await ctx.close();
+}
+// 8. Gespeicherte Bausteine laden sich wieder richtig in den Editor
+{
+  const html = '<div data-callout="tipp"><p>Merke dir das</p></div><details><summary>Titel</summary><div data-type="detailsContent"><p>Inhalt</p></div></details><table><tbody><tr><th><p>A</p></th><th><p>B</p></th></tr><tr><td><p>1</p></td><td><p>2</p></td></tr></tbody></table>';
+  const ctx = await browser.newContext({ viewport: { width: 900, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.goto(url + "#" + encodeURIComponent(html));
+  await page.locator(".ProseMirror").waitFor();
+  await page.waitForTimeout(150);
+  const out = await page.locator('input[name="content"]').inputValue();
+  check("Hinweis, Spoiler und Tabelle bleiben beim Laden erhalten", out.includes('data-callout="tipp"') && out.includes("<summary") && out.includes('data-type="detailsContent"') && (out.match(/<th/g) ?? []).length === 2 && (out.match(/<td/g) ?? []).length === 2, out.slice(0, 200));
+  // Spoiler im Editor aufklappen: der Inhalt wird sichtbar
+  const content = page.locator('.ProseMirror [data-type="detailsContent"]');
+  const hiddenBefore = !(await content.isVisible());
+  await page.locator('.ProseMirror div[data-type="details"] > button').click();
+  await page.waitForTimeout(100);
+  check("Spoiler lässt sich im Editor auf- und zuklappen", hiddenBefore && (await content.isVisible()), String(hiddenBefore));
+  await page.locator(".ProseMirror").screenshot({ path: path.join(here, ".build", "blocks.png") });
+  check("keine Seitenfehler beim Laden", errors.length === 0, errors.join("|"));
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);
