@@ -50,7 +50,7 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 
 ## Senden mit Enter (live)
 - Einstellung pro Gerät unter Einstellungen → Aussehen → „Senden mit Enter“ (`components/send-key-pref.tsx`, Logik/Hook `src/lib/send-pref.ts`, localStorage `wortwinkel:enter-sends`, Standard: Enter sendet). Aus: Enter = neue Zeile, Strg/Cmd+Enter sendet (gilt in beiden Modi immer). Am Handy (kein feiner Zeiger) bleibt Enter = neue Zeile.
-- Eingebaut in: RPG-Chat (`chats/[id]/chat-room.tsx`, Eingabefeld ist jetzt eine mehrzeilige Textarea), Redaktions-Chat, Chat-Blase, Kommentare (`MentionTextarea` schickt das umgebende Formular per `requestSubmit` ab). Nicht in Rich-Text-Editoren (Beiträge, Story): dort bleibt Enter ein Absatz. Neue Nachrichtenfelder: `isSendKey(e, useEnterSends())` benutzen.
+- Eingebaut in: RPG-Chat (`chats/[id]/chat-room.tsx`, Eingabefeld ist jetzt eine mehrzeilige Textarea), Redaktions-Chat, Chat-Blase, Kommentare (`MentionTextarea` schickt das umgebende Formular per `requestSubmit` ab). Story-Beiträge (`RichTextEditor` mit `onSubmitKey`, in `story-entry-form.tsx`) senden ebenfalls mit Enter bzw. Strg/Cmd+Enter; solange die @-Liste offen ist (`data-mention-popup`), wählt Enter den Charakter. Andere Rich-Text-Editoren (Beiträge, Wiki, Redaktions-Beitrag) lassen Enter ein Absatz sein. Neue Nachrichtenfelder: `isSendKey(e, useEnterSends())` benutzen.
 - Story: gelöschte Beiträge verschwinden live bei allen, die die Szene offen haben (`story/[id]/entry-list.tsx`, Realtime-DELETE auf `story_entries`).
 
 - Status in Story/Chat (`lib/presence-status.ts`, `components/presence-status-ui.tsx`): In der Story wird der gesetzte Status pro Charakter auf dem Gerät gemerkt (`usePresenceStatus(…, { persist: true })`, localStorage `wortwinkel:status:<characterId>`) und beim Öffnen wieder gesetzt, bis man ihn entfernt (✕). Eigene Texte landen in einer Liste „Gespeichert“ (`wortwinkel:status-saved`, max. 6). Beim Schreiben/Würfeln wird er nur kurz ausgeblendet (`pauseFor(6000)` statt früher `clear()`) und kommt danach von selbst zurück; gilt auch im RPG-Chat (dort ohne Speichern).
@@ -60,6 +60,9 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 
 ## Layout auf Laptop/großen Bildschirmen (live)
 - Außenrahmen (`app/layout.tsx`): `max-w-6xl` (1152) → ab 1440 px 1360, ab 1800 px 1640. Seitenspalten: `max-w-2xl` → `xl:max-w-3xl 2xl:max-w-4xl` (Lese-Seiten Story/Wiki/Beitrag nur bis 3xl), Feed-Spalte `470px` → `xl:540px 2xl:600px`, Profile `935px` → `xl:1040px`, Badge-Seiten `3xl` → `xl:4xl`. Neue Seiten sollten dasselbe Muster benutzen. Unter 1024 px bleibt das Handy-/Tablet-Layout unverändert.
+
+## Wiki-Rechte (live)
+- Jedes Mitglied der Welt darf jeden Wiki-Eintrag bearbeiten (RLS-Policy `wiki_pages_update_member`, `supabase/migration_wiki_edit_all.sql`, im SQL-Editor **ausgeführt**; Bearbeiten-Knopf in `wiki/[id]/page.tsx` immer sichtbar). Löschen weiterhin nur Ersteller:in und Welt-Besitzer:in (`wiki_pages_delete_own_or_world_owner`).
 
 ## Gemerkte Auswahl (live)
 - Zuletzt gewählter Charakter und Welt bleiben nach dem Schließen der App erhalten: die Cookies `active_character_id` / `active_world_id` haben `maxAge` 1 Jahr (`SELECTION_COOKIE_OPTIONS` in `src/lib/types.ts`, an allen `set`-Stellen benutzt). `SelectionCookieKeeper` (`src/components/selection-cookie-keeper.tsx`, im Root-Layout) macht alte Session-Cookies beim Start dauerhaft. Neue Stellen, die diese Cookies setzen, müssen die Konstante nutzen.

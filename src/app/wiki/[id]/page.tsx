@@ -51,18 +51,17 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         <span className="rounded-full bg-surface-3 px-2.5 py-0.5 text-xs text-fg-soft">
           {CATEGORY_LABELS[page.category]}
         </span>
-        {canManage && (
-          <div className="flex items-center gap-1">
-            <Link
-              href={`/wiki/${page.id}/edit`}
-              title="Bearbeiten"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
-            >
-              <Pencil className="h-4 w-4" strokeWidth={2} />
-            </Link>
-            <DeleteWikiPageButton wikiPageId={page.id} />
-          </div>
-        )}
+        <div className="flex items-center gap-1">
+          {/* Bearbeiten darf jedes Mitglied der Welt; löschen nur Ersteller:in und Welt-Besitzer:in. */}
+          <Link
+            href={`/wiki/${page.id}/edit`}
+            title="Bearbeiten"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
+          >
+            <Pencil className="h-4 w-4" strokeWidth={2} />
+          </Link>
+          {canManage && <DeleteWikiPageButton wikiPageId={page.id} />}
+        </div>
       </div>
 
       {page.cover_image_url && (

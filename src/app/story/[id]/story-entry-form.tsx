@@ -36,6 +36,7 @@ export function StoryEntryForm({
   const [resetKey, setResetKey] = useState(0);
   // Inhalt, mit dem der Editor nach einem Zurücksetzen startet (leer; bei einem Fehler der gesendete Text).
   const [restoreText, setRestoreText] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const latestHtml = useRef("");
   const sentHtml = useRef("");
   const wasPending = useRef(false);
@@ -64,7 +65,7 @@ export function StoryEntryForm({
   }, [pending, error]);
 
   return (
-    <form action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-2">
       <input type="hidden" name="character_id" value={writerId} />
       {narrator && <input type="hidden" name="narrator" value="on" />}
       {restored && (
@@ -79,6 +80,7 @@ export function StoryEntryForm({
           if (html) onTyping?.();
         }}
         mentionCharacters={characters}
+        onSubmitKey={() => formRef.current?.requestSubmit()}
         minHeight={100}
         showToolbar={showToolbar}
         allowFontSelection

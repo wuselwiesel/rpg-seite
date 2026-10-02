@@ -1,6 +1,7 @@
 "use client";
 
 import { EmojiCatalog } from "./emoji-catalog";
+import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent, type Editor, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -338,6 +339,7 @@ export function RichTextEditor({
   minHeight = 240,
   showToolbar = true,
   allowFontSelection = false,
+  onSubmitKey,
 }: {
   name: string;
   initialContent?: string;
@@ -349,8 +351,17 @@ export function RichTextEditor({
   // Schriftart-Auswahl im Toolbar für markierten Text (wort-/buchstabengenau) - bewusst
   // nur dort aktiviert, wo es angefragt wurde (Feed-Posts), nicht überall, siehe Chat/Story.
   allowFontSelection?: boolean;
+  // Wenn gesetzt, schickt die Sende-Taste (Enter bzw. Strg/Cmd+Enter, siehe Einstellungen → Aussehen) den Text ab.
+  onSubmitKey?: () => void;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
+  const enterSends = useEnterSends();
+  const enterSendsRef = useRef(enterSends);
+  const submitKeyRef = useRef(onSubmitKey);
+  useEffect(() => {
+    enterSendsRef.current = enterSends;
+    submitKeyRef.current = onSubmitKey;
+  });
 
   // Gemerkte Standard-Schriftart auf neuen, leeren Text anwenden.
   function applyDefaultFont(ed: Editor) {
@@ -380,6 +391,15 @@ export function RichTextEditor({
     ] satisfies Extensions,
     content: initialContent ?? "",
     editorProps: {
+      handleKeyDown: (view, event) => {
+        if (!submitKeyRef.current || !isSendKey(event, enterSendsRef.current)) return false;
+        // Während die @-Auswahl offen ist, wählt Enter den Charakter; leerer Text wird nicht abgeschickt.
+        if (document.querySelector("[data-mention-popup]")) return false;
+        if (!view.state.doc.textContent.trim()) return false;
+        event.preventDefault();
+        submitKeyRef.current();
+        return true;
+      },
       attributes: {
         class: "post-content px-3 py-2 text-fg outline-none [&_p]:my-2 first:[&_p]:mt-0",
         style: `min-height: ${minHeight}px`,

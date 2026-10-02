@@ -39,10 +39,18 @@ export function useEnterSends(): boolean {
 
 // Ist das die Taste, die die Nachricht abschicken soll? Strg/Cmd+Enter schickt immer ab.
 export function isSendKey(
-  e: { key: string; shiftKey: boolean; ctrlKey: boolean; metaKey: boolean; altKey: boolean; nativeEvent?: { isComposing?: boolean } },
+  e: {
+    key: string;
+    shiftKey: boolean;
+    ctrlKey: boolean;
+    metaKey: boolean;
+    altKey: boolean;
+    isComposing?: boolean;
+    nativeEvent?: { isComposing?: boolean };
+  },
   enterSends: boolean,
 ): boolean {
-  if (e.key !== "Enter" || e.nativeEvent?.isComposing) return false;
+  if (e.key !== "Enter" || e.isComposing || e.nativeEvent?.isComposing) return false;
   if (e.ctrlKey || e.metaKey) return true;
   return enterSends && !e.shiftKey && !e.altKey && window.matchMedia("(pointer: fine)").matches;
 }

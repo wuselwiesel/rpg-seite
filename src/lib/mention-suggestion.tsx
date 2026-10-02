@@ -26,6 +26,7 @@ export function createMentionSuggestion(characters: Character[]): Omit<Suggestio
         onStart: (props) => {
           component = new ReactRenderer(MentionList, { props, editor: props.editor });
           popup = document.createElement("div");
+          popup.dataset.mentionPopup = "1"; // Marker: solange die Liste offen ist, wählt Enter den Charakter
           popup.style.position = "fixed";
           popup.style.zIndex = "50";
           document.body.appendChild(popup);
