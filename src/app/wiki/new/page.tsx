@@ -27,7 +27,7 @@ export default async function NewWikiPagePage({ searchParams }: PageProps<"/wiki
         folders={folderOptions(tree.folders)}
         parentChoices={pageOptions(tree)}
         linkTargets={pages.map((p) => ({ id: p.id, title: p.title })).sort((a, b) => a.title.localeCompare(b.title, "de"))}
-        defaults={{ title: first(sp.title), folder: first(sp.folder), parent: first(sp.parent) }}
+        defaults={{ title: first(sp.title), folder: first(sp.folder), parent: first(sp.parent), type: first(sp.type) }}
       />
     </div>
   );

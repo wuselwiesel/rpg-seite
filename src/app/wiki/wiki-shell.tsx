@@ -1,5 +1,6 @@
 "use client";
 
+import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -238,7 +239,10 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                       }}
                       className="flex flex-col rounded-lg px-2 py-1.5 text-sm text-fg transition hover:bg-surface-2"
                     >
-                      <span className="font-medium">{p.title}</span>
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <WikiTypeIcon type={p.page_type} className="h-3.5 w-3.5 shrink-0 text-muted" />
+                        {p.title}
+                      </span>
                       <span className="truncate text-xs text-muted">
                         {folderPath(folders, p.folder_id).map((f) => f.name).join(" › ") || "Ohne Ordner"}
                       </span>
@@ -546,9 +550,10 @@ function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; dep
         <Link
           href={`/wiki/${page.id}`}
           onClick={onNavigate}
-          className={`min-w-0 flex-1 truncate py-1.5 pr-2 text-sm ${active ? "font-semibold text-accent" : "text-fg-soft hover:text-fg"}`}
+          className={`flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-2 text-sm ${active ? "font-semibold text-accent" : "text-fg-soft hover:text-fg"}`}
         >
-          {page.title}
+          <WikiTypeIcon type={page.page_type} className="h-3.5 w-3.5 shrink-0 text-muted" />
+          <span className="truncate">{page.title}</span>
         </Link>
       </div>
       {open && (

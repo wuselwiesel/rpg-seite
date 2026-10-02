@@ -231,6 +231,7 @@ export type WikiPage = {
   aliases?: string[];
   cover_image_url?: string | null;
   gallery?: string[];
+  page_type?: string | null;
   // Steckbrief: Zeilen aus Symbol, Titel, Text (wie die Profilfelder).
   fields?: { icon: string; title: string; text: string }[];
   created_by: string;
