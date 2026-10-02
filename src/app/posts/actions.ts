@@ -1,5 +1,7 @@
 "use server";
 
+import { syncCharacterBadges } from "@/lib/badges-server";
+import { after } from "next/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -150,6 +152,7 @@ export async function createPost(_prevState: string | null, formData: FormData) 
     }
   }
 
+  after(() => syncCharacterBadges(characterId));
   revalidatePath("/");
   redirect(isScheduled ? `/characters/${characterId}?tab=scheduled` : `/posts/${data.id}`);
 }
@@ -236,6 +239,7 @@ export async function createComment(
     "hat dich in einem Kommentar erwähnt",
   );
 
+  after(() => syncCharacterBadges(characterId));
   revalidatePath(`/posts/${postId}`);
   return null;
 }

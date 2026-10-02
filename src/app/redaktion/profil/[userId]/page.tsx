@@ -1,3 +1,5 @@
+import { BadgeRow } from "@/components/badge-row";
+import { getAccountBadges, syncAccountBadges } from "@/lib/badges-server";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -29,6 +31,8 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
     isOwn ? getAcceptedFriends(userId) : Promise.resolve(null),
   ]);
 
+  if (isOwn) await syncAccountBadges();
+  const badges = (await getAccountBadges(userId)).filter((b) => b.kind === "account");
   const displayName = profile.nickname || profile.username;
   const fields = redProfile?.custom_fields ?? [];
 
@@ -112,6 +116,8 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
               ))}
             </dl>
           )}
+
+          <BadgeRow badges={badges} />
         </header>
 
         <div className="mt-6">

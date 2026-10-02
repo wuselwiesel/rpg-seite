@@ -37,11 +37,18 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Eigene Emojis pro Welt: Tabelle `custom_emojis` (`supabase/migration_custom_emojis.sql`, im SQL-Editor **ausgeführt**), Verwaltung unter Einstellungen → Eigene Emojis (`app/profile/emojis/*`, Upload in Bucket `avatars/emoji/`), Anzeige von `:name:` über `CustomEmojiProvider` im Root-Layout (`components/custom-emoji-provider.tsx`: `EmojiText` für Klartext, `EmojiHtml` für HTML), Picker `components/custom-emoji-picker.tsx` in Chats und Editor-Toolbar (🖼️). Auch `MentionTextarea` (Kommentare) hat den Picker; die Redaktions-Kommentare nutzen jetzt ebenfalls `MentionTextarea` (ohne Charaktere).
 - Im Test-Account liegt ein Selbsttest-Chat (`00000000-0000-4000-8000-0000000000c1`, nur `logotestuser` als Teilnehmer) – darf gelöscht werden.
 
+## Badges und Verlauf (live)
+- Entscheidungen der Nutzerin: automatische Erfolge + Spielleitungs-Titel + eigene Badges aller Mitglieder + Redaktions-Abzeichen (Account); Anzeige im Profil und neben Namen (je pro Gerät abschaltbar), Benachrichtigung beim Erhalt, eigene Seite `/badges`; Charakter-Timeline automatisch.
+- DB `supabase/migration_badges.sql` (Tabellen `badge_defs`, `badge_awards`, Spalten `characters.featured_badge_id` / `profiles.featured_badge_id`) ist im SQL-Editor **ausgeführt**. Schlüssel: `auto:*` (Charakter), `account:*` (Account), `custom:<def-id>`.
+- Code: Katalog `lib/badges.ts` (`AUTO_BADGES`), Server-Logik `lib/badges-server.ts` (`syncCharacterBadges`, `syncAccountBadges`, Metriken), Aktionen `app/badges/actions.ts`, Seite `app/badges/*`, Anzeige `components/badge-row.tsx` (Profil), `components/name-badge.tsx` (Haupt-Badge neben Namen, lädt gesammelt per Server Action nach), Schalter `components/badge-prefs.tsx` (Einstellungen → Aussehen), Benachrichtigungstyp `badge`.
+- Vergabe-Zeitpunkt: nach Beitrag/Kommentar/Story-Eintrag/Redaktions-Beitrag/-Kommentar per `after()`, außerdem beim Öffnen von `/badges` und des eigenen Profils. „Herzen erhalten“ und „Follower“ werden daher erst beim nächsten Sync erkannt.
+- Mini-Timeline `components/character-timeline.tsx` („Verlauf“ im Charakterprofil): Ankunft, Beitrags-Meilensteine, erste Story-Szene, Beziehungsverläufe, erhaltene Badges.
+
 ## Nächste Schritte (Wünsche der Nutzerin, Reihenfolge offen)
 1. (erledigt) Redaktions-Feed hat jetzt den Aufbau des Ingame-Feeds: gleiche Spalte/Seitenleiste (`redaktion-sidebar.tsx`), Filterleiste, Pull-to-Refresh, unendliches Scrollen (`redaktion-feed-list.tsx`, `lib/redaktion-feed.ts`), randlose Insta-Karten in `redaktion-post-card.tsx`.
 2. (erledigt) Charakterprofile im Stil des Redaktions-Profils: Banner, überlappender Avatar, Status-Zeile, Bio, eigene Felder, Raster/Liste (`?ansicht=liste`), Charakterbogen-Bereich, Highlights und Tabs bleiben. Migration `supabase/migration_character_profile.sql` (Spalten `banner_url`, `status_text`, `custom_fields` an `characters`) ist im SQL-Editor **ausgeführt**. Bearbeiten unter `/characters/[id]/edit` (gemeinsamer Editor `components/profile-fields-editor.tsx`, Parser `lib/profile-fields.ts`, auch vom Redaktions-Profil genutzt).
 3. Eigene Emojis pro Welt (Upload PNG/GIF/WebP max. 256 KB, `:name:`-Kürzel, Picker; Orte: Beiträge/Kommentare, Chats, Story/Wiki, Profile inkl. Feld-Symbole). Noch nicht gebaut.
-4. Älteres Backlog: Mini-Timeline bei Charakterprofilen; Badges (erst mit der Nutzerin besprechen).
+4. (erledigt) Badges und Mini-Timeline – siehe Abschnitt unten.
 
 ## Fallstricke
 - `tsconfig.tsbuildinfo` kann Typfehler verdecken: löschen und `npx tsc --noEmit; echo $?` ohne Pipe. Der Vercel-Build ist die Instanz, die zählt.

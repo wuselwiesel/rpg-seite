@@ -1,5 +1,6 @@
 "use client";
 
+import { NameBadge } from "@/components/name-badge";
 import { useOptimistic, useState, useTransition, useActionState, useEffect, useRef } from "react";
 import { Heart, Pencil, Trash2, UserRoundPlus, X } from "lucide-react";
 import { createComment, createFakeComment, deleteComment, toggleLike, updateComment } from "../actions";
@@ -262,7 +263,8 @@ export function CommentThread({
         <CharacterAvatar name={displayName} avatarUrl={avatarUrl} size={isReply ? 28 : 36} />
         <div className="min-w-0 flex-1">
           <div className="text-sm text-fg">
-            <span className="font-semibold">{displayName}</span>{" "}
+            <span className="font-semibold">{displayName}</span>
+            {!isFake && c.character_id && <NameBadge characterId={c.character_id} />}{" "}
             {editing === c.id ? null : <MentionText text={text} className="inline whitespace-pre-line text-fg-soft" />}
           </div>
           {editing === c.id ? (

@@ -1,5 +1,6 @@
 "use client";
 
+import { NameBadge } from "@/components/name-badge";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { useState } from "react";
@@ -64,6 +65,7 @@ export function RedaktionPostCard({
           <div className="min-w-0 flex-1 leading-tight">
             <p className="flex items-baseline gap-1.5 text-[13px] text-fg">
               <span className="truncate font-semibold">{handle}</span>
+              <NameBadge userId={post.author_id} />
               <time
                 dateTime={post.created_at}
                 title={new Date(post.created_at).toLocaleString("de-DE")}

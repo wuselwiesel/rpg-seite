@@ -1,5 +1,7 @@
 "use server";
 
+import { syncCharacterBadges } from "@/lib/badges-server";
+import { after } from "next/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -272,6 +274,7 @@ export async function createStoryEntry(
 
   await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice, true, narrator);
 
+  after(() => syncCharacterBadges(characterId));
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
   return null;

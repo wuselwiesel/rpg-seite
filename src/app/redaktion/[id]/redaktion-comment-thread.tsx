@@ -1,5 +1,6 @@
 "use client";
 
+import { NameBadge } from "@/components/name-badge";
 import { MentionTextarea } from "@/components/mention-textarea";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
@@ -78,7 +79,8 @@ export function RedaktionCommentThread({
           <div className="text-sm text-fg">
             <Link href={`/redaktion/profil/${c.author_id}`} className="font-semibold hover:underline">
               {name}
-            </Link>{" "}
+            </Link>
+            <NameBadge userId={c.author_id} />{" "}
             <span className="whitespace-pre-line text-fg-soft">
               <EmojiText text={c.content} />
             </span>

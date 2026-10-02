@@ -1,5 +1,7 @@
 "use server";
 
+import { syncAccountBadges } from "@/lib/badges-server";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -136,6 +138,7 @@ export async function createRedaktionPost(_prevState: string | null, formData: F
     );
   }
 
+  after(() => syncAccountBadges());
   revalidatePath("/redaktion");
   return null;
 }
@@ -252,6 +255,7 @@ export async function createRedaktionComment(
     ),
   );
 
+  after(() => syncAccountBadges());
   revalidatePath(`/redaktion/${postId}`);
   return null;
 }

@@ -1,3 +1,4 @@
+import { NameBadge } from "./name-badge";
 import Link from "next/link";
 import { MessageCircle, Pin, BookOpen } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
@@ -51,6 +52,7 @@ export function SocialPostCard({
             <div className="min-w-0 flex-1 leading-tight">
               <p className="flex items-baseline gap-1.5 text-[13px] text-fg">
                 <span className="truncate font-semibold">{handle}</span>
+                <NameBadge characterId={post.characterId} />
                 {post.pinned && <Pin className="h-3 w-3 shrink-0 self-center text-muted" strokeWidth={2} aria-label="Angepinnt" />}
                 <time
                   dateTime={post.createdAt}

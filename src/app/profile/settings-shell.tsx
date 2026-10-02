@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Award,
   Bell,
   ChevronRight,
   Compass,
@@ -24,6 +25,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     items: [
       { href: "/profile/konto", label: "Konto", hint: "Profilbild, Benutzername, Spitzname", Icon: UserRound },
       { href: "/redaktion/profil/bearbeiten", label: "Redaktions-Profil", hint: "Banner, Bio, eigene Felder", Icon: Newspaper },
+      { href: "/badges", label: "Badges", hint: "Erfolge, Titel und eigene Badges", Icon: Award },
       { href: "/characters", label: "Charaktere verwalten", hint: "Deine Figuren in allen Welten", Icon: Users },
     ],
   },
