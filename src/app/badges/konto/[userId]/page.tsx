@@ -2,11 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_CATEGORIES, AUTO_BADGES } from "@/lib/badges";
 import { accountMetrics, getAccountBadges, syncAccountBadges, visibleBadges } from "@/lib/badges-server";
-import { BadgeSections } from "@/components/badge-sections";
+import { BadgeFilterTabs, BadgeSections } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
-export default async function AccountBadgeCollectionPage({ params }: PageProps<"/badges/konto/[userId]">) {
+export default async function AccountBadgeCollectionPage({ params, searchParams }: PageProps<"/badges/konto/[userId]">) {
   const { userId } = await params;
+  const sp = await searchParams;
+  const showAll = (Array.isArray(sp.zeige) ? sp.zeige[0] : sp.zeige) === "alle";
   const supabase = await createClient();
   const {
     data: { user },
@@ -40,7 +42,8 @@ export default async function AccountBadgeCollectionPage({ params }: PageProps<"
         done={earned.length}
         total={defs.length}
       />
-      <BadgeSections defs={defs} categories={ACCOUNT_CATEGORIES} earned={earned} metrics={metrics} />
+      <BadgeFilterTabs basePath={`/badges/konto/${userId}`} showAll={showAll} earned={earned.length} total={defs.length} />
+      <BadgeSections defs={defs} categories={ACCOUNT_CATEGORIES} earned={earned} metrics={metrics} showAll={showAll} />
     </div>
   );
 }
