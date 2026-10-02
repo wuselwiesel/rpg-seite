@@ -248,6 +248,8 @@ export type RelationshipHistoryEntry = {
   color: string;
   label: string | null;
   note: string | null;
+  // Vom Nutzer gewähltes Datum, ab dem dieser Stand gilt (sonst zählt created_at).
+  occurred_on?: string | null;
   created_at: string;
 };
 

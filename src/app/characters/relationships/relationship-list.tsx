@@ -28,7 +28,7 @@ export function EditForm({ rel, onDone }: { rel: CharacterRelationship; onDone: 
   return (
     <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t border-line pt-3">
       <p className="w-full text-xs text-muted">
-        Die Beziehung entwickelt sich weiter? Die Änderung wird mit Datum im Verlauf festgehalten.
+        Die Beziehung entwickelt sich weiter? Die Änderung wird mit Datum im Verlauf festgehalten – das Datum kannst du selbst wählen (leer = heute).
       </p>
       <select
         name="category"
@@ -64,6 +64,10 @@ export function EditForm({ rel, onDone }: { rel: CharacterRelationship; onDone: 
       />
       <input name="label" defaultValue={rel.label ?? ""} placeholder="Notiz zur Beziehung" className={`w-44 ${field}`} />
       <input name="note" placeholder="Was ist passiert? (für den Verlauf)" className={`w-56 ${field}`} />
+      <label className="flex items-center gap-1.5 text-xs text-muted">
+        Gilt seit
+        <input type="date" name="since" aria-label="Gilt seit (leer = heute)" className={field} />
+      </label>
       <button
         type="submit"
         disabled={pending}

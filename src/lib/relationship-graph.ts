@@ -37,16 +37,31 @@ export function neighborhood(adj: Map<string, Set<string>>, focus: string, depth
   return Array.from(seen);
 }
 
+type StepDates = Pick<RelationshipHistoryEntry, "occurred_on" | "created_at">;
+
+// Ab wann gilt dieser Stand? Das selbst eingetragene Datum, sonst der Tag des Anlegens.
+export function stepDate(h: StepDates): string {
+  return h.occurred_on ?? h.created_at.slice(0, 10);
+}
+
+export function stepTime(h: StepDates): number {
+  return h.occurred_on ? Date.parse(h.occurred_on) : new Date(h.created_at).getTime();
+}
+
+export function compareSteps(a: StepDates, b: StepDates): number {
+  return stepTime(a) - stepTime(b) || a.created_at.localeCompare(b.created_at);
+}
+
 export type HistoryByRelationship = Map<string, { at: number; h: RelationshipHistoryEntry }[]>;
 
 export function groupHistory(history: RelationshipHistoryEntry[]): HistoryByRelationship {
   const m: HistoryByRelationship = new Map();
   for (const h of history) {
     const list = m.get(h.relationship_id) ?? [];
-    list.push({ at: new Date(h.created_at).getTime(), h });
+    list.push({ at: stepTime(h), h });
     m.set(h.relationship_id, list);
   }
-  for (const list of m.values()) list.sort((a, b) => a.at - b.at);
+  for (const list of m.values()) list.sort((a, b) => compareSteps(a.h, b.h));
   return m;
 }
 

@@ -72,3 +72,21 @@ describe("Beziehungsnetz: Stand zu einem Zeitpunkt", () => {
     expect(result.map((r) => r.type).sort()).toEqual(["Befreundet", "Verbündet"]);
   });
 });
+
+describe("Beziehungsnetz: eigene Daten im Verlauf", () => {
+  it("ordnet nach dem selbst gewählten Datum statt nach dem Anlegen", () => {
+    const early = { ...hist("r1", "2026-05-01T10:00:00Z", "Rivalen", "rivalitaet"), occurred_on: "2020-03-01" };
+    const late = { ...hist("r1", "2026-05-01T09:00:00Z", "Befreundet", "freundschaft"), occurred_on: "2025-06-01" };
+    const g = groupHistory([late, early]);
+    expect(g.get("r1")?.map((x) => x.h.type)).toEqual(["Rivalen", "Befreundet"]);
+  });
+
+  it("zeigt den Stand zu einem Datum anhand des eingetragenen Datums", () => {
+    const a = { ...hist("r1", "2026-05-01T10:00:00Z", "Rivalen", "rivalitaet"), occurred_on: "2020-03-01" };
+    const b = { ...hist("r1", "2026-05-01T10:01:00Z", "Befreundet", "freundschaft"), occurred_on: "2025-06-01" };
+    const g = groupHistory([a, b]);
+    const at2022 = relationshipsAsOf([rel("r1", "a", "b")], g, Date.parse("2022-01-01"));
+    expect(at2022[0].type).toBe("Rivalen");
+    expect(relationshipsAsOf([rel("r1", "a", "b")], g, Date.parse("2019-01-01"))).toEqual([]);
+  });
+});

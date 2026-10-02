@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { deleteRelationship } from "../actions";
+import { deleteRelationship, updateRelationshipStep } from "../actions";
 import { RelationshipForm } from "./relationship-form";
 import { EditForm } from "./relationship-list";
 import { formatDate } from "@/lib/format";
+import { compareSteps, stepDate } from "@/lib/relationship-graph";
 import { categoryInfo } from "@/lib/relationships";
 import type {
   Character,
@@ -29,6 +30,7 @@ export function RelationshipTimeline({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editingStep, setEditingStep] = useState<string | null>(null);
   const canDelete = (rel: CharacterRelationship) =>
     rel.created_by === currentUserId || isWorldOwner;
   const canEdit = (rel: CharacterRelationship) =>
@@ -56,9 +58,7 @@ export function RelationshipTimeline({
   const rows = relationships
     .map((rel) => ({
       rel,
-      steps: (byRelationship.get(rel.id) ?? []).sort((a, b) =>
-        a.created_at.localeCompare(b.created_at),
-      ),
+      steps: (byRelationship.get(rel.id) ?? []).sort(compareSteps),
     }))
     .sort(
       (a, b) =>
@@ -152,13 +152,25 @@ export function RelationshipTimeline({
                       <span className="text-fg-soft"> – {step.label}</span>
                     )}
                   </p>
-                  <p className="text-xs text-muted">
-                    {i === 0 ? "Angelegt" : "Geändert"} am{" "}
-                    {formatDate(step.created_at.slice(0, 10))}
-                    {step.note && (
-                      <span className="text-fg-soft"> · {step.note}</span>
-                    )}
-                  </p>
+                  {editingStep === step.id ? (
+                    <StepEditForm step={step} onDone={() => setEditingStep(null)} />
+                  ) : (
+                    <p className="flex flex-wrap items-center gap-x-1 text-xs text-muted">
+                      <span>Seit {formatDate(stepDate(step))}</span>
+                      {step.note && <span className="text-fg-soft">· {step.note}</span>}
+                      {canEdit(rel) && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingStep(step.id)}
+                          title="Datum und Notiz ändern"
+                          aria-label="Datum und Notiz dieses Schritts ändern"
+                          className="rounded p-0.5 text-muted transition hover:bg-surface-3 hover:text-fg"
+                        >
+                          <Pencil className="h-3 w-3" strokeWidth={2} />
+                        </button>
+                      )}
+                    </p>
+                  )}
                 </div>
               ))}
               {steps.length <= 1 && editingId !== rel.id && (
@@ -175,5 +187,52 @@ export function RelationshipTimeline({
         ))}
       </ol>
     </>
+  );
+}
+
+// Datum ("gilt seit") und Notiz eines vorhandenen Verlaufsschritts ändern.
+function StepEditForm({ step, onDone }: { step: RelationshipHistoryEntry; onDone: () => void }) {
+  const [since, setSince] = useState(stepDate(step));
+  const [note, setNote] = useState(step.note ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const field =
+    "rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg outline-none focus:border-accent";
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    startTransition(async () => {
+      const err = await updateRelationshipStep(step.id, since, note);
+      if (err) setError(err);
+      else onDone();
+    });
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-1 flex flex-wrap items-center gap-2">
+      <label className="flex items-center gap-1 text-xs text-muted">
+        Seit
+        <input type="date" value={since} onChange={(e) => setSince(e.target.value)} required className={field} />
+      </label>
+      <input
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        maxLength={300}
+        placeholder="Notiz (optional)"
+        className={`min-w-0 flex-1 ${field}`}
+      />
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-md bg-accent-strong px-2.5 py-1 text-xs font-medium text-on-accent-strong disabled:opacity-50"
+      >
+        {pending ? "…" : "Speichern"}
+      </button>
+      <button type="button" onClick={onDone} className="text-xs text-muted hover:text-fg">
+        Abbrechen
+      </button>
+      {error && <p className="w-full text-xs text-red-600 dark:text-red-400">{error}</p>}
+    </form>
   );
 }

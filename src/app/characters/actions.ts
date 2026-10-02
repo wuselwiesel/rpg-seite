@@ -240,6 +240,33 @@ function parseFamilyRole(raw: FormDataEntryValue | null): (typeof FAMILY_ROLES)[
   return (FAMILY_ROLES as readonly string[]).includes(value) ? (value as (typeof FAMILY_ROLES)[number]) : "verwandt";
 }
 
+// Leeres Feld = null (dann zählt der Tag des Anlegens); sonst ein Datum JJJJ-MM-TT; false = ungültig.
+function parseDate(raw: FormDataEntryValue | null): string | null | false {
+  const v = String(raw ?? "").trim();
+  if (!v) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || Number.isNaN(Date.parse(v))) return false;
+  return v;
+}
+
+// Datum und Notiz eines vorhandenen Verlaufsschritts nachträglich ändern.
+export async function updateRelationshipStep(stepId: string, since: string, note: string): Promise<string | null> {
+  const date = parseDate(since);
+  if (date === false) return "Ungültiges Datum.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("update_relationship_step", {
+    p_step_id: stepId,
+    p_occurred_on: date,
+    p_note: note.trim().slice(0, 300),
+  });
+  if (error) return error.message;
+  revalidatePath("/characters/relationships");
+  return null;
+}
+
 // Beziehung entwickelt sich weiter ("Feinde -> Verbündete"): der Verlauf entsteht automatisch per Trigger.
 export async function updateRelationship(
   relationshipId: string,
@@ -250,6 +277,8 @@ export async function updateRelationship(
   const color = String(formData.get("color") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim().slice(0, 200);
   const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+  const since = parseDate(formData.get("since"));
+  if (since === false) return "Ungültiges Datum.";
   const category = parseCategory(formData.get("category"));
   const familyRole = category === "familie" ? parseFamilyRole(formData.get("family_role")) : null;
   if (!type) return "Bitte eine Bezeichnung angeben.";
@@ -264,7 +293,7 @@ export async function updateRelationship(
   const { error, count } = await supabase
     .from("character_relationships")
     .update(
-      { type, color, label: label || null, category, family_role: familyRole, change_note: note || null },
+      { type, color, label: label || null, category, family_role: familyRole, change_note: note || null, change_date: since },
       { count: "exact" },
     )
     .eq("id", relationshipId);
@@ -281,9 +310,11 @@ export async function createRelationship(_prevState: string | null, formData: Fo
   const type = String(formData.get("type") ?? "").trim();
   const color = String(formData.get("color") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
+  const since = parseDate(formData.get("since"));
   const category = parseCategory(formData.get("category"));
   const familyRole = category === "familie" ? parseFamilyRole(formData.get("family_role")) : null;
 
+  if (since === false) return "Ungültiges Datum.";
   if (!characterAId || !characterBId) return "Bitte zwei Charaktere auswählen.";
   if (characterAId === characterBId) return "Wähle zwei unterschiedliche Charaktere.";
   if (!type) return "Bitte eine Bezeichnung angeben.";
@@ -311,6 +342,7 @@ export async function createRelationship(_prevState: string | null, formData: Fo
     label: label || null,
     category,
     family_role: familyRole,
+    change_date: since,
     created_by: user.id,
   });
 

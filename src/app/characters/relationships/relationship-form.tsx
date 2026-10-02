@@ -106,6 +106,11 @@ export function RelationshipForm({ characters }: { characters: Character[] }) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
+        Seit wann? (optional)
+        <input type="date" name="since" className={field} />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Notiz (optional)
         <input type="text" name="label" placeholder="z. B. Kindheitsfreunde" className={field} />
       </label>

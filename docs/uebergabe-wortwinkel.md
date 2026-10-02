@@ -61,6 +61,9 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 ## Layout auf Laptop/großen Bildschirmen (live)
 - Außenrahmen (`app/layout.tsx`): `max-w-6xl` (1152) → ab 1440 px 1360, ab 1800 px 1640. Seitenspalten: `max-w-2xl` → `xl:max-w-3xl 2xl:max-w-4xl` (Lese-Seiten Story/Wiki/Beitrag nur bis 3xl), Feed-Spalte `470px` → `xl:540px 2xl:600px`, Profile `935px` → `xl:1040px`, Badge-Seiten `3xl` → `xl:4xl`. Neue Seiten sollten dasselbe Muster benutzen. Unter 1024 px bleibt das Handy-/Tablet-Layout unverändert.
 
+## Beziehungsnetz: eigene Daten (live)
+- Jeder Verlaufsschritt hat ein frei wählbares Datum „gilt seit“ (`relationship_history.occurred_on`, sonst Tag des Anlegens). Beim Anlegen („Seit wann?“) und Weiterentwickeln („Gilt seit“) per Datumsfeld; bestehende Schritte nachträglich über das Stift-Symbol im Reiter „Verlauf“ (Datum + Notiz, RPC `update_relationship_step`). Der Trigger übernimmt `character_relationships.change_date` in den Verlauf. Die Zeitleiste im Netz (`relationshipsAsOf`) und die Sortierung nutzen das Datum (`stepDate`/`stepTime`/`compareSteps` in `lib/relationship-graph.ts`). Migration `supabase/migration_relationship_dates.sql` im SQL-Editor **ausgeführt**.
+
 ## Wiki-Rechte (live)
 - Jedes Mitglied der Welt darf jeden Wiki-Eintrag bearbeiten (RLS-Policy `wiki_pages_update_member`, `supabase/migration_wiki_edit_all.sql`, im SQL-Editor **ausgeführt**; Bearbeiten-Knopf in `wiki/[id]/page.tsx` immer sichtbar). Löschen weiterhin nur Ersteller:in und Welt-Besitzer:in (`wiki_pages_delete_own_or_world_owner`).
 
