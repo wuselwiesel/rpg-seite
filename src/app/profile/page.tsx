@@ -6,6 +6,7 @@ import type { Profile } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
 import { PushSubscribeToggle } from "@/components/push-subscribe-toggle";
 import { PaletteSwitcher } from "@/components/palette-switcher";
+import { AppLogoPicker } from "@/components/app-logo-picker";
 import { NotificationSettings } from "./notification-settings";
 import { DEFAULT_PREFS } from "@/lib/notification-prefs";
 
@@ -52,6 +53,11 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
       <div className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-lg text-fg">Farbpalette</h2>
         <PaletteSwitcher />
+      </div>
+
+      <div className="mt-8 border-t border-line pt-6">
+        <h2 className="mb-3 font-serif text-lg text-fg">App-Logo</h2>
+        <AppLogoPicker />
       </div>
 
       <div className="mt-8 border-t border-line pt-6">

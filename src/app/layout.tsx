@@ -127,7 +127,12 @@ try {
   var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.classList.toggle('dark', dark);
   var favicon = document.getElementById('favicon');
-  if (favicon) favicon.href = dark ? '/icons/icon-dark-32.png' : '/icon.png';
+  var logo = localStorage.getItem('wortwinkel:app-logo');
+  if (logo && /^[a-z]+$/.test(logo) && logo !== 'rose') {
+    if (favicon) favicon.href = '/icons/logos/' + logo + '-64.png';
+    var apple = document.querySelector('link[rel="apple-touch-icon"]');
+    if (apple) apple.href = '/icons/logos/' + logo + '-apple.png';
+  } else if (favicon) favicon.href = dark ? '/icons/icon-dark-32.png' : '/icon.png';
   var palette = localStorage.getItem('palette');
   if (palette) document.documentElement.setAttribute('data-palette', palette);
 } catch (e) {}
