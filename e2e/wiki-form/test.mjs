@@ -1,0 +1,113 @@
+// Wiki-Formular im echten Browser: Typ wählen bereitet Steckbrief und Gliederung vor, ohne Geschriebenes zu überschreiben.
+import { chromium } from "playwright-core";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import "./build.mjs";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const url = "file://" + path.join(here, ".build", "index.html");
+const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM || undefined, args: ["--no-sandbox"] });
+const results = [];
+const check = (name, ok, extra = "") => {
+  results.push(ok);
+  console.log(ok ? "OK  " : "FAIL", name, extra);
+};
+
+async function fresh() {
+  const ctx = await browser.newContext({ viewport: { width: 900, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.goto(url);
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.locator(".ProseMirror").waitFor();
+  return { ctx, page, errors, type: () => page.locator('input[name="page_type"]').inputValue(), body: () => page.locator('input[name="content"]').inputValue() };
+}
+const fieldTitles = (page) => page.locator('input[name$="title"], input[placeholder*="Titel"]').evaluateAll((els) => els.map((e) => e.value));
+
+// 1. Typ Ereignis auf leerer Seite: Gliederung und Felder
+{
+  const { ctx, page, errors, type, body } = await fresh();
+  await page.getByRole("radio", { name: "Ereignis" }).click();
+  await page.waitForTimeout(200);
+  check("Typ wird gesetzt", (await type()) === "ereignis");
+  const html = await page.locator(".ProseMirror").innerHTML();
+  check("Gliederung steht im Editor", html.includes("Was geschah?") && html.includes("Folgen"), html.slice(0, 120));
+  const text = await page.locator("form").innerText();
+  check("Steckbrief hat die Felder des Typs", ["Datum", "Beteiligte"].every((t) => text.length > 0) && (await page.locator('input[value="Beteiligte"]').count()) === 1);
+  check("keine Seitenfehler", errors.length === 0, errors.join("|"));
+  await ctx.close();
+}
+// 2. Geschriebener Text bleibt beim Typwechsel
+{
+  const { ctx, page, body } = await fresh();
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Mein eigener Text");
+  await page.getByRole("radio", { name: "Ort" }).click();
+  await page.waitForTimeout(200);
+  const b = await body();
+  check("Eigener Text bleibt, keine Gliederung darüber", b.includes("Mein eigener Text") && !b.includes("Geschichte"), b);
+  check("Felder des Typs kommen trotzdem", (await page.locator('input[value="Lage"]').count()) === 1);
+  // Felder mit Inhalt bleiben beim nächsten Wechsel
+  await page.locator('input[value="Lage"]').locator("xpath=following::*[self::input or self::textarea][1]").fill("Am Meer");
+  await page.getByRole("radio", { name: "Spezies / Wesen" }).click();
+  await page.waitForTimeout(200);
+  check("Ausgefüllter Steckbrief wird nicht ersetzt", (await page.locator('input[value="Lage"]').count()) === 1 && (await page.locator('input[value="Schwäche"]').count()) === 0);
+  await ctx.close();
+}
+// 3. „Keine“ nimmt den Typ zurück
+{
+  const { ctx, page, type } = await fresh();
+  await page.getByRole("radio", { name: "Mythos" }).click();
+  await page.getByRole("radio", { name: "Keine" }).click();
+  check("Typ lässt sich zurücknehmen", (await type()) === "");
+  await ctx.close();
+}
+
+// 4. Tags und Entwurf-Schalter
+{
+  const { ctx, page } = await fresh();
+  await page.locator('input[name="tags"]').fill("Magie, Küste");
+  check("Tags-Feld nimmt Text an", (await page.locator('input[name="tags"]').inputValue()) === "Magie, Küste");
+  const draft = page.locator('input[name="is_draft"]');
+  check("Entwurf-Schalter ist anfangs aus", (await draft.count()) === 1 && !(await draft.isChecked()));
+  await draft.check();
+  check("Entwurf-Schalter lässt sich setzen", await draft.isChecked());
+  await ctx.close();
+}
+
+// 5. Zeitpunkt: Monate des Kalenders, Tag erst nach Monatswahl, Zeitraum
+{
+  const { ctx, page } = await fresh();
+  const month = page.locator('select[name="date_month"]');
+  check("Monatsliste hat die 12 gewöhnlichen Monate", (await month.locator("option").count()) === 13);
+  const day = page.locator('input[name="date_day"]');
+  check("Tag ist ohne Monat gesperrt", await day.isDisabled());
+  await page.locator('input[name="date_year"]').fill("1432");
+  await month.selectOption("2");
+  check("Tag wird nach Monatswahl frei, Obergrenze = Tage des Monats", !(await day.isDisabled()) && (await day.getAttribute("max")) === "28");
+  await day.fill("12");
+  check("Zeitraum lässt sich ein- und ausblenden", (await page.locator('input[name="date_end_year"]').count()) === 0);
+  await page.getByRole("button", { name: "+ Zeitraum (mit Ende)" }).click();
+  check("Ende-Felder erscheinen", (await page.locator('input[name="date_end_year"]').count()) === 1);
+  await page.getByRole("button", { name: "Zeitraum entfernen" }).click();
+  check("Ende-Felder verschwinden wieder (und werden nicht gesendet)", (await page.locator('input[name="date_end_year"]').count()) === 0);
+  await ctx.close();
+}
+
+// 6. Person: Bild im Hochformat statt breitem Titelbild
+{
+  const { ctx, page } = await fresh();
+  check("Ohne Typ heißt es Titelbild", (await page.getByText("Titelbild", { exact: true }).count()) === 1);
+  await page.getByRole("radio", { name: "Person" }).click();
+  check("Bei Person: Bild im Hochformat", (await page.getByText("Bild (Hochformat, wie ein Charakterbild)").count()) === 1 && (await page.getByText("Titelbild", { exact: true }).count()) === 0);
+  await page.getByRole("radio", { name: "Ort" }).click();
+  check("Bei Ort wieder Titelbild", (await page.getByText("Titelbild", { exact: true }).count()) === 1);
+  await ctx.close();
+}
+
+await browser.close();
+const failed = results.filter((r) => !r).length;
+console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);
+process.exit(failed ? 1 : 0);

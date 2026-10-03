@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Folder } from "lucide-react";
 import { WikiTile } from "@/components/wiki-tile";
+import { WikiTypeBadge } from "@/components/wiki-type-icon";
 import type { TreeFolder, TreePage } from "@/lib/wiki-tree";
 
 const SPINES = ["bg-accent", "bg-accent-strong", "bg-chip"];
@@ -58,6 +59,12 @@ export function PageCard({ page, showChildren = true }: { page: TreePage; showCh
         >
           {page.title}
         </Link>
+        {(page.page_type || page.is_draft) && (
+          <p className="mt-1 flex flex-wrap items-center gap-1.5">
+            <WikiTypeBadge type={page.page_type} />
+            {page.is_draft && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">Entwurf</span>}
+          </p>
+        )}
         {page.lead && <p className="mt-0.5 line-clamp-2 text-sm text-fg-soft">{page.lead}</p>}
         {kids.length > 0 && (
           <ul className="relative z-10 mt-2 flex flex-wrap gap-1.5">

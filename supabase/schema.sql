@@ -2923,4 +2923,160 @@ where p.folder_id is null
   and f.parent_id is null
   and f.name = case p.category when 'ort' then 'Orte' when 'npc' then 'NPCs' when 'fraktion' then 'Fraktionen' else 'Sonstiges' end;
 
+
+-- Wiki: Typ einer Seite (Ort, Spezies, Organisation, ...). Optional; bestehende Seiten bleiben ohne Typ.
+alter table public.wiki_pages add column if not exists page_type text;
+alter table public.wiki_pages drop constraint if exists wiki_pages_page_type_check;
+alter table public.wiki_pages add constraint wiki_pages_page_type_check
+  check (page_type is null or page_type in ('ort','spezies','organisation','person','ereignis','mythos','gegenstand'));
+create index if not exists wiki_pages_type_idx on public.wiki_pages (world_id, page_type);
+
+
+-- Wiki Runde 3: Tags, Entwürfe, Favoriten.
+-- Entwürfe sieht nur, wer sie angelegt hat; alle anderen Mitglieder sehen die Seite erst nach dem Veröffentlichen.
+alter table public.wiki_pages add column if not exists tags text[] not null default '{}';
+alter table public.wiki_pages add column if not exists is_draft boolean not null default false;
+create index if not exists wiki_pages_tags_idx on public.wiki_pages using gin (tags);
+
+-- Bestehende Regel direkt ändern (kein DROP, daher ohne Lücke, in der niemand etwas sieht).
+alter policy "wiki_pages_select_member" on public.wiki_pages
+  using (is_world_member(world_id) and (not is_draft or created_by = auth.uid()));
+
+create table if not exists public.wiki_favorites (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  page_id uuid not null references public.wiki_pages (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, page_id)
+);
+alter table public.wiki_favorites enable row level security;
+drop policy if exists "wiki_favorites_select_own" on public.wiki_favorites;
+create policy "wiki_favorites_select_own" on public.wiki_favorites for select using (user_id = auth.uid());
+drop policy if exists "wiki_favorites_insert_own" on public.wiki_favorites;
+create policy "wiki_favorites_insert_own" on public.wiki_favorites for insert with check (user_id = auth.uid());
+drop policy if exists "wiki_favorites_delete_own" on public.wiki_favorites;
+create policy "wiki_favorites_delete_own" on public.wiki_favorites for delete using (user_id = auth.uid());
+grant select, insert, delete on public.wiki_favorites to authenticated;
+
+
+
+-- Wiki Runde 4: Karten mit Markierungen (Pins). Ein Pin kann auf eine Wiki-Seite oder auf eine weitere Karte zeigen.
+-- Das Kartenbild liegt im Bucket wiki-covers (Pfad maps/...). Mitglieder der Welt dürfen Karten und Pins bearbeiten (wie Wiki-Seiten);
+-- Karten löschen dürfen nur, wer sie angelegt hat, und die Welt-Besitzerin.
+create table if not exists public.wiki_maps (
+  id uuid primary key default gen_random_uuid(),
+  world_id uuid not null references public.worlds (id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 120),
+  description text check (description is null or char_length(description) <= 500),
+  image_url text not null,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists wiki_maps_world_idx on public.wiki_maps (world_id);
+
+create table if not exists public.wiki_map_pins (
+  id uuid primary key default gen_random_uuid(),
+  map_id uuid not null references public.wiki_maps (id) on delete cascade,
+  x numeric(6, 3) not null check (x between 0 and 100),
+  y numeric(6, 3) not null check (y between 0 and 100),
+  label text not null check (char_length(label) between 1 and 80),
+  icon text check (icon is null or char_length(icon) <= 40),
+  page_id uuid references public.wiki_pages (id) on delete set null,
+  target_map_id uuid references public.wiki_maps (id) on delete set null,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists wiki_map_pins_map_idx on public.wiki_map_pins (map_id);
+create index if not exists wiki_map_pins_page_idx on public.wiki_map_pins (page_id);
+
+-- Pins zeigen nur auf Seiten und Karten derselben Welt.
+create or replace function public.wiki_map_pin_check() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if new.page_id is not null and not exists (
+    select 1 from wiki_pages p join wiki_maps m on m.id = new.map_id where p.id = new.page_id and p.world_id = m.world_id
+  ) then
+    raise exception 'Die Seite gehört nicht zur Welt dieser Karte.';
+  end if;
+  if new.target_map_id is not null and not exists (
+    select 1 from wiki_maps t join wiki_maps m on m.id = new.map_id where t.id = new.target_map_id and t.world_id = m.world_id
+  ) then
+    raise exception 'Die Zielkarte gehört nicht zur Welt dieser Karte.';
+  end if;
+  if new.target_map_id = new.map_id then
+    raise exception 'Ein Pin kann nicht auf die eigene Karte zeigen.';
+  end if;
+  return new;
+end $$;
+drop trigger if exists wiki_map_pin_check on public.wiki_map_pins;
+create trigger wiki_map_pin_check before insert or update on public.wiki_map_pins
+  for each row execute function public.wiki_map_pin_check();
+
+alter table public.wiki_maps enable row level security;
+alter table public.wiki_map_pins enable row level security;
+
+drop policy if exists "wiki_maps_select_member" on public.wiki_maps;
+create policy "wiki_maps_select_member" on public.wiki_maps for select using (is_world_member(world_id));
+drop policy if exists "wiki_maps_insert_member" on public.wiki_maps;
+create policy "wiki_maps_insert_member" on public.wiki_maps for insert with check (created_by = auth.uid() and is_world_member(world_id));
+drop policy if exists "wiki_maps_update_member" on public.wiki_maps;
+create policy "wiki_maps_update_member" on public.wiki_maps for update using (is_world_member(world_id)) with check (is_world_member(world_id));
+drop policy if exists "wiki_maps_delete_own_or_world_owner" on public.wiki_maps;
+create policy "wiki_maps_delete_own_or_world_owner" on public.wiki_maps for delete using (
+  created_by = auth.uid() or exists (select 1 from worlds w where w.id = wiki_maps.world_id and w.created_by = auth.uid())
+);
+
+drop policy if exists "wiki_map_pins_select_member" on public.wiki_map_pins;
+create policy "wiki_map_pins_select_member" on public.wiki_map_pins for select using (
+  exists (select 1 from wiki_maps m where m.id = map_id and is_world_member(m.world_id))
+);
+drop policy if exists "wiki_map_pins_insert_member" on public.wiki_map_pins;
+create policy "wiki_map_pins_insert_member" on public.wiki_map_pins for insert with check (
+  created_by = auth.uid() and exists (select 1 from wiki_maps m where m.id = map_id and is_world_member(m.world_id))
+);
+drop policy if exists "wiki_map_pins_update_member" on public.wiki_map_pins;
+create policy "wiki_map_pins_update_member" on public.wiki_map_pins for update
+  using (exists (select 1 from wiki_maps m where m.id = map_id and is_world_member(m.world_id)))
+  with check (exists (select 1 from wiki_maps m where m.id = map_id and is_world_member(m.world_id)));
+drop policy if exists "wiki_map_pins_delete_member" on public.wiki_map_pins;
+create policy "wiki_map_pins_delete_member" on public.wiki_map_pins for delete using (
+  exists (select 1 from wiki_maps m where m.id = map_id and is_world_member(m.world_id))
+);
+
+grant select, insert, update, delete on public.wiki_maps, public.wiki_map_pins to authenticated;
+
+
+
+-- Wiki Runde 8: Zeitpunkt an Wiki-Seiten (z. B. Ereignisse) und ein frei einstellbarer Kalender je Welt.
+-- Daten sind teilweise möglich (nur Jahr; Jahr und Monat; ganzes Datum) und können einen Zeitraum (Ende) haben.
+alter table public.wiki_pages add column if not exists event_year integer;
+alter table public.wiki_pages add column if not exists event_month smallint;
+alter table public.wiki_pages add column if not exists event_day smallint;
+alter table public.wiki_pages add column if not exists event_end_year integer;
+alter table public.wiki_pages add column if not exists event_end_month smallint;
+alter table public.wiki_pages add column if not exists event_end_day smallint;
+alter table public.wiki_pages add constraint wiki_pages_event_ranges check (
+  (event_month is null or event_month between 1 and 99) and (event_day is null or event_day between 1 and 999)
+  and (event_end_month is null or event_end_month between 1 and 99) and (event_end_day is null or event_end_day between 1 and 999)
+);
+create index if not exists wiki_pages_event_idx on public.wiki_pages (world_id, event_year) where event_year is not null;
+
+-- Kalender der Welt: Liste der Monate (Name, Anzahl Tage) und eine Bezeichnung für die Jahreszählung (z. B. „n. d. Zeitenwende“).
+create table if not exists public.wiki_calendars (
+  world_id uuid primary key references public.worlds (id) on delete cascade,
+  months jsonb not null,
+  era text check (era is null or char_length(era) <= 40),
+  updated_by uuid references auth.users (id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+alter table public.wiki_calendars enable row level security;
+drop policy if exists "wiki_calendars_select_member" on public.wiki_calendars;
+create policy "wiki_calendars_select_member" on public.wiki_calendars for select using (is_world_member(world_id));
+drop policy if exists "wiki_calendars_insert_member" on public.wiki_calendars;
+create policy "wiki_calendars_insert_member" on public.wiki_calendars for insert with check (is_world_member(world_id) and updated_by = auth.uid());
+drop policy if exists "wiki_calendars_update_member" on public.wiki_calendars;
+create policy "wiki_calendars_update_member" on public.wiki_calendars for update using (is_world_member(world_id)) with check (is_world_member(world_id));
+grant select, insert, update on public.wiki_calendars to authenticated;
+
+
 notify pgrst, 'reload schema';

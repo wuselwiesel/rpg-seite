@@ -231,6 +231,16 @@ export type WikiPage = {
   aliases?: string[];
   cover_image_url?: string | null;
   gallery?: string[];
+  page_type?: string | null;
+  tags?: string[];
+  event_year?: number | null;
+  event_month?: number | null;
+  event_day?: number | null;
+  event_end_year?: number | null;
+  event_end_month?: number | null;
+  event_end_day?: number | null;
+  // Entwurf: nur die Autorin sieht die Seite (Leseregel in der Datenbank).
+  is_draft?: boolean;
   // Steckbrief: Zeilen aus Symbol, Titel, Text (wie die Profilfelder).
   fields?: { icon: string; title: string; text: string }[];
   created_by: string;

@@ -18,7 +18,7 @@ export const getWikiPageRows = cache(async (worldId: string): Promise<PageRow[]>
   const supabase = await createClient();
   const { data } = await supabase
     .from("wiki_pages")
-    .select("id, title, folder_id, parent_page_id, lead, cover_image_url, updated_at, created_by")
+    .select("id, title, folder_id, parent_page_id, lead, page_type, tags, is_draft, event_year, event_month, event_day, event_end_year, event_end_month, event_end_day, cover_image_url, created_at, updated_at, created_by")
     .eq("world_id", worldId)
     .returns<PageRow[]>();
   return data ?? [];
@@ -42,4 +42,11 @@ export const getWikiLinkPages = cache(async (worldId: string): Promise<WikiLinkP
     .eq("world_id", worldId)
     .returns<WikiLinkPage[]>();
   return data ?? [];
+});
+
+// Seiten, die die Person als Favorit markiert hat.
+export const getWikiFavoriteIds = cache(async (userId: string): Promise<string[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("wiki_favorites").select("page_id").eq("user_id", userId);
+  return (data ?? []).map((r) => r.page_id as string);
 });

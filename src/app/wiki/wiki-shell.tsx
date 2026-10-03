@@ -1,16 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { WikiTypeIcon } from "@/components/wiki-type-icon";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Folder, FolderOpen, FolderPlus, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import { ChevronRight, FileText, Folder, FolderOpen, FolderPlus, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { Wordmark } from "@/components/wordmark";
 import { FolderDialog, type FolderDialogState } from "./folder-dialog";
 import { useNavHidden, useOpenState } from "./use-open-folders";
+import { moveWikiFolder } from "./folder-actions";
+import { moveWikiPage } from "./actions";
 import {
   buildWikiTree,
   folderPath,
   pageAncestors,
+  planMove,
+  type DragItem,
+  type DropTarget,
   type FolderRow,
   type PageRow,
   type TreeFolder,
@@ -44,6 +64,53 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
   const [navOpen, setNavOpen] = useState(false);
   const [dialog, setDialog] = useState<FolderDialogState | null>(null);
 
+  // --- Ziehen und Ablegen: Ordner und Seiten per Maus oder (langes Drücken) per Finger verschieben ---
+  const [activeItem, setActiveItem] = useState<DragItem | null>(null);
+  const [overTarget, setOverTarget] = useState<DropTarget | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const [moving, startMove] = useTransition();
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
+  );
+  const validFor = useCallback(
+    (target: DropTarget) => (activeItem ? planMove(folders, pages, activeItem, target) !== null : false),
+    [activeItem, folders, pages],
+  );
+  const dnd: DndApi = { active: activeItem, validFor };
+
+  const targetOf = (id: unknown): DropTarget | null => {
+    const raw = String(id ?? "");
+    if (raw === "root") return { kind: "root" };
+    const [kind, ...rest] = raw.split(":");
+    return kind === "folder" || kind === "page" ? { kind, id: rest.join(":") } : null;
+  };
+  const onDragStart = (e: DragStartEvent) => {
+    setMoveError(null);
+    setActiveItem((e.active.data.current as DragItem | undefined) ?? null);
+  };
+  const onDragOver = (e: DragOverEvent) => setOverTarget(e.over ? targetOf(e.over.id) : null);
+  const onDragEnd = (e: DragEndEvent) => {
+    const item = activeItem;
+    const target = e.over ? targetOf(e.over.id) : null;
+    setActiveItem(null);
+    setOverTarget(null);
+    if (!item || !target) return;
+    const plan = planMove(folders, pages, item, target);
+    if (!plan) return;
+    startMove(async () => {
+      const err =
+        plan.type === "folder"
+          ? await moveWikiFolder(plan.id, plan.parentId)
+          : await moveWikiPage(plan.id, plan.folderId, plan.parentPageId);
+      setMoveError(err);
+    });
+  };
+  const onDragCancel = () => {
+    setActiveItem(null);
+    setOverTarget(null);
+  };
+
   // Auf dem Weg zur geöffneten Seite sind alle Ordner/Oberseiten aufgeklappt, solange man sie nicht selbst zuklappt.
   const autoOpen = useMemo(() => {
     const ids = new Set<string>();
@@ -67,6 +134,16 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
     save(next);
   };
 
+  // Wer lange über einem zugeklappten Ordner verharrt, klappt ihn auf (damit man tiefer ablegen kann).
+  useEffect(() => {
+    if (!activeItem || overTarget?.kind !== "folder" || !overTarget.id) return;
+    const id = overTarget.id;
+    if (id in stored ? stored[id] : autoOpen.has(id)) return;
+    const timer = setTimeout(() => save({ ...stored, [id]: true }), 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeItem, overTarget, stored]);
+
   const q = query.trim().toLowerCase();
   const hits = q
     ? pages.filter((p) => `${p.title} ${p.lead ?? ""}`.toLowerCase().includes(q)).slice(0, 12)
@@ -75,7 +152,7 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
   const canDelete = (f: TreeFolder) => f.created_by === userId || isWorldOwner;
 
   return (
-    <div className="mx-auto max-w-[1800px] px-4 py-6 sm:py-8 lg:px-8">
+    <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-20">
       <header className="mb-6 hidden items-center justify-between gap-4 border-b border-line pb-4 lg:flex">
         <Link href="/" aria-label="Wortwinkel" className="block">
           <Wordmark height={36} />
@@ -141,6 +218,26 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
               </button>
             </div>
 
+            <Link
+              href={q ? `/wiki/suche?q=${encodeURIComponent(query.trim())}` : "/wiki/suche"}
+              onClick={() => setNavOpen(false)}
+              className="-mt-1 px-1 text-xs text-muted transition hover:text-accent"
+            >
+              Erweiterte Suche mit Filtern
+            </Link>
+            <Link href="/wiki/karten" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Karten
+            </Link>
+            <Link href="/wiki/graph" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Graph
+            </Link>
+            <Link href="/wiki/zeitleiste" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Zeitleiste
+            </Link>
+            <Link href="/wiki/kalender" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
+              Kalender
+            </Link>
+
             <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">
             {q ? (
               <ul className="flex flex-col">
@@ -162,7 +259,10 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                       }}
                       className="flex flex-col rounded-lg px-2 py-1.5 text-sm text-fg transition hover:bg-surface-2"
                     >
-                      <span className="font-medium">{p.title}</span>
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <WikiTypeIcon type={p.page_type} className="h-3.5 w-3.5 shrink-0 text-muted" />
+                        {p.title}
+                      </span>
                       <span className="truncate text-xs text-muted">
                         {folderPath(folders, p.folder_id).map((f) => f.name).join(" › ") || "Ohne Ordner"}
                       </span>
@@ -172,6 +272,22 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
               </ul>
             ) : (
               <>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={pointerWithin}
+                  onDragStart={onDragStart}
+                  onDragOver={onDragOver}
+                  onDragEnd={onDragEnd}
+                  onDragCancel={onDragCancel}
+                >
+                {moveError && (
+                  <p role="alert" className="mb-2 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs text-red-600 dark:text-red-400">
+                    {moveError}{" "}
+                    <button type="button" onClick={() => setMoveError(null)} className="underline">
+                      OK
+                    </button>
+                  </p>
+                )}
                 <ul role="tree" className="flex flex-col">
                   {tree.folders.map((f) => (
                     <FolderNode
@@ -183,6 +299,7 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                       canDelete={canDelete}
                       onDialog={setDialog}
                       onNavigate={() => setNavOpen(false)}
+                      dnd={dnd}
                     />
                   ))}
                   {tree.loose.length > 0 && (
@@ -190,12 +307,36 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                       <p className="px-2 pb-1 text-xs text-muted">Ohne Ordner</p>
                       <ul>
                         {tree.loose.map((p) => (
-                          <PageNode key={p.id} page={p} isOpen={isOpen} toggle={toggle} cur={cur} depth={0} onNavigate={() => setNavOpen(false)} />
+                          <PageNode key={p.id} page={p} isOpen={isOpen} toggle={toggle} cur={cur} depth={0} onNavigate={() => setNavOpen(false)} dnd={dnd} />
                         ))}
                       </ul>
                     </li>
                   )}
                 </ul>
+                {/* Am Ende und am unteren Rand haftend: erscheint, ohne die Zeilen darüber zu verschieben. */}
+                {activeItem && (
+                  <div className="sticky bottom-0 mt-2 bg-surface pt-1">
+                    <RootDropZone dnd={dnd} kind={activeItem.kind} />
+                  </div>
+                )}
+                <DragOverlay dropAnimation={null}>
+                  {activeItem && (
+                    <div className="flex max-w-[240px] items-center gap-2 rounded-lg border border-accent bg-surface px-3 py-1.5 text-sm font-medium text-fg shadow-lg">
+                      {activeItem.kind === "folder" ? (
+                        <Folder className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
+                      ) : (
+                        <FileText className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
+                      )}
+                      <span className="truncate">
+                        {activeItem.kind === "folder"
+                          ? folders.find((f) => f.id === activeItem.id)?.name
+                          : pages.find((p) => p.id === activeItem.id)?.title}
+                      </span>
+                    </div>
+                  )}
+                </DragOverlay>
+                </DndContext>
+                {moving && <p className="mt-1 px-2 text-xs text-muted">Verschiebe …</p>}
                 {folders.length + pages.length > 0 && (
                   <button type="button" onClick={toggleAll} className="mt-2 w-full rounded-lg px-2 py-1.5 text-left text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
                     {anyOpen ? "Alle zuklappen" : "Alle aufklappen"}
@@ -239,7 +380,43 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
   );
 }
 
+type DndApi = { active: DragItem | null; validFor: (t: DropTarget) => boolean };
+
+// Ablagefläche für „oberste Ebene“ / „Ohne Ordner“, nur sichtbar, solange etwas gezogen wird.
+function RootDropZone({ dnd, kind }: { dnd: DndApi; kind: "folder" | "page" }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "root" });
+  const valid = dnd.validFor({ kind: "root" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-lg border border-dashed px-3 py-2 text-center text-xs transition ${
+        isOver && valid ? "border-accent bg-accent/10 text-accent" : valid ? "border-line text-muted" : "border-line/50 text-muted/50"
+      }`}
+    >
+      {kind === "folder" ? "Hierher ziehen: oberste Ebene" : "Hierher ziehen: ohne Ordner"}
+    </div>
+  );
+}
+
+// Zeile im Baum als Zieh-Quelle und Ablageziel zugleich.
+function useRowDnd(item: DragItem, dnd: DndApi) {
+  const drag = useDraggable({ id: `${item.kind}:${item.id}`, data: item });
+  const drop = useDroppable({ id: `${item.kind}:${item.id}` });
+  const { setNodeRef: setDrag } = drag;
+  const { setNodeRef: setDrop } = drop;
+  const setRef = useCallback(
+    (el: HTMLElement | null) => {
+      setDrag(el);
+      setDrop(el);
+    },
+    [setDrag, setDrop],
+  );
+  const over = drop.isOver && dnd.validFor({ kind: item.kind, id: item.id });
+  return { setRef, listeners: drag.listeners, dragging: drag.isDragging, over };
+}
+
 type NodeCommon = {
+  dnd: DndApi;
   isOpen: (id: string) => boolean;
   toggle: (id: string) => void;
   cur: { folder: string | null; page: string | null };
@@ -270,7 +447,8 @@ function FolderNode({
   canDelete: (f: TreeFolder) => boolean;
   onDialog: (d: FolderDialogState) => void;
 }) {
-  const { isOpen, toggle, cur, onNavigate } = common;
+  const { isOpen, toggle, cur, onNavigate, dnd } = common;
+  const { setRef: setRowRef, listeners: rowListeners, dragging, over } = useRowDnd({ kind: "folder", id: folder.id }, dnd);
   const hasContent = folder.children.length + folder.pages.length > 0;
   const open = isOpen(folder.id) && hasContent;
   const active = cur.folder === folder.id;
@@ -293,7 +471,17 @@ function FolderNode({
 
   return (
     <li role="treeitem" aria-selected={active} aria-expanded={hasContent ? open : undefined}>
-      <div ref={ref} className={`group relative flex items-center rounded-lg ${active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"}`}>
+      <div
+        ref={(el) => {
+          ref.current = el;
+          setRowRef(el);
+        }}
+        {...rowListeners}
+        style={{ touchAction: "manipulation" }}
+        className={`group relative flex items-center rounded-lg ${dragging ? "opacity-40" : ""} ${
+          over ? "bg-accent/15 ring-2 ring-accent" : active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"
+        }`}
+      >
         {hasContent ? (
           <Chevron open={open} label={`${folder.name} ${open ? "einklappen" : "aufklappen"}`} onClick={() => toggle(folder.id)} />
         ) : (
@@ -359,13 +547,21 @@ function FolderNode({
 }
 
 function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; depth: number }) {
-  const { isOpen, toggle, cur, onNavigate } = common;
+  const { isOpen, toggle, cur, onNavigate, dnd } = common;
+  const { setRef: setRowRef, listeners: rowListeners, dragging, over } = useRowDnd({ kind: "page", id: page.id }, dnd);
   const hasKids = page.children.length > 0;
   const open = isOpen(page.id) && hasKids;
   const active = cur.page === page.id;
   return (
     <li role="treeitem" aria-selected={active} aria-expanded={hasKids ? open : undefined}>
-      <div className={`flex items-center rounded-lg ${active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"}`}>
+      <div
+        ref={setRowRef}
+        {...rowListeners}
+        style={{ touchAction: "manipulation" }}
+        className={`flex items-center rounded-lg ${dragging ? "opacity-40" : ""} ${
+          over ? "bg-accent/15 ring-2 ring-accent" : active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"
+        }`}
+      >
         {hasKids ? (
           <Chevron open={open} label={`${page.title} ${open ? "einklappen" : "aufklappen"}`} onClick={() => toggle(page.id)} />
         ) : (
@@ -374,9 +570,11 @@ function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; dep
         <Link
           href={`/wiki/${page.id}`}
           onClick={onNavigate}
-          className={`min-w-0 flex-1 truncate py-1.5 pr-2 text-sm ${active ? "font-semibold text-accent" : "text-fg-soft hover:text-fg"}`}
+          className={`flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-2 text-sm ${active ? "font-semibold text-accent" : "text-fg-soft hover:text-fg"}`}
         >
-          {page.title}
+          <WikiTypeIcon type={page.page_type} className="h-3.5 w-3.5 shrink-0 text-muted" />
+          <span className="truncate">{page.title}</span>
+          {page.is_draft && <span className="shrink-0 rounded bg-accent/10 px-1.5 text-[10px] text-accent">Entwurf</span>}
         </Link>
       </div>
       {open && (

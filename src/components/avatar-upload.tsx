@@ -20,7 +20,8 @@ export function AvatarUpload({
   initialUrl?: string | null;
   displayName: string;
   bucket?: string;
-  variant?: "circle" | "cover";
+  // circle: rundes Profilbild; cover: breites Titelbild; portrait: normales Hochformat-Bild (z. B. Person im Wiki)
+  variant?: "circle" | "cover" | "portrait";
 }) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [uploading, setUploading] = useState(false);
@@ -71,9 +72,9 @@ export function AvatarUpload({
       {cropFile && (
         <ImageCropper
           file={cropFile}
-          aspects={variant === "cover" ? [ASPECTS.cover, ASPECTS.landscape] : [ASPECTS.square]}
-          round={variant !== "cover"}
-          title={variant === "cover" ? "Titelbild zuschneiden" : "Profilbild zuschneiden"}
+          aspects={variant === "cover" ? [ASPECTS.cover, ASPECTS.landscape] : variant === "portrait" ? [ASPECTS.portrait, ASPECTS.square] : [ASPECTS.square]}
+          round={variant === "circle"}
+          title={variant === "cover" ? "Titelbild zuschneiden" : variant === "portrait" ? "Bild zuschneiden" : "Profilbild zuschneiden"}
           onCancel={() => setCropFile(null)}
           onDone={(cropped) => {
             setCropFile(null);
@@ -84,6 +85,15 @@ export function AvatarUpload({
       <input type="hidden" name={name} value={url} />
       {variant === "cover" ? (
         <WorldCover name={displayName} coverUrl={url} className="h-32 w-full" />
+      ) : variant === "portrait" ? (
+        url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="h-28 w-[5.6rem] rounded-xl bg-surface-2 object-cover" />
+        ) : (
+          <span aria-hidden className="flex h-28 w-[5.6rem] items-center justify-center rounded-xl bg-surface-2 text-3xl text-muted">
+            {displayName.trim().charAt(0).toUpperCase() || "?"}
+          </span>
+        )
       ) : (
         <CharacterAvatar name={displayName} avatarUrl={url} size={56} />
       )}

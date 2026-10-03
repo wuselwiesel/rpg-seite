@@ -2,6 +2,7 @@
 // Arbeitet nur auf Textknoten und lässt Links und @-Erwähnungen unangetastet.
 
 import { BRACKET_LINK_SOURCE, escapeRegex, nameVariants } from "@/lib/wiki-links";
+import { characterAnchor, characterIndex, type CharacterTerm } from "@/lib/character-links";
 
 // `category` ist die Beschriftung für die Vorschau (heute der Ordnername); ältere Schlüssel werden übersetzt.
 export type WikiTerm = { id: string; title: string; category: string; excerpt: string; aliases?: string[]; coverImageUrl?: string | null };
@@ -23,10 +24,11 @@ function wikiAnchor(entry: WikiTerm, label: string): string {
 }
 
 // Ersetzt [[Titel]] und [[Titel|Anzeigetext]] in Textknoten durch Links; unbekannte Titel werden rote Links zum Anlegen.
-export function linkWikiBrackets(html: string, wiki: WikiTerm[] = []): string {
+export function linkWikiBrackets(html: string, wiki: WikiTerm[] = [], characters: CharacterTerm[] = []): string {
   if (!html.includes("[[")) return html;
   const byName = new Map<string, WikiTerm>();
   for (const entry of wiki) for (const n of nameVariants(entry.title, entry.aliases)) if (!byName.has(n.toLowerCase())) byName.set(n.toLowerCase(), entry);
+  const charByName = characterIndex(characters);
   const re = new RegExp(BRACKET_LINK_SOURCE, "g");
   let anchorDepth = 0;
   return html
@@ -43,6 +45,9 @@ export function linkWikiBrackets(html: string, wiki: WikiTerm[] = []): string {
         const shown = (label ?? name).trim();
         const entry = byName.get(name.toLowerCase());
         if (entry) return wikiAnchor(entry, shown);
+        // Keine Seite mit diesem Namen: ein Charakter der Welt
+        const character = charByName.get(name.toLowerCase());
+        if (character) return characterAnchor(character, shown);
         return `<a class="wiki-missing" href="/wiki/new?title=${encodeURIComponent(name)}" title="Noch keine Seite. Anlegen.">${shown}</a>`;
       });
     })
@@ -51,10 +56,10 @@ export function linkWikiBrackets(html: string, wiki: WikiTerm[] = []): string {
 
 export function autolinkHtml(
   html: string,
-  options: { wiki?: WikiTerm[]; tagHref?: string; excludeWikiId?: string },
+  options: { wiki?: WikiTerm[]; characters?: CharacterTerm[]; tagHref?: string; excludeWikiId?: string },
 ): string {
   // [[…]] nur dort verlinken, wo das Wiki mitgegeben wird (Wiki-Seiten, Beiträge mit Verknüpfung), nicht in jedem Text.
-  if (options.wiki) html = linkWikiBrackets(html, options.wiki);
+  if (options.wiki) html = linkWikiBrackets(html, options.wiki, options.characters);
   // Jeder Eintrag ist unter seinem Titel, dem Titel ohne Artikel ("Die Kapelle von X" -> "Kapelle von X")
   // und seinen Alternativnamen auffindbar.
   const names: { name: string; entry: WikiTerm }[] = [];

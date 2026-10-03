@@ -1,20 +1,27 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { computeUnreadCounts, type ChatWithMessages } from "@/lib/unread-counts";
 
-// Anzahl ungelesener Nachrichten pro Chat, live über Realtime aktualisiert.
+// Anzahl ungelesener Nachrichten pro Chat, live über Realtime aktualisiert. Mit `forCharacterId` (dem aktiven
+// Charakter) wird wie in der Chatliste nur aus dessen Sicht gezählt; ohne Angabe aus der Sicht aller eigenen Charaktere.
 export function useUnreadChatIds(
   userId: string,
   myCharacterIds: string[],
   initialUnreadCounts: Record<string, number>,
+  forCharacterId?: string | null,
 ) {
   const [counts, setCounts] = useState(initialUnreadCounts);
   const instanceId = useId();
   const pathname = usePathname();
   const idsKey = myCharacterIds.join(",");
+  const refetchRef = useRef<() => void>(() => {});
+  const myIdsRef = useRef(myCharacterIds);
+  useEffect(() => {
+    myIdsRef.current = myCharacterIds;
+  });
 
   // Zählung neu vom Server holen (beim Seitenwechsel, Zurückkehren zur App und alle 30 s),
   // damit ein verpasstes Realtime-Ereignis keinen "Geister"-Punkt hinterlässt.
@@ -32,8 +39,9 @@ export function useUnreadChatIds(
         supabase.from("chat_reads").select("chat_id, last_read_at").eq("user_id", userId),
       ]);
       if (cancelled || !chats) return;
-      setCounts(computeUnreadCounts(chats, reads ?? [], idsKey ? idsKey.split(",") : []));
+      setCounts(computeUnreadCounts(chats, reads ?? [], idsKey ? idsKey.split(",") : [], forCharacterId ?? undefined));
     }
+    refetchRef.current = refetch;
     // Direkt nach dem Verlassen eines Chats ist der Lese-Zeitstempel evtl. noch nicht gespeichert.
     const first = setTimeout(refetch, 800);
     const interval = setInterval(refetch, 30_000);
@@ -47,21 +55,25 @@ export function useUnreadChatIds(
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", refetch);
     };
-  }, [userId, idsKey, pathname]);
+  }, [userId, idsKey, pathname, forCharacterId]);
 
   useEffect(() => {
     const supabase = createClient();
 
+    let refetchTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel(`global-message-watcher-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          const row = payload.new as { chat_id: string };
+          const row = payload.new as { chat_id: string; character_id: string };
           if (window.location.pathname === `/chats/${row.chat_id}`) return;
-
-          setCounts((prev) => ({ ...prev, [row.chat_id]: (prev[row.chat_id] ?? 0) + 1 }));
+          // Eigene Nachrichten (z. B. aus der Chat-Blase) sind nie ungelesen.
+          if (myIdsRef.current.includes(row.character_id)) return;
+          // Statt blind +1: neu zählen, damit der Zähler genau zur Chatliste passt (richtiger Charakter, Lesezeitpunkt).
+          if (refetchTimer) clearTimeout(refetchTimer);
+          refetchTimer = setTimeout(() => refetchRef.current(), 500);
         },
       )
       .on(
@@ -85,6 +97,7 @@ export function useUnreadChatIds(
       .subscribe();
 
     return () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

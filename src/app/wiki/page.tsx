@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
+import { CalendarDays, Clock, Map as MapIcon, Network, Plus, Search, Shuffle, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
-import { buildWikiTree, folderPath } from "@/lib/wiki-tree";
+import { getWikiMaps } from "@/lib/wiki-map-data";
+import { getWorldCharacterTerms } from "@/lib/wiki-characters";
+import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
+import { buildWikiTree, folderPath, type PageRow } from "@/lib/wiki-tree";
+import { tagCounts } from "@/lib/wiki-tags";
+import { WIKI_TYPES } from "@/lib/wiki-types";
+import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { findMissingLinks } from "@/lib/wiki-links";
 import { formatDate } from "@/lib/format";
 import { WikiTile } from "@/components/wiki-tile";
@@ -18,6 +23,25 @@ function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+// Eine Zeile mit Kachel, Titel und Pfad; für „Zuletzt bearbeitet“, „Neu“, Favoriten und Entwürfe.
+function PageLine({ p, folders, note }: { p: PageRow; folders: Parameters<typeof folderPath>[0]; note?: string }) {
+  return (
+    <Link href={`/wiki/${p.id}`} className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-surface-2">
+      <WikiTile id={p.id} title={p.title} cover={p.cover_image_url} size="sm" />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 truncate font-medium text-fg">
+          <WikiTypeIcon type={p.page_type} className="h-3.5 w-3.5 shrink-0 text-muted" />
+          <span className="truncate">{p.title}</span>
+        </span>
+        <span className="block truncate text-xs text-muted">{folderPath(folders, p.folder_id).map((f) => f.name).join(" › ") || "Ohne Ordner"}</span>
+      </span>
+      {note && <span className="shrink-0 text-xs text-muted">{note}</span>}
+    </Link>
+  );
+}
+
+const sectionTitle = "mb-4 font-serif text-2xl text-fg";
+
 export default async function WikiHomePage() {
   const supabase = await createClient();
   const {
@@ -27,14 +51,23 @@ export default async function WikiHomePage() {
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [folders, pageRows, linkPages] = await Promise.all([
+  const [folders, pageRows, linkPages, favoriteIds, maps, characters] = await Promise.all([
     getWikiFolders(world.id),
     getWikiPageRows(world.id),
     getWikiLinkPages(world.id),
+    getWikiFavoriteIds(user.id),
+    getWikiMaps(world.id),
+    getWorldCharacterTerms(world.id),
   ]);
   const tree = buildWikiTree(folders, pageRows);
-  const recent = [...pageRows].sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")).slice(0, 6);
-  const missing = findMissingLinks(linkPages).slice(0, 12);
+  const published = pageRows.filter((p) => !p.is_draft);
+  const recent = [...published].sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")).slice(0, 6);
+  const newest = [...published].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "")).slice(0, 6);
+  const drafts = pageRows.filter((p) => p.is_draft && p.created_by === user.id);
+  const favorites = favoriteIds.map((id) => pageRows.find((p) => p.id === id)).filter((p): p is PageRow => Boolean(p));
+  const tags = tagCounts(published).slice(0, 24);
+  const typeCounts = WIKI_TYPES.map((t) => ({ type: t, count: published.filter((p) => p.page_type === t.id).length })).filter((t) => t.count > 0);
+  const missing = findMissingLinks(linkPages, characters.map((c) => c.name)).slice(0, 12);
 
   const actions = (
     <div className="flex flex-wrap gap-2">
@@ -43,6 +76,42 @@ export default async function WikiHomePage() {
         Neuer Artikel
       </Link>
       <NewFolderButton tree={tree.folders} allFolders={folders} />
+      <Link
+        href="/wiki/zufall"
+        prefetch={false}
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <Shuffle className="h-4 w-4" strokeWidth={2} />
+        Zufällige Seite
+      </Link>
+      <Link
+        href="/wiki/karten"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <MapIcon className="h-4 w-4" strokeWidth={2} />
+        Karten{maps.length > 0 ? ` (${maps.length})` : ""}
+      </Link>
+      <Link
+        href="/wiki/graph"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <Network className="h-4 w-4" strokeWidth={2} />
+        Graph
+      </Link>
+      <Link
+        href="/wiki/zeitleiste"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <Clock className="h-4 w-4" strokeWidth={2} />
+        Zeitleiste
+      </Link>
+      <Link
+        href="/wiki/kalender"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+      >
+        <CalendarDays className="h-4 w-4" strokeWidth={2} />
+        Kalender
+      </Link>
     </div>
   );
 
@@ -71,6 +140,92 @@ export default async function WikiHomePage() {
         {actions}
       </header>
 
+      <form method="get" action="/wiki/suche" role="search" className="-mt-6 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 focus-within:border-accent">
+        <Search className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
+        <input type="search" name="q" placeholder="Im Wiki suchen" aria-label="Im Wiki suchen" className="w-full bg-transparent py-2.5 text-fg outline-none" />
+        <Link href="/wiki/suche" className="shrink-0 text-xs text-muted hover:text-accent">
+          Filter
+        </Link>
+      </form>
+
+      {drafts.length > 0 && (
+        <section aria-labelledby="entwuerfe" className="rounded-2xl border border-dashed border-accent/50 p-4">
+          <h2 id="entwuerfe" className={sectionTitle}>
+            Meine Entwürfe <span className="text-base text-muted">{drafts.length}</span>
+          </h2>
+          <p className="-mt-2 mb-3 text-sm text-muted">Nur du siehst diese Seiten, bis du sie veröffentlichst.</p>
+          <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+            {drafts.map((p) => (
+              <li key={p.id}>
+                <PageLine p={p} folders={folders} note="Entwurf" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {favorites.length > 0 && (
+        <section aria-labelledby="favoriten">
+          <h2 id="favoriten" className={`${sectionTitle} flex items-center gap-2`}>
+            <Star className="h-5 w-5 text-accent" strokeWidth={2} fill="currentColor" />
+            Favoriten
+          </h2>
+          <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+            {favorites.map((p) => (
+              <li key={p.id}>
+                <PageLine p={p} folders={folders} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {maps.length > 0 && (
+        <section aria-labelledby="karten">
+          <h2 id="karten" className={sectionTitle}>
+            Karten
+          </h2>
+          <ul className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
+            {maps.slice(0, 3).map((m) => (
+              <li key={m.id}>
+                <Link href={`/wiki/karten/${m.id}`} className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-accent/50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={m.image_url} alt="" loading="lazy" className="aspect-[16/9] w-full bg-surface-2 object-cover" />
+                  <span className="p-3 font-serif text-lg text-fg">{m.title}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {maps.length > 3 && (
+            <Link href="/wiki/karten" className="mt-3 inline-block text-sm text-accent hover:underline">
+              Alle {maps.length} Karten
+            </Link>
+          )}
+        </section>
+      )}
+
+      {typeCounts.length > 0 && (
+        <section aria-labelledby="arten">
+          <h2 id="arten" className={sectionTitle}>
+            Nach Art
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {typeCounts.map(({ type, count }) => (
+              <li key={type.id}>
+                <Link
+                  href={`/wiki/suche?type=${type.id}`}
+                  className="flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+                >
+                  <WikiTypeIcon type={type.id} className="h-4 w-4" />
+                  {type.plural}
+                  <span className="text-xs text-muted">{count}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {tree.folders.length > 0 && (
         <section aria-labelledby="ordner">
           <h2 id="ordner" className="mb-4 font-serif text-2xl text-fg">
@@ -88,21 +243,48 @@ export default async function WikiHomePage() {
 
       {recent.length > 0 && (
         <section aria-labelledby="zuletzt">
-          <h2 id="zuletzt" className="mb-4 font-serif text-2xl text-fg">
+          <h2 id="zuletzt" className={sectionTitle}>
             Zuletzt bearbeitet
           </h2>
           <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
             {recent.map((p) => (
               <li key={p.id}>
-                <Link href={`/wiki/${p.id}`} className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-surface-2">
-                  <WikiTile id={p.id} title={p.title} cover={p.cover_image_url} size="sm" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-fg">{p.title}</span>
-                    <span className="block truncate text-xs text-muted">
-                      {folderPath(folders, p.folder_id).map((f) => f.name).join(" › ") || "Ohne Ordner"}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-xs text-muted">{p.updated_at ? formatDate(p.updated_at.slice(0, 10)) : ""}</span>
+                <PageLine p={p} folders={folders} note={p.updated_at ? formatDate(p.updated_at.slice(0, 10)) : ""} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {newest.length > 0 && (
+        <section aria-labelledby="neu">
+          <h2 id="neu" className={sectionTitle}>
+            Neu im Wiki
+          </h2>
+          <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+            {newest.map((p) => (
+              <li key={p.id}>
+                <PageLine p={p} folders={folders} note={p.created_at ? formatDate(p.created_at.slice(0, 10)) : ""} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {tags.length > 0 && (
+        <section aria-labelledby="tags">
+          <h2 id="tags" className={sectionTitle}>
+            Tags
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {tags.map((t) => (
+              <li key={t.tag}>
+                <Link
+                  href={`/wiki/suche?tag=${encodeURIComponent(t.tag)}`}
+                  className="flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft transition hover:text-accent"
+                >
+                  #{t.tag}
+                  <span className="text-xs text-muted">{t.count}</span>
                 </Link>
               </li>
             ))}

@@ -7,6 +7,16 @@ export type PageRow = {
   folder_id: string | null;
   parent_page_id: string | null;
   lead?: string | null;
+  page_type?: string | null;
+  tags?: string[] | null;
+  event_year?: number | null;
+  event_month?: number | null;
+  event_day?: number | null;
+  event_end_year?: number | null;
+  event_end_month?: number | null;
+  event_end_day?: number | null;
+  is_draft?: boolean;
+  created_at?: string;
   cover_image_url?: string | null;
   updated_at?: string;
   created_by?: string | null;
@@ -161,4 +171,49 @@ export function pageOptions(tree: { folders: TreeFolder[]; loose: TreePage[] }, 
   walk(tree.folders, []);
   tree.loose.forEach((p) => addPage(p, []));
   return out;
+}
+
+// --- Ziehen und Ablegen in der Seitenleiste ---
+
+export type DragItem = { kind: "folder" | "page"; id: string };
+export type DropTarget = { kind: "folder" | "page" | "root"; id?: string };
+
+// Was beim Ablegen passiert: ein Ordner bekommt einen neuen Oberordner, eine Seite einen neuen Ordner und/oder eine Oberseite.
+export type MovePlan =
+  | { type: "folder"; id: string; parentId: string | null }
+  | { type: "page"; id: string; folderId: string | null; parentPageId: string | null };
+
+// Ergebnis des Ablegens oder null, wenn es nicht erlaubt ist oder nichts ändern würde.
+//  - Ordner → Ordner/oberste Ebene (nie in sich selbst oder einen eigenen Unterordner), nie auf eine Seite.
+//  - Seite → Ordner (wird Seite dieses Ordners), → Seite (wird Unterseite, nie unter sich selbst oder eine eigene Unterseite),
+//    → oberste Ebene ("Ohne Ordner").
+export function planMove(folders: FolderRow[], pages: PageRow[], item: DragItem, target: DropTarget): MovePlan | null {
+  if (item.kind === "folder") {
+    const folder = folders.find((f) => f.id === item.id);
+    if (!folder) return null;
+    if (target.kind === "page") return null;
+    const parentId = target.kind === "root" ? null : (target.id ?? null);
+    if (target.kind === "folder") {
+      if (!target.id || !folders.some((f) => f.id === target.id)) return null;
+      if (folderSubtreeIds(folders, item.id).has(target.id)) return null;
+    }
+    if ((folder.parent_id ?? null) === parentId) return null;
+    return { type: "folder", id: item.id, parentId };
+  }
+
+  const page = pages.find((p) => p.id === item.id);
+  if (!page) return null;
+  if (target.kind === "root") {
+    if (!page.folder_id && !page.parent_page_id) return null;
+    return { type: "page", id: item.id, folderId: null, parentPageId: null };
+  }
+  if (target.kind === "folder") {
+    if (!target.id || !folders.some((f) => f.id === target.id)) return null;
+    if (page.folder_id === target.id && !page.parent_page_id) return null;
+    return { type: "page", id: item.id, folderId: target.id, parentPageId: null };
+  }
+  const parent = pages.find((p) => p.id === target.id);
+  if (!parent || pageSubtreeIds(pages, item.id).has(parent.id)) return null;
+  if (page.parent_page_id === parent.id) return null;
+  return { type: "page", id: item.id, folderId: parent.folder_id, parentPageId: parent.id };
 }
