@@ -432,6 +432,29 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
   return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
 }
 
+// Nur das Datum im Kalender der Welt setzen oder entfernen (aus der Story-Liste, ohne die Szene zu öffnen).
+export async function setSceneDates(storyPostId: string, dateForm: FormData): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: post } = await supabase.from("story_posts").select("world_id").eq("id", storyPostId).maybeSingle();
+  if (!post) return "Szene nicht gefunden.";
+  const sceneDates = await readSceneDates(dateForm, post.world_id);
+  if (sceneDates.error !== null) return sceneDates.error;
+
+  const { data, error } = await supabase.from("story_posts").update(sceneDates.columns).eq("id", storyPostId).select("id").maybeSingle();
+  if (error) return error.message;
+  if (!data) return "Nur die Autor:in der Szene kann das Datum ändern.";
+
+  revalidatePath("/story");
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/wiki/zeitleiste");
+  return null;
+}
+
 export async function updateStoryMeta(
   storyPostId: string,
   location: string,
