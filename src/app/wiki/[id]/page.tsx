@@ -119,7 +119,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         )}
 
         <div className="flex items-start gap-4 @xl:gap-5">
-          {page.cover_image_url ? (
+          {page.icon_url ? (
+            // Icon: durchsichtig, ohne Rahmen und Zuschnitt
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={page.icon_url} alt={page.title} className="h-24 w-24 shrink-0 object-contain @xl:h-32 @xl:w-32 @4xl:h-40 @4xl:w-40" />
+          ) : page.cover_image_url ? (
             // Titelbild in normalem Format neben dem Namen (Person: Hochformat, sonst 4:3), nie als breiter Streifen.
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -305,7 +309,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
             {backlinks.map((p) => (
               <li key={p.id}>
                 <Link href={`/wiki/${p.id}`} className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-1 pr-3 text-sm text-fg-soft transition hover:text-accent">
-                  <WikiTile id={p.id} title={p.title} cover={p.cover_image_url} size="sm" />
+                  <WikiTile id={p.id} title={p.title} cover={p.cover_image_url} icon={p.icon_url} size="sm" />
                   {p.title}
                 </Link>
               </li>

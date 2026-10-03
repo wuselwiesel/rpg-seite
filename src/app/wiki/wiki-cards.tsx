@@ -51,7 +51,7 @@ export function PageCard({ page, showChildren = true }: { page: TreePage; showCh
   const kids = showChildren ? page.children : [];
   return (
     <div className="group relative flex gap-4 rounded-2xl border border-line bg-surface p-3.5 transition focus-within:border-accent/50 hover:border-accent/50 hover:bg-surface-2/50">
-      <WikiTile id={page.id} title={page.title} cover={page.cover_image_url} size="md" />
+      <WikiTile id={page.id} title={page.title} cover={page.cover_image_url} icon={page.icon_url} size="md" />
       <div className="min-w-0 flex-1">
         <Link
           href={`/wiki/${page.id}`}

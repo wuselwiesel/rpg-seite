@@ -298,6 +298,17 @@ export function WikiForm({
           />
         </div>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
+          Icon (optional, kann durchsichtig sein)
+          <AvatarUpload
+            name="icon_url"
+            initialUrl={page?.icon_url}
+            displayName={page?.title ?? "Wiki-Seite"}
+            bucket="wiki-covers"
+            variant="icon"
+          />
+          <span className="text-xs text-muted">Ein PNG, SVG oder WebP ohne Hintergrund: hochladen, ins Feld ziehen oder dort mit Strg/Cmd+V einfügen. Es ersetzt das Bild in Karten und im Artikelkopf und wird nicht zugeschnitten.</span>
+        </div>
+        <div className="flex flex-col gap-1 text-sm text-fg-soft">
           Galerie
           <GalleryUpload initial={page?.gallery ?? []} />
           <span className="text-xs text-muted">Weitere Bilder erscheinen unter dem Text. Bilder mitten im Text fügst du mit dem Bild-Knopf im Editor ein.</span>

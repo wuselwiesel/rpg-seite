@@ -20,8 +20,9 @@ export function AvatarUpload({
   initialUrl?: string | null;
   displayName: string;
   bucket?: string;
+  // icon: Symbol ohne Hintergrund (PNG/SVG/WebP/GIF), wird weder zugeschnitten noch verkleinert, damit die Transparenz bleibt;
   // circle: rundes Profilbild; cover: breites Titelbild; standard: normales Querformat 4:3 (Wiki); portrait: normales Hochformat-Bild (z. B. Person im Wiki)
-  variant?: "circle" | "cover" | "portrait" | "standard";
+  variant?: "circle" | "cover" | "portrait" | "standard" | "icon";
 }) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [uploading, setUploading] = useState(false);
@@ -33,15 +34,47 @@ export function AvatarUpload({
     const original = e.target.files?.[0];
     e.target.value = "";
     if (!original) return;
-    if (canCrop(original)) setCropFile(original);
+    if (variant === "icon") void upload(original);
+    else if (canCrop(original)) setCropFile(original);
     else void upload(original);
   }
 
-  async function upload(original: File) {
-    const file = await resizeImage(original, 1200);
+  // Icon: Bild aus der Zwischenablage (Strg/Cmd+V) oder per Ziehen ablegen.
+  function takeImage(files: FileList | File[] | null | undefined): boolean {
+    const file = Array.from(files ?? []).find((f) => f.type.startsWith("image/"));
+    if (!file) return false;
+    void upload(file);
+    return true;
+  }
 
-    if (file.size > MAX_SIZE) {
-      setError("Bild ist zu groß (max. 5 MB).");
+  async function pasteFromClipboard() {
+    setError(null);
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (type) {
+          const blob = await item.getType(type);
+          void upload(new File([blob], `eingefuegt.${type.split("/")[1].replace("svg+xml", "svg")}`, { type }));
+          return;
+        }
+      }
+      setError("In der Zwischenablage liegt kein Bild.");
+    } catch {
+      setError("Kein Zugriff auf die Zwischenablage. Klicke auf das Feld und drücke Strg/Cmd+V.");
+    }
+  }
+
+  async function upload(original: File) {
+    const file = variant === "icon" ? original : await resizeImage(original, 1200);
+    const maxSize = variant === "icon" ? 2 * 1024 * 1024 : MAX_SIZE;
+
+    if (variant === "icon" && !/^image\/(png|svg\+xml|webp|gif)$/.test(file.type)) {
+      setError("Für Icons bitte PNG, SVG, WebP oder GIF nehmen (nur diese Formate können durchsichtig sein).");
+      return;
+    }
+    if (file.size > maxSize) {
+      setError(variant === "icon" ? "Icon ist zu groß (max. 2 MB)." : "Bild ist zu groß (max. 5 MB).");
       return;
     }
 
@@ -85,6 +118,30 @@ export function AvatarUpload({
       <input type="hidden" name={name} value={url} />
       {variant === "cover" ? (
         <WorldCover name={displayName} coverUrl={url} className="h-32 w-full" />
+      ) : variant === "icon" ? (
+        <span
+          tabIndex={0}
+          role="group"
+          aria-label="Icon: hier Bild einfügen (Strg/Cmd+V) oder ablegen"
+          title="Anklicken und Strg/Cmd+V drücken, oder ein Bild hierher ziehen"
+          onPaste={(e) => {
+            if (takeImage(e.clipboardData.files)) e.preventDefault();
+          }}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            takeImage(e.dataTransfer.files);
+          }}
+          className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+          style={{ backgroundImage: "conic-gradient(var(--surface-2) 25%, var(--surface) 0 50%, var(--surface-2) 0 75%, var(--surface) 0)", backgroundSize: "16px 16px" }}
+        >
+          {url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt="" className="h-full w-full object-contain p-1.5" />
+          ) : (
+            <span className="px-2 text-center text-xs text-muted">Hier einfügen oder ablegen</span>
+          )}
+        </span>
       ) : variant === "standard" ? (
         url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -108,15 +165,25 @@ export function AvatarUpload({
       )}
       <div className="flex flex-col gap-1">
         <label className="cursor-pointer text-sm text-accent hover:underline">
-          {uploading ? "Lädt hoch..." : url ? "Bild ändern" : "Bild hochladen"}
+          {uploading ? "Lädt hoch..." : url ? (variant === "icon" ? "Icon ändern" : "Bild ändern") : variant === "icon" ? "Icon hochladen" : "Bild hochladen"}
           <input
             type="file"
-            accept="image/*"
+            accept={variant === "icon" ? "image/png,image/svg+xml,image/webp,image/gif" : "image/*"}
             onChange={handleFileChange}
             disabled={uploading}
             className="hidden"
           />
         </label>
+        {variant === "icon" && (
+          <button type="button" onClick={pasteFromClipboard} disabled={uploading} className="w-fit text-left text-sm text-accent hover:underline">
+            Aus Zwischenablage einfügen
+          </button>
+        )}
+        {variant === "icon" && url && (
+          <button type="button" onClick={() => setUrl("")} className="w-fit text-left text-sm text-muted hover:text-fg">
+            Icon entfernen
+          </button>
+        )}
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       </div>
     </div>

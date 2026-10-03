@@ -18,6 +18,7 @@ export type PageRow = {
   is_draft?: boolean;
   created_at?: string;
   cover_image_url?: string | null;
+  icon_url?: string | null;
   updated_at?: string;
   created_by?: string | null;
 };

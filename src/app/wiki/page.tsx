@@ -27,7 +27,7 @@ function plural(n: number, one: string, many: string) {
 function PageLine({ p, folders, note }: { p: PageRow; folders: Parameters<typeof folderPath>[0]; note?: string }) {
   return (
     <Link href={`/wiki/${p.id}`} className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-surface-2">
-      <WikiTile id={p.id} title={p.title} cover={p.cover_image_url} size="sm" />
+      <WikiTile id={p.id} title={p.title} cover={p.cover_image_url} icon={p.icon_url} size="sm" />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 truncate font-medium text-fg">
           <WikiTypeIcon type={p.page_type} className="h-3.5 w-3.5 shrink-0 text-muted" />

@@ -230,6 +230,7 @@ export type WikiPage = {
   content: string;
   aliases?: string[];
   cover_image_url?: string | null;
+  icon_url?: string | null;
   gallery?: string[];
   page_type?: string | null;
   tags?: string[];

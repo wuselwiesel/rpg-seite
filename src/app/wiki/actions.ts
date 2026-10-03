@@ -27,6 +27,11 @@ function parseAliases(raw: FormDataEntryValue | null): string[] {
   ).slice(0, 12);
 }
 
+function parseIconUrl(raw: FormDataEntryValue | null): string | null {
+  const url = String(raw ?? "").trim();
+  return /^https?:\/\//.test(url) && url.length <= 500 ? url : null;
+}
+
 // Nur http(s)-Adressen aus dem eigenen Speicher; Reihenfolge bleibt erhalten.
 function parseGallery(formData: FormData): string[] {
   const seen = new Set<string>();
@@ -46,6 +51,7 @@ type PageInput = {
   content: string;
   aliases: string[];
   cover_image_url: string | null;
+  icon_url: string | null;
   gallery: string[];
   fields: { icon: string; title: string; text: string }[];
   folder_id: string | null;
@@ -102,6 +108,7 @@ async function readPageForm(
       content: sanitizePostHtml(String(formData.get("content") ?? "").trim()),
       aliases: parseAliases(formData.get("aliases")),
       cover_image_url: String(formData.get("cover_image_url") ?? "").trim() || null,
+      icon_url: parseIconUrl(formData.get("icon_url")),
       gallery: parseGallery(formData),
       fields: parseProfileFields(formData),
       folder_id: folderId,

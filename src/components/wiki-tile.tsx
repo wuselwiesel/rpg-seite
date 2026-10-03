@@ -17,18 +17,29 @@ const SIZES = {
   lg: "h-20 w-20 rounded-2xl text-4xl sm:h-24 sm:w-24 sm:text-5xl",
 };
 
+// Icons haben keinen Hintergrund und werden nicht zugeschnitten, nur eingepasst.
+const ICON_SIZES = { sm: "h-11 w-11", md: "h-16 w-16", lg: "h-20 w-20 sm:h-24 sm:w-24" };
+
 export function WikiTile({
   id,
   title,
   cover,
+  icon,
   size = "md",
 }: {
   id: string;
   title: string;
   cover?: string | null;
+  icon?: string | null;
   size?: keyof typeof SIZES;
 }) {
   const base = `${SIZES[size]} shrink-0 overflow-hidden`;
+  if (icon) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={icon} alt="" loading="lazy" className={`${ICON_SIZES[size]} shrink-0 object-contain`} />
+    );
+  }
   if (cover) {
     return (
       // eslint-disable-next-line @next/next/no-img-element

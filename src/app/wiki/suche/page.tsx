@@ -37,7 +37,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
   ]);
   const tree = buildWikiTree(folders, rows);
   const textById = new Map(linkPages.map((p) => [p.id, { text: stripHtml(p.content ?? ""), aliases: p.aliases }]));
-  const entries: (SearchEntry & { cover_image_url?: string | null; is_draft?: boolean })[] = rows.map((r) => ({
+  const entries: (SearchEntry & { cover_image_url?: string | null; icon_url?: string | null; is_draft?: boolean })[] = rows.map((r) => ({
     id: r.id,
     title: r.title,
     lead: r.lead,
@@ -48,6 +48,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
     folder_id: r.folder_id,
     updated_at: r.updated_at,
     cover_image_url: r.cover_image_url,
+    icon_url: r.icon_url,
     is_draft: r.is_draft,
   }));
   const filtering = Boolean(q || type || tag || folderId);
@@ -136,7 +137,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
             {hits.slice(0, 60).map(({ entry, snippet }) => (
               <li key={entry.id}>
                 <Link href={`/wiki/${entry.id}`} className="flex gap-3 rounded-2xl border border-line bg-surface p-3 transition hover:border-accent/50 hover:bg-surface-2/50">
-                  <WikiTile id={entry.id} title={entry.title} cover={entry.cover_image_url} size="md" />
+                  <WikiTile id={entry.id} title={entry.title} cover={entry.cover_image_url} icon={entry.icon_url} size="md" />
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="font-serif text-xl text-fg">{entry.title}</span>
