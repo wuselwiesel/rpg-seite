@@ -18,6 +18,7 @@ export function StoryComposer({
   activeCharacterId,
   characters,
   participantIds,
+  previousChapter = null,
 }: {
   storyPostId: string;
   worldId: string;
@@ -27,6 +28,8 @@ export function StoryComposer({
   // Alle ansprechbaren Charaktere der Welt (Erwähnungen, Wurf-Ziel, "Danach dran").
   characters: Character[];
   participantIds: string[];
+  // Letztes bisheriges Kapitel (für dessen Zusammenfassung beim Beginn eines neuen)
+  previousChapter?: { id: string; title: string; hasRecap: boolean } | null;
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
 
@@ -207,7 +210,7 @@ export function StoryComposer({
       )}
 
       {mode === "write" && showChapter && (
-        <ChapterForm storyPostId={storyPostId} worldId={worldId} writerId={writerId} onDone={() => setShowChapter(false)} />
+        <ChapterForm storyPostId={storyPostId} worldId={worldId} writerId={writerId} previousChapter={previousChapter} onDone={() => setShowChapter(false)} />
       )}
 
       {Object.keys(typing).length > 0 && (

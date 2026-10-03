@@ -8,14 +8,17 @@ export function ChapterForm({
   worldId,
   onDone,
   writerId,
+  previousChapter,
 }: {
   storyPostId: string;
   worldId: string;
   onDone: () => void;
   writerId: string;
+  previousChapter?: { id: string; title: string; hasRecap: boolean } | null;
 }) {
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
+  const [previousRecap, setPreviousRecap] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -23,7 +26,7 @@ export function ChapterForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const err = await createChapter(storyPostId, worldId, title, summary, writerId);
+      const err = await createChapter(storyPostId, worldId, title, summary, writerId, previousChapter?.id ?? "", previousRecap);
       if (err) setError(err);
       else onDone();
     });
@@ -52,6 +55,19 @@ export function ChapterForm({
         placeholder="Was ist bisher geschehen? (optional, für den Rückblick)"
         className="rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
       />
+      {previousChapter && !previousChapter.hasRecap && (
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Zusammenfassung von „{previousChapter.title}“ (optional, zum Nachlesen)
+          <textarea
+            value={previousRecap}
+            onChange={(e) => setPreviousRecap(e.target.value)}
+            maxLength={8000}
+            rows={4}
+            placeholder="Das Kapitel ist abgeschlossen: Was ist darin geschehen?"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
+          />
+        </label>
+      )}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex gap-2">
         <button

@@ -159,6 +159,9 @@ export type StoryEntry = {
   kind?: "entry" | "narrator" | "chapter";
   chapter_title?: string | null;
   chapter_summary?: string | null;
+  // Selbst geschriebene Zusammenfassung des Kapitels zum Nachlesen
+  chapter_recap?: string | null;
+  chapter_recap_at?: string | null;
 };
 
 export type Chat = {
