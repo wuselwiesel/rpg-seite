@@ -5,10 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiMaps } from "@/lib/wiki-map-data";
 import { getWorldCharacterTerms } from "@/lib/wiki-characters";
-import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
+import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { buildWikiTree, folderPath, type PageRow } from "@/lib/wiki-tree";
 import { tagCounts } from "@/lib/wiki-tags";
-import { WIKI_TYPES } from "@/lib/wiki-types";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { findMissingLinks } from "@/lib/wiki-links";
 import { formatDate } from "@/lib/format";
@@ -51,13 +50,14 @@ export default async function WikiHomePage() {
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [folders, pageRows, linkPages, favoriteIds, maps, characters] = await Promise.all([
+  const [folders, pageRows, linkPages, favoriteIds, maps, characters, wikiTypes] = await Promise.all([
     getWikiFolders(world.id),
     getWikiPageRows(world.id),
     getWikiLinkPages(world.id),
     getWikiFavoriteIds(user.id),
     getWikiMaps(world.id),
     getWorldCharacterTerms(world.id),
+    getWikiTypes(world.id),
   ]);
   const tree = buildWikiTree(folders, pageRows);
   const published = pageRows.filter((p) => !p.is_draft);
@@ -66,7 +66,7 @@ export default async function WikiHomePage() {
   const drafts = pageRows.filter((p) => p.is_draft && p.created_by === user.id);
   const favorites = favoriteIds.map((id) => pageRows.find((p) => p.id === id)).filter((p): p is PageRow => Boolean(p));
   const tags = tagCounts(published).slice(0, 24);
-  const typeCounts = WIKI_TYPES.map((t) => ({ type: t, count: published.filter((p) => p.page_type === t.id).length })).filter((t) => t.count > 0);
+  const typeCounts = wikiTypes.map((t) => ({ type: t, count: published.filter((p) => p.page_type === t.id).length })).filter((t) => t.count > 0);
   const missing = findMissingLinks(linkPages, characters.map((c) => c.name)).slice(0, 12);
 
   const actions = (

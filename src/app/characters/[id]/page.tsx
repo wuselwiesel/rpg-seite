@@ -20,6 +20,8 @@ import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
 import { BookOpen, Plus } from "lucide-react";
 import { getWikiPagesAboutCharacter } from "@/lib/wiki-characters";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
+import { WikiTypesProvider } from "@/components/wiki-types-context";
+import { getWikiTypes } from "@/lib/wiki-data";
 import type { Character, Highlight, Post, Story } from "@/lib/types";
 
 export default async function CharacterProfilePage({
@@ -82,6 +84,7 @@ export default async function CharacterProfilePage({
   if (character.owner_id === user.id) await syncCharacterBadges(character.id);
   const allBadges = await getCharacterBadges(character.id);
   const wikiAbout = await getWikiPagesAboutCharacter(character).catch(() => []);
+  const wikiTypes = wikiAbout.length > 0 ? await getWikiTypes(character.world_id).catch(() => []) : [];
   const badges = character.owner_id === user.id ? allBadges : visibleBadges(allBadges);
   const myCharacters = activeWorld
     ? (await getOwnCharacters(user.id, activeWorld.id)).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
@@ -277,6 +280,7 @@ export default async function CharacterProfilePage({
           )}
 
           {wikiAbout.length > 0 && (
+            <WikiTypesProvider types={wikiTypes}>
             <section aria-label="Im Wiki" className="mt-4">
               <h2 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted">
                 <BookOpen className="h-3.5 w-3.5" strokeWidth={2} />
@@ -297,6 +301,7 @@ export default async function CharacterProfilePage({
                 ))}
               </ul>
             </section>
+            </WikiTypesProvider>
           )}
 
           <BadgeRow badges={badges} collectionHref={`/badges/sammlung/${character.id}`} editable={isOwn} />

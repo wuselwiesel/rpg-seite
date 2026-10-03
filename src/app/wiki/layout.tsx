@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { getWikiFolders, getWikiPageRows } from "@/lib/wiki-data";
+import { getWikiFolders, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { WikiShell } from "./wiki-shell";
+import { WikiTypesProvider } from "@/components/wiki-types-context";
 
 export default async function WikiLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -13,9 +14,10 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [folders, pages] = await Promise.all([getWikiFolders(world.id), getWikiPageRows(world.id)]);
+  const [folders, pages, types] = await Promise.all([getWikiFolders(world.id), getWikiPageRows(world.id), getWikiTypes(world.id)]);
 
   return (
+    <WikiTypesProvider types={types}>
     <WikiShell
       worldId={world.id}
       worldName={world.name}
@@ -26,5 +28,6 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
     >
       {children}
     </WikiShell>
+    </WikiTypesProvider>
   );
 }

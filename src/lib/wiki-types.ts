@@ -1,22 +1,34 @@
-// Seiten-Typen des Wikis (Vorbild: Artikelvorlagen bei World Anvil). Jeder Typ bringt Steckbrief-Felder und eine Gliederung
-// für den Text mit; beides ist nur ein Vorschlag und lässt sich ändern.
+import { folderColorHex } from "@/lib/wiki-folder-style";
 
-export const WIKI_TYPE_IDS = ["ort", "spezies", "organisation", "person", "ereignis", "mythos", "gegenstand"] as const;
-export type WikiTypeId = (typeof WIKI_TYPE_IDS)[number];
+// Seitenarten des Wikis (Vorbild: Artikelvorlagen bei World Anvil). Jede Art bringt Steckbrief-Felder und eine Gliederung
+// für den Text mit; beides ist nur ein Vorschlag und lässt sich ändern. Die Arten stehen pro Welt in der Tabelle
+// `wiki_types` (frei bearbeitbar, eigene möglich); die Liste unten ist der mitgelieferte Grundstock und der Rückfall.
 
-export type WikiTypeIcon = "map-pin" | "paw-print" | "users" | "user" | "calendar-days" | "scroll-text" | "gem";
+export const STANDARD_TYPE_ICONS = ["map-pin", "paw-print", "users", "user", "calendar-days", "scroll-text", "gem", "file-text"] as const;
+export type WikiTypeIcon = (typeof STANDARD_TYPE_ICONS)[number];
+
+export type WikiTypeId = string;
 
 export type WikiType = {
   id: WikiTypeId;
   label: string;
   plural: string;
-  icon: WikiTypeIcon;
+  // Name eines der Standard-Symbole (siehe WikiTypeIcon) oder ein Emoji bzw. :eigenes:
+  icon: string;
+  // Schlüssel aus FOLDER_COLORS (lib/wiki-folder-style.ts); ohne Farbe neutral
+  color: string | null;
   hint: string;
   fields: string[];
   outline: string[];
+  // Bild als Hochformat neben dem Namen statt Querformat
+  portrait: boolean;
+  // wer die Art angelegt hat (für das Löschrecht); bei den mitgelieferten die Welt-Besitzer:in
+  createdBy?: string | null;
 };
 
-export const WIKI_TYPES: WikiType[] = [
+const BUILTIN_COLOR: Record<string, string> = { ort: "sage", spezies: "peach", organisation: "plum", person: "sky", ereignis: "rose", mythos: "gold", gegenstand: "slate" };
+
+const BUILTIN_RAW: Omit<WikiType, "color" | "portrait">[] = [
   {
     id: "ort",
     label: "Ort",
@@ -79,18 +91,22 @@ export const WIKI_TYPES: WikiType[] = [
     hint: "Waffen, Artefakte, Besonderes",
     fields: ["Art", "Besitzer:in", "Herkunft", "Wirkung"],
     outline: ["Beschreibung", "Geschichte", "Kräfte und Preis", "Aufenthaltsort"],
-  },
+  }
 ];
 
-const BY_ID = new Map<string, WikiType>(WIKI_TYPES.map((t) => [t.id, t]));
+export const BUILTIN_WIKI_TYPES: WikiType[] = BUILTIN_RAW.map((t) => ({ ...t, color: BUILTIN_COLOR[t.id] ?? null, portrait: t.id === "person" }));
 
-export function wikiTypeOf(id: string | null | undefined): WikiType | null {
-  return (id && BY_ID.get(id)) || null;
+// Rückfall für Stellen ohne Weltdaten.
+export const WIKI_TYPES = BUILTIN_WIKI_TYPES;
+export const WIKI_TYPE_IDS = BUILTIN_WIKI_TYPES.map((t) => t.id);
+
+export function wikiTypeOf(id: string | null | undefined, types: WikiType[] = BUILTIN_WIKI_TYPES): WikiType | null {
+  return (id && types.find((t) => t.id === id)) || null;
 }
 
-// Prüft einen Wert aus dem Formular: gültiger Typ oder null.
-export function parseWikiType(raw: FormDataEntryValue | null): WikiTypeId | null {
-  return wikiTypeOf(String(raw ?? ""))?.id ?? null;
+// Prüft einen Wert aus dem Formular: gültige Art der Welt oder null.
+export function parseWikiType(raw: FormDataEntryValue | null, types: WikiType[] = BUILTIN_WIKI_TYPES): WikiTypeId | null {
+  return wikiTypeOf(String(raw ?? ""), types)?.id ?? null;
 }
 
 // Gliederung als HTML für den Editor: Überschriften mit leerem Absatz darunter.
@@ -109,17 +125,30 @@ export function mergeFields(
   return [...filled, ...added];
 }
 
-// Farbe eines Typs im Wiki-Graph (Farbton; ohne Typ neutral). Feste Töne, damit Typen auch auf allen Themen unterscheidbar bleiben.
-const TYPE_HUE: Record<WikiTypeId, number> = { ort: 150, spezies: 25, organisation: 265, person: 200, ereignis: 350, mythos: 45, gegenstand: 300 };
-
-export function wikiTypeColor(id: string | null | undefined): string {
-  const t = wikiTypeOf(id);
-  return t ? `hsl(${TYPE_HUE[t.id]} 50% 42%)` : "var(--muted)";
+// Farbe einer Art im Wiki-Graph; ohne Art oder Farbe neutral. Feste Töne, damit Arten auf allen Themen unterscheidbar bleiben.
+export function wikiTypeColor(id: string | null | undefined, types: WikiType[] = BUILTIN_WIKI_TYPES): string {
+  const t = wikiTypeOf(id, types);
+  return (t && folderColorHex(t.color)) || "var(--muted)";
 }
 
-// Typen, bei denen das Bild ein normales Hochformat-Bild (wie ein Charakterbild) neben dem Namen ist statt eines breiten Titelbilds.
-export const PORTRAIT_TYPES: readonly WikiTypeId[] = ["person"];
+// Arten, bei denen das Bild ein normales Hochformat-Bild (wie ein Charakterbild) neben dem Namen ist statt eines Querformat-Bilds.
+export function usesPortraitImage(type: string | null | undefined, types: WikiType[] = BUILTIN_WIKI_TYPES): boolean {
+  return Boolean(wikiTypeOf(type, types)?.portrait);
+}
 
-export function usesPortraitImage(type: string | null | undefined): boolean {
-  return PORTRAIT_TYPES.some((t) => t === type);
+// Eine Kennung für eine neue Art aus dem Namen ("Magie & Zauber" -> "magie_zauber"), frei von Doppelungen.
+export function newTypeId(label: string, taken: Set<string>): string {
+  const base =
+    label
+      .toLowerCase()
+      .replace(/ä/g, "ae")
+      .replace(/ö/g, "oe")
+      .replace(/ü/g, "ue")
+      .replace(/ß/g, "ss")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 30) || "art";
+  let id = base;
+  for (let i = 2; taken.has(id); i++) id = `${base}_${i}`;
+  return id;
 }

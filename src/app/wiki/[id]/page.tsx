@@ -13,7 +13,7 @@ import { getWikiTerms } from "@/lib/wiki-terms";
 import { getMapsForPage } from "@/lib/wiki-map-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import { datesFromRow, formatRange } from "@/lib/wiki-calendar";
-import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
+import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { buildWikiTree, folderPath, pageAncestors, type TreePage } from "@/lib/wiki-tree";
 import { findBacklinks } from "@/lib/wiki-links";
 import { addHeadingIds } from "@/lib/wiki-html";
@@ -47,7 +47,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
       : (await supabase.from("worlds").select("created_by").eq("id", page.world_id).maybeSingle()).data?.created_by;
   const canDelete = page.created_by === user.id || worldOwnerId === user.id;
 
-  const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps, characters, calendar] = await Promise.all([
+  const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps, characters, calendar, wikiTypeRows] = await Promise.all([
     getWikiTerms(page.world_id),
     getWikiFolders(page.world_id),
     getWikiPageRows(page.world_id),
@@ -56,6 +56,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     getMapsForPage(page.id),
     getWorldCharacterTerms(page.world_id),
     getWikiCalendar(page.world_id),
+    getWikiTypes(page.world_id),
   ]);
   const pageDates = datesFromRow(page);
 
@@ -101,7 +102,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     ...folderTrail.map((f) => ({ href: `/wiki/ordner/${f.id}`, label: f.name })),
     ...pageTrail.map((p) => ({ href: `/wiki/${p.id}`, label: p.title })),
   ];
-  const portrait = usesPortraitImage(page.page_type);
+  const portrait = usesPortraitImage(page.page_type, wikiTypeRows);
   const sectionHead = "mb-4 flex items-baseline gap-2 font-serif text-2xl text-fg";
 
   return (

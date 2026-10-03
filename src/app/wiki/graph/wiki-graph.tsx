@@ -6,7 +6,8 @@ import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, f
 import { Minus, Plus, RotateCcw, Search } from "lucide-react";
 import { usePanZoom } from "@/lib/use-pan-zoom";
 import { buildAdjacency, neighborhood } from "@/lib/relationship-graph";
-import { WIKI_TYPES, wikiTypeColor } from "@/lib/wiki-types";
+import { wikiTypeColor } from "@/lib/wiki-types";
+import { useWikiTypes } from "@/components/wiki-types-context";
 import type { LinkEdge } from "@/lib/wiki-links";
 import { WikiTypeBadge } from "@/components/wiki-type-icon";
 
@@ -52,6 +53,7 @@ export function WikiGraph({ pages, edges, initialFocusId }: { pages: GraphPage[]
   const adj = useMemo(() => buildAdjacency(edges.map((e) => ({ character_a_id: e.a, character_b_id: e.b })), new Set(pages.map((p) => p.id))), [edges, pages]);
   const tags = useMemo(() => Array.from(new Set(pages.flatMap((p) => p.tags))).sort((a, b) => a.localeCompare(b, "de")), [pages]);
 
+  const wikiTypes = useWikiTypes();
   const [focusId, setFocusId] = useState<string | null>(initialFocusId && byId.has(initialFocusId) ? initialFocusId : null);
   const [depth, setDepth] = useState<1 | 2 | 3>(1);
   const [type, setType] = useState("");
@@ -82,7 +84,7 @@ export function WikiGraph({ pages, edges, initialFocusId }: { pages: GraphPage[]
   const showAllNames = visibleIds.length <= 12 || view.scale >= 1.6;
   const hits = query.trim() ? pages.filter((p) => p.title.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 6) : [];
 
-  const typesInUse = WIKI_TYPES.filter((t) => pages.some((p) => p.page_type === t.id));
+  const typesInUse = wikiTypes.filter((t) => pages.some((p) => p.page_type === t.id));
   const outgoing = selected ? edges.filter((e) => e.kind === "link" && e.a === selected.id && !e.mutual).map((e) => e.b) : [];
   const incoming = selected ? edges.filter((e) => e.kind === "link" && e.b === selected.id && !e.mutual).map((e) => e.a) : [];
   const mutual = selected ? edges.filter((e) => e.kind === "link" && e.mutual && (e.a === selected.id || e.b === selected.id)).map((e) => (e.a === selected.id ? e.b : e.a)) : [];
@@ -244,7 +246,7 @@ export function WikiGraph({ pages, edges, initialFocusId }: { pages: GraphPage[]
                     onClick={(ev) => { ev.stopPropagation(); if (!moved.current) setSelectedId(id); }}
                     onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setSelectedId(id); } }}
                   >
-                    <circle r={R / view.scale ** 0.3} fill={wikiTypeColor(p.page_type)} stroke={isSel ? "var(--accent)" : "var(--surface)"} strokeWidth={isSel ? 4 : 2.5} />
+                    <circle r={R / view.scale ** 0.3} fill={wikiTypeColor(p.page_type, wikiTypes)} stroke={isSel ? "var(--accent)" : "var(--surface)"} strokeWidth={isSel ? 4 : 2.5} />
                     {label && (
                       <text y={R + 16} textAnchor="middle" fontSize={13 / view.scale ** 0.4} fill="var(--fg)" stroke="var(--surface)" strokeWidth={3} paintOrder="stroke" className="pointer-events-none">
                         {p.title.length > 26 ? `${p.title.slice(0, 25)}…` : p.title}
@@ -263,7 +265,7 @@ export function WikiGraph({ pages, edges, initialFocusId }: { pages: GraphPage[]
           {typesInUse.map((t) => (
             <li key={t.id}>
               <button type="button" onClick={() => setType(type === t.id ? "" : t.id)} aria-pressed={type === t.id} className={`${chip} flex items-center gap-2 ${type === t.id ? "border-accent bg-accent/10 text-fg" : "border-line text-fg-soft hover:border-accent"}`}>
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: wikiTypeColor(t.id) }} />
+                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: wikiTypeColor(t.id, wikiTypes) }} />
                 {t.label}
               </button>
             </li>

@@ -3,11 +3,10 @@ import { redirect } from "next/navigation";
 import { CalendarDays, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { getWikiPageRows } from "@/lib/wiki-data";
+import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import { datesFromRow, formatRange, groupByYear } from "@/lib/wiki-calendar";
 import { hasTag, tagCounts } from "@/lib/wiki-tags";
-import { WIKI_TYPES, wikiTypeOf } from "@/lib/wiki-types";
 import { WikiTypeBadge } from "@/components/wiki-type-icon";
 import { WikiCrumbs } from "../wiki-crumbs";
 
@@ -16,7 +15,7 @@ const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg ou
 
 export default async function WikiTimelinePage({ searchParams }: PageProps<"/wiki/zeitleiste">) {
   const sp = await searchParams;
-  const type = wikiTypeOf(first(sp.type))?.id ?? "";
+  const type = first(sp.type).slice(0, 40);
   const tag = first(sp.tag).slice(0, 40);
 
   const supabase = await createClient();
@@ -27,7 +26,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [rows, calendar] = await Promise.all([getWikiPageRows(world.id), getWikiCalendar(world.id)]);
+  const [rows, calendar, types] = await Promise.all([getWikiPageRows(world.id), getWikiCalendar(world.id), getWikiTypes(world.id)]);
   const dated = rows.map((r) => ({ ...r, dates: datesFromRow(r) })).filter((r) => r.dates.start);
   const undated = rows.length - dated.length;
   const shown = dated.filter((r) => (!type || r.page_type === type) && (!tag || hasTag(r, tag)));
@@ -59,7 +58,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
           Art
           <select name="type" defaultValue={type} className={field}>
             <option value="">Alle</option>
-            {WIKI_TYPES.map((t) => (
+            {types.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}
               </option>

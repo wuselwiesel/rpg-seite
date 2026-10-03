@@ -8,7 +8,8 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { GalleryUpload } from "@/components/gallery-upload";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import { useDraft } from "@/lib/use-draft";
-import { WIKI_TYPES, mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf } from "@/lib/wiki-types";
+import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf } from "@/lib/wiki-types";
+import { useWikiTypes } from "@/components/wiki-types-context";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { stripHtml } from "@/lib/strip-html";
 import { DEFAULT_CALENDAR, daysInMonth, datesFromRow, type EventDate, type WikiCalendar } from "@/lib/wiki-calendar";
@@ -95,7 +96,8 @@ export function WikiForm({
   const dates = datesFromRow(page ?? {});
   const [showEnd, setShowEnd] = useState(Boolean(dates.end));
 
-  const [pageType, setPageType] = useState(wikiTypeOf(page?.page_type ?? defaults?.type)?.id ?? "");
+  const types = useWikiTypes();
+  const [pageType, setPageType] = useState(wikiTypeOf(page?.page_type ?? defaults?.type, types)?.id ?? "");
   const [bodyHtml, setBodyHtml] = useState(page?.content ?? "");
   const [editorKey, setEditorKey] = useState(0);
   const [seed, setSeed] = useState<string | null>(null);
@@ -104,7 +106,7 @@ export function WikiForm({
   // Typ wählen: leere Felder und eine leere Gliederung werden vorbereitet. Was schon geschrieben steht, bleibt unberührt.
   function chooseType(id: string) {
     setPageType(id);
-    const type = wikiTypeOf(id);
+    const type = wikiTypeOf(id, types);
     if (!type) return;
     if (!fieldRows.some((f) => f.title.trim() || f.text.trim())) {
       setFieldRows(mergeFields(fieldRows, type));
@@ -127,7 +129,12 @@ export function WikiForm({
       <section className={card}>
         <div>
           <h2 className="font-serif text-xl text-fg">Art der Seite</h2>
-          <p className="text-sm text-muted">Der Typ bereitet Steckbrief und Gliederung vor. Beides kannst du frei ändern.</p>
+          <p className="text-sm text-muted">
+            Die Art bereitet Steckbrief und Gliederung vor. Beides kannst du frei ändern.{" "}
+            <Link href="/wiki/einstellungen" className="text-accent underline underline-offset-2">
+              Arten verwalten
+            </Link>
+          </p>
         </div>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Art der Seite">
           <button
@@ -139,7 +146,7 @@ export function WikiForm({
           >
             Keine
           </button>
-          {WIKI_TYPES.map((t) => (
+          {types.map((t) => (
             <button
               key={t.id}
               type="button"
@@ -288,13 +295,13 @@ export function WikiForm({
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Bilder</h2>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
-          {usesPortraitImage(pageType) ? "Bild (Hochformat, wie ein Charakterbild)" : "Titelbild"}
+          {usesPortraitImage(pageType, types) ? "Bild (Hochformat, wie ein Charakterbild)" : "Titelbild"}
           <AvatarUpload
             name="cover_image_url"
             initialUrl={page?.cover_image_url}
             displayName={page?.title ?? "Wiki-Seite"}
             bucket="wiki-covers"
-            variant={usesPortraitImage(pageType) ? "portrait" : "standard"}
+            variant={usesPortraitImage(pageType, types) ? "portrait" : "standard"}
           />
         </div>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">

@@ -3,11 +3,10 @@ import { redirect } from "next/navigation";
 import { Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { getWikiFolders, getWikiLinkPages, getWikiPageRows } from "@/lib/wiki-data";
+import { getWikiFolders, getWikiLinkPages, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { buildWikiTree, folderOptions, folderPath } from "@/lib/wiki-tree";
 import { searchWiki, type SearchEntry } from "@/lib/wiki-search";
 import { tagCounts } from "@/lib/wiki-tags";
-import { WIKI_TYPES, wikiTypeOf } from "@/lib/wiki-types";
 import { stripHtml } from "@/lib/strip-html";
 import { WikiTile } from "@/components/wiki-tile";
 import { WikiTypeBadge } from "@/components/wiki-type-icon";
@@ -18,7 +17,7 @@ const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg ou
 export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/suche">) {
   const sp = await searchParams;
   const q = first(sp.q).slice(0, 100);
-  const type = wikiTypeOf(first(sp.type))?.id ?? "";
+  const type = first(sp.type).slice(0, 40);
   const tag = first(sp.tag).slice(0, 40);
   const folderId = first(sp.ordner);
 
@@ -30,10 +29,11 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [folders, rows, linkPages] = await Promise.all([
+  const [folders, rows, linkPages, types] = await Promise.all([
     getWikiFolders(world.id),
     getWikiPageRows(world.id),
     getWikiLinkPages(world.id),
+    getWikiTypes(world.id),
   ]);
   const tree = buildWikiTree(folders, rows);
   const textById = new Map(linkPages.map((p) => [p.id, { text: stripHtml(p.content ?? ""), aliases: p.aliases }]));
@@ -76,7 +76,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
               Art
               <select name="type" defaultValue={type} className={field}>
                 <option value="">Alle</option>
-                {WIKI_TYPES.map((t) => (
+                {types.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.label}
                   </option>

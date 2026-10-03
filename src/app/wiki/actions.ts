@@ -8,6 +8,7 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { parseProfileFields } from "@/lib/profile-fields";
 import { pageSubtreeIds } from "@/lib/wiki-tree";
 import { parseWikiType } from "@/lib/wiki-types";
+import { getWikiTypes } from "@/lib/wiki-data";
 import { parseTags } from "@/lib/wiki-tags";
 import { columnsFromDates, parsePageDates, type EventColumns } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
@@ -113,7 +114,7 @@ async function readPageForm(
       fields: parseProfileFields(formData),
       folder_id: folderId,
       parent_page_id: parentId,
-      page_type: parseWikiType(formData.get("page_type")),
+      page_type: parseWikiType(formData.get("page_type"), await getWikiTypes(worldId)),
       tags: parseTags(String(formData.get("tags") ?? "")),
       is_draft: formData.get("is_draft") === "on",
     },

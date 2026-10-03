@@ -4,7 +4,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -230,13 +230,14 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
               )}
             </div>
 
-            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-5 gap-1 rounded-xl border border-line bg-surface p-1">
+            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-6 gap-1 rounded-xl border border-line bg-surface p-1">
               {[
                 { href: q ? `/wiki/suche?q=${encodeURIComponent(query.trim())}` : "/wiki/suche", base: "/wiki/suche", label: "Erweiterte Suche mit Filtern", Icon: SlidersHorizontal },
                 { href: "/wiki/karten", base: "/wiki/karten", label: "Karten", Icon: MapIcon },
                 { href: "/wiki/graph", base: "/wiki/graph", label: "Graph", Icon: Network },
                 { href: "/wiki/zeitleiste", base: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },
                 { href: "/wiki/kalender", base: "/wiki/kalender", label: "Kalender", Icon: CalendarDays },
+                { href: "/wiki/einstellungen", base: "/wiki/einstellungen", label: "Wiki-Einstellungen (Seitenarten)", Icon: Settings },
               ].map(({ href, base, label, Icon }) => {
                 const active = pathname.startsWith(base);
                 return (
