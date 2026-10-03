@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { MapPin, Minus, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { SymbolPicker } from "@/components/symbol-picker";
 import {
@@ -14,7 +13,7 @@ import {
   type WikiMap,
   type WikiMapPin,
 } from "@/lib/wiki-map";
-import { addMapPin, deletePin, deleteWikiMap, movePin, updatePin, updateWikiMap } from "../actions";
+import { addMapPin, deletePin, movePin, updatePin } from "../actions";
 
 type Option = { id: string; title: string };
 type Draft = { id?: string; x: number; y: number; label: string; icon: string; pageId: string; targetMapId: string };
@@ -27,17 +26,14 @@ export function MapViewer({
   initialPins,
   pages,
   otherMaps,
-  canDelete,
   initialPinId,
 }: {
   map: WikiMap;
   initialPins: WikiMapPin[];
   pages: Option[];
   otherMaps: Option[];
-  canDelete: boolean;
   initialPinId?: string;
 }) {
-  const router = useRouter();
   const viewportRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -48,7 +44,6 @@ export function MapViewer({
   const [selectedId, setSelectedId] = useState<string | null>(initialPinId ?? null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [title, setTitle] = useState(map.title);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -242,20 +237,6 @@ export function MapViewer({
     setSelectedId(null);
   }
 
-  async function renameMap() {
-    const res = await updateWikiMap(map.id, { title, description: map.description ?? "" });
-    setError(res.ok ? null : res.error);
-    if (res.ok) router.refresh();
-  }
-
-  async function removeMap() {
-    if (!window.confirm(`Karte „${map.title}“ samt allen Pins löschen?`)) return;
-    const res = await deleteWikiMap(map.id);
-    if (!res.ok) return setError(res.error);
-    router.push("/wiki/karten");
-    router.refresh();
-  }
-
   const zoomBy = (factor: number) => {
     const s = size();
     setView((v) => zoomAround(v, factor, s.w / 2, s.h / 2, s.w, s.h));
@@ -442,23 +423,6 @@ export function MapViewer({
         )
       )}
 
-      {editing && (
-        <section aria-label="Karte verwalten" className="flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-line p-4">
-          <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-muted">
-            Name der Karte
-            <input value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} className={field} />
-          </label>
-          <button type="button" onClick={() => void renameMap()} disabled={!title.trim() || title === map.title} className="rounded-lg border border-line px-3 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent disabled:opacity-40">
-            Umbenennen
-          </button>
-          {canDelete && (
-            <button type="button" onClick={() => void removeMap()} className="flex items-center gap-1.5 px-3 py-2 text-sm text-red-600 hover:underline dark:text-red-400">
-              <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-              Karte löschen
-            </button>
-          )}
-        </section>
-      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { getWikiMaps } from "@/lib/wiki-map-data";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { NewMapForm } from "./new-map-form";
+import { MapMenu } from "./map-menu";
 
 export default async function WikiMapsPage() {
   const supabase = await createClient();
@@ -31,7 +32,8 @@ export default async function WikiMapsPage() {
       {maps.length > 0 && (
         <ul className="grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
           {maps.map((m) => (
-            <li key={m.id}>
+            <li key={m.id} className="relative">
+              <MapMenu map={m} canDelete={m.created_by === user.id || world.created_by === user.id} variant="card" />
               <Link href={`/wiki/karten/${m.id}`} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-accent/50">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.image_url} alt="" loading="lazy" className="aspect-[4/3] w-full bg-surface-2 object-cover" />

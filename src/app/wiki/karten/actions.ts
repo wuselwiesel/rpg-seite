@@ -43,15 +43,18 @@ export async function createWikiMap(input: { title: string; description?: string
   return { ok: true, id: data.id as string };
 }
 
-export async function updateWikiMap(id: string, input: { title: string; description?: string }): Promise<Result> {
+// imageUrl: optional neues Kartenbild; die Pins behalten ihre Position (in Prozent).
+export async function updateWikiMap(id: string, input: { title: string; description?: string; imageUrl?: string }): Promise<Result> {
   const { supabase, user } = await me();
   if (!user) return { ok: false, error: "Nicht angemeldet." };
   const title = cleanMapTitle(input.title);
   if (!title) return { ok: false, error: "Bitte gib der Karte einen Namen." };
   const description = (input.description ?? "").replace(/\s+/g, " ").trim().slice(0, 500) || null;
+  const imageUrl = input.imageUrl === undefined ? undefined : String(input.imageUrl).trim();
+  if (imageUrl !== undefined && (!/^https:\/\//.test(imageUrl) || imageUrl.length > 500)) return { ok: false, error: "Das Kartenbild ist ungültig." };
   const { data, error } = await supabase
     .from("wiki_maps")
-    .update({ title, description, updated_at: new Date().toISOString() })
+    .update({ title, description, ...(imageUrl ? { image_url: imageUrl } : {}), updated_at: new Date().toISOString() })
     .eq("id", id)
     .select("id");
   if (error) return { ok: false, error: error.message };

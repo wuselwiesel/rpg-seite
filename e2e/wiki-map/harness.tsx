@@ -30,7 +30,6 @@ createRoot(document.getElementById("root")!).render(
         { id: "pg2", title: "Vampire" },
       ]}
       otherMaps={[{ id: "m2", title: "Burgkarte" }]}
-      canDelete
     />
   </div>,
 );
