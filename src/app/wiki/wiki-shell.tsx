@@ -4,7 +4,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, FileText, Folder, FolderOpen, FolderPlus, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderOpen, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -203,7 +203,7 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                 onClick={() => setDialog({ kind: "new", parent: null })}
                 title="Neuer Ordner"
                 aria-label="Neuen Ordner anlegen"
-                className="flex w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+                className="flex w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
               >
                 <FolderPlus className="h-4 w-4" strokeWidth={2} />
               </button>
@@ -212,31 +212,47 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                 onClick={() => setNavHidden(true)}
                 title="Ordnerleiste ausblenden"
                 aria-label="Ordnerleiste ausblenden"
-                className="hidden w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg lg:flex"
+                className="hidden w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg lg:flex"
               >
                 <PanelLeftClose className="h-4 w-4" strokeWidth={2} />
               </button>
+              {folders.length + pages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  title={anyOpen ? "Alle Ordner zuklappen" : "Alle Ordner aufklappen"}
+                  aria-label={anyOpen ? "Alle Ordner zuklappen" : "Alle Ordner aufklappen"}
+                  className="flex w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+                >
+                  {anyOpen ? <ChevronsDownUp className="h-4 w-4" strokeWidth={2} /> : <ChevronsUpDown className="h-4 w-4" strokeWidth={2} />}
+                </button>
+              )}
             </div>
 
-            <Link
-              href={q ? `/wiki/suche?q=${encodeURIComponent(query.trim())}` : "/wiki/suche"}
-              onClick={() => setNavOpen(false)}
-              className="-mt-1 px-1 text-xs text-muted transition hover:text-accent"
-            >
-              Erweiterte Suche mit Filtern
-            </Link>
-            <Link href="/wiki/karten" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
-              Karten
-            </Link>
-            <Link href="/wiki/graph" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
-              Graph
-            </Link>
-            <Link href="/wiki/zeitleiste" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
-              Zeitleiste
-            </Link>
-            <Link href="/wiki/kalender" onClick={() => setNavOpen(false)} className="-mt-2 px-1 text-xs text-muted transition hover:text-accent">
-              Kalender
-            </Link>
+            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-5 gap-1 rounded-xl border border-line bg-surface p-1">
+              {[
+                { href: q ? `/wiki/suche?q=${encodeURIComponent(query.trim())}` : "/wiki/suche", base: "/wiki/suche", label: "Erweiterte Suche mit Filtern", Icon: SlidersHorizontal },
+                { href: "/wiki/karten", base: "/wiki/karten", label: "Karten", Icon: MapIcon },
+                { href: "/wiki/graph", base: "/wiki/graph", label: "Graph", Icon: Network },
+                { href: "/wiki/zeitleiste", base: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },
+                { href: "/wiki/kalender", base: "/wiki/kalender", label: "Kalender", Icon: CalendarDays },
+              ].map(({ href, base, label, Icon }) => {
+                const active = pathname.startsWith(base);
+                return (
+                  <Link
+                    key={base}
+                    href={href}
+                    title={label}
+                    aria-label={label}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setNavOpen(false)}
+                    className={`flex h-8 items-center justify-center rounded-lg transition ${active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+                  >
+                    <Icon className="h-4 w-4" strokeWidth={2} />
+                  </Link>
+                );
+              })}
+            </div>
 
             <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">
             {q ? (
@@ -337,11 +353,6 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
                 </DragOverlay>
                 </DndContext>
                 {moving && <p className="mt-1 px-2 text-xs text-muted">Verschiebe …</p>}
-                {folders.length + pages.length > 0 && (
-                  <button type="button" onClick={toggleAll} className="mt-2 w-full rounded-lg px-2 py-1.5 text-left text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
-                    {anyOpen ? "Alle zuklappen" : "Alle aufklappen"}
-                  </button>
-                )}
                 {folders.length === 0 && pages.length === 0 && (
                   <p className="px-2 py-1 text-sm text-muted">Noch nichts in {worldName}. Leg den ersten Ordner oder Artikel an.</p>
                 )}
