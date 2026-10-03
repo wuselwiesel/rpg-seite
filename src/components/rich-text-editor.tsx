@@ -3,7 +3,8 @@
 import { EmojiCatalog } from "./emoji-catalog";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { useEffect, useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor, type Extensions } from "@tiptap/react";
+import { useEditor, useEditorState, EditorContent, type Editor, type Extensions } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
@@ -55,6 +56,91 @@ function ToolbarButton({
     >
       {children}
     </button>
+  );
+}
+
+// Schwebende Leiste über (am Handy unter) markiertem Text: die wichtigsten Formate, ohne zur festen Leiste oben zurückzuscrollen.
+function SelectionMenu({ editor }: { editor: Editor }) {
+  // Am Handy erscheint über der Auswahl schon das Menü des Systems (Kopieren, Einfügen), deshalb dort darunter.
+  const coarse = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  // Hervorhebung der aktiven Formate folgt der Auswahl.
+  const on = useEditorState({
+    editor,
+    selector: ({ editor: ed }) => ({
+      bold: ed.isActive("bold"),
+      italic: ed.isActive("italic"),
+      underline: ed.isActive("underline"),
+      strike: ed.isActive("strike"),
+      h2: ed.isActive("heading", { level: 2 }),
+      h3: ed.isActive("heading", { level: 3 }),
+      list: ed.isActive("bulletList"),
+      quote: ed.isActive("blockquote"),
+      link: ed.isActive("link"),
+    }),
+  });
+
+  function setLink() {
+    const previousUrl = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("Link-URL:", previousUrl ?? "https://");
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }
+
+  function wrapInGuillemets() {
+    const { from, to } = editor.state.selection;
+    editor.chain().focus().insertContentAt(to, "«").insertContentAt(from, "»").run();
+  }
+
+  return (
+    <BubbleMenu
+      editor={editor}
+      options={{ placement: coarse ? "bottom" : "top", offset: 8 }}
+      shouldShow={({ editor: ed, state }) => ed.isEditable && !state.selection.empty && !ed.isActive("image")}
+    >
+      <div
+        role="toolbar"
+        aria-label="Formatierung der Auswahl"
+        className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1 shadow-lg"
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        <ToolbarButton label="Fett" active={on.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
+          <strong>F</strong>
+        </ToolbarButton>
+        <ToolbarButton label="Kursiv" active={on.italic} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <em>K</em>
+        </ToolbarButton>
+        <ToolbarButton label="Unterstrichen" active={on.underline} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <span className="underline">U</span>
+        </ToolbarButton>
+        <ToolbarButton label="Durchgestrichen" active={on.strike} onClick={() => editor.chain().focus().toggleStrike().run()}>
+          <span className="line-through">S</span>
+        </ToolbarButton>
+        <span className="mx-0.5 h-5 w-px bg-line" />
+        <ToolbarButton label="Überschrift groß" active={on.h2} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+          H2
+        </ToolbarButton>
+        <ToolbarButton label="Überschrift klein" active={on.h3} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+          H3
+        </ToolbarButton>
+        <ToolbarButton label="Aufzählung" active={on.list} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+          • Liste
+        </ToolbarButton>
+        <ToolbarButton label="Zitat" active={on.quote} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+          „Zitat“
+        </ToolbarButton>
+        <span className="mx-0.5 h-5 w-px bg-line" />
+        <ToolbarButton label="Markierten Text in » « setzen" onClick={wrapInGuillemets}>
+          »…«
+        </ToolbarButton>
+        <ToolbarButton label="Link" active={on.link} onClick={setLink}>
+          🔗
+        </ToolbarButton>
+      </div>
+    </BubbleMenu>
   );
 }
 
@@ -520,6 +606,7 @@ export function RichTextEditor({
     <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
       {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} wikiPages={wikiPages} />}
+      {editor && <SelectionMenu editor={editor} />}
       <EditorContent editor={editor} />
     </div>
   );
