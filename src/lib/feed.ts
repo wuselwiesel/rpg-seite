@@ -40,9 +40,11 @@ export async function fetchFeedPage(
   before?: string,
 ): Promise<FeedPost[]> {
   const supabase = await createClient();
+  // Der Feed zeigt nur Beiträge von Charakteren der ausgewählten Welt (innerer Join auf den Charakter).
   let query = supabase
     .from("posts")
-    .select(POST_SELECT)
+    .select(POST_SELECT.replace("characters!posts_character_id_fkey(", "characters!posts_character_id_fkey!inner("))
+    .eq("characters.world_id", activeWorldId)
     .lte("publish_at", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(FEED_PAGE_SIZE);
