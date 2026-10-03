@@ -22,6 +22,7 @@ import { ScrollToLast } from "./scroll-to-last";
 import { JumpToLast } from "./jump-to-last";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
+import { SceneDateToggle } from "@/components/scene-date-toggle";
 import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
@@ -189,14 +190,21 @@ export default async function StoryPostDetailPage({
           narrator={!!storyPost.narrator}
           canEdit={myCharacterIds.has(storyPost.character_id) || isWorldOwner}
           metaSlot={
-            <SceneMeta
-              storyPostId={storyPost.id}
-              location={storyPost.location}
-              inWorldTime={storyPost.in_world_time}
-              dates={datesFromRow(storyPost)}
-              calendar={calendar}
-              canEdit={myCharacterIds.has(storyPost.character_id)}
-            />
+            <>
+              <SceneMeta
+                storyPostId={storyPost.id}
+                location={storyPost.location}
+                inWorldTime={storyPost.in_world_time}
+                dates={datesFromRow(storyPost)}
+                calendar={calendar}
+                canEdit={myCharacterIds.has(storyPost.character_id)}
+              />
+              {!myCharacterIds.has(storyPost.character_id) && (myCharacterIds.size > 0 || isWorldOwner) && (
+                <div className="mb-3">
+                  <SceneDateToggle storyPostId={storyPost.id} dates={datesFromRow(storyPost)} calendar={calendar} />
+                </div>
+              )}
+            </>
           }
         />
       </article>

@@ -90,9 +90,10 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     .eq("world_id", activeWorld.id);
   const myCharIds = (myChars ?? []).map((c) => c.id);
   const calendar = await getWikiCalendar(activeWorld.id);
-  // Datum setzen/ändern nur bei eigenen Szenen
+  // Datum setzen/ändern dürfen alle, die in der Welt mitspielen
+  const canDate = myCharIds.length > 0 || activeWorld.created_by === user.id;
   const dateSlot = (post: StoryPost) =>
-    myCharIds.includes(post.character_id) ? <SceneDateToggle storyPostId={post.id} dates={datesFromRow(post)} calendar={calendar} /> : undefined;
+    canDate ? <SceneDateToggle storyPostId={post.id} dates={datesFromRow(post)} calendar={calendar} /> : undefined;
   if (onlyMyTurn) {
     storyQuery = storyQuery.in("turn_character_id", myCharIds.length ? myCharIds : ["00000000-0000-0000-0000-000000000000"]);
   }
@@ -316,7 +317,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
               narrator={!!post.narrator}
             />
-            {(recapOf(post) || myCharIds.includes(post.character_id)) && (
+            {(recapOf(post) || canDate) && (
               <div className="flex flex-wrap items-start gap-x-2 px-1 pb-3">
                 {recapOf(post) && <RecapToggle html={recapOf(post)} />}
                 {dateSlot(post)}

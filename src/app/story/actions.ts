@@ -432,7 +432,7 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
   return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
 }
 
-// Nur das Datum im Kalender der Welt setzen oder entfernen (aus der Story-Liste, ohne die Szene zu öffnen).
+// Nur das Datum im Kalender der Welt setzen oder entfernen. Das dürfen alle, die in der Welt mitspielen (RPC), nicht nur die Autor:in.
 export async function setSceneDates(storyPostId: string, dateForm: FormData): Promise<string | null> {
   const supabase = await createClient();
   const {
@@ -445,9 +445,17 @@ export async function setSceneDates(storyPostId: string, dateForm: FormData): Pr
   const sceneDates = await readSceneDates(dateForm, post.world_id);
   if (sceneDates.error !== null) return sceneDates.error;
 
-  const { data, error } = await supabase.from("story_posts").update(sceneDates.columns).eq("id", storyPostId).select("id").maybeSingle();
-  if (error) return error.message;
-  if (!data) return "Nur die Autor:in der Szene kann das Datum ändern.";
+  const c = sceneDates.columns;
+  const { error } = await supabase.rpc("set_scene_dates", {
+    p_story_post_id: storyPostId,
+    p_year: c.event_year,
+    p_month: c.event_month,
+    p_day: c.event_day,
+    p_end_year: c.event_end_year,
+    p_end_month: c.event_end_month,
+    p_end_day: c.event_end_day,
+  });
+  if (error) return error.message === "Keine Berechtigung" ? "Nur wer in dieser Welt mitspielt, kann das Datum ändern." : error.message;
 
   revalidatePath("/story");
   revalidatePath(`/story/${storyPostId}`);
