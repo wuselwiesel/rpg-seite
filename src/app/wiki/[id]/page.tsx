@@ -193,14 +193,6 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
               <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
               Bearbeiten
             </Link>
-            <Link
-              href={`/wiki/new?parent=${page.id}`}
-              title="Unterseite anlegen"
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-            >
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-              Unterseite
-            </Link>
             {canDelete && <DeleteWikiPageButton wikiPageId={page.id} hasSubpages={(node?.children.length ?? 0) > 0} backTo={page.folder_id ? `/wiki/ordner/${page.folder_id}` : "/wiki"} />}
           </div>
         </div>
@@ -269,6 +261,10 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         <section aria-labelledby="unterseiten">
           <h2 id="unterseiten" className={sectionHead}>
             Unterseiten <span className="text-base text-muted">{node.children.length}</span>
+            <Link href={`/wiki/new?parent=${page.id}`} className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 font-sans text-sm text-muted transition hover:bg-surface-2 hover:text-fg">
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+              Neue Unterseite
+            </Link>
           </h2>
           <ul className="grid gap-3 @3xl:grid-cols-2">
             {node.children.map((c) => (
