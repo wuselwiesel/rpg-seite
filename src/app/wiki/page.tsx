@@ -190,7 +190,7 @@ export default async function WikiHomePage() {
               <li key={m.id}>
                 <Link href={`/wiki/karten/${m.id}`} className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-accent/50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={m.image_url} alt="" loading="lazy" className="aspect-[16/9] w-full bg-surface-2 object-cover" />
+                  <img src={m.image_url} alt="" loading="lazy" className="aspect-[4/3] w-full bg-surface-2 object-cover" />
                   <span className="p-3 font-serif text-lg text-fg">{m.title}</span>
                 </Link>
               </li>
