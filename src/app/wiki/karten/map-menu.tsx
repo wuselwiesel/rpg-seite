@@ -4,10 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { resizeImage } from "@/lib/image-resize";
+import { MAP_MAX_BYTES, prepareMapImage } from "@/lib/map-image";
 import { deleteWikiMap, updateWikiMap } from "./actions";
 
-const MAX_SIZE = 8 * 1024 * 1024;
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
 type MapInfo = { id: string; title: string; description: string | null; image_url: string };
@@ -119,8 +118,8 @@ function EditDialog({ map, onClose }: { map: MapInfo; onClose: () => void }) {
     try {
       let imageUrl: string | undefined;
       if (file) {
-        const resized = await resizeImage(file, 3200, 0.9);
-        if (resized.size > MAX_SIZE) throw new Error("Das Bild ist zu groß (max. 8 MB).");
+        const resized = await prepareMapImage(file);
+        if (resized.size > MAP_MAX_BYTES) throw new Error("Das Bild ist zu groß (max. 25 MB). Speichere es als JPEG oder in kleinerer Größe.");
         const supabase = createClient();
         const ext = resized.name.split(".").pop() || "jpg";
         const path = `maps/${crypto.randomUUID()}.${ext}`;
