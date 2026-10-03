@@ -244,6 +244,8 @@ export type WikiPage = {
   gallery?: string[];
   page_type?: string | null;
   tags?: string[];
+  event_label?: string | null;
+  event_end_label?: string | null;
   event_year?: number | null;
   event_month?: number | null;
   event_day?: number | null;

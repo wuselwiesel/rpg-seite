@@ -10,7 +10,7 @@ import { pageSubtreeIds } from "@/lib/wiki-tree";
 import { parseWikiType } from "@/lib/wiki-types";
 import { getWikiTypes } from "@/lib/wiki-data";
 import { parseTags } from "@/lib/wiki-tags";
-import { columnsFromDates, parsePageDates, type EventColumns } from "@/lib/wiki-calendar";
+import { cleanDateLabel, columnsFromDates, parsePageDates, type EventColumns } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -60,6 +60,8 @@ type PageInput = {
   page_type: string | null;
   tags: string[];
   is_draft: boolean;
+  event_label: string | null;
+  event_end_label: string | null;
 } & Required<EventColumns>;
 
 // Liest und prüft das Formular. Eine Oberseite bestimmt den Ordner (Unterseiten liegen im Ordner ihrer Oberseite).
@@ -104,6 +106,9 @@ async function readPageForm(
   return {
     input: {
       ...columnsFromDates(dates),
+      // Bezeichnungen gehören zum Datum: ohne Datum (bzw. ohne Ende) entfallen sie
+      event_label: dates.start ? cleanDateLabel(formData.get("date_label")) : null,
+      event_end_label: dates.end ? cleanDateLabel(formData.get("date_end_label")) : null,
       title,
       lead: String(formData.get("lead") ?? "").replace(/\s+/g, " ").trim().slice(0, 300) || null,
       content: sanitizePostHtml(String(formData.get("content") ?? "").trim()),
@@ -142,6 +147,29 @@ export async function createWikiPage(_prevState: string | null, formData: FormDa
 
   revalidatePath("/wiki", "layout");
   redirect(`/wiki/${data.id}`);
+}
+
+// Ereignis direkt auf der Zeitleiste eintragen: eine Wiki-Seite (Art „Ereignis“) mit Datum und Kurztext, die man später im Wiki ausbauen kann.
+export async function createTimelineEvent(_prev: string | null, formData: FormData): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const world = await getActiveWorld(user.id);
+  if (!world) return "Keine aktive Welt.";
+
+  const parsed = await readPageForm(supabase, world.id, formData);
+  if ("error" in parsed) return parsed.error;
+  if (parsed.input.event_year == null) return "Ein Ereignis braucht mindestens ein Jahr.";
+
+  const { error } = await supabase
+    .from("wiki_pages")
+    .insert({ ...parsed.input, world_id: world.id, category: "sonstiges", created_by: user.id });
+  if (error) return error.message;
+
+  revalidatePath("/wiki", "layout");
+  return null;
 }
 
 export async function updateWikiPage(wikiPageId: string, _prevState: string | null, formData: FormData) {

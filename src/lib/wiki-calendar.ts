@@ -56,6 +56,44 @@ export function formatRange(cal: WikiCalendar, dates: PageDates): string {
   return `${formatDate(cal, start)} – ${formatDate(cal, end)}`;
 }
 
+// Bezeichnungen zum Datum („Geboren“, „Gegründet“), je eine für Anfang und Ende. Leer = keine.
+export type DateLabels = { start?: string | null; end?: string | null };
+export const MAX_DATE_LABEL = 40;
+
+export function cleanDateLabel(raw: unknown): string | null {
+  return String(raw ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_DATE_LABEL) || null;
+}
+
+// „Geboren 12. Frostmond 1432“, mit Ende „Geboren 1432 – Gestorben 1490“. Ohne Bezeichnungen wie formatRange.
+export function formatLabeled(cal: WikiCalendar, dates: PageDates, labels: DateLabels = {}): string {
+  const { start, end } = dates;
+  if (!start) return "";
+  const l1 = cleanDateLabel(labels.start);
+  const l2 = cleanDateLabel(labels.end);
+  if (!l1 && !l2) return formatRange(cal, dates);
+  if (!end || sortKey(end) === sortKey(start)) return `${l1 ? `${l1} ` : ""}${formatDate(cal, start)}`;
+  // Die Jahres-Bezeichnung der Welt steht nur am Ende, sonst erscheint sie doppelt.
+  const first = formatDate({ ...cal, era: "" }, start);
+  return `${l1 ? `${l1} ` : ""}${first} – ${l2 ? `${l2} ` : ""}${formatDate(cal, end)}`;
+}
+
+// Vorschläge für die Bezeichnung, je nach Art der Seite.
+const LABEL_SUGGESTIONS: Record<string, [string[], string[]]> = {
+  person: [["Geboren", "Erstmals erwähnt", "Angekommen"], ["Gestorben", "Verschwunden", "Abgereist"]],
+  organisation: [["Gegründet", "Entstanden"], ["Aufgelöst", "Untergegangen"]],
+  ort: [["Gegründet", "Erbaut", "Entdeckt"], ["Zerstört", "Verlassen"]],
+  ereignis: [["Beginn", "Ausgebrochen"], ["Ende", "Beendet"]],
+  gegenstand: [["Geschaffen", "Entdeckt"], ["Verloren", "Zerstört"]],
+  spezies: [["Erstmals erwähnt", "Entstanden"], ["Ausgestorben", "Verschwunden"]],
+  mythos: [["Entstanden", "Erzählt seit"], ["Vergessen"]],
+};
+const GENERIC_SUGGESTIONS: [string[], string[]] = [["Beginn", "Gegründet", "Geboren"], ["Ende", "Aufgelöst", "Gestorben"]];
+
+export function dateLabelSuggestions(type: string | null | undefined): { start: string[]; end: string[] } {
+  const [start, end] = (type && LABEL_SUGGESTIONS[type]) || GENERIC_SUGGESTIONS;
+  return { start, end };
+}
+
 export function daysInMonth(cal: WikiCalendar, month: number): number {
   return cal.months[month - 1]?.days ?? 31;
 }

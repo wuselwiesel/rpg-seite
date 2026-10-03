@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
-import { datesFromRow, formatRange, type Dated, type WikiCalendar } from "@/lib/wiki-calendar";
+import { datesFromRow, formatLabeled, type Dated, type DateLabels, type WikiCalendar } from "@/lib/wiki-calendar";
 import { timelineSections } from "@/lib/timeline";
 import { hasTag, tagCounts } from "@/lib/wiki-tags";
 import { recapToHtml } from "@/lib/recap-html";
@@ -14,6 +14,7 @@ import { WikiTypeBadge, WikiTypeIcon } from "@/components/wiki-type-icon";
 import { WikiTile } from "@/components/wiki-tile";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { WikiCrumbs } from "../wiki-crumbs";
+import { TimelineEventForm } from "./event-form";
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
@@ -40,7 +41,7 @@ type SceneRow = {
 };
 
 type Entry =
-  | { kind: "wiki"; id: string; title: string; lead: string | null; type: string | null; draft: boolean; icon: string | null; cover: string | null }
+  | { kind: "wiki"; labels: DateLabels; id: string; title: string; lead: string | null; type: string | null; draft: boolean; icon: string | null; cover: string | null }
   | { kind: "scene"; id: string; title: string; excerpt: string; location: string | null; extra: string | null; author: string; avatar: string | null; arc: string | null };
 
 const excerpt = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trimEnd()} …` : s);
@@ -131,7 +132,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [rows, calendar, types, { data: sceneData }, { count: undatedScenes }] = await Promise.all([
+  const [rows, calendar, types, { data: sceneData }] = await Promise.all([
     getWikiPageRows(world.id),
     getWikiCalendar(world.id),
     getWikiTypes(world.id),
@@ -144,11 +145,9 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
       .eq("archived", false)
       .not("event_year", "is", null)
       .returns<SceneRow[]>(),
-    supabase.from("story_posts").select("id", { count: "exact", head: true }).eq("world_id", world.id).eq("archived", false).is("event_year", null),
   ]);
 
   const wikiDated = rows.map((r) => ({ ...r, dates: datesFromRow(r) })).filter((r) => r.dates.start);
-  const undatedWiki = rows.length - wikiDated.length;
   const scenesDated = (sceneData ?? []).map((s) => ({ ...s, dates: datesFromRow(s) }));
 
   const wikiShown = source === "szenen" ? [] : wikiDated.filter((r) => (!type || r.page_type === type) && (!tag || hasTag(r, tag)));
@@ -158,6 +157,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
     ...wikiShown.map(
       (r): Dated<Entry> => ({
         kind: "wiki",
+        labels: { start: r.event_label, end: r.event_end_label },
         id: r.id,
         title: r.title,
         lead: r.lead ?? null,
@@ -192,10 +192,6 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
     wikiShown.length > 0 ? `${wikiShown.length} ${wikiShown.length === 1 ? "Seite" : "Seiten"}` : null,
     scenesShown.length > 0 ? `${scenesShown.length} ${scenesShown.length === 1 ? "Szene" : "Szenen"}` : null,
   ].filter(Boolean);
-  const missing = [
-    source !== "szenen" && undatedWiki > 0 ? `${undatedWiki} ${undatedWiki === 1 ? "Seite hat" : "Seiten haben"} keinen Zeitpunkt` : null,
-    source !== "welt" && (undatedScenes ?? 0) > 0 ? `${undatedScenes} ${undatedScenes === 1 ? "Szene hat" : "Szenen haben"} noch kein Datum` : null,
-  ].filter(Boolean);
 
   const chip = (active: boolean) =>
     `rounded-full px-3.5 py-1.5 text-sm font-medium transition ${active ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
@@ -220,6 +216,8 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
           {counts.length > 0 && <span className="text-muted">{counts.join(", ")}</span>}
         </div>
       </header>
+
+      <TimelineEventForm calendar={calendar} eventType={types.some((t) => t.id === "ereignis") ? "ereignis" : null} />
 
       <div className="flex flex-col gap-3">
         <nav aria-label="Was die Zeitleiste zeigt" className="flex flex-wrap gap-2">
@@ -321,7 +319,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
                         {y.items.map((p) => (
                           <li key={`${p.kind}-${p.id}`}>
                             {p.kind === "wiki" ? (
-                              <WikiEntryCard e={p} label={labelOf(calendar, p.dates)} />
+                              <WikiEntryCard e={p} label={labelOf(calendar, p.dates, p.labels)} />
                             ) : (
                               <SceneEntryCard e={p} label={labelOf(calendar, p.dates)} />
                             )}
@@ -337,11 +335,10 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
         </>
       )}
 
-      {missing.length > 0 && <p className="text-sm text-muted">{missing.join(". ")}.</p>}
     </div>
   );
 }
 
-function labelOf(calendar: WikiCalendar, dates: Dated<Entry>["dates"]) {
-  return formatRange({ ...calendar, era: "" }, dates);
+function labelOf(calendar: WikiCalendar, dates: Dated<Entry>["dates"], labels?: DateLabels) {
+  return formatLabeled({ ...calendar, era: "" }, dates, labels);
 }

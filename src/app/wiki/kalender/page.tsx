@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiPageRows } from "@/lib/wiki-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
-import { datesFromRow, formatRange, monthName, placeInMonth } from "@/lib/wiki-calendar";
+import { datesFromRow, formatLabeled, monthName, placeInMonth } from "@/lib/wiki-calendar";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { CalendarForm } from "./calendar-form";
 
@@ -96,7 +96,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
                 <li key={p.id}>
                   <Link href={`/wiki/${p.id}`} className="flex flex-wrap items-baseline gap-x-2 text-fg hover:text-accent">
                     <span className="font-medium">{p.title}</span>
-                    <span className="text-sm text-muted">{formatRange(calendar, p.dates)}</span>
+                    <span className="text-sm text-muted">{formatLabeled(calendar, p.dates, { start: p.event_label, end: p.event_end_label })}</span>
                   </Link>
                 </li>
               ))}

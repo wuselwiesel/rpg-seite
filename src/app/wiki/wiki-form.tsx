@@ -201,7 +201,7 @@ export function WikiForm({
             ).
           </p>
         </div>
-        <EventDateRange calendar={calendar} dates={dates} />
+        <EventDateRange calendar={calendar} dates={dates} labels={{ start: page?.event_label ?? null, end: page?.event_end_label ?? null }} type={pageType} />
       </section>
 
       <section className={card}>

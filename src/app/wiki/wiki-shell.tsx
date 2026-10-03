@@ -3,8 +3,8 @@
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings, SlidersHorizontal } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -59,6 +59,7 @@ function currentFromPath(pathname: string): { folder: string | null; page: strin
 // Wiki-Rahmen: links die Ordner (einklappbar, mit Unterordnern, Seiten und Unterseiten), rechts der Inhalt.
 export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, children }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const cur = currentFromPath(pathname);
   const tree = useMemo(() => buildWikiTree(folders, pages), [folders, pages]);
   const { state: stored, save } = useOpenState(worldId);
@@ -199,6 +200,13 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter öffnet die Suche mit allen Filtern
+                    if (e.key === "Enter" && query.trim()) {
+                      setNavOpen(false);
+                      router.push(`/wiki/suche?q=${encodeURIComponent(query.trim())}`);
+                    }
+                  }}
                   placeholder="Suchen"
                   aria-label="Wiki durchsuchen"
                   className="w-full rounded-xl border border-line bg-surface py-2 pl-9 pr-3 text-sm text-fg outline-none placeholder:text-muted focus:border-accent"
@@ -235,9 +243,8 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
               )}
             </div>
 
-            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-6 gap-1 rounded-xl border border-line bg-surface p-1">
+            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-5 gap-1 rounded-xl border border-line bg-surface p-1">
               {[
-                { href: q ? `/wiki/suche?q=${encodeURIComponent(query.trim())}` : "/wiki/suche", base: "/wiki/suche", label: "Erweiterte Suche mit Filtern", Icon: SlidersHorizontal },
                 { href: "/wiki/karten", base: "/wiki/karten", label: "Karten", Icon: MapIcon },
                 { href: "/wiki/graph", base: "/wiki/graph", label: "Graph", Icon: Network },
                 { href: "/wiki/zeitleiste", base: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },

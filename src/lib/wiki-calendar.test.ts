@@ -5,7 +5,9 @@ import {
   datesFromRow,
   eventsInMonth,
   formatDate,
+  formatLabeled,
   formatRange,
+  dateLabelSuggestions,
   groupByYear,
   normalizeCalendar,
   placeInMonth,
@@ -133,4 +135,35 @@ describe("Monatsblatt", () => {
     expect([...jan.byDay.keys()]).toEqual([28, 29, 30]);
     expect(placeInMonth(items, 10, 4, 30).byDay.size).toBe(0);
   });
+});
+
+describe("formatLabeled", () => {
+  const cal = { months: [{ name: "Frostmond", days: 30 }], era: "n. Z." };
+  const d = (year: number, month: number | null = null, day: number | null = null) => ({ year, month, day });
+  it("ohne Bezeichnung wie formatRange", () => {
+    const dates = { start: d(1432, 1, 12), end: null };
+    expect(formatLabeled(cal, dates)).toBe(formatRange(cal, dates));
+  });
+  it("Bezeichnung vor dem Datum", () => {
+    expect(formatLabeled(cal, { start: d(1432, 1, 12), end: null }, { start: "Geboren" })).toBe("Geboren 12. Frostmond 1432 n. Z.");
+  });
+  it("zwei Bezeichnungen bei einem Zeitraum, Jahres-Bezeichnung nur einmal", () => {
+    expect(formatLabeled(cal, { start: d(1432), end: d(1490) }, { start: "Geboren", end: "Gestorben" })).toBe("Geboren 1432 – Gestorben 1490 n. Z.");
+  });
+  it("nur Anfangs-Bezeichnung bei einem Zeitraum", () => {
+    expect(formatLabeled(cal, { start: d(1432), end: d(1490) }, { start: "Regierte" })).toBe("Regierte 1432 – 1490 n. Z.");
+  });
+  it("kein Datum, keine Ausgabe", () => {
+    expect(formatLabeled(cal, { start: null, end: null }, { start: "Geboren" })).toBe("");
+  });
+});
+
+describe("dateLabelSuggestions", () => {
+  it("Person: Geboren / Gestorben", () => {
+    const s = dateLabelSuggestions("person");
+    expect(s.start[0]).toBe("Geboren");
+    expect(s.end[0]).toBe("Gestorben");
+  });
+  it("Organisation: Gegründet", () => expect(dateLabelSuggestions("organisation").start[0]).toBe("Gegründet"));
+  it("unbekannte Art: allgemeine Vorschläge", () => expect(dateLabelSuggestions("eigene-art").start).toContain("Beginn"));
 });

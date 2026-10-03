@@ -12,7 +12,7 @@ import { getWorldCharacterTerms } from "@/lib/wiki-characters";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import { getMapsForPage } from "@/lib/wiki-map-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
-import { datesFromRow, formatRange } from "@/lib/wiki-calendar";
+import { datesFromRow, formatLabeled } from "@/lib/wiki-calendar";
 import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { buildWikiTree, folderPath, pageAncestors, type TreePage } from "@/lib/wiki-tree";
 import { findBacklinks } from "@/lib/wiki-links";
@@ -158,7 +158,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
               className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-sm font-medium text-fg-soft transition hover:text-accent"
             >
               <Clock className="h-3.5 w-3.5" strokeWidth={2} />
-              {formatRange(calendar, pageDates)}
+              {formatLabeled(calendar, pageDates, { start: page.event_label, end: page.event_end_label })}
             </Link>
           </p>
         )}
