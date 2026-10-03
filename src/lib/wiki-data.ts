@@ -8,7 +8,7 @@ export const getWikiFolders = cache(async (worldId: string): Promise<FolderRow[]
   const supabase = await createClient();
   const { data } = await supabase
     .from("wiki_folders")
-    .select("id, parent_id, name, created_by")
+    .select("id, parent_id, name, created_by, icon, color")
     .eq("world_id", worldId)
     .returns<FolderRow[]>();
   return data ?? [];

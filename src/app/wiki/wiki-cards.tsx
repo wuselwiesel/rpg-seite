@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Folder } from "lucide-react";
+import { FolderGlyph } from "@/components/folder-glyph";
+import { folderColorHex } from "@/lib/wiki-folder-style";
 import { WikiTile } from "@/components/wiki-tile";
 import { WikiTypeBadge } from "@/components/wiki-type-icon";
 import type { TreeFolder, TreePage } from "@/lib/wiki-tree";
@@ -14,15 +15,20 @@ function plural(n: number, one: string, many: string) {
 export function FolderCard({ folder, index }: { folder: TreeFolder; index: number }) {
   const preview = folder.pages.slice(0, 3);
   const rest = folder.pages.length - preview.length;
+  const hex = folderColorHex(folder.color);
   return (
     <Link
       href={`/wiki/ordner/${folder.id}`}
       className="group relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border border-line bg-surface py-4 pl-6 pr-4 transition hover:border-accent/50 hover:bg-surface-2/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      <span aria-hidden className={`absolute inset-y-0 left-0 w-2 ${SPINES[index % SPINES.length]}`} />
+      <span
+        aria-hidden
+        className={`absolute inset-y-0 left-0 w-2 ${hex ? "" : SPINES[index % SPINES.length]}`}
+        style={hex ? { backgroundColor: hex } : undefined}
+      />
       <div className="flex items-start justify-between gap-3">
         <h3 className="flex min-w-0 items-center gap-2 font-serif text-2xl leading-tight text-fg">
-          <Folder className="h-5 w-5 shrink-0 text-muted" strokeWidth={1.75} />
+          <FolderGlyph icon={folder.icon} color={folder.color} className="h-5 w-5" textClass="text-xl" />
           <span className="truncate">{folder.name}</span>
         </h3>
         <span className="shrink-0 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-fg-soft">{folder.total}</span>

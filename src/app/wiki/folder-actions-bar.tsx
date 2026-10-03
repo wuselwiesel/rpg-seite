@@ -72,7 +72,7 @@ export function FolderActionsBar({
           {menu && (
             <div role="menu" className="absolute left-0 top-full z-30 mt-1 w-48 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
               <button role="menuitem" type="button" className={item} onClick={() => open({ kind: "rename", folder })}>
-                Umbenennen
+                Bearbeiten (Name, Icon, Farbe)
               </button>
               <button role="menuitem" type="button" className={item} onClick={() => open({ kind: "move", folder })}>
                 Verschieben

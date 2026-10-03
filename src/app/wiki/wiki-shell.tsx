@@ -4,7 +4,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderOpen, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, SlidersHorizontal } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -20,6 +20,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { Wordmark } from "@/components/wordmark";
+import { FolderGlyph } from "@/components/folder-glyph";
 import { FolderDialog, type FolderDialogState } from "./folder-dialog";
 import { useNavHidden, useOpenState } from "./use-open-folders";
 import { moveWikiFolder } from "./folder-actions";
@@ -503,11 +504,7 @@ function FolderNode({
           onClick={onNavigate}
           className={`flex min-w-0 flex-1 items-center gap-2 py-1.5 text-sm ${active ? "font-semibold text-accent" : "font-medium text-fg"}`}
         >
-          {open ? (
-            <FolderOpen className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
-          ) : (
-            <Folder className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} />
-          )}
+          <FolderGlyph icon={folder.icon} color={folder.color} open={open} textClass="text-base" />
           <span className="truncate">{folder.name}</span>
         </Link>
         <span className="pr-2 text-xs text-muted group-hover:hidden group-focus-within:hidden">{folder.total}</span>
@@ -530,7 +527,7 @@ function FolderNode({
               Unterordner anlegen
             </button>
             <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "rename", folder }); }}>
-              Umbenennen
+              Bearbeiten
             </button>
             <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "move", folder }); }}>
               Verschieben

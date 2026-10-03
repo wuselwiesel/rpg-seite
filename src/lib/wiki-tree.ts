@@ -1,6 +1,13 @@
 // Ordner- und Seitenbaum des Wikis: Ordner enthalten Unterordner und Seiten, Seiten können Unterseiten haben.
 
-export type FolderRow = { id: string; parent_id: string | null; name: string; created_by: string | null };
+export type FolderRow = {
+  id: string;
+  parent_id: string | null;
+  name: string;
+  created_by: string | null;
+  icon?: string | null;
+  color?: string | null;
+};
 export type PageRow = {
   id: string;
   title: string;

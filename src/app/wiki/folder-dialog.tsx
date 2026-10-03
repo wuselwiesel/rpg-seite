@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createWikiFolder, deleteWikiFolder, moveWikiFolder, renameWikiFolder } from "./folder-actions";
 import { folderOptions, folderSubtreeIds, type TreeFolder } from "@/lib/wiki-tree";
+import { FOLDER_COLORS } from "@/lib/wiki-folder-style";
+import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
+import { FolderGlyph } from "@/components/folder-glyph";
 
 export type FolderDialogState =
   | { kind: "new"; parent: TreeFolder | null }
@@ -13,7 +16,7 @@ export type FolderDialogState =
 
 const field = "w-full rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent";
 
-// Kleines Fenster für Ordner anlegen, umbenennen, verschieben und löschen.
+// Kleines Fenster für Ordner anlegen, bearbeiten (Name, Icon, Farbe), verschieben und löschen.
 export function FolderDialog({
   state,
   tree,
@@ -29,6 +32,8 @@ export function FolderDialog({
 }) {
   const router = useRouter();
   const [name, setName] = useState(state.kind === "rename" ? state.folder.name : "");
+  const [icon, setIcon] = useState(state.kind === "rename" ? (state.folder.icon ?? "") : "");
+  const [color, setColor] = useState(state.kind === "rename" ? (state.folder.color ?? "") : "");
   const [target, setTarget] = useState<string>(state.kind === "move" ? (state.folder.parent_id ?? "") : "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -38,8 +43,8 @@ export function FolderDialog({
     setError(null);
     startTransition(async () => {
       let err: string | null = null;
-      if (state.kind === "new") err = await createWikiFolder(state.parent?.id ?? null, name);
-      else if (state.kind === "rename") err = await renameWikiFolder(state.folder.id, name);
+      if (state.kind === "new") err = await createWikiFolder(state.parent?.id ?? null, name, icon, color);
+      else if (state.kind === "rename") err = await renameWikiFolder(state.folder.id, name, icon, color);
       else if (state.kind === "move") err = await moveWikiFolder(state.folder.id, target || null);
       else err = await deleteWikiFolder(state.folder.id);
       if (err) {
@@ -58,7 +63,7 @@ export function FolderDialog({
         ? `Unterordner in „${state.parent.name}“`
         : "Neuer Ordner"
       : state.kind === "rename"
-        ? "Ordner umbenennen"
+        ? "Ordner bearbeiten"
         : state.kind === "move"
           ? `„${state.folder.name}“ verschieben`
           : `„${state.folder.name}“ löschen`;
@@ -89,6 +94,55 @@ export function FolderDialog({
               className={field}
             />
           </label>
+        )}
+
+        {(state.kind === "new" || state.kind === "rename") && (
+          <>
+            <div className="flex flex-col gap-1 text-sm text-fg-soft">
+              Icon
+              <div className="flex items-center gap-2">
+                <span className="flex h-10 w-10 items-center justify-center rounded-md border border-line bg-app text-xl">
+                  <FolderGlyph icon={icon} color={color} className="h-5 w-5" textClass="text-xl" />
+                </span>
+                <CustomEmojiPicker
+                  direction="down"
+                  onPick={(token) => setIcon(token.trim().slice(0, 40))}
+                  className="flex h-10 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+                />
+                {icon && (
+                  <button type="button" onClick={() => setIcon("")} className="text-xs text-muted hover:text-fg">
+                    Zurücksetzen
+                  </button>
+                )}
+              </div>
+            </div>
+            <fieldset className="flex flex-col gap-1.5 text-sm text-fg-soft">
+              <legend className="mb-1">Farbe</legend>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setColor("")}
+                  aria-pressed={color === ""}
+                  title="Standard"
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs text-muted ${color === "" ? "border-accent ring-2 ring-accent/40" : "border-line"}`}
+                >
+                  –
+                </button>
+                {FOLDER_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setColor(c.id)}
+                    aria-pressed={color === c.id}
+                    aria-label={c.label}
+                    title={c.label}
+                    className={`h-7 w-7 rounded-full border-2 ${color === c.id ? "border-fg ring-2 ring-accent/40" : "border-transparent"}`}
+                    style={{ backgroundColor: c.hex }}
+                  />
+                ))}
+              </div>
+            </fieldset>
+          </>
         )}
 
         {state.kind === "move" && (
@@ -129,7 +183,7 @@ export function FolderDialog({
               : state.kind === "new"
                 ? "Anlegen"
                 : state.kind === "rename"
-                  ? "Umbenennen"
+                  ? "Speichern"
                   : state.kind === "move"
                     ? "Verschieben"
                     : "Löschen"}

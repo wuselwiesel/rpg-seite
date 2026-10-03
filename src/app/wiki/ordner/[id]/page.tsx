@@ -1,5 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Folder } from "lucide-react";
+import { FolderGlyph } from "@/components/folder-glyph";
+import { folderColorHex } from "@/lib/wiki-folder-style";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiFolders, getWikiPageRows } from "@/lib/wiki-data";
@@ -24,6 +26,7 @@ export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner
   if (!folder) notFound();
 
   const trail = folderPath(folders, folder.parent_id);
+  const hex = folderColorHex(folder.color);
   const canDelete = folder.created_by === user.id || world.created_by === user.id;
   const counts = [
     `${folder.total} ${folder.total === 1 ? "Artikel" : "Artikel"}`,
@@ -35,8 +38,12 @@ export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner
       <header className="flex flex-col gap-5">
         <WikiCrumbs crumbs={trail.map((f) => ({ href: `/wiki/ordner/${f.id}`, label: f.name }))} />
         <div className="flex items-center gap-4">
-          <span aria-hidden className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-surface-3 text-accent">
-            <Folder className="h-8 w-8" strokeWidth={1.5} />
+          <span
+            aria-hidden
+            className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${hex ? "" : "bg-surface-3 text-accent"}`}
+            style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} 22%, transparent)`, color: hex } : undefined}
+          >
+            {folder.icon ? <FolderGlyph icon={folder.icon} textClass="text-4xl" /> : <Folder className="h-8 w-8" strokeWidth={1.5} />}
           </span>
           <div className="min-w-0">
             <h1 className="font-serif text-4xl leading-none text-fg @xl:text-5xl">{folder.name}</h1>

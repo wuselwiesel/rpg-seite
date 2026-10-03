@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { parseFolderColor, parseFolderIcon } from "@/lib/wiki-folder-style";
 
 const MAX_NAME = 60;
 
@@ -15,7 +16,7 @@ function done(): null {
   return null;
 }
 
-export async function createWikiFolder(parentId: string | null, rawName: string): Promise<string | null> {
+export async function createWikiFolder(parentId: string | null, rawName: string, rawIcon?: string | null, rawColor?: string | null): Promise<string | null> {
   const name = cleanName(rawName);
   if (!name) return "Bitte einen Namen eingeben.";
   const supabase = await createClient();
@@ -27,16 +28,16 @@ export async function createWikiFolder(parentId: string | null, rawName: string)
   if (!world) return "Keine aktive Welt.";
   const { error } = await supabase
     .from("wiki_folders")
-    .insert({ world_id: world.id, parent_id: parentId, name, created_by: user.id });
+    .insert({ world_id: world.id, parent_id: parentId, name, created_by: user.id, icon: parseFolderIcon(rawIcon), color: parseFolderColor(rawColor) });
   if (error) return error.message;
   return done();
 }
 
-export async function renameWikiFolder(id: string, rawName: string): Promise<string | null> {
+export async function renameWikiFolder(id: string, rawName: string, rawIcon?: string | null, rawColor?: string | null): Promise<string | null> {
   const name = cleanName(rawName);
   if (!name) return "Bitte einen Namen eingeben.";
   const supabase = await createClient();
-  const { data, error } = await supabase.from("wiki_folders").update({ name }).eq("id", id).select("id");
+  const { data, error } = await supabase.from("wiki_folders").update({ name, icon: parseFolderIcon(rawIcon), color: parseFolderColor(rawColor) }).eq("id", id).select("id");
   if (error) return error.message;
   if (!data?.length) return "Ordner nicht gefunden oder keine Berechtigung.";
   return done();

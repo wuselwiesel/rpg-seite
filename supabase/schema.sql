@@ -3083,4 +3083,8 @@ grant select, insert, update on public.wiki_calendars to authenticated;
 alter table public.wiki_pages add column if not exists icon_url text check (icon_url is null or char_length(icon_url) <= 500);
 
 
+-- Wiki-Ordner: frei wählbares Icon (Emoji oder :eigenes:) und Farbe aus einer festen Auswahl.
+alter table public.wiki_folders add column if not exists icon text check (icon is null or char_length(icon) <= 40);
+alter table public.wiki_folders add column if not exists color text check (color is null or color in ('rose','peach','gold','sage','teal','sky','slate','plum','gray'));
+
 notify pgrst, 'reload schema';
