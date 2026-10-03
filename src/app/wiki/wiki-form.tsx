@@ -294,7 +294,7 @@ export function WikiForm({
             initialUrl={page?.cover_image_url}
             displayName={page?.title ?? "Wiki-Seite"}
             bucket="wiki-covers"
-            variant={usesPortraitImage(pageType) ? "portrait" : "cover"}
+            variant={usesPortraitImage(pageType) ? "portrait" : "standard"}
           />
         </div>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">

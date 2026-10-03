@@ -9,6 +9,7 @@ export const ASPECTS = {
   square: { id: "square", label: "Quadrat", ratio: 1 },
   portrait: { id: "portrait", label: "Hochformat 4:5", ratio: 4 / 5 },
   landscape: { id: "landscape", label: "Querformat 16:9", ratio: 16 / 9 },
+  standard: { id: "standard", label: "Querformat 4:3", ratio: 4 / 3 },
   story: { id: "story", label: "Story 9:16", ratio: 9 / 16 },
   cover: { id: "cover", label: "Titelbild 3:1", ratio: 3 },
 } satisfies Record<string, CropAspect>;

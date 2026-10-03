@@ -20,8 +20,8 @@ export function AvatarUpload({
   initialUrl?: string | null;
   displayName: string;
   bucket?: string;
-  // circle: rundes Profilbild; cover: breites Titelbild; portrait: normales Hochformat-Bild (z. B. Person im Wiki)
-  variant?: "circle" | "cover" | "portrait";
+  // circle: rundes Profilbild; cover: breites Titelbild; standard: normales Querformat 4:3 (Wiki); portrait: normales Hochformat-Bild (z. B. Person im Wiki)
+  variant?: "circle" | "cover" | "portrait" | "standard";
 }) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [uploading, setUploading] = useState(false);
@@ -72,9 +72,9 @@ export function AvatarUpload({
       {cropFile && (
         <ImageCropper
           file={cropFile}
-          aspects={variant === "cover" ? [ASPECTS.cover, ASPECTS.landscape] : variant === "portrait" ? [ASPECTS.portrait, ASPECTS.square] : [ASPECTS.square]}
+          aspects={variant === "cover" ? [ASPECTS.cover, ASPECTS.landscape] : variant === "portrait" ? [ASPECTS.portrait, ASPECTS.square] : variant === "standard" ? [ASPECTS.standard, ASPECTS.square, ASPECTS.portrait] : [ASPECTS.square]}
           round={variant === "circle"}
-          title={variant === "cover" ? "Titelbild zuschneiden" : variant === "portrait" ? "Bild zuschneiden" : "Profilbild zuschneiden"}
+          title={variant === "cover" ? "Titelbild zuschneiden" : variant === "portrait" || variant === "standard" ? "Bild zuschneiden" : "Profilbild zuschneiden"}
           onCancel={() => setCropFile(null)}
           onDone={(cropped) => {
             setCropFile(null);
@@ -85,6 +85,15 @@ export function AvatarUpload({
       <input type="hidden" name={name} value={url} />
       {variant === "cover" ? (
         <WorldCover name={displayName} coverUrl={url} className="h-32 w-full" />
+      ) : variant === "standard" ? (
+        url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="aspect-[4/3] h-28 rounded-xl bg-surface-2 object-cover" />
+        ) : (
+          <span aria-hidden className="flex aspect-[4/3] h-28 items-center justify-center rounded-xl bg-surface-2 text-3xl text-muted">
+            {displayName.trim().charAt(0).toUpperCase() || "?"}
+          </span>
+        )
       ) : variant === "portrait" ? (
         url ? (
           // eslint-disable-next-line @next/next/no-img-element
