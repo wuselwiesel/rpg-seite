@@ -118,8 +118,9 @@ export async function characterMetrics(supabase: Supabase, characterId: string) 
       count(supabase.from("story_entries").select("id", head).eq("character_id", characterId).not("roll_die", "is", null)),
       count(supabase.from("story_entries").select("id", head).eq("character_id", characterId).eq("roll_success", true)),
       count(supabase.from("messages").select("id", head).eq("character_id", characterId)),
-      count(supabase.from("character_follows").select("follower_id", head).eq("followed_id", characterId)),
-      count(supabase.from("character_follows").select("followed_id", head).eq("follower_id", characterId)),
+      // Automatische Folgen der Welt (auto = true) zählen für Badges nicht mit.
+      count(supabase.from("character_follows").select("follower_id", head).eq("followed_id", characterId).eq("auto", false)),
+      count(supabase.from("character_follows").select("followed_id", head).eq("follower_id", characterId).eq("auto", false)),
       count(supabase.from("likes").select("id, posts!inner(character_id)", head).eq("posts.character_id", characterId)),
       count(supabase.from("reactions").select("id, posts!inner(character_id)", head).eq("posts.character_id", characterId)),
       count(supabase.from("likes").select("id", head).eq("character_id", characterId)),
