@@ -162,7 +162,7 @@ export function EntryCard({
           {replyCount > 0 ? `${replyCount} ${replyLabel}` : replyCta}
         </Link>
         {hasRecap && (
-          <Link href={`${detailHref}#zusammenfassung`} className="flex items-center gap-1.5 text-sm text-muted hover:text-fg">
+          <Link href={`${detailHref}?zusammenfassung=1#zusammenfassung`} className="flex items-center gap-1.5 text-sm text-muted hover:text-fg">
             <NotebookPen className="h-4 w-4" strokeWidth={2} />
             Zusammenfassung
           </Link>

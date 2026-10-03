@@ -29,7 +29,7 @@ export default async function StoryPostDetailPage({
   searchParams,
 }: PageProps<"/story/[id]">) {
   const { id } = await params;
-  const { as: asCharacterId, ziel } = await searchParams;
+  const { as: asCharacterId, ziel, zusammenfassung } = await searchParams;
   // Aus einer Benachrichtigung ("… wartet auf dich"): direkt zum letzten Beitrag springen.
   const jumpToLast = ziel === "ende" || typeof asCharacterId === "string";
   const supabase = await createClient();
@@ -213,6 +213,7 @@ export default async function StoryPostDetailPage({
         recapAt={storyPost.recap_at ?? null}
         locked={storyPost.locked}
         mentionCharacters={mentionableCharacters}
+        defaultOpen={zusammenfassung === "1"}
       />
 
       <SceneRecap

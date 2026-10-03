@@ -18,6 +18,7 @@ export function SceneSummary({
   recapAt,
   locked,
   mentionCharacters,
+  defaultOpen = false,
 }: {
   storyPostId: string;
   // gespeicherter Text (zum Bearbeiten) und seine mit Wiki-Links angereicherte, bereinigte Anzeige
@@ -26,8 +27,10 @@ export function SceneSummary({
   recapAt: string | null;
   locked: boolean;
   mentionCharacters: Character[];
+  // z. B. beim Öffnen über den Link „Zusammenfassung“ in der Story-Liste
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [editing, setEditing] = useState(false);
   const initialHtml = recapToHtml(recap);
   const [html, setHtml] = useState(initialHtml);
