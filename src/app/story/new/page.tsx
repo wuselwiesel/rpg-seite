@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import type { StoryArc } from "@/lib/types";
 import { NewStoryPostForm } from "./new-story-post-form";
 
@@ -29,7 +30,7 @@ export default async function NewStoryPostPage() {
   ]);
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
-  const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
+  const [ownCharacters, calendar] = await Promise.all([getOwnCharacters(user.id, activeWorld.id), getWikiCalendar(activeWorld.id)]);
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
@@ -40,6 +41,7 @@ export default async function NewStoryPostPage() {
         ownCharacters={ownCharacters}
         activeCharacterId={activeCharacter?.id ?? null}
         locations={locations}
+        calendar={calendar}
       />
     </div>
   );

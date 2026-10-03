@@ -12,6 +12,8 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import { getWikiTerms } from "@/lib/wiki-terms";
+import { getWikiCalendar } from "@/lib/wiki-calendar-data";
+import { datesFromRow } from "@/lib/wiki-calendar";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
@@ -80,7 +82,7 @@ export default async function StoryPostDetailPage({
     .eq("owner_id", user.id);
   const myCharacterIds = new Set((myCharacters ?? []).map((c) => c.id));
 
-  const wikiTerms = await getWikiTerms(storyPost.world_id);
+  const [wikiTerms, calendar] = await Promise.all([getWikiTerms(storyPost.world_id), getWikiCalendar(storyPost.world_id)]);
   const link = (html: string) => autolinkHtml(html, { wiki: wikiTerms, tagHref: "/story" });
 
   const [{ data: world }, { data: bookmark }] = await Promise.all([
@@ -191,6 +193,8 @@ export default async function StoryPostDetailPage({
               storyPostId={storyPost.id}
               location={storyPost.location}
               inWorldTime={storyPost.in_world_time}
+              dates={datesFromRow(storyPost)}
+              calendar={calendar}
               canEdit={myCharacterIds.has(storyPost.character_id)}
             />
           }

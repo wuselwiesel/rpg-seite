@@ -6,6 +6,8 @@ import { createStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { WriterSelect } from "@/components/writer-select";
 import { useDraft } from "@/lib/use-draft";
+import { EventDateRange } from "@/components/event-date-fields";
+import type { WikiCalendar } from "@/lib/wiki-calendar";
 import type { Character, StoryArc } from "@/lib/types";
 
 const NEW_ARC_VALUE = "__new__";
@@ -16,12 +18,14 @@ export function NewStoryPostForm({
   ownCharacters,
   activeCharacterId,
   locations,
+  calendar,
 }: {
   arcs: StoryArc[];
   allCharacters: Character[];
   ownCharacters: Character[];
   activeCharacterId: string | null;
   locations: string[];
+  calendar: WikiCalendar;
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
   const otherCharacters = allCharacters.filter((c) => c.id !== writerId);
@@ -115,6 +119,14 @@ export function NewStoryPostForm({
           />
         </label>
       </div>
+
+      <details className="rounded-lg border border-line bg-surface px-3 py-2">
+        <summary className="cursor-pointer text-sm text-fg-soft">Datum im Kalender der Welt (optional, für die Zeitleiste)</summary>
+        <div className="mt-3 flex flex-col gap-3">
+          <p className="text-xs text-muted">Mit Datum erscheint die Szene auf der Zeitleiste im Wiki, zwischen den Ereignissen der Welt. Das Jahr genügt.</p>
+          <EventDateRange calendar={calendar} dates={{ start: null, end: null }} />
+        </div>
+      </details>
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Handlungsstrang (optional)

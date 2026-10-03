@@ -15,8 +15,21 @@ import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacterIds, createNotification } from "@/lib/notifications";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import { isRateLimited } from "@/lib/rate-limit";
+import { columnsFromDates, parsePageDates } from "@/lib/wiki-calendar";
+import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+// Zeitpunkt der Szene aus dem Formular, geprüft gegen den Kalender der Welt.
+async function readSceneDates(formData: FormData, worldId: string) {
+  const calendar = await loadWikiCalendar(worldId);
+  const g = (k: string) => String(formData.get(k) ?? "");
+  const dates = parsePageDates(calendar, {
+    start: { year: g("date_year"), month: g("date_month"), day: g("date_day") },
+    end: { year: g("date_end_year"), month: g("date_end_month"), day: g("date_end_day") },
+  });
+  return "error" in dates ? { error: dates.error, columns: null } : { error: null, columns: columnsFromDates(dates) };
+}
 
 // Zu jedem bei einer Szene angegebenen Ort gibt es automatisch einen leeren Wiki-Eintrag
 // (Kategorie "ort"), den man dann füllen kann - legt nichts doppelt an, Titel-Vergleich
@@ -139,6 +152,9 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
   const location = String(formData.get("location") ?? "").trim().slice(0, 80) || null;
   const inWorldTime = String(formData.get("in_world_time") ?? "").trim().slice(0, 80) || null;
 
+  const sceneDates = await readSceneDates(formData, activeWorld.id);
+  if (sceneDates.error !== null) return sceneDates.error;
+
   const isPrivate = formData.get("is_private") === "on";
   const viewerCharacterIds = formData.getAll("viewer_character_id").map(String).filter(Boolean);
 
@@ -154,6 +170,7 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
       is_private: isPrivate,
       location,
       in_world_time: inWorldTime,
+      ...sceneDates.columns,
       narrator: formData.get("narrator") === "on",
     })
     .select("id")
@@ -419,6 +436,7 @@ export async function updateStoryMeta(
   storyPostId: string,
   location: string,
   inWorldTime: string,
+  dateForm: FormData,
 ): Promise<string | null> {
   const supabase = await createClient();
   const {
@@ -426,10 +444,15 @@ export async function updateStoryMeta(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
+  const { data: post } = await supabase.from("story_posts").select("world_id").eq("id", storyPostId).maybeSingle();
+  if (!post) return "Nur die Autor:in der Szene kann Ort und Zeit ändern.";
+  const sceneDates = await readSceneDates(dateForm, post.world_id);
+  if (sceneDates.error !== null) return sceneDates.error;
+
   const trimmedLocation = location.trim().slice(0, 80) || null;
   const { data, error } = await supabase
     .from("story_posts")
-    .update({ location: trimmedLocation, in_world_time: inWorldTime.trim().slice(0, 80) || null })
+    .update({ location: trimmedLocation, in_world_time: inWorldTime.trim().slice(0, 80) || null, ...sceneDates.columns })
     .eq("id", storyPostId)
     .select("world_id")
     .maybeSingle();
@@ -441,6 +464,7 @@ export async function updateStoryMeta(
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
   revalidatePath("/wiki");
+  revalidatePath("/wiki/zeitleiste");
   return null;
 }
 

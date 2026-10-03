@@ -122,6 +122,13 @@ export type StoryPost = {
   archived: boolean;
   location: string | null;
   in_world_time: string | null;
+  // Zeitpunkt im Kalender der Welt (für die Zeitleiste)
+  event_year?: number | null;
+  event_month?: number | null;
+  event_day?: number | null;
+  event_end_year?: number | null;
+  event_end_month?: number | null;
+  event_end_day?: number | null;
   turn_character_id: string | null;
   turn_set_at: string | null;
   narrator?: boolean;

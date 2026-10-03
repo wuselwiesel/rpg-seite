@@ -12,50 +12,13 @@ import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf } from "@/lib/w
 import { useWikiTypes } from "@/components/wiki-types-context";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { stripHtml } from "@/lib/strip-html";
-import { DEFAULT_CALENDAR, daysInMonth, datesFromRow, type EventDate, type WikiCalendar } from "@/lib/wiki-calendar";
+import { EventDateRange } from "@/components/event-date-fields";
+import { DEFAULT_CALENDAR, datesFromRow, type WikiCalendar } from "@/lib/wiki-calendar";
 import type { ProfileField } from "@/lib/profile-fields";
 import type { FolderOption, PageOption } from "@/lib/wiki-tree";
 import type { WikiPage } from "@/lib/types";
 
 const input = "rounded-lg border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent";
-// Eingabefelder für ein Datum: Jahr (Pflicht), Monat und Tag (frei). Namen: <prefix>_year, <prefix>_month, <prefix>_day.
-function DateFields({ prefix, calendar, initial, label }: { prefix: string; calendar: WikiCalendar; initial: EventDate | null; label: string }) {
-  const [month, setMonth] = useState(initial?.month ? String(initial.month) : "");
-  return (
-    <fieldset className="grid gap-3 sm:grid-cols-[1fr_1.4fr_1fr]">
-      <legend className="mb-1 text-sm font-medium text-fg-soft">{label}</legend>
-      <label className="flex flex-col gap-1 text-xs text-muted">
-        Jahr
-        <input type="number" name={`${prefix}_year`} defaultValue={initial?.year ?? ""} placeholder="z. B. 1432" className={input} />
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-muted">
-        Monat
-        <select name={`${prefix}_month`} value={month} onChange={(e) => setMonth(e.target.value)} className={input}>
-          <option value="">Unbekannt</option>
-          {calendar.months.map((m, i) => (
-            <option key={i} value={i + 1}>
-              {m.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-muted">
-        Tag
-        <input
-          type="number"
-          name={`${prefix}_day`}
-          min={1}
-          max={month ? daysInMonth(calendar, Number(month)) : undefined}
-          disabled={!month}
-          defaultValue={initial?.day ?? ""}
-          placeholder={month ? `1 bis ${daysInMonth(calendar, Number(month))}` : "erst Monat"}
-          className={`${input} disabled:opacity-60`}
-        />
-      </label>
-    </fieldset>
-  );
-}
-
 const card = "flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 @xl:p-6";
 
 export function WikiForm({
@@ -94,7 +57,6 @@ export function WikiForm({
   const [fieldRows, setFieldRows] = useState<ProfileField[]>(page?.fields ?? []);
   const [fieldsKey, setFieldsKey] = useState(0);
   const dates = datesFromRow(page ?? {});
-  const [showEnd, setShowEnd] = useState(Boolean(dates.end));
 
   const types = useWikiTypes();
   const [pageType, setPageType] = useState(wikiTypeOf(page?.page_type ?? defaults?.type, types)?.id ?? "");
@@ -239,23 +201,7 @@ export function WikiForm({
             ).
           </p>
         </div>
-        <DateFields prefix="date" calendar={calendar} initial={dates.start} label="Zeitpunkt oder Anfang" />
-        {showEnd ? (
-          <>
-            <DateFields prefix="date_end" calendar={calendar} initial={dates.end} label="Ende des Zeitraums" />
-            <div>
-              <button type="button" onClick={() => setShowEnd(false)} className="text-sm text-muted hover:text-fg">
-                Zeitraum entfernen
-              </button>
-            </div>
-          </>
-        ) : (
-          <div>
-            <button type="button" onClick={() => setShowEnd(true)} className="text-sm text-accent hover:underline">
-              + Zeitraum (mit Ende)
-            </button>
-          </div>
-        )}
+        <EventDateRange calendar={calendar} dates={dates} />
       </section>
 
       <section className={card}>
