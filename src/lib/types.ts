@@ -127,6 +127,9 @@ export type StoryPost = {
   narrator?: boolean;
   ai_summary?: string | null;
   ai_summary_count?: number | null;
+  // Selbst geschriebene Zusammenfassung der Szene zum Nachlesen
+  recap?: string | null;
+  recap_at?: string | null;
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];
@@ -159,9 +162,6 @@ export type StoryEntry = {
   kind?: "entry" | "narrator" | "chapter";
   chapter_title?: string | null;
   chapter_summary?: string | null;
-  // Selbst geschriebene Zusammenfassung des Kapitels zum Nachlesen
-  chapter_recap?: string | null;
-  chapter_recap_at?: string | null;
 };
 
 export type Chat = {

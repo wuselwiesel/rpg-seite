@@ -314,9 +314,6 @@ export async function createChapter(
   title: string,
   summary: string,
   chosenCharacterId = "",
-  // Optional: Zusammenfassung des bisherigen (jetzt abgeschlossenen) Kapitels
-  previousChapterId = "",
-  previousRecap = "",
 ): Promise<string | null> {
   const chapterTitle = title.trim().slice(0, 100);
   const chapterSummary = summary.trim().slice(0, 1500);
@@ -340,28 +337,21 @@ export async function createChapter(
   });
   if (error) return error.message;
 
-  if (previousChapterId && previousRecap.trim()) {
-    const { error: recapError } = await supabase.rpc("set_chapter_recap", { p_entry_id: previousChapterId, p_text: previousRecap.trim().slice(0, 8000) });
-    if (recapError) {
-      revalidatePath(`/story/${storyPostId}`);
-      return `Das Kapitel wurde angelegt, die Zusammenfassung des vorigen aber nicht gespeichert: ${recapError.message}`;
-    }
-  }
-
   revalidatePath(`/story/${storyPostId}`);
   return null;
 }
 
-// Zusammenfassung eines Kapitels schreiben, ändern oder (leer) entfernen.
-export async function setChapterRecap(storyPostId: string, entryId: string, text: string): Promise<string | null> {
+// Zusammenfassung einer Szene schreiben, ändern oder (leer) entfernen.
+export async function setSceneRecap(storyPostId: string, text: string): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const { error } = await supabase.rpc("set_chapter_recap", { p_entry_id: entryId, p_text: text.slice(0, 8000) });
+  const { error } = await supabase.rpc("set_scene_recap", { p_story_post_id: storyPostId, p_text: text.slice(0, 8000) });
   if (error) return error.message;
   revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story");
   return null;
 }
 

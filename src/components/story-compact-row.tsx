@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, MessageCircle, Pin } from "lucide-react";
+import { MapPin, MessageCircle, NotebookPen, Pin } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import { NarratorAvatar } from "./narrator-avatar";
 import { timeAgoShort } from "@/lib/format";
@@ -17,6 +17,7 @@ export function StoryCompactRow({
   location,
   pinned,
   yourTurn,
+  hasRecap = false,
   narrator = false,
 }: {
   href: string;
@@ -28,6 +29,7 @@ export function StoryCompactRow({
   location?: string | null;
   pinned?: boolean;
   yourTurn?: boolean;
+  hasRecap?: boolean;
   narrator?: boolean;
 }) {
   return (
@@ -47,6 +49,11 @@ export function StoryCompactRow({
         <p className="truncate text-sm text-muted">{stripHtml(content)}</p>
         <div className="mt-0.5 flex items-center gap-2.5 text-xs text-muted">
           {yourTurn && <span className="rounded-full bg-accent-strong/15 px-2 py-px font-medium text-accent">Du bist dran</span>}
+          {hasRecap && (
+            <span className="flex shrink-0 items-center gap-1" title="Mit Zusammenfassung">
+              <NotebookPen className="h-3 w-3" strokeWidth={2} aria-label="Mit Zusammenfassung" />
+            </span>
+          )}
           {pinned && <Pin className="h-3 w-3" strokeWidth={2} aria-label="Angepinnt" />}
           {location && (
             <span className="flex min-w-0 items-center gap-1 truncate">

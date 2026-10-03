@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, EyeOff, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
+import { Clock, EyeOff, MapPin, MessageCircle, NotebookPen, Pen, Pin } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import { NarratorAvatar } from "./narrator-avatar";
 import type { Character } from "@/lib/types";
@@ -27,6 +27,7 @@ export function EntryCard({
   arcName,
   arcHref,
   isPrivate,
+  hasRecap = false,
   pinned,
   location,
   inWorldTime,
@@ -52,6 +53,8 @@ export function EntryCard({
   arcName?: string;
   arcHref?: string;
   isPrivate?: boolean;
+  // Die Szene hat eine selbst geschriebene Zusammenfassung
+  hasRecap?: boolean;
   pinned?: boolean;
   location?: string | null;
   inWorldTime?: string | null;
@@ -158,6 +161,12 @@ export function EntryCard({
           <MessageCircle className="h-4 w-4" strokeWidth={2} />
           {replyCount > 0 ? `${replyCount} ${replyLabel}` : replyCta}
         </Link>
+        {hasRecap && (
+          <Link href={`${detailHref}#zusammenfassung`} className="flex items-center gap-1.5 text-sm text-muted hover:text-fg">
+            <NotebookPen className="h-4 w-4" strokeWidth={2} />
+            Zusammenfassung
+          </Link>
+        )}
         {likeButton}
       </div>
     </article>

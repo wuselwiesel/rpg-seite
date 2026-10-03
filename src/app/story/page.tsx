@@ -302,6 +302,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               location={post.location}
               pinned={post.pinned}
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
+              hasRecap={!!post.recap}
               narrator={!!post.narrator}
             />
           ) : (
@@ -323,6 +324,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               arcName={post.story_arcs?.name}
               arcHref={post.arc_id ? `/story?arc=${post.arc_id}` : undefined}
               isPrivate={post.is_private}
+              hasRecap={!!post.recap}
               pinned={post.pinned}
               location={post.location}
               inWorldTime={post.in_world_time}

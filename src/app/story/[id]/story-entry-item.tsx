@@ -8,7 +8,6 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
-import { ChapterRecap } from "./chapter-recap";
 import type { Character, StoryEntry } from "@/lib/types";
 
 export function StoryEntryItem({
@@ -17,7 +16,6 @@ export function StoryEntryItem({
   canManage,
   mentionCharacters,
   chapterNumber,
-  chapterClosed = false,
   displayHtml,
 }: {
   entry: StoryEntry;
@@ -25,8 +23,6 @@ export function StoryEntryItem({
   canManage: boolean;
   mentionCharacters: Character[];
   chapterNumber?: number;
-  // Das Kapitel ist abgeschlossen, weil danach ein weiteres beginnt.
-  chapterClosed?: boolean;
   // Mit Wiki-Links und Hashtag-Links angereicherte Fassung von entry.content.
   displayHtml?: string;
 }) {
@@ -61,12 +57,11 @@ export function StoryEntryItem({
         {entry.chapter_summary && (
           <p className="mx-auto mt-1 max-w-md text-sm italic text-muted">{entry.chapter_summary}</p>
         )}
-        <ChapterRecap storyPostId={storyPostId} entryId={entry.id} recap={entry.chapter_recap ?? null} recapAt={entry.chapter_recap_at ?? null} closed={chapterClosed} />
         {canManage && (
           <button
             type="button"
             onClick={handleDelete}
-            className="mt-1 block w-full text-xs text-muted transition hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+            className="mt-1 text-xs text-muted transition hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
           >
             Kapitel entfernen
           </button>

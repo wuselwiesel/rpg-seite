@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { NotebookPen } from "lucide-react";
+import { SceneSummary } from "./scene-summary";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -205,6 +205,8 @@ export default async function StoryPostDetailPage({
         />
       )}
 
+      <SceneSummary storyPostId={storyPost.id} recap={storyPost.recap ?? null} recapAt={storyPost.recap_at ?? null} locked={storyPost.locked} />
+
       <SceneRecap
         storyPostId={storyPost.id}
         chapterTitle={lastChapter?.chapter_title ?? null}
@@ -227,7 +229,6 @@ export default async function StoryPostDetailPage({
               className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-accent"
             >
               {i + 1} · {c.chapter_title}
-              {c.chapter_recap && <NotebookPen aria-label="mit Zusammenfassung" className="ml-1.5 inline h-3 w-3 text-accent" strokeWidth={2} />}
             </a>
           ))}
         </nav>
@@ -257,7 +258,6 @@ export default async function StoryPostDetailPage({
                 canManage={myCharacterIds.has(entry.character_id)}
                 mentionCharacters={mentionableCharacters}
                 chapterNumber={entry.kind === "chapter" ? ++chapterCounter : undefined}
-                chapterClosed={entry.kind === "chapter" && chapterCounter < chapters.length}
                 displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
               />
             ),
@@ -306,7 +306,6 @@ export default async function StoryPostDetailPage({
             activeCharacterId={activeCharacter?.id ?? null}
             characters={mentionableCharacters}
             participantIds={participantIds}
-            previousChapter={lastChapter ? { id: lastChapter.id, title: lastChapter.chapter_title ?? "", hasRecap: Boolean(lastChapter.chapter_recap) } : null}
           />
         </div>
       )}
