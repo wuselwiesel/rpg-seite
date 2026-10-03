@@ -20,6 +20,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { Wordmark } from "@/components/wordmark";
+import { WikiWorldMenu } from "./wiki-world-menu";
 import { FolderGlyph } from "@/components/folder-glyph";
 import { FolderDialog, type FolderDialogState } from "./folder-dialog";
 import { useNavHidden, useOpenState } from "./use-open-folders";
@@ -41,6 +42,7 @@ import {
 type Props = {
   worldId: string;
   worldName: string;
+  worlds: { id: string; name: string }[];
   folders: FolderRow[];
   pages: PageRow[];
   userId: string;
@@ -55,7 +57,7 @@ function currentFromPath(pathname: string): { folder: string | null; page: strin
 }
 
 // Wiki-Rahmen: links die Ordner (einklappbar, mit Unterordnern, Seiten und Unterseiten), rechts der Inhalt.
-export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldOwner, children }: Props) {
+export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, children }: Props) {
   const pathname = usePathname();
   const cur = currentFromPath(pathname);
   const tree = useMemo(() => buildWikiTree(folders, pages), [folders, pages]);
@@ -155,9 +157,12 @@ export function WikiShell({ worldId, worldName, folders, pages, userId, isWorldO
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-20">
       <header className="mb-6 hidden items-center justify-between gap-4 border-b border-line pb-4 lg:flex">
-        <Link href="/" aria-label="Wortwinkel" className="block">
-          <Wordmark height={36} />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/" aria-label="Wortwinkel" className="block">
+            <Wordmark height={36} />
+          </Link>
+          {worlds.length > 0 && <WikiWorldMenu worlds={worlds} activeId={worldId} />}
+        </div>
         <nav aria-label="Zurück in die App" className="flex items-center gap-1 text-sm">
           {[
             { href: "/story", label: "Story" },

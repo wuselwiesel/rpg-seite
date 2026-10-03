@@ -40,12 +40,13 @@ export async function createWorld(_prevState: string | null, formData: FormData)
   redirect("/characters/new?welcome=1");
 }
 
-export async function setActiveWorld(worldId: string) {
+// backTo: nur das Wiki darf als Ziel angegeben werden (sonst Startseite).
+export async function setActiveWorld(worldId: string, backTo?: string) {
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect(backTo === "/wiki" ? "/wiki" : "/");
 }
 
 export async function joinWorld(worldId: string): Promise<string | null> {
