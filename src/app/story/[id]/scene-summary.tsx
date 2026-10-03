@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { ChevronDown, NotebookPen } from "lucide-react";
 import { setSceneRecap } from "../actions";
+import { EmojiHtml } from "@/components/custom-emoji-provider";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import { isEmptyRecap, recapToHtml } from "@/lib/recap-html";
+import type { Character } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 
 // Selbst geschriebene Zusammenfassung einer Szene zum Nachlesen: aufklappbar, von allen Mitspielenden schreib- und änderbar.
@@ -10,27 +14,34 @@ import { formatDateTime } from "@/lib/format";
 export function SceneSummary({
   storyPostId,
   recap,
+  displayHtml,
   recapAt,
   locked,
+  mentionCharacters,
 }: {
   storyPostId: string;
+  // gespeicherter Text (zum Bearbeiten) und seine mit Wiki-Links angereicherte, bereinigte Anzeige
   recap: string | null;
+  displayHtml: string;
   recapAt: string | null;
   locked: boolean;
+  mentionCharacters: Character[];
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(recap ?? "");
+  const initialHtml = recapToHtml(recap);
+  const [html, setHtml] = useState(initialHtml);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
+  // Beim Speichern prüft der Server noch einmal und bereinigt den Text.
   function save(value: string) {
     setError(null);
     start(async () => {
       const err = await setSceneRecap(storyPostId, value);
       if (err) return setError(err);
       setEditing(false);
-      if (value.trim()) setOpen(true);
+      if (!isEmptyRecap(value)) setOpen(true);
     });
   }
 
@@ -39,23 +50,13 @@ export function SceneSummary({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          save(text);
+          save(html);
         }}
         className="mb-4 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4"
       >
-        <label htmlFor="scene-recap" className="text-sm font-medium text-fg">
-          Zusammenfassung dieser Szene
-        </label>
+        <p className="text-sm font-medium text-fg">Zusammenfassung dieser Szene</p>
         <p className="-mt-1 text-xs text-muted">Für alle zum Nachlesen: Was ist geschehen, was wurde entschieden, was ist offen geblieben?</p>
-        <textarea
-          id="scene-recap"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          maxLength={8000}
-          rows={8}
-          autoFocus
-          className="rounded-md border border-line bg-app px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
-        />
+        <RichTextEditor name="recap" initialContent={initialHtml} onChange={setHtml} mentionCharacters={mentionCharacters} minHeight={160} allowFontSelection />
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex flex-wrap items-center gap-2">
           <button type="submit" disabled={pending} className="rounded-md bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
@@ -65,7 +66,7 @@ export function SceneSummary({
             type="button"
             onClick={() => {
               setEditing(false);
-              setText(recap ?? "");
+              setHtml(initialHtml);
               setError(null);
             }}
             className="rounded-md px-3 py-1.5 text-xs text-muted hover:text-fg"
@@ -77,7 +78,6 @@ export function SceneSummary({
               Zusammenfassung entfernen
             </button>
           )}
-          <span className="ml-auto text-xs text-muted">{text.length} / 8000</span>
         </div>
       </form>
     );
@@ -116,7 +116,7 @@ export function SceneSummary({
       </button>
       {open && (
         <div className="border-t border-line px-4 py-3">
-          <p className="whitespace-pre-line text-sm leading-relaxed text-fg-soft">{recap}</p>
+          <EmojiHtml className="post-content text-sm text-fg-soft" html={displayHtml} />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
             <span>{recapAt ? `Zuletzt geändert am ${formatDateTime(recapAt)}` : ""}</span>
             <button type="button" onClick={() => setEditing(true)} className="transition hover:text-fg">

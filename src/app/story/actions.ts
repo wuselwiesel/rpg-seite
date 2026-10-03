@@ -10,6 +10,7 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
+import { isEmptyRecap, recapToHtml } from "@/lib/recap-html";
 import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacterIds, createNotification } from "@/lib/notifications";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
@@ -348,7 +349,10 @@ export async function setSceneRecap(storyPostId: string, text: string): Promise<
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const { error } = await supabase.rpc("set_scene_recap", { p_story_post_id: storyPostId, p_text: text.slice(0, 8000) });
+  // Formatierter Text: bereinigt speichern; ohne Inhalt (nur leere Absätze) wird die Zusammenfassung entfernt.
+  const html = sanitizePostHtml(recapToHtml(text));
+  if (html.length > 30000) return "Die Zusammenfassung ist zu lang.";
+  const { error } = await supabase.rpc("set_scene_recap", { p_story_post_id: storyPostId, p_text: isEmptyRecap(html) ? "" : html });
   if (error) return error.message;
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");

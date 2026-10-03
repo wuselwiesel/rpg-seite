@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { SceneSummary } from "./scene-summary";
+import { recapToHtml } from "@/lib/recap-html";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -205,7 +206,14 @@ export default async function StoryPostDetailPage({
         />
       )}
 
-      <SceneSummary storyPostId={storyPost.id} recap={storyPost.recap ?? null} recapAt={storyPost.recap_at ?? null} locked={storyPost.locked} />
+      <SceneSummary
+        storyPostId={storyPost.id}
+        recap={storyPost.recap ?? null}
+        displayHtml={storyPost.recap ? link(sanitizePostHtml(recapToHtml(storyPost.recap))) : ""}
+        recapAt={storyPost.recap_at ?? null}
+        locked={storyPost.locked}
+        mentionCharacters={mentionableCharacters}
+      />
 
       <SceneRecap
         storyPostId={storyPost.id}
