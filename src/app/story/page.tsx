@@ -6,6 +6,9 @@ import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import { EntryCard } from "@/components/entry-card";
 import { StoryCompactRow } from "@/components/story-compact-row";
+import { RecapToggle } from "@/components/recap-toggle";
+import { recapToHtml } from "@/lib/recap-html";
+import { sanitizePostHtml } from "@/lib/sanitize";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
@@ -27,6 +30,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const showArchived = params.archived === "1";
   const bookmarkedOnly = params.bookmarked === "1";
   const compact = params.ansicht === "kompakt";
+  // Bereinigte Zusammenfassung einer Szene (leer, wenn es keine gibt).
+  const recapOf = (post: StoryPost) => (post.recap ? sanitizePostHtml(recapToHtml(post.recap)) : "");
   const page = Math.max(1, (typeof params.seite === "string" && Number(params.seite)) || 1);
 
   const supabase = await createClient();
@@ -291,8 +296,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       <div data-tour="story-list" className={compact ? "flex flex-col divide-y divide-line" : "flex flex-col gap-4"}>
         {storyPosts?.length ? (
           storyPosts.map((post, index) => compact ? (
+            <div key={post.id}>
             <StoryCompactRow
-              key={post.id}
               href={`/story/${post.id}`}
               title={post.title}
               content={post.content}
@@ -302,9 +307,10 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               location={post.location}
               pinned={post.pinned}
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
-              hasRecap={!!post.recap}
               narrator={!!post.narrator}
             />
+            {recapOf(post) && <RecapToggle html={recapOf(post)} className="px-1 pb-3" />}
+            </div>
           ) : (
             <EntryCard
               key={post.id}
@@ -324,7 +330,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               arcName={post.story_arcs?.name}
               arcHref={post.arc_id ? `/story?arc=${post.arc_id}` : undefined}
               isPrivate={post.is_private}
-              hasRecap={!!post.recap}
+              recapHtml={recapOf(post)}
               pinned={post.pinned}
               location={post.location}
               inWorldTime={post.in_world_time}

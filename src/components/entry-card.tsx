@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Clock, EyeOff, MapPin, MessageCircle, NotebookPen, Pen, Pin } from "lucide-react";
+import { Clock, EyeOff, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
+import { RecapToggle } from "./recap-toggle";
 import { CharacterAvatar } from "./character-avatar";
 import { NarratorAvatar } from "./narrator-avatar";
 import type { Character } from "@/lib/types";
@@ -27,7 +28,7 @@ export function EntryCard({
   arcName,
   arcHref,
   isPrivate,
-  hasRecap = false,
+  recapHtml = "",
   pinned,
   location,
   inWorldTime,
@@ -53,8 +54,8 @@ export function EntryCard({
   arcName?: string;
   arcHref?: string;
   isPrivate?: boolean;
-  // Die Szene hat eine selbst geschriebene Zusammenfassung
-  hasRecap?: boolean;
+  // Selbst geschriebene Zusammenfassung der Szene (bereinigtes HTML), klappt in der Karte auf
+  recapHtml?: string;
   pinned?: boolean;
   location?: string | null;
   inWorldTime?: string | null;
@@ -161,14 +162,9 @@ export function EntryCard({
           <MessageCircle className="h-4 w-4" strokeWidth={2} />
           {replyCount > 0 ? `${replyCount} ${replyLabel}` : replyCta}
         </Link>
-        {hasRecap && (
-          <Link href={`${detailHref}?zusammenfassung=1#zusammenfassung`} className="flex items-center gap-1.5 text-sm text-muted hover:text-fg">
-            <NotebookPen className="h-4 w-4" strokeWidth={2} />
-            Zusammenfassung
-          </Link>
-        )}
         {likeButton}
       </div>
+      {recapHtml && <RecapToggle html={recapHtml} className="mt-2" />}
     </article>
   );
 }
