@@ -111,18 +111,18 @@ export default async function WikiHomePage() {
       )}
 
       {missing.length > 0 && (
-        <section aria-labelledby="fehlend" className="rounded-2xl border border-dashed border-line p-5">
-          <h2 id="fehlend" className="font-serif text-2xl text-fg">
-            Fehlende Artikel
-          </h2>
-          <p className="mt-1 text-sm text-muted">Diese Begriffe sind mit [[…]] verlinkt, aber es gibt noch keine Seite dazu.</p>
-          <ul className="mt-4 flex flex-wrap gap-2">
+        <details className="group text-sm text-muted">
+          <summary className="w-fit cursor-pointer list-none rounded-lg px-2 py-1 transition hover:bg-surface-2 hover:text-fg [&::-webkit-details-marker]:hidden">
+            {plural(missing.length, "fehlender Artikel", "fehlende Artikel")} anzeigen
+          </summary>
+          <p className="mt-2 px-2">Mit [[…]] verlinkt, aber noch ohne eigene Seite. Ein Klick legt sie an.</p>
+          <ul className="mt-3 flex flex-wrap gap-2 px-2">
             {missing.map((m) => (
               <li key={m.title}>
                 <Link
                   href={`/wiki/new?title=${encodeURIComponent(m.title)}`}
                   title={`Artikel „${m.title}“ anlegen`}
-                  className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-2.5 text-sm transition hover:bg-surface-3"
+                  className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-2.5 transition hover:bg-surface-3"
                 >
                   <span className="wiki-missing-text font-medium">{m.title}</span>
                   <span className="text-xs text-muted">{m.count}×</span>
@@ -130,7 +130,7 @@ export default async function WikiHomePage() {
               </li>
             ))}
           </ul>
-        </section>
+        </details>
       )}
     </div>
   );
