@@ -32,6 +32,7 @@ export async function AccountChatList() {
             id={c.id}
             title={title}
             avatarUrl={c.partner?.avatar_url}
+            partnerId={c.partner?.id}
             muted={c.muted}
             unread={c.unread}
             lastMessage={

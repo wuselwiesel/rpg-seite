@@ -27,6 +27,8 @@ import {
   IM_Fell_English,
 } from "next/font/google";
 import "./globals.css";
+import { OnlineProvider } from "@/components/online-status";
+import { getOwnPresence } from "@/lib/online-status-server";
 import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
 import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
@@ -149,7 +151,7 @@ if (location.pathname.indexOf('/redaktion') === 0) document.documentElement.setA
 `;
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [emojiMap, accountFont] = await Promise.all([getEmojiMap(), getAccountDefaultFont()]);
+  const [emojiMap, accountFont, ownPresence] = await Promise.all([getEmojiMap(), getAccountDefaultFont(), getOwnPresence()]);
   return (
     <html
       lang="de"
@@ -173,12 +175,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <KeyboardFix />
         <OfflineBanner />
         <AppTour />
-        <CustomEmojiProvider map={emojiMap}>
-          <AppFrame sidebar={<Sidebar />}>
-            <MobileMain>{children}</MobileMain>
-          </AppFrame>
-          <ChatBubbleLoader />
-        </CustomEmojiProvider>
+        <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"}>
+          <CustomEmojiProvider map={emojiMap}>
+            <AppFrame sidebar={<Sidebar />}>
+              <MobileMain>{children}</MobileMain>
+            </AppFrame>
+            <ChatBubbleLoader />
+          </CustomEmojiProvider>
+        </OnlineProvider>
       </body>
     </html>
   );

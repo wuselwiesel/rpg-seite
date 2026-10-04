@@ -1,3 +1,4 @@
+import { OnlineBadge } from "@/components/online-status";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Friendship } from "@/lib/types";
@@ -70,7 +71,10 @@ export default async function FriendsPage() {
                   key={f.id}
                   className="flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3"
                 >
-                  <span className="text-sm text-fg">@{friend?.username}</span>
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-fg">
+                    @{friend?.username}
+                    <OnlineBadge userId={friend?.id} />
+                  </span>
                   <FriendRequestActions friendshipId={f.id} mode="accepted" />
                 </li>
               );

@@ -89,3 +89,15 @@ export async function saveNotificationPrefs(input: {
   revalidatePath("/profile/benachrichtigungen");
   return null;
 }
+
+// Online-Status von Hand: „online“ (sichtbar, solange die App offen ist) oder „offline“ (für andere unsichtbar).
+export async function setPresenceMode(mode: "online" | "offline"): Promise<string | null> {
+  if (mode !== "online" && mode !== "offline") return "Ungültiger Status.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.from("profiles").update({ presence_mode: mode }).eq("id", user.id);
+  return error ? error.message : null;
+}

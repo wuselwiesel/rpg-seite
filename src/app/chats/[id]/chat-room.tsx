@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { OnlineBadge, OnlineCount } from "@/components/online-status";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { resizeImage } from "@/lib/image-resize";
 import { aggregateReactions } from "@/lib/reactions";
@@ -481,7 +482,14 @@ export function ChatRoom({
           ) : (
             <div className="flex items-center gap-2">
               {isGroup && <CharacterAvatar name={title} avatarUrl={avatarUrl} size={36} />}
-              <h1 className="truncate font-serif text-2xl text-fg">{title}</h1>
+              <div className="flex min-w-0 flex-col">
+                <h1 className="truncate font-serif text-2xl leading-tight text-fg">{title}</h1>
+                {isGroup ? (
+                  <OnlineCount userIds={participants.map((p) => p.owner_id)} selfId={userId} />
+                ) : (
+                  <OnlineBadge userId={participants.find((p) => p.id !== activeCharacter.id && p.owner_id !== userId)?.owner_id} />
+                )}
+              </div>
               {isGroup && (
                 <button
                   type="button"

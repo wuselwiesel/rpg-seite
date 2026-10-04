@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BellOff } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { OnlineDot } from "@/components/online-status";
 import { chatTime } from "@/lib/chat-preview";
 
 export function ChatListItem({
   id,
   title,
   avatarUrl,
+  ownerId,
   participantCount,
   lastMessage = null,
   unreadCount,
@@ -18,6 +20,8 @@ export function ChatListItem({
   id: string;
   title: string;
   avatarUrl: string | null | undefined;
+  // Account der Gegenseite bei einem Zweier-Chat (für den Online-Punkt)
+  ownerId?: string | null;
   participantCount: number;
   lastMessage?: { text: string; at: string; sender: string | null } | null;
   unreadCount: number;
@@ -33,7 +37,10 @@ export function ChatListItem({
         active ? "bg-surface-2" : "hover:bg-surface-2/60"
       }`}
     >
-      <CharacterAvatar name={title} avatarUrl={avatarUrl} size={52} />
+      <span className="relative shrink-0">
+        <CharacterAvatar name={title} avatarUrl={avatarUrl} size={52} />
+        <OnlineDot userId={ownerId} overlay />
+      </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <p className={`min-w-0 flex-1 truncate text-[15px] text-fg ${unread ? "font-semibold" : "font-medium"}`}>{title}</p>

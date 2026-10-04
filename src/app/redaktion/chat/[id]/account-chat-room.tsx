@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { setAccountChatMuted } from "../actions";
 import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
@@ -89,8 +90,14 @@ export function AccountChatRoom({
           </Link>
           {partnerProfileId ? (
             <Link href={`/redaktion/profil/${partnerProfileId}`} className="flex min-w-0 items-center gap-2.5">
-              <CharacterAvatar name={partnerName} avatarUrl={partnerAvatarUrl} size={36} />
-              <h1 className="truncate font-serif text-xl text-fg">{partnerName}</h1>
+              <span className="relative shrink-0">
+                <CharacterAvatar name={partnerName} avatarUrl={partnerAvatarUrl} size={36} />
+                <OnlineDot userId={partnerProfileId} overlay />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <h1 className="truncate font-serif text-xl leading-tight text-fg">{partnerName}</h1>
+                <OnlineBadge userId={partnerProfileId} />
+              </span>
             </Link>
           ) : (
             <h1 className="truncate font-serif text-xl text-fg">{partnerName}</h1>

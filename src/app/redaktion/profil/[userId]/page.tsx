@@ -1,3 +1,4 @@
+import { OnlineBadge } from "@/components/online-status";
 import { BadgeRow } from "@/components/badge-row";
 import { getAccountBadges, syncAccountBadges, visibleBadges } from "@/lib/badges-server";
 import { EmojiText } from "@/components/custom-emoji-provider";
@@ -81,8 +82,11 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
               </span>
             )}
           </h1>
-          <p className="text-sm text-muted">
-            @{profile.username} · dabei seit {formatDate(profile.created_at.slice(0, 10))}
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted">
+            <span>
+              @{profile.username} · dabei seit {formatDate(profile.created_at.slice(0, 10))}
+            </span>
+            <OnlineBadge userId={profile.id} />
           </p>
 
           <ul className="mt-4 flex gap-6 text-sm text-fg-soft">
