@@ -1,13 +1,26 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Feather } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiPageRows } from "@/lib/wiki-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
-import { datesFromRow, formatLabeled, monthName, placeInMonth } from "@/lib/wiki-calendar";
+import { datesFromRow, formatLabeled, monthName, placeInMonth, type Dated } from "@/lib/wiki-calendar";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { CalendarForm } from "./calendar-form";
+
+type SceneRow = {
+  id: string;
+  title: string;
+  event_year: number | null;
+  event_month: number | null;
+  event_day: number | null;
+  event_end_year: number | null;
+  event_end_month: number | null;
+  event_end_day: number | null;
+};
+type Entry = { kind: "wiki" | "scene"; id: string; title: string; labels: { start?: string | null; end?: string | null } };
+const hrefOf = (e: Entry) => (e.kind === "scene" ? `/story/${e.id}` : `/wiki/${e.id}`);
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
@@ -22,8 +35,22 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [rows, calendar] = await Promise.all([getWikiPageRows(world.id), getWikiCalendar(world.id)]);
-  const dated = rows.map((r) => ({ ...r, dates: datesFromRow(r) })).filter((r) => r.dates.start);
+  const [rows, calendar, { data: sceneRows }] = await Promise.all([
+    getWikiPageRows(world.id),
+    getWikiCalendar(world.id),
+    // Szenen mit Datum stehen im Kalender an ihrem Tag (RLS: nur sichtbare Szenen)
+    supabase
+      .from("story_posts")
+      .select("id, title, event_year, event_month, event_day, event_end_year, event_end_month, event_end_day")
+      .eq("world_id", world.id)
+      .eq("archived", false)
+      .not("event_year", "is", null)
+      .returns<SceneRow[]>(),
+  ]);
+  const dated: Dated<Entry>[] = [
+    ...rows.map((r): Dated<Entry> => ({ kind: "wiki", id: r.id, title: r.title, labels: { start: r.event_label, end: r.event_end_label }, dates: datesFromRow(r) })).filter((r) => r.dates.start),
+    ...(sceneRows ?? []).map((r): Dated<Entry> => ({ kind: "scene", id: r.id, title: r.title, labels: {}, dates: datesFromRow(r) })),
+  ];
 
   // Startmonat: aus der Adresse, sonst der Monat der frühesten datierten Seite, sonst Jahr 1.
   const earliest = [...dated].sort((a, b) => a.dates.start!.year - b.dates.start!.year)[0]?.dates.start;
@@ -93,9 +120,10 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
             <ul className="flex flex-col gap-1.5">
               {general.map((p) => (
                 <li key={p.id}>
-                  <Link href={`/wiki/${p.id}`} className="flex flex-wrap items-baseline gap-x-2 text-fg hover:text-accent">
+                  <Link href={hrefOf(p)} className="flex flex-wrap items-baseline gap-x-2 text-fg hover:text-accent">
+                    {p.kind === "scene" && <Feather className="h-3.5 w-3.5 self-center text-accent" strokeWidth={2} aria-label="Szene" />}
                     <span className="font-medium">{p.title}</span>
-                    <span className="text-sm text-muted">{formatLabeled(calendar, p.dates, { start: p.event_label, end: p.event_end_label })}</span>
+                    <span className="text-sm text-muted">{formatLabeled(calendar, p.dates, p.labels)}</span>
                   </Link>
                 </li>
               ))}
@@ -110,7 +138,8 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
               <li key={d} data-day={d} className={`flex min-h-20 flex-col gap-1 rounded-xl border p-2 ${list.length ? "border-accent/50 bg-accent/5" : "border-line bg-surface"}`}>
                 <span className={`text-xs font-medium ${list.length ? "text-accent" : "text-muted"}`}>{d}</span>
                 {list.map((p) => (
-                  <Link key={p.id} href={`/wiki/${p.id}`} className="line-clamp-2 text-sm leading-snug text-fg hover:text-accent">
+                  <Link key={`${p.kind}-${p.id}`} href={hrefOf(p)} className="line-clamp-2 text-sm leading-snug text-fg hover:text-accent">
+                    {p.kind === "scene" && <Feather className="mr-1 inline h-3 w-3 -translate-y-px text-accent" strokeWidth={2} aria-label="Szene" />}
                     {p.title}
                   </Link>
                 ))}

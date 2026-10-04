@@ -95,7 +95,7 @@ export function SceneMeta({
       )}
       {(dateLabel || inWorldTime) && (
         <Link
-          href="/wiki/zeitleiste"
+          href={dates.start ? `/wiki/kalender?jahr=${dates.start.year}&monat=${dates.start.month ?? 1}` : "/wiki/zeitleiste"}
           className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 transition hover:text-accent"
         >
           <Clock className="h-3 w-3" strokeWidth={2} />

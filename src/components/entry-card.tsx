@@ -29,7 +29,6 @@ export function EntryCard({
   arcHref,
   isPrivate,
   recapHtml = "",
-  footerSlot,
   pinned,
   location,
   inWorldTime,
@@ -57,8 +56,6 @@ export function EntryCard({
   isPrivate?: boolean;
   // Selbst geschriebene Zusammenfassung der Szene (bereinigtes HTML), klappt in der Karte auf
   recapHtml?: string;
-  // Zusatzzeile unter der Karte (z. B. Datum setzen)
-  footerSlot?: React.ReactNode;
   pinned?: boolean;
   location?: string | null;
   inWorldTime?: string | null;
@@ -167,12 +164,7 @@ export function EntryCard({
         </Link>
         {likeButton}
       </div>
-      {(recapHtml || footerSlot) && (
-        <div className="mt-2 flex flex-wrap items-start gap-x-2">
-          {recapHtml && <RecapToggle html={recapHtml} />}
-          {footerSlot}
-        </div>
-      )}
+      {recapHtml && <RecapToggle html={recapHtml} className="mt-2" />}
     </article>
   );
 }

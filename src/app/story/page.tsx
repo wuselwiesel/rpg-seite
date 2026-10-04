@@ -7,9 +7,6 @@ import { getActiveWorld } from "@/lib/worlds";
 import { EntryCard } from "@/components/entry-card";
 import { StoryCompactRow } from "@/components/story-compact-row";
 import { RecapToggle } from "@/components/recap-toggle";
-import { SceneDateToggle } from "@/components/scene-date-toggle";
-import { getWikiCalendar } from "@/lib/wiki-calendar-data";
-import { datesFromRow } from "@/lib/wiki-calendar";
 import { recapToHtml } from "@/lib/recap-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -89,11 +86,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     .eq("owner_id", user.id)
     .eq("world_id", activeWorld.id);
   const myCharIds = (myChars ?? []).map((c) => c.id);
-  const calendar = await getWikiCalendar(activeWorld.id);
-  // Datum setzen/ändern dürfen alle, die in der Welt mitspielen
-  const canDate = myCharIds.length > 0 || activeWorld.created_by === user.id;
-  const dateSlot = (post: StoryPost) =>
-    canDate ? <SceneDateToggle storyPostId={post.id} dates={datesFromRow(post)} calendar={calendar} /> : undefined;
   if (onlyMyTurn) {
     storyQuery = storyQuery.in("turn_character_id", myCharIds.length ? myCharIds : ["00000000-0000-0000-0000-000000000000"]);
   }
@@ -325,12 +317,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
               narrator={!!post.narrator}
             />
-            {(recapOf(post) || canDate) && (
-              <div className="flex flex-wrap items-start gap-x-2 px-1 pb-3">
-                {recapOf(post) && <RecapToggle html={recapOf(post)} />}
-                {dateSlot(post)}
-              </div>
-            )}
+            {recapOf(post) && <RecapToggle html={recapOf(post)} className="px-1 pb-3" />}
             </div>
           ) : (
             <EntryCard
@@ -352,7 +339,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               arcHref={post.arc_id ? `/story?arc=${post.arc_id}` : undefined}
               isPrivate={post.is_private}
               recapHtml={recapOf(post)}
-              footerSlot={dateSlot(post)}
               pinned={post.pinned}
               location={post.location}
               inWorldTime={post.in_world_time}
