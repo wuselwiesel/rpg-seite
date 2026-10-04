@@ -94,7 +94,7 @@ export function SpecialBadges({ badges }: { badges: BadgeView[] }) {
             key={b.awardId}
             icon={b.icon}
             name={b.name}
-            description={b.description || "Ein besonderer Titel aus dieser Welt."}
+            description={b.description || "Ein besonderer Titel."}
             color={b.color}
             footnote={`${b.awardedByName ? `Verliehen von ${b.awardedByName} · ` : ""}${formatDate(b.awardedAt.slice(0, 10))}`}
           />
@@ -114,7 +114,7 @@ export function FocusedBadge({ badge, defs }: { badge: BadgeView | undefined; de
         <BadgeCard
           icon={badge.icon}
           name={badge.name}
-          description={badge.description || "Ein besonderer Titel aus dieser Welt."}
+          description={badge.description || "Ein besonderer Titel."}
           meaning={def?.meaning}
           color={badge.color}
           tier={def?.tier}

@@ -22,12 +22,14 @@ export async function createBadgeDef(_prev: string | null, formData: FormData): 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const world = await getActiveWorld(user.id);
-  if (!world) return "Wähle zuerst eine Welt.";
+  // „account“: Abzeichen von Account zu Account (Redaktion), gehört zu keiner Welt
+  const accountLevel = String(formData.get("scope") ?? "") === "account";
+  const world = accountLevel ? null : await getActiveWorld(user.id);
+  if (!accountLevel && !world) return "Wähle zuerst eine Welt.";
 
   const { error } = await supabase
     .from("badge_defs")
-    .insert({ world_id: world.id, name, description: description || null, icon, color, created_by: user.id });
+    .insert({ world_id: world?.id ?? null, name, description: description || null, icon, color, created_by: user.id });
   if (error) return error.message;
   revalidatePath("/badges", "layout");
   return null;
@@ -97,6 +99,43 @@ export async function awardBadge(defId: string, characterId: string, asCharacter
   }
   revalidatePath("/badges", "layout");
   revalidatePath(`/characters/${characterId}`);
+  return null;
+}
+
+// Verleiht ein Redaktions-Badge (ohne Welt) an die Account einer befreundeten Person. Nur die Gestalter:in darf verleihen.
+export async function awardAccountBadge(defId: string, recipientId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  if (recipientId === user.id) return "Du kannst dir kein Badge selbst verleihen.";
+
+  const [{ data: def }, { data: recipient }, { data: me }] = await Promise.all([
+    supabase.from("badge_defs").select("name, icon, world_id, created_by").eq("id", defId).maybeSingle(),
+    supabase.from("profiles").select("id, username, nickname").eq("id", recipientId).maybeSingle(),
+    supabase.from("profiles").select("username, nickname, avatar_url").eq("id", user.id).maybeSingle(),
+  ]);
+  if (!def || def.world_id !== null || def.created_by !== user.id) return "Dieses Badge kannst du nicht verleihen.";
+  if (!recipient) return "Person nicht gefunden.";
+
+  const { error } = await supabase
+    .from("badge_awards")
+    .insert({ badge_key: `custom:${defId}`, user_id: recipientId, def_id: defId, awarded_by: user.id });
+  const name = recipient.nickname || recipient.username;
+  if (error) return error.code === "23505" ? `${name} hat dieses Badge schon.` : "Du kannst nur an Freund:innen verleihen.";
+
+  await createNotification(supabase, {
+    userId: recipientId,
+    type: "badge",
+    actorName: me?.nickname || me?.username || "Jemand",
+    actorAvatarUrl: me?.avatar_url ?? null,
+    link: `/badges/konto/${recipientId}?badge=${encodeURIComponent(`custom:${defId}`)}`,
+    message: `hat dir das Badge ${def.icon} ${def.name} verliehen`,
+    recipientName: name,
+  }).catch(() => {});
+  revalidatePath("/badges", "layout");
+  revalidatePath(`/redaktion/profil/${recipientId}`);
   return null;
 }
 

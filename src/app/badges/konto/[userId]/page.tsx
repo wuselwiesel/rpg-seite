@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_CATEGORIES, AUTO_BADGES } from "@/lib/badges";
 import { accountMetrics, getAccountBadges, syncAccountBadges, visibleBadges } from "@/lib/badges-server";
-import { BadgeFilterTabs, BadgeSections, FocusedBadge } from "@/components/badge-sections";
+import { BadgeFilterTabs, BadgeSections, FocusedBadge, SpecialBadges } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
 export default async function AccountBadgeCollectionPage({ params, searchParams }: PageProps<"/badges/konto/[userId]">) {
@@ -30,6 +30,8 @@ export default async function AccountBadgeCollectionPage({ params, searchParams 
     isOwn ? accountMetrics(supabase, userId) : Promise.resolve(undefined),
   ]);
   const earned = badges.filter((b) => b.kind === "account");
+  // Von Freund:innen verliehene Abzeichen
+  const special = badges.filter((b) => b.kind === "custom");
   const defs = AUTO_BADGES.filter((b) => b.scope === "account");
 
   return (
@@ -42,9 +44,11 @@ export default async function AccountBadgeCollectionPage({ params, searchParams 
         title="Redaktions-Abzeichen"
         done={earned.length}
         total={defs.length}
+        extra={special.length}
       />
-      <FocusedBadge badge={earned.find((b) => b.key === focusKey)} defs={defs} />
-      <BadgeFilterTabs basePath={`/badges/konto/${userId}`} showAll={showAll} earned={earned.length} total={defs.length} />
+      <FocusedBadge badge={badges.find((b) => b.key === focusKey)} defs={defs} />
+      <BadgeFilterTabs basePath={`/badges/konto/${userId}`} showAll={showAll} earned={earned.length + special.length} total={defs.length + special.length} />
+      <SpecialBadges badges={special} />
       <BadgeSections defs={defs} categories={ACCOUNT_CATEGORIES} earned={earned} metrics={metrics} showAll={showAll} />
     </div>
   );
