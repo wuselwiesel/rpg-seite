@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Dices, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -290,6 +290,14 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
           <span className="truncate text-sm text-muted">
             Beginn eine neue Szene als {activeCharacter.name}...
           </span>
+        </Link>
+        <Link
+          href="/story/wuerfe"
+          aria-label="Würfelverlauf"
+          title="Würfelverlauf"
+          className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg active:bg-surface-3"
+        >
+          <Dices className="h-5 w-5" strokeWidth={2} />
         </Link>
         <Link
           href="/story/schicksal"

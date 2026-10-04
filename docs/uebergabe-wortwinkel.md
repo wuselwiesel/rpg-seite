@@ -105,6 +105,10 @@ Entscheidungen der Nutzerin: Raster+Liste umschaltbar; Banner, Bio, Zähler, Sta
 - Entfernt auf Wunsch der Nutzerin: der Hinweis „X Seiten haben keinen Zeitpunkt, Y Szenen haben noch kein Datum“ unten auf der Zeitleiste und das Symbol „Erweiterte Suche“ in der Werkzeugleiste des Wikis (Enter im Suchfeld der Seitenleiste öffnet `/wiki/suche?q=…`; die Startseite hat weiterhin den Link).
 - Offen/Idee: Zeitleiste horizontal, Beziehungsverlauf einbinden, Charakter-Lebensläufe.
 
+## Würfelverlauf (live)
+- `/story/wuerfe`: alle Würfe der aktiven Welt, neueste zuerst (Würfe sind `story_entries` mit `roll_label`, keine neue Tabelle). Zeile mit Charakter, „würfelt auf …“, Ergebnis/Zielwert, Würfel, Erfolg/Misserfolg, Glückspunkte, Szene und Zeit; Klick öffnet die Szene. Filter Charakter und Ergebnis, 40 pro Seite (`?seite=`, `?charakter=`, `?ergebnis=erfolg|misserfolg`). Private Szenen bleiben durch RLS verborgen. Einstieg: Würfel-Symbol neben dem Schicksalswürfel oben in der Story. Gewürfelt wird weiter in der Story. Die Abfrage nutzt ein schmales Typ-Interface (`RollQuery`), weil die volle Supabase-Typauswertung hier „zu tief“ wurde.
+- Hintergrund: Teil der geplanten Übernahme des Charakterbogens (Repo `wuselwiesel/charakterbogen`, eine HTML-Datei mit Firebase) nach Wortwinkel; Entscheidungen der Nutzerin: ersetzen, erste Runde nur Bogen plus Würfelverlauf, alte Daten per Export übernehmen.
+
 ## Wiki-Rechte (live)
 - Jedes Mitglied der Welt darf jeden Wiki-Eintrag bearbeiten (RLS-Policy `wiki_pages_update_member`, `supabase/migration_wiki_edit_all.sql`, im SQL-Editor **ausgeführt**; Bearbeiten-Knopf in `wiki/[id]/page.tsx` immer sichtbar). Löschen weiterhin nur Ersteller:in und Welt-Besitzer:in (`wiki_pages_delete_own_or_world_owner`).
 
