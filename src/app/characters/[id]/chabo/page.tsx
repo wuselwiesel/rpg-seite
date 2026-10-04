@@ -23,8 +23,9 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
     .maybeSingle<{ id: string; name: string; owner_id: string; world_id: string; sheet_url: string | null }>();
   if (!character) notFound();
 
-  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id), getMentionableCharacters(user.id, character.world_id)]);
   const isOwn = character.owner_id === user.id;
+  // Geheimes lädt nur für die Besitzer:in
+  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id, isOwn), getMentionableCharacters(user.id, character.world_id)]);
   if (!isOwn && !sheet) notFound();
 
   return (

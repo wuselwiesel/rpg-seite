@@ -50,7 +50,7 @@ export default async function CharacterProfilePage({
 
   const isOwnerView = character.owner_id === user.id;
   const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
-  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id), getMentionableCharacters(user.id, character.world_id)]);
+  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id, isOwnerView), getMentionableCharacters(user.id, character.world_id)]);
   const listView = ansicht === "liste";
   const nowIso = new Date().toISOString();
 

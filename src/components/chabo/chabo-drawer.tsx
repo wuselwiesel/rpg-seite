@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { IdCard, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { normalizeSheet, type SheetData } from "@/lib/sheet-rules";
+import { mergeSecrets, normalizeSheet, parseSecrets, stripSecrets, type SheetData } from "@/lib/sheet-rules";
 import { Chabo } from "./chabo";
 import type { Character } from "@/lib/types";
 
@@ -16,8 +16,16 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
     if (!open) return;
     let cancelled = false;
     void (async () => {
-      const { data } = await createClient().from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
-      if (!cancelled) setSheet(data ? normalizeSheet(data.data) : null);
+      const supabase = createClient();
+      const { data } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
+      if (!data) {
+        if (!cancelled) setSheet(null);
+        return;
+      }
+      // Geheimes bekommt nur die Besitzer:in (RLS); das Fenster zeigt immer den Bogen eines eigenen Charakters
+      const { data: secret } = await supabase.from("character_sheet_secrets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
+      const open = stripSecrets(normalizeSheet(data.data));
+      if (!cancelled) setSheet(secret ? mergeSecrets(open, parseSecrets(secret.data)) : open);
     })();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("keydown", onKey);

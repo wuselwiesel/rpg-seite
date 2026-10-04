@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard } from "lucide-react";
+import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { ActiveCharacterMenu } from "./active-character-menu";
 import { InstallAppButton } from "./install-app-button";
@@ -110,6 +110,11 @@ export function MobileNav({
               label="Chat"
             />
             <MobileCreateTab href="/redaktion/new" label="Neuer Beitrag" />
+            <MobileTabLink
+              href="/redaktion/verlauf"
+              icon={<History className="h-5 w-5" strokeWidth={2} />}
+              label="Verlauf"
+            />
             <MobileTabLink
               href={`/redaktion/profil/${userId}`}
               icon={<UserRound className="h-5 w-5" strokeWidth={2} />}

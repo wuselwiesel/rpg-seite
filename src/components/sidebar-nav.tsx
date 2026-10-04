@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle, IdCard } from "lucide-react";
+import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History } from "lucide-react";
 import { getAppMode } from "@/lib/app-mode";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -34,6 +34,9 @@ export function SidebarNav({
           </NavLink>
           <NavLink href="/redaktion/chat" icon={<MessageCircle className={ICON} strokeWidth={2} />}>
             Chat
+          </NavLink>
+          <NavLink href="/redaktion/verlauf" icon={<History className={ICON} strokeWidth={2} />}>
+            Verlauf
           </NavLink>
           <NavLink href={`/redaktion/profil/${userId}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
             Profil

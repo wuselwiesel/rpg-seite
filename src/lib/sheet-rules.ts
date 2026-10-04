@@ -59,19 +59,22 @@ export const TALENT_ATTRS: Record<string, [AttrCode, AttrCode]> = {
   "Überleben": ["KO", "MU"],
 };
 
+export type SheetItem = { label: string; value: string; secret?: boolean };
+export type NoteBlock = { label: string; html: string; secret?: boolean };
+
 export type SheetData = {
   race: Race;
   portraitUrl: string | null;
   luckPointsUsed: number;
-  personalFields: { label: string; value: string }[];
+  personalFields: SheetItem[];
   // Sektion „Familie“: eigene Zeilen (Bezeichnung + Angabe, mit @ auf Charaktere verlinkbar)
-  family: { label: string; value: string }[];
+  family: SheetItem[];
   attrBasis: Record<string, string>;
   attrBonus: Record<string, string>;
   // Wird beim Speichern aus den Attributen berechnet; so lesen die Würfel-Auswahl und der alte Bogen dieselbe Form.
   talentBasis: Record<string, string>;
   talentBonus: Record<string, string>;
-  notesBlocks: { label: string; html: string }[];
+  notesBlocks: NoteBlock[];
 };
 
 export function emptySheet(): SheetData {
@@ -216,6 +219,7 @@ export function normalizeSheet(raw: unknown): SheetData {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rec = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
   const base = emptySheet();
+  const item = (f: unknown): SheetItem => ({ label: clip(rec(f).label, 40), value: clip(rec(f).value, 200), ...(rec(f).secret === true ? { secret: true } : {}) });
 
   const attrBasis: Record<string, string> = {};
   const attrBonus: Record<string, string> = {};
@@ -228,15 +232,15 @@ export function normalizeSheet(raw: unknown): SheetData {
 
   const fields = Array.isArray(r.personalFields) ? r.personalFields : null;
   const personalFields = fields
-    ? fields.slice(0, MAX_PERSONAL_FIELDS).map((f) => ({ label: clip(rec(f).label, 40), value: clip(rec(f).value, 200) }))
+    ? fields.slice(0, MAX_PERSONAL_FIELDS).map((f) => item(f))
     : base.personalFields;
 
   const familyRaw = Array.isArray(r.family) ? r.family : [];
-  const family = familyRaw.slice(0, MAX_FAMILY_FIELDS).map((f) => ({ label: clip(rec(f).label, 40), value: clip(rec(f).value, 200) }));
+  const family = familyRaw.slice(0, MAX_FAMILY_FIELDS).map((f) => item(f));
 
   const blocks = Array.isArray(r.notesBlocks) ? r.notesBlocks : null;
   const notesBlocks = blocks?.length
-    ? blocks.slice(0, MAX_NOTE_BLOCKS).map((b) => ({ label: clip(rec(b).label, 60), html: clip(rec(b).html, MAX_NOTE_HTML) }))
+    ? blocks.slice(0, MAX_NOTE_BLOCKS).map((b) => ({ label: clip(rec(b).label, 60), html: clip(rec(b).html, MAX_NOTE_HTML), ...(rec(b).secret === true ? { secret: true } : {}) }))
     : base.notesBlocks;
 
   const race: Race = r.race === "werwolf" || r.race === "vampir" ? r.race : "none";
@@ -263,4 +267,75 @@ export function withDerived(data: SheetData): SheetData {
   const talentBasis: Record<string, string> = {};
   for (const t of talentRows(data)) talentBasis[t.slug] = t.basis == null ? "" : String(t.basis);
   return { ...data, talentBasis };
+}
+
+// ---- Geheimes: liegt in einer eigenen, nur für die Besitzer:in lesbaren Tabelle ----
+
+type Positioned<T> = T & { pos: number };
+export type SheetSecrets = {
+  personalFields: Positioned<SheetItem>[];
+  family: Positioned<SheetItem>[];
+  notesBlocks: Positioned<NoteBlock>[];
+};
+
+export function emptySecrets(): SheetSecrets {
+  return { personalFields: [], family: [], notesBlocks: [] };
+}
+
+export function hasSecrets(s: SheetSecrets): boolean {
+  return s.personalFields.length + s.family.length + s.notesBlocks.length > 0;
+}
+
+function splitList<T extends { secret?: boolean }>(list: T[]): { open: T[]; secret: Positioned<T>[] } {
+  const open: T[] = [];
+  const secret: Positioned<T>[] = [];
+  list.forEach((x, pos) => {
+    if (x.secret) secret.push({ ...x, pos });
+    else open.push(x);
+  });
+  return { open, secret };
+}
+
+// Trennt den Bogen: „open“ ist für alle in der Welt lesbar und enthält nie ein geheimes Element; „secrets“ merkt sich die Position für das Zurücksetzen.
+export function splitSecrets(data: SheetData): { open: SheetData; secrets: SheetSecrets } {
+  const p = splitList(data.personalFields);
+  const f = splitList(data.family);
+  const n = splitList(data.notesBlocks);
+  return { open: { ...data, personalFields: p.open, family: f.open, notesBlocks: n.open }, secrets: { personalFields: p.secret, family: f.secret, notesBlocks: n.secret } };
+}
+
+function mergeList<T extends { secret?: boolean }>(open: T[], secret: Positioned<T>[]): T[] {
+  const out = open.filter((x) => !x.secret);
+  for (const s of [...secret].sort((a, b) => a.pos - b.pos)) {
+    const { pos, ...rest } = s;
+    out.splice(Math.min(Math.max(0, pos), out.length), 0, { ...(rest as unknown as T), secret: true });
+  }
+  return out;
+}
+
+// Liest die geheimen Daten aus der Datenbank (beliebige Form) in eine gültige Form.
+export function parseSecrets(raw: unknown): SheetSecrets {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const asObj = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
+  const pos = (v: unknown) => (Number.isInteger(v) && (v as number) >= 0 && (v as number) < 200 ? (v as number) : 0);
+  const items = (v: unknown): Positioned<SheetItem>[] =>
+    (Array.isArray(v) ? v : []).slice(0, MAX_PERSONAL_FIELDS).map((x) => ({ label: clip(asObj(x).label, 40), value: clip(asObj(x).value, 200), pos: pos(asObj(x).pos) }));
+  const blocks = (v: unknown): Positioned<NoteBlock>[] =>
+    (Array.isArray(v) ? v : []).slice(0, MAX_NOTE_BLOCKS).map((x) => ({ label: clip(asObj(x).label, 60), html: clip(asObj(x).html, MAX_NOTE_HTML), pos: pos(asObj(x).pos) }));
+  return { personalFields: items(r.personalFields), family: items(r.family), notesBlocks: blocks(r.notesBlocks) };
+}
+
+// Setzt die geheimen Elemente wieder an ihre Stelle (nur für die Besitzer:in aufrufen).
+export function mergeSecrets(open: SheetData, secrets: SheetSecrets): SheetData {
+  return {
+    ...open,
+    personalFields: mergeList(open.personalFields, secrets.personalFields),
+    family: mergeList(open.family, secrets.family),
+    notesBlocks: mergeList(open.notesBlocks, secrets.notesBlocks),
+  };
+}
+
+// Entfernt alles Geheime (Absicherung für Ansichten fremder Bögen, auch falls je etwas Falsches in der offenen Zeile stünde).
+export function stripSecrets(data: SheetData): SheetData {
+  return splitSecrets(data).open;
 }

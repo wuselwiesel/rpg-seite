@@ -62,6 +62,9 @@ export function DiceRollForm({
   const [lastRoll, setLastRoll] = useState<LastRoll | null>(null);
   const [rerolling, startReroll] = useTransition();
   const [rerollError, setRerollError] = useState<string | null>(null);
+  // Ergebnis des letzten Wurfs (null = freier Wurf) und ob die Frage „Glückspunkt nutzen?“ weggeklickt wurde
+  const [lastSuccess, setLastSuccess] = useState<boolean | null>(null);
+  const [luckDismissed, setLuckDismissed] = useState(false);
 
   const glueckOption = statOptions.find((o) => o.category === "Attribut" && o.name === "Glück");
   // Anzahl der Glückspunkte pro Szene (nicht der Glück-Wert selbst).
@@ -124,6 +127,8 @@ export function DiceRollForm({
       });
       // eslint-disable-next-line react-hooks/set-state-in-effect -- gehört zum Abschluss der Server-Action (siehe oben)
       if (state.luckRemaining !== null) setLuckRemaining(state.luckRemaining);
+      setLastSuccess(state.success ?? null);
+      setLuckDismissed(false);
       setLabel("");
       setStatName("");
       setValue("");
@@ -146,6 +151,7 @@ export function DiceRollForm({
       });
       if (result.error) setRerollError(result.error);
       if (result.luckRemaining !== null) setLuckRemaining(result.luckRemaining);
+      if (!result.error) setLastSuccess(result.success ?? null);
     });
   }
 
@@ -309,17 +315,26 @@ export function DiceRollForm({
         {pending ? "Würfle..." : "Würfeln"}
       </button>
 
-      {lastRoll && glueckOption && luckRemaining !== null && luckRemaining > 0 && (
-        <div className="flex flex-col items-start gap-1 border-t border-line pt-3">
-          <button
-            type="button"
-            onClick={reroll}
-            disabled={rerolling}
-            className="flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-fg disabled:opacity-50"
-          >
+      {lastRoll && lastRoll.value !== null && lastSuccess === false && glueckOption && luckRemaining !== null && luckRemaining > 0 && !luckDismissed && (
+        <div role="group" aria-label="Glückspunkt nutzen" className="flex flex-col gap-2.5 rounded-xl border border-emerald-600/30 bg-emerald-500/10 p-3.5">
+          <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-fg">
             <Clover className="h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
-            {rerolling ? "Würfle nochmal..." : "Glückspunkt einsetzen: nochmal würfeln"}
-          </button>
+            Glückspunkt nutzen?
+            <CloverRow remaining={luckRemaining} />
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={reroll}
+              disabled={rerolling}
+              className="rounded-md bg-accent-strong px-3.5 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+            >
+              {rerolling ? "Würfle nochmal..." : "Ja, nochmal würfeln"}
+            </button>
+            <button type="button" onClick={() => setLuckDismissed(true)} disabled={rerolling} className="rounded-md px-3 py-1.5 text-sm text-muted transition hover:bg-surface hover:text-fg disabled:opacity-50">
+              Nein
+            </button>
+          </div>
           {rerollError && <p className="text-xs text-red-600 dark:text-red-400">{rerollError}</p>}
         </div>
       )}

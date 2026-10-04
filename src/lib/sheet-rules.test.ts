@@ -8,7 +8,11 @@ import {
   hasErrors,
   luckAvailable,
   luckTotal,
+  mergeSecrets,
   normalizeSheet,
+  parseSecrets,
+  splitSecrets,
+  stripSecrets,
   parseWhole,
   talentRows,
   validateSheet,
@@ -162,5 +166,63 @@ describe("normalizeSheet", () => {
     const mu = getStatOptions(d).find((o) => o.name === "Mut");
     expect(mu?.value).toBe(13);
     expect(withDerived(d).talentBasis.talent_singen).toBe(d.talentBasis.talent_singen);
+  });
+});
+
+describe("Geheimes", () => {
+  const mk = (): SheetData =>
+    normalizeSheet({
+      personalFields: [
+        { label: "Vorname", value: "Lyra" },
+        { label: "Echter Name", value: "Geheim!", secret: true },
+        { label: "Rang", value: "Anführer" },
+      ],
+      family: [
+        { label: "Mutter", value: "@Mira" },
+        { label: "Vater", value: "unbekannt", secret: true },
+      ],
+      notesBlocks: [
+        { label: "Notizen", html: "<p>offen</p>" },
+        { label: "Plan", html: "<p>geheim</p>", secret: true },
+      ],
+    });
+
+  it("normalizeSheet behält das Geheim-Zeichen", () => {
+    const d = mk();
+    expect(d.personalFields[1].secret).toBe(true);
+    expect(d.personalFields[0].secret).toBeUndefined();
+    expect(d.notesBlocks[1].secret).toBe(true);
+  });
+  it("splitSecrets: die offene Zeile enthält nichts Geheimes", () => {
+    const { open, secrets } = splitSecrets(mk());
+    expect(JSON.stringify(open)).not.toContain("Geheim!");
+    expect(JSON.stringify(open)).not.toContain("unbekannt");
+    expect(JSON.stringify(open)).not.toContain("geheim</p>");
+    expect(open.personalFields.map((f) => f.label)).toEqual(["Vorname", "Rang"]);
+    expect(secrets.personalFields).toEqual([{ label: "Echter Name", value: "Geheim!", secret: true, pos: 1 }]);
+    expect(secrets.family[0].pos).toBe(1);
+  });
+  it("Hin und zurück ergibt dieselbe Reihenfolge", () => {
+    const d = mk();
+    const { open, secrets } = splitSecrets(d);
+    const back = mergeSecrets(open, parseSecrets(JSON.parse(JSON.stringify(secrets))));
+    expect(back.personalFields).toEqual(d.personalFields);
+    expect(back.family).toEqual(d.family);
+    expect(back.notesBlocks).toEqual(d.notesBlocks);
+  });
+  it("mehrere geheime Einträge an verschiedenen Stellen", () => {
+    const d = normalizeSheet({ personalFields: [{ label: "a", value: "1", secret: true }, { label: "b", value: "2" }, { label: "c", value: "3", secret: true }, { label: "d", value: "4" }] });
+    const { open, secrets } = splitSecrets(d);
+    expect(open.personalFields.map((f) => f.label)).toEqual(["b", "d"]);
+    expect(mergeSecrets(open, secrets).personalFields.map((f) => f.label)).toEqual(["a", "b", "c", "d"]);
+  });
+  it("stripSecrets entfernt Geheimes aus fremden Ansichten", () => {
+    const d = stripSecrets(mk());
+    expect(d.personalFields.every((f) => !f.secret)).toBe(true);
+    expect(d.notesBlocks).toHaveLength(1);
+  });
+  it("parseSecrets verträgt Unsinn", () => {
+    expect(parseSecrets("kaputt")).toEqual({ personalFields: [], family: [], notesBlocks: [] });
+    expect(parseSecrets({ family: [{ label: "x", value: "y", pos: -4 }] }).family[0].pos).toBe(0);
   });
 });

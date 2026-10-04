@@ -600,7 +600,8 @@ export async function deleteStoryEntry(entryId: string, storyPostId: string) {
 
 const ALLOWED_DICE = [4, 6, 8, 10, 12, 20, 100];
 
-export type DiceRollState = { error: string | null; luckRemaining: number | null };
+// success: Ergebnis der Probe (null = freier Wurf ohne Wert); fehlt bei Fehlern
+export type DiceRollState = { error: string | null; luckRemaining: number | null; success?: boolean | null };
 
 type RollParams = {
   characterId: string;
@@ -724,7 +725,7 @@ async function performDiceRoll(
   }
 
   revalidatePath(`/story/${storyPostId}`);
-  return { error: null, luckRemaining };
+  return { error: null, luckRemaining, success };
 }
 
 export async function createDiceRoll(

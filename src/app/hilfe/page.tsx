@@ -186,7 +186,7 @@ export default function HelpPage() {
           <li>
             Die Glückspunkte gelten <strong>pro Szene</strong>. In jeder Szene fängst du mit allen Punkten neu an.
           </li>
-          <li>Hast du bei einer Probe mit Wert danebengewürfelt, kannst du einen Glückspunkt einsetzen und genau diesen Wurf einmal wiederholen.</li>
+          <li>Hast du bei einer Probe mit Wert danebengewürfelt, fragt dich das Würfeln „Glückspunkt nutzen?“, solange du noch einen hast. Mit „Ja, nochmal würfeln“ wird genau dieser Wurf wiederholt, mit „Nein“ bleibt es beim Misserfolg.</li>
           <li>Das geht nur nach einem Misserfolg und nur bei Proben mit Wert, nicht bei freien Würfen.</li>
           <li>Die übrigen Glückspunkte siehst du beim Würfeln als Kleeblätter. Sie stehen auch im Eintrag des Wurfs.</li>
         </ul>
@@ -214,6 +214,12 @@ export default function HelpPage() {
           <li>Bearbeiten kann nur, wem der Charakter gehört. Alle anderen in der Welt können ihn ansehen.</li>
           <li>Änderungen werden automatisch gespeichert, sobald alle Werte gültig sind. Ungültige Felder sind rot markiert, solange wird nicht gespeichert.</li>
           <li>Das Bild im ChaBo ist unabhängig vom Profilbild des Charakters.</li>
+          <li>
+            Mit dem <strong>Schloss</strong> neben einer Zeile (persönliche Infos, Familie) oder einem Notiz-Block machst du sie <strong>geheim</strong>. Geheimes sieht nur du, niemand sonst in der Welt, auch nicht in der Ansicht oder im Verlauf.
+          </li>
+          <li>
+            Wer wann was am ChaBo geändert hat, steht in der Redaktion unter <strong>Verlauf</strong>, zum Beispiel „Hörnchen hat Mut bearbeitet 13 → 11“ und darunter der Name des Charakters.
+          </li>
           <li>Die Notizen sind frei formatierbar. Du kannst beliebig viele Blöcke mit eigenen Überschriften anlegen.</li>
           <li>
             In der Sektion <strong>Familie</strong> legst du eigene Zeilen an, zum Beispiel „Mutter“. Die Bezeichnung tippst du frei oder wählst einen Vorschlag.

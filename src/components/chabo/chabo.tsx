@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, CircleHelp, Clover, Pencil, Plus, X } from "lucide-react";
+import { Check, CircleHelp, Clover, Lock, LockOpen, Pencil, Plus, X } from "lucide-react";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
@@ -67,6 +67,27 @@ type Status = { kind: "idle" } | { kind: "pending" } | { kind: "saved" } | { kin
 let blockCounter = 0;
 const uid = () => `b${blockCounter++}`;
 
+// Schloss-Knopf: geheime Zeilen und Notizen sieht nur die Besitzer:in
+function LockToggle({ secret, onToggle }: { secret: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={secret}
+      aria-label="Geheim"
+      title={secret ? "Geheim: nur du siehst das" : "Nicht geheim: alle in der Welt sehen das"}
+      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition ${secret ? "bg-accent/15 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+    >
+      {secret ? <Lock className="h-4 w-4" strokeWidth={2} /> : <LockOpen className="h-4 w-4" strokeWidth={2} />}
+    </button>
+  );
+}
+
+// Kleines Schloss vor geheimen Einträgen in der Ansicht (sichtbar nur für die Besitzer:in)
+function SecretMark() {
+  return <Lock aria-label="Geheim" className="mr-1.5 inline h-3 w-3 -translate-y-px text-accent" strokeWidth={2.25} />;
+}
+
 function Meter({ used, max, label }: { used: number; max: number; label: string }) {
   const over = used > max;
   return (
@@ -106,6 +127,8 @@ export function Chabo({
   variant?: "page" | "panel";
 }) {
   const canEdit = editable && variant === "page";
+  // Geheimes zeigt die Ansicht nur der Besitzer:in (fremde Bögen enthalten es gar nicht erst, das hier ist zusätzliche Absicherung)
+  const seen = <T extends { secret?: boolean }>(list: T[]) => (editable ? list : list.filter((x) => !x.secret));
   const Title = variant === "page" ? "h1" : "h2";
   const [data, setData] = useState<SheetData>(() => withDerived(initial ?? emptySheet()));
   const [editing, setEditing] = useState(canEdit && !initial);
@@ -272,14 +295,15 @@ export function Chabo({
           )}
           {importError && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{importError}</p>}
 
-          {(editing || data.personalFields.some((f) => f.value.trim())) && (
+          {(editing || seen(data.personalFields).some((f) => f.value.trim())) && (
             <div>
               {editing ? (
                 <div className="flex flex-col gap-2">
                   {data.personalFields.map((f, i) => (
-                    <div key={i} className="grid grid-cols-[7rem_1fr_auto] gap-2 @xl:grid-cols-[9rem_1fr_auto]">
+                    <div key={i} className="grid grid-cols-[7rem_1fr_auto_auto] gap-2 @xl:grid-cols-[9rem_1fr_auto_auto]">
                       <input value={f.label} maxLength={40} placeholder="Bezeichnung" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
                       <MentionInput value={f.value} targets={mentionCharacters} placeholder="Angabe, mit @ Charaktere verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, value } : x)) })} className={textInput} />
+                      <LockToggle secret={Boolean(f.secret)} onToggle={() => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, secret: x.secret ? undefined : true } : x)) })} />
                       <button type="button" aria-label="Zeile entfernen" onClick={() => commit({ ...data, personalFields: data.personalFields.filter((_, j) => j !== i) })} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
                         <X className="h-4 w-4" strokeWidth={2} />
                       </button>
@@ -294,11 +318,14 @@ export function Chabo({
                 </div>
               ) : (
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-                  {data.personalFields
+                  {seen(data.personalFields)
                     .filter((f) => f.value.trim())
                     .map((f, i) => (
                       <div key={i} className="contents">
-                        <dt className="text-muted">{f.label || "–"}</dt>
+                        <dt className="text-muted">
+                          {f.secret && <SecretMark />}
+                          {f.label || "–"}
+                        </dt>
                         <dd className="text-fg">
                           <MentionText text={f.value} targets={mentionCharacters} />
                         </dd>
@@ -311,7 +338,7 @@ export function Chabo({
         </div>
       </header>
 
-      {(editing || data.family.some((f) => f.label.trim() || f.value.trim())) && (
+      {(editing || seen(data.family).some((f) => f.label.trim() || f.value.trim())) && (
         <section aria-label="Familie" className={card}>
           <h2 className="font-serif text-xl text-fg">Familie</h2>
           {editing ? (
@@ -322,9 +349,10 @@ export function Chabo({
                 ))}
               </datalist>
               {data.family.map((f, i) => (
-                <div key={i} className="grid grid-cols-[7rem_1fr_auto] items-start gap-2 @xl:grid-cols-[11rem_1fr_auto]">
+                <div key={i} className="grid grid-cols-[7rem_1fr_auto_auto] items-start gap-2 @xl:grid-cols-[11rem_1fr_auto_auto]">
                   <input value={f.label} maxLength={40} list="chabo-familie-vorschlaege" placeholder="z. B. Mutter" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
                   <MentionInput value={f.value} targets={mentionCharacters} placeholder="Name, mit @ Charakter verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, value } : x)) })} className={textInput} />
+                  <LockToggle secret={Boolean(f.secret)} onToggle={() => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, secret: x.secret ? undefined : true } : x)) })} />
                   <button type="button" aria-label="Zeile entfernen" onClick={() => commit({ ...data, family: data.family.filter((_, j) => j !== i) })} className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
                     <X className="h-4 w-4" strokeWidth={2} />
                   </button>
@@ -339,11 +367,14 @@ export function Chabo({
             </div>
           ) : (
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-[15px]">
-              {data.family
+              {seen(data.family)
                 .filter((f) => f.label.trim() || f.value.trim())
                 .map((f, i) => (
                   <div key={i} className="contents">
-                    <dt className="text-muted">{f.label || "–"}</dt>
+                    <dt className="text-muted">
+                      {f.secret && <SecretMark />}
+                      {f.label || "–"}
+                    </dt>
                     <dd className="text-fg">
                       <MentionText text={f.value} targets={mentionCharacters} />
                     </dd>
@@ -499,6 +530,7 @@ export function Chabo({
               <div key={blockIds[i] ?? i} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <input value={b.label} maxLength={60} placeholder="Überschrift" aria-label="Überschrift des Blocks" onChange={(e) => commit({ ...data, notesBlocks: data.notesBlocks.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
+                  <LockToggle secret={Boolean(b.secret)} onToggle={() => commit({ ...data, notesBlocks: data.notesBlocks.map((x, j) => (j === i ? { ...x, secret: x.secret ? undefined : true } : x)) })} />
                   <button
                     type="button"
                     aria-label="Block entfernen"
@@ -528,13 +560,16 @@ export function Chabo({
               </button>
             )}
           </div>
-        ) : data.notesBlocks.some((b) => b.html.replace(/<[^>]*>/g, "").trim() || /<img/i.test(b.html)) ? (
+        ) : seen(data.notesBlocks).some((b) => b.html.replace(/<[^>]*>/g, "").trim() || /<img/i.test(b.html)) ? (
           <div className="flex flex-col gap-2">
-            {data.notesBlocks
+            {seen(data.notesBlocks)
               .filter((b) => b.html.replace(/<[^>]*>/g, "").trim() || /<img/i.test(b.html))
               .map((b, i) => (
                 <details key={i} open={i === 0} className="group rounded-xl border border-line px-4 py-3">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-fg [&::-webkit-details-marker]:hidden">{b.label || "Notizen"}</summary>
+                  <summary className="cursor-pointer list-none text-sm font-medium text-fg [&::-webkit-details-marker]:hidden">
+                    {b.secret && <SecretMark />}
+                    {b.label || "Notizen"}
+                  </summary>
                   <EmojiHtml className="post-content mt-2 text-sm text-fg-soft" html={b.html} />
                 </details>
               ))}
