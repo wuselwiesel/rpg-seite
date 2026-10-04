@@ -243,15 +243,15 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
               )}
             </div>
 
-            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-6 gap-1 rounded-xl border border-line bg-surface p-1">
+            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-surface p-1">
               {[
-                { href: "/wiki/karten", base: "/wiki/karten", label: "Karten", Icon: MapIcon },
-                { href: "/wiki/graph", base: "/wiki/graph", label: "Graph", Icon: Network },
-                { href: "/wiki/zeitleiste", base: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },
-                { href: "/wiki/kalender", base: "/wiki/kalender", label: "Kalender", Icon: CalendarDays },
-                { href: "/characters/relationships", base: "/characters/relationships", label: "Beziehungen", Icon: Users },
-                { href: "/wiki/einstellungen", base: "/wiki/einstellungen", label: "Wiki-Einstellungen (Seitenarten)", Icon: Settings },
-              ].map(({ href, base, label, Icon }) => {
+                { href: "/wiki/karten", base: "/wiki/karten", label: "Karten", short: "Karten", Icon: MapIcon },
+                { href: "/wiki/graph", base: "/wiki/graph", label: "Graph", short: "Graph", Icon: Network },
+                { href: "/wiki/zeitleiste", base: "/wiki/zeitleiste", label: "Zeitleiste", short: "Zeitleiste", Icon: Clock },
+                { href: "/wiki/kalender", base: "/wiki/kalender", label: "Kalender", short: "Kalender", Icon: CalendarDays },
+                { href: "/characters/relationships", base: "/characters/relationships", label: "Beziehungen", short: "Beziehungen", Icon: Users },
+                { href: "/wiki/einstellungen", base: "/wiki/einstellungen", label: "Wiki-Einstellungen (Seitenarten)", short: "Einstellungen", Icon: Settings },
+              ].map(({ href, base, label, short, Icon }) => {
                 const active = pathname.startsWith(base);
                 return (
                   <Link
@@ -261,9 +261,10 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                     aria-label={label}
                     aria-current={active ? "page" : undefined}
                     onClick={() => setNavOpen(false)}
-                    className={`flex h-8 items-center justify-center rounded-lg transition ${active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+                    className={`flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-xs transition ${active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
                   >
-                    <Icon className="h-4 w-4" strokeWidth={2} />
+                    <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+                    <span className="truncate">{short}</span>
                   </Link>
                 );
               })}

@@ -471,7 +471,7 @@ export function RelationshipGraph({
                 if (!c || !pos) return null;
                 const dim = activeNeighbors && !activeNeighbors.has(id);
                 const ring = houseColor(c.house, houses);
-                const label = showAllLabels || id === focus || id === active || !!activeNeighbors?.has(id);
+                const label = showAllLabels || id === focus || id === active || !!activeNeighbors?.has(id) || (linked.get(id)?.size ?? 0) >= 3;
                 return (
                   <g
                     key={id}
@@ -512,7 +512,7 @@ export function RelationshipGraph({
                         className="fill-fg-soft"
                         style={{ fontSize: 11, paintOrder: "stroke", stroke: "var(--surface)", strokeWidth: 3 }}
                       >
-                        {c.name}
+                        {c.name.length > 16 ? `${c.name.slice(0, 15)}…` : c.name}
                       </text>
                     )}
                   </g>
@@ -569,16 +569,18 @@ export function RelationshipGraph({
       )}
 
       {!focus && unconnected.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs text-muted">Noch ohne Beziehung ({unconnected.length})</p>
-          <div className="flex flex-wrap gap-1.5">
+        <details className="group rounded-xl bg-surface px-3 py-2">
+          <summary className="cursor-pointer list-none text-xs font-medium text-fg-soft [&::-webkit-details-marker]:hidden">
+            Noch ohne Beziehung ({unconnected.length})
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {unconnected.map((c) => (
               <Link key={c.id} href={`/characters/${c.id}`} className={chip(false)}>
                 {c.name}
               </Link>
             ))}
           </div>
-        </div>
+        </details>
       )}
     </div>
   );
