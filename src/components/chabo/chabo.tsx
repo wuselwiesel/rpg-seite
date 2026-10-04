@@ -6,6 +6,8 @@ import { Check, CircleHelp, Clover, Pencil, Plus, X } from "lucide-react";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
+import { MentionInput, MentionText } from "./mention-input";
+import type { Character } from "@/lib/types";
 import { folderColorHex } from "@/lib/wiki-folder-style";
 import { createClient } from "@/lib/supabase/client";
 import { fetchPublicSheet, parseSheetUrl } from "@/lib/charakterbogen";
@@ -16,6 +18,8 @@ import {
   BASIS_MIN,
   BONUS_MAX,
   BONUS_MIN,
+  FAMILY_SUGGESTIONS,
+  MAX_FAMILY_FIELDS,
   MAX_NOTE_BLOCKS,
   MAX_PERSONAL_FIELDS,
   RACES,
@@ -87,6 +91,7 @@ export function Chabo({
   initial,
   editable,
   legacyUrl,
+  mentionCharacters = [],
   variant = "page",
 }: {
   characterId: string;
@@ -95,6 +100,8 @@ export function Chabo({
   editable: boolean;
   // Adresse des alten Charakterbogens (öffentlicher Link) zum Übernehmen
   legacyUrl?: string | null;
+  // Charaktere der Welt für @-Erwähnungen in Feldern und Notizen
+  mentionCharacters?: Character[];
   // panel: kompakte Ansicht, z. B. im seitlichen Fenster einer Szene
   variant?: "page" | "panel";
 }) {
@@ -272,7 +279,7 @@ export function Chabo({
                   {data.personalFields.map((f, i) => (
                     <div key={i} className="grid grid-cols-[7rem_1fr_auto] gap-2 @xl:grid-cols-[9rem_1fr_auto]">
                       <input value={f.label} maxLength={40} placeholder="Bezeichnung" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
-                      <input value={f.value} maxLength={200} placeholder="Angabe" aria-label={f.label || "Angabe"} onChange={(e) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)) })} className={textInput} />
+                      <MentionInput value={f.value} targets={mentionCharacters} placeholder="Angabe, mit @ Charaktere verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, value } : x)) })} className={textInput} />
                       <button type="button" aria-label="Zeile entfernen" onClick={() => commit({ ...data, personalFields: data.personalFields.filter((_, j) => j !== i) })} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
                         <X className="h-4 w-4" strokeWidth={2} />
                       </button>
@@ -292,7 +299,9 @@ export function Chabo({
                     .map((f, i) => (
                       <div key={i} className="contents">
                         <dt className="text-muted">{f.label || "–"}</dt>
-                        <dd className="text-fg">{f.value}</dd>
+                        <dd className="text-fg">
+                          <MentionText text={f.value} targets={mentionCharacters} />
+                        </dd>
                       </div>
                     ))}
                 </dl>
@@ -301,6 +310,49 @@ export function Chabo({
           )}
         </div>
       </header>
+
+      {(editing || data.family.some((f) => f.label.trim() || f.value.trim())) && (
+        <section aria-label="Familie" className={card}>
+          <h2 className="font-serif text-xl text-fg">Familie</h2>
+          {editing ? (
+            <div className="flex flex-col gap-3">
+              <datalist id="chabo-familie-vorschlaege">
+                {FAMILY_SUGGESTIONS.map((x) => (
+                  <option key={x} value={x} />
+                ))}
+              </datalist>
+              {data.family.map((f, i) => (
+                <div key={i} className="grid grid-cols-[7rem_1fr_auto] items-start gap-2 @xl:grid-cols-[11rem_1fr_auto]">
+                  <input value={f.label} maxLength={40} list="chabo-familie-vorschlaege" placeholder="z. B. Mutter" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
+                  <MentionInput value={f.value} targets={mentionCharacters} placeholder="Name, mit @ Charakter verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, value } : x)) })} className={textInput} />
+                  <button type="button" aria-label="Zeile entfernen" onClick={() => commit({ ...data, family: data.family.filter((_, j) => j !== i) })} className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
+                    <X className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                </div>
+              ))}
+              {data.family.length < MAX_FAMILY_FIELDS && (
+                <button type="button" onClick={() => commit({ ...data, family: [...data.family, { label: "", value: "" }] })} className="flex w-fit items-center gap-1.5 text-sm text-accent hover:underline">
+                  <Plus className="h-4 w-4" strokeWidth={2} />
+                  Zeile hinzufügen
+                </button>
+              )}
+            </div>
+          ) : (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-[15px]">
+              {data.family
+                .filter((f) => f.label.trim() || f.value.trim())
+                .map((f, i) => (
+                  <div key={i} className="contents">
+                    <dt className="text-muted">{f.label || "–"}</dt>
+                    <dd className="text-fg">
+                      <MentionText text={f.value} targets={mentionCharacters} />
+                    </dd>
+                  </div>
+                ))}
+            </dl>
+          )}
+        </section>
+      )}
 
       <section aria-label="Attribute" className={card}>
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -459,7 +511,7 @@ export function Chabo({
                     <X className="h-4 w-4" strokeWidth={2} />
                   </button>
                 </div>
-                <RichTextEditor name={`notes_${blockIds[i] ?? i}`} initialContent={b.html} minHeight={140} onChange={(html) => commit({ ...data, notesBlocks: data.notesBlocks.map((x, j) => (j === i ? { ...x, html } : x)) })} />
+                <RichTextEditor name={`notes_${blockIds[i] ?? i}`} initialContent={b.html} minHeight={140} mentionCharacters={mentionCharacters} onChange={(html) => commit({ ...data, notesBlocks: data.notesBlocks.map((x, j) => (j === i ? { ...x, html } : x)) })} />
               </div>
             ))}
             {data.notesBlocks.length < MAX_NOTE_BLOCKS && (

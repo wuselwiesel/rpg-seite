@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCharacterSheet } from "@/lib/character-sheet-data";
+import { getMentionableCharacters } from "@/lib/active-character";
 import { Chabo } from "@/components/chabo/chabo";
 
 export const metadata = { title: "Charakterbogen" };
@@ -17,12 +18,12 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
 
   const { data: character } = await supabase
     .from("characters")
-    .select("id, name, owner_id, sheet_url")
+    .select("id, name, owner_id, world_id, sheet_url")
     .eq("id", id)
-    .maybeSingle<{ id: string; name: string; owner_id: string; sheet_url: string | null }>();
+    .maybeSingle<{ id: string; name: string; owner_id: string; world_id: string; sheet_url: string | null }>();
   if (!character) notFound();
 
-  const sheet = await getCharacterSheet(id);
+  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id), getMentionableCharacters(user.id, character.world_id)]);
   const isOwn = character.owner_id === user.id;
   if (!isOwn && !sheet) notFound();
 
@@ -32,7 +33,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
         <ChevronLeft className="h-4 w-4" strokeWidth={2} />
         Zum Profil
       </Link>
-      <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} />
+      <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} />
     </div>
   );
 }

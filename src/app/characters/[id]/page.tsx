@@ -16,6 +16,7 @@ import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
 import { Chabo } from "@/components/chabo/chabo";
 import { getCharacterSheet } from "@/lib/character-sheet-data";
+import { getMentionableCharacters } from "@/lib/active-character";
 import { storyBackground } from "@/lib/stories";
 import { PostMedia } from "@/components/post-media";
 import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
@@ -49,7 +50,7 @@ export default async function CharacterProfilePage({
 
   const isOwnerView = character.owner_id === user.id;
   const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
-  const sheet = await getCharacterSheet(id);
+  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id), getMentionableCharacters(user.id, character.world_id)]);
   const listView = ansicht === "liste";
   const nowIso = new Date().toISOString();
 
@@ -416,7 +417,7 @@ export default async function CharacterProfilePage({
 
         {tab === "chabo" ? (
           <div className="px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
-            <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwnerView} variant="panel" />
+            <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwnerView} mentionCharacters={mentionCharacters} variant="panel" />
           </div>
         ) : (
           <>

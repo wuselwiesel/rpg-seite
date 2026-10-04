@@ -5,9 +5,10 @@ import { IdCard, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeSheet, type SheetData } from "@/lib/sheet-rules";
 import { Chabo } from "./chabo";
+import type { Character } from "@/lib/types";
 
 // Knopf mit seitlichem Fenster: der ChaBo des Charakters, ohne die Szene zu verlassen.
-export function ChaboDrawer({ characterId, characterName }: { characterId: string; characterName: string }) {
+export function ChaboDrawer({ characterId, characterName, mentionCharacters = [] }: { characterId: string; characterName: string; mentionCharacters?: Character[] }) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<SheetData | null | undefined>(undefined);
 
@@ -54,7 +55,7 @@ export function ChaboDrawer({ characterId, characterName }: { characterId: strin
                 </a>
               </p>
             ) : (
-              <Chabo key={characterId} characterId={characterId} characterName={characterName} initial={sheet} editable variant="panel" />
+              <Chabo key={characterId} characterId={characterId} characterName={characterName} initial={sheet} editable mentionCharacters={mentionCharacters} variant="panel" />
             )}
           </aside>
         </div>

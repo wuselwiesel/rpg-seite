@@ -12,6 +12,9 @@ export const TALENT_BONUS_MAX = 19;
 export const TALENT_BONUS_BUDGET = 20;
 
 export const MAX_PERSONAL_FIELDS = 30;
+export const MAX_FAMILY_FIELDS = 30;
+// Vorschläge für die Bezeichnung in der Sektion „Familie“; man kann frei tippen.
+export const FAMILY_SUGGESTIONS = ["Mutter", "Vater", "Bruder", "Schwester", "Geschwister", "Großmutter", "Großvater", "Tante", "Onkel", "Cousin", "Cousine", "Partner:in", "Kind", "Rudel", "Zieheltern"];
 export const MAX_NOTE_BLOCKS = 30;
 export const MAX_NOTE_HTML = 30000;
 export const PERSONAL_DEFAULT_LABELS = ["Titel", "Vorname", "Nachname", "Spitzname", "Alter", "Wesen", "Rang"];
@@ -61,6 +64,8 @@ export type SheetData = {
   portraitUrl: string | null;
   luckPointsUsed: number;
   personalFields: { label: string; value: string }[];
+  // Sektion „Familie“: eigene Zeilen (Bezeichnung + Angabe, mit @ auf Charaktere verlinkbar)
+  family: { label: string; value: string }[];
   attrBasis: Record<string, string>;
   attrBonus: Record<string, string>;
   // Wird beim Speichern aus den Attributen berechnet; so lesen die Würfel-Auswahl und der alte Bogen dieselbe Form.
@@ -75,6 +80,7 @@ export function emptySheet(): SheetData {
     portraitUrl: null,
     luckPointsUsed: 0,
     personalFields: PERSONAL_DEFAULT_LABELS.map((label) => ({ label, value: "" })),
+    family: [],
     attrBasis: {},
     attrBonus: {},
     talentBasis: {},
@@ -225,6 +231,9 @@ export function normalizeSheet(raw: unknown): SheetData {
     ? fields.slice(0, MAX_PERSONAL_FIELDS).map((f) => ({ label: clip(rec(f).label, 40), value: clip(rec(f).value, 200) }))
     : base.personalFields;
 
+  const familyRaw = Array.isArray(r.family) ? r.family : [];
+  const family = familyRaw.slice(0, MAX_FAMILY_FIELDS).map((f) => ({ label: clip(rec(f).label, 40), value: clip(rec(f).value, 200) }));
+
   const blocks = Array.isArray(r.notesBlocks) ? r.notesBlocks : null;
   const notesBlocks = blocks?.length
     ? blocks.slice(0, MAX_NOTE_BLOCKS).map((b) => ({ label: clip(rec(b).label, 60), html: clip(rec(b).html, MAX_NOTE_HTML) }))
@@ -239,6 +248,7 @@ export function normalizeSheet(raw: unknown): SheetData {
     portraitUrl: portrait,
     luckPointsUsed: Number.isInteger(used) && used >= 0 && used <= 99 ? used : 0,
     personalFields,
+    family,
     attrBasis,
     attrBonus,
     talentBasis: {},

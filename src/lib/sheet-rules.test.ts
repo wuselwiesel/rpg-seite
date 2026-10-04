@@ -141,6 +141,15 @@ describe("normalizeSheet", () => {
     expect(d.portraitUrl).toBeNull();
     expect(d.race).toBe("none");
   });
+  it("Familie: Zeilen übernehmen, kürzen, begrenzen; fehlt sie, ist sie leer", () => {
+    expect(normalizeSheet({}).family).toEqual([]);
+    const d = normalizeSheet({ family: [{ label: "Mutter", value: "@Mira Salz" }, { label: "x".repeat(80), value: "y".repeat(300) }, "kaputt"] });
+    expect(d.family[0]).toEqual({ label: "Mutter", value: "@Mira Salz" });
+    expect(d.family[1].label).toHaveLength(40);
+    expect(d.family[1].value).toHaveLength(200);
+    expect(d.family[2]).toEqual({ label: "", value: "" });
+    expect(normalizeSheet({ family: Array.from({ length: 50 }, () => ({ label: "a", value: "b" })) }).family).toHaveLength(30);
+  });
   it("schneidet Längen ab und trägt die Talent-Basiswerte ein", () => {
     const d = normalizeSheet({ attrBasis: { GE: "10", SB: "6" }, personalFields: [{ label: "x".repeat(100), value: "y".repeat(500) }] });
     expect(d.personalFields[0].label).toHaveLength(40);

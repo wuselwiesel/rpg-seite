@@ -215,6 +215,12 @@ export default function HelpPage() {
           <li>Änderungen werden automatisch gespeichert, sobald alle Werte gültig sind. Ungültige Felder sind rot markiert, solange wird nicht gespeichert.</li>
           <li>Das Bild im ChaBo ist unabhängig vom Profilbild des Charakters.</li>
           <li>Die Notizen sind frei formatierbar. Du kannst beliebig viele Blöcke mit eigenen Überschriften anlegen.</li>
+          <li>
+            In der Sektion <strong>Familie</strong> legst du eigene Zeilen an, zum Beispiel „Mutter“. Die Bezeichnung tippst du frei oder wählst einen Vorschlag.
+          </li>
+          <li>
+            In den persönlichen Infos, in der Familie und in den Notizen kannst du mit <strong>@</strong> Charaktere deiner Welt markieren. Tippe @ und wähle den Namen aus der Liste. In der Ansicht ist der Name ein Link zum Profil.
+          </li>
           <li>Hattest du einen Bogen auf der alten Charakterbogen-Seite, übernimmst du ihn beim Bearbeiten mit „Aus altem Charakterbogen übernehmen“.</li>
         </ul>
       </Section>

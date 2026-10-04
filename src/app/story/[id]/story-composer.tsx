@@ -167,7 +167,7 @@ export function StoryComposer({
               <CircleHelp className="h-4 w-4" strokeWidth={2} />
             </Link>
           )}
-          {writer && <ChaboDrawer characterId={writer.id} characterName={writer.name} />}
+          {writer && <ChaboDrawer characterId={writer.id} characterName={writer.name} mentionCharacters={[...ownCharacters, ...characters.filter((c) => !ownCharacters.some((o) => o.id === c.id))]} />}
           {mode === "write" && (
             <>
               <button
