@@ -89,8 +89,8 @@ export function MobileNav({
             type="button"
             onClick={() => setMoreOpen(true)}
             aria-label="Menü"
-            // In der Redaktion gibt es unten keinen „Mehr“-Knopf; dann ist dieser die Menü-Stelle für den Rundgang
-            data-tour={mode === "redaktion" ? "account-menu" : undefined}
+            // Das Menü gibt es nur oben (unten keinen zweiten „Mehr“-Knopf); hier setzt der Rundgang an
+            data-tour="account-menu"
             className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
           >
             <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
@@ -138,6 +138,14 @@ export function MobileNav({
               icon={<Network className="h-5 w-5" strokeWidth={2} />}
               label="Beziehungen"
             />
+            {activeCharacter && (
+              <MobileTabLink
+                href={`/characters/${activeCharacter.id}`}
+                icon={<UserRound className="h-5 w-5" strokeWidth={2} />}
+                label="Profil"
+                exact
+              />
+            )}
           </>
         ) : (
           <>
@@ -147,23 +155,13 @@ export function MobileNav({
             <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
           </>
         )}
-        {mode === "ingame" && activeCharacter ? (
+        {mode === "ingame" && activeCharacter && (
           <MobileTabLink
             href={`/characters/${activeCharacter.id}`}
             icon={<CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={28} />}
             label="Profil"
             showLabel={false}
           />
-        ) : mode === "redaktion" ? null : (
-          <button
-            type="button"
-            onClick={() => setMoreOpen(true)}
-            data-tour="account-menu"
-            className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[11px] font-medium text-muted transition hover:text-fg-soft"
-          >
-            <Menu className="h-5 w-5" strokeWidth={2} />
-            Mehr
-          </button>
         )}
       </nav>
 
