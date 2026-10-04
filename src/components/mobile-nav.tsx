@@ -89,6 +89,8 @@ export function MobileNav({
             type="button"
             onClick={() => setMoreOpen(true)}
             aria-label="Menü"
+            // In der Redaktion gibt es unten keinen „Mehr“-Knopf; dann ist dieser die Menü-Stelle für den Rundgang
+            data-tour={mode === "redaktion" ? "account-menu" : undefined}
             className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
           >
             <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
@@ -152,7 +154,7 @@ export function MobileNav({
             label="Profil"
             showLabel={false}
           />
-        ) : (
+        ) : mode === "redaktion" ? null : (
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
