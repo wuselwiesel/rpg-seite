@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:e2e": "node e2e/relationship-graph/test.mjs && node e2e/wiki-dnd/test.mjs && node e2e/wiki-mention/test.mjs && node e2e/wiki-form/test.mjs && node e2e/wiki-map/test.mjs && node e2e/wiki-graph/test.mjs && node e2e/chabo-random/test.mjs && node e2e/mode-memory/test.mjs && node e2e/npc-form/test.mjs && node e2e/chat-composer/test.mjs && node e2e/presence-status/test.mjs && node e2e/emoji-popup/test.mjs"
+    "test:e2e": "node e2e/relationship-graph/test.mjs && node e2e/wiki-dnd/test.mjs && node e2e/wiki-mention/test.mjs && node e2e/wiki-form/test.mjs && node e2e/wiki-map/test.mjs && node e2e/wiki-graph/test.mjs && node e2e/chabo-random/test.mjs && node e2e/mode-memory/test.mjs && node e2e/npc-form/test.mjs && node e2e/chat-composer/test.mjs && node e2e/presence-status/test.mjs && node e2e/emoji-popup/test.mjs && node e2e/story-audience/test.mjs && node e2e/random-lists/test.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -7,6 +7,7 @@ import { getMentionableCharacters, getOwnCharacters, getOwnNpcs, getWorldNpcs } 
 import { getCharacterAccess } from "@/lib/npc-data";
 import { NpcBadge } from "@/components/npc-badge";
 import { ChaboSwitcher } from "@/components/chabo/chabo-switcher";
+import { fetchRandomLists } from "@/lib/random-lists";
 import { Chabo } from "@/components/chabo/chabo";
 
 export const metadata = { title: "Charakterbogen" };
@@ -28,12 +29,13 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
 
   // Bearbeiten und Geheimes: Besitzer:in, bei NPCs auch die Welt-Besitzerin
   const isOwn = (await getCharacterAccess(character, user.id)).canEdit;
-  const [sheet, mentionCharacters, ownChars, ownNpcs, worldNpcs] = await Promise.all([
+  const [sheet, mentionCharacters, ownChars, ownNpcs, worldNpcs, randomLists] = await Promise.all([
     getCharacterSheet(id, isOwn),
     getMentionableCharacters(user.id, character.world_id),
     getOwnCharacters(user.id, character.world_id),
     getOwnNpcs(user.id, character.world_id),
     getWorldNpcs(character.world_id),
+    isOwn ? fetchRandomLists(supabase, character.world_id) : Promise.resolve(undefined),
   ]);
   if (!isOwn && !sheet) notFound();
   // ChaBo-Wechsler: eigene Charaktere, darunter getrennt die NPCs (eigene zuerst, dann die übrigen der Welt)
@@ -52,7 +54,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
           <ChaboSwitcher currentId={id} characters={ownChars.map((c) => ({ id: c.id, name: c.name }))} npcs={switcherNpcs.map((c) => ({ id: c.id, name: c.name }))} />
         </div>
       </div>
-      <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} />
+      <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} randomLists={randomLists} />
     </div>
   );
 }

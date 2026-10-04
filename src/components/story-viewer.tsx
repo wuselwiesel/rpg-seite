@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Heart, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { Eye, Heart, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import { deleteHighlight, deleteStory, replyToStory, toggleStoryLike } from "@/app/stories/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -139,6 +139,11 @@ function StoryViewer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(false);
   const [likes, setLikes] = useState<string[]>([]);
+  // Nur für den Account, dem die Story gehört: welche Charaktere sie gesehen bzw. geliked haben
+  type AudienceEntry = { id: string; name: string; avatar_url: string | null; liked: boolean };
+  const [audienceData, setAudienceData] = useState<{ storyId: string; list: AudienceEntry[] } | null>(null);
+  // Das Fenster gehört zu einer Story; wechselt die Story, ist es zu
+  const [audienceOpenFor, setAudienceOpenFor] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyFocus, setReplyFocus] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -150,9 +155,9 @@ function StoryViewer({
   // Videos bestimmen ihre eigene Laufzeit (max. 60 s), Bilder und Text laufen SLIDE_MS.
   const [videoMs, setVideoMs] = useState<{ id: string; ms: number } | null>(null);
 
-  const paused = holdPaused || replyFocus;
   const group = groups[gi];
   const story = group?.stories[si];
+  const paused = holdPaused || replyFocus || (audienceOpenFor !== null && audienceOpenFor === story?.id);
   const slideMs = story && videoMs?.id === story.id ? videoMs.ms : SLIDE_MS;
 
   const next = useCallback(() => {
@@ -194,6 +199,47 @@ function StoryViewer({
       cancelled = true;
     };
   }, [storyId]);
+
+  // Ansicht festhalten (nur mit eigenem Charakter und nicht bei der eigenen Story)
+  const ownStory = Boolean(group && story && group.characterId === viewerCharacterId);
+  useEffect(() => {
+    if (!storyId || !viewerCharacterId || ownStory || group?.canManage) return;
+    void createClient()
+      .from("story_views")
+      .upsert({ story_id: storyId, character_id: viewerCharacterId }, { onConflict: "story_id,character_id", ignoreDuplicates: true });
+  }, [storyId, viewerCharacterId, ownStory, group?.canManage]);
+
+  // Wer hat die Story gesehen / geliked? Die Datenbank liefert das nur der Besitzerin der Story.
+  const canSeeAudience = Boolean(group?.canManage);
+  const audience = audienceData && audienceData.storyId === storyId ? audienceData.list : [];
+  const audienceOpen = audienceOpenFor !== null && audienceOpenFor === storyId;
+  useEffect(() => {
+    if (!storyId || !canSeeAudience) return;
+    let cancelled = false;
+    const supabase = createClient();
+    Promise.all([
+      supabase.from("story_views").select("character_id, created_at, characters(id, name, avatar_url)").eq("story_id", storyId).order("created_at", { ascending: false }),
+      supabase.from("story_likes").select("character_id, characters(id, name, avatar_url)").eq("story_id", storyId),
+    ]).then(([views, liked]) => {
+      if (cancelled) return;
+      type Row = { character_id: string; characters: { id: string; name: string; avatar_url: string | null } | { id: string; name: string; avatar_url: string | null }[] | null };
+      const pick = (r: Row) => (Array.isArray(r.characters) ? r.characters[0] : r.characters);
+      const likedIds = new Set(((liked.data ?? []) as Row[]).map((r) => r.character_id));
+      const map = new Map<string, AudienceEntry>();
+      for (const r of (views.data ?? []) as Row[]) {
+        const c = pick(r);
+        if (c) map.set(c.id, { ...c, liked: likedIds.has(c.id) });
+      }
+      for (const r of (liked.data ?? []) as Row[]) {
+        const c = pick(r);
+        if (c && !map.has(c.id)) map.set(c.id, { ...c, liked: true });
+      }
+      setAudienceData({ storyId, list: [...map.values()] });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [storyId, canSeeAudience]);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -478,15 +524,56 @@ function StoryViewer({
               </button>
             )}
           </form>
-        ) : group.canManage && likes.length > 0 ? (
-          <p
-            className="absolute bottom-0 left-0 z-10 flex items-center gap-1.5 px-4 text-sm font-medium text-white"
+        ) : group.canManage ? (
+          <button
+            type="button"
+            onClick={() => setAudienceOpenFor(storyId ?? null)}
+            aria-label="Wer hat die Story gesehen?"
+            className="absolute bottom-0 left-0 z-10 flex items-center gap-3 px-4 text-sm font-medium text-white"
             style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
           >
-            <Heart className="h-4 w-4 fill-white" strokeWidth={0} />
-            {likes.length}
-          </p>
+            <span className="flex items-center gap-1.5">
+              <Eye className="h-4 w-4" strokeWidth={2} />
+              {audience.length}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Heart className="h-4 w-4 fill-white" strokeWidth={0} />
+              {Math.max(likes.length, audience.filter((a) => a.liked).length)}
+            </span>
+          </button>
         ) : null}
+
+        {audienceOpen && (
+          <div className="absolute inset-0 z-20 flex items-end bg-black/50" onClick={() => setAudienceOpenFor(null)}>
+            <div
+              role="dialog"
+              aria-label="Gesehen von"
+              onClick={(e) => e.stopPropagation()}
+              className="flex max-h-[70%] w-full flex-col rounded-t-2xl bg-surface p-4 text-fg"
+              style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-serif text-lg">Gesehen von</h2>
+                <button type="button" onClick={() => setAudienceOpenFor(null)} aria-label="Schließen" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface-2">
+                  <X className="h-5 w-5" strokeWidth={2} />
+                </button>
+              </div>
+              {audience.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted">Noch niemand.</p>
+              ) : (
+                <ul className="flex flex-col gap-1 overflow-y-auto">
+                  {audience.map((a) => (
+                    <li key={a.id} className="flex items-center gap-3 rounded-xl px-1 py-1.5">
+                      <CharacterAvatar name={a.name} avatarUrl={a.avatar_url} size={36} />
+                      <span className="min-w-0 flex-1 truncate text-sm">{a.name}</span>
+                      {a.liked && <Heart className="h-4 w-4 shrink-0 fill-[#ed4956] text-[#ed4956]" strokeWidth={0} aria-label="Gefällt" />}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

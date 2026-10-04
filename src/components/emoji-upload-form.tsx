@@ -31,7 +31,14 @@ async function prepareImage(file: File): Promise<{ file: File; animated: boolean
 
 // Aus einem Dateinamen wie "Süße Katze 2.png" einen gültigen Emoji-Namen vorschlagen.
 function suggestName(filename: string) {
-  const base = filename.replace(/\.[^.]+$/, "").toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+  const base = filename
+    .normalize("NFC")
+    .replace(/\.[^.]+$/, "")
+    .toLowerCase()
+    .replace(/\u00e4/g, "ae")
+    .replace(/\u00f6/g, "oe")
+    .replace(/\u00fc/g, "ue")
+    .replace(/\u00df/g, "ss");
   const slug = base.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32);
   return EMOJI_NAME.test(slug) && !/^(image|bild|screenshot|unbenannt)/.test(slug) ? slug : "";
 }
@@ -104,8 +111,9 @@ export function EmojiUploadForm({
     }
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  // Bewusst kein <form>: Das Formular steckt oft im Emoji-Fenster eines anderen Formulars (Chat, Ordner-Dialog). Verschachtelte Formulare
+  // lösen sonst auch das äußere aus (Nachricht senden, Dialog schließen) und der Upload bricht ab.
+  async function submit() {
     setError(null);
     const clean = name.trim().toLowerCase().replace(/^:|:$/g, "");
     if (!EMOJI_NAME.test(clean)) return setError("Name: 2–32 Zeichen, nur Kleinbuchstaben, Zahlen und Unterstrich.");
@@ -145,7 +153,7 @@ export function EmojiUploadForm({
   }
 
   return (
-      <form onSubmit={submit} className={`flex flex-col gap-3 ${compact ? "p-3" : "rounded-2xl border border-line p-4"}`}>
+      <div className={`flex flex-col gap-3 ${compact ? "p-3" : "rounded-2xl border border-line p-4"}`}>
         {title && <p className="text-sm font-medium text-fg">{title}</p>}
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Name
@@ -154,6 +162,12 @@ export function EmojiUploadForm({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                e.stopPropagation();
+                void submit();
+              }}
               maxLength={34}
               placeholder="katze"
               autoCapitalize="none"
@@ -227,13 +241,14 @@ export function EmojiUploadForm({
         </div>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
-          type="submit"
+          type="button"
+          onClick={() => void submit()}
           disabled={busy}
           className="flex items-center gap-1.5 self-start rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
         >
           <Upload className="h-4 w-4" strokeWidth={2} />
           {busy ? "Lädt hoch..." : "Hinzufügen"}
         </button>
-      </form>
+      </div>
   );
 }
