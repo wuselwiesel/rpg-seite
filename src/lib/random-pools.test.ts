@@ -44,7 +44,10 @@ describe("fieldKind erkennt Felder an der Bezeichnung", () => {
     expect(fieldKind("Schule")).toBe("beruf");
     expect(fieldKind("Eigenheiten")).toBe("eigenheit");
     expect(fieldKind("Macke")).toBe("eigenheit");
-    expect(fieldKind("Aussehen")).toBe("aussehen");
+    expect(fieldKind("Aussehen")).toBeNull();
+    expect(fieldKind("Lebensziel / Wunsch")).toBe("lebensziel");
+    expect(fieldKind("Geheimnis")).toBe("geheimnis");
+    expect(fieldKind("Größte Angst")).toBe("angst");
   });
   it("Unbekanntes bekommt keinen Würfel", () => {
     for (const l of ["Titel", "Rang", "", "  ", "Lieblingsfarbe", "Größe", "Art"]) expect(fieldKind(l)).toBeNull();
@@ -83,7 +86,7 @@ describe("rollValue", () => {
   it("liefert für jede Art nicht-leere, kurze Werte", () => {
     for (const seed of SEEDS) {
       const rng = seeded(seed);
-      for (const k of ["vorname", "nachname", "spitzname", "alter", "wesen", "hobby", "beruf", "eigenheit", "aussehen"] as const) {
+      for (const k of ["vorname", "nachname", "spitzname", "alter", "wesen", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"] as const) {
         const v = rollValue(k, { rng });
         expect(v.trim().length).toBeGreaterThan(0);
         expect(v.length).toBeLessThanOrEqual(200);
@@ -138,7 +141,7 @@ describe("rollAllFields („Alles zufällig“)", () => {
     for (const seed of SEEDS) {
       const out = rollAllFields(emptySheet(), undefined, seeded(seed));
       for (const label of ["Vorname", "Nachname", "Spitzname", "Alter", "Wesen"]) expect(value(out, label)?.trim().length).toBeGreaterThan(0);
-      for (const label of ["Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Aussehen"]) expect(value(out, label)?.trim().length).toBeGreaterThan(0);
+      for (const label of ["Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Lebensziel / Wunsch", "Geheimnis", "Größte Angst"]) expect(value(out, label)?.trim().length).toBeGreaterThan(0);
       expect(value(out, "Titel")).toBe("");
       expect(value(out, "Rang")).toBe("");
       expect(out.personalFields.length).toBeLessThanOrEqual(MAX_PERSONAL_FIELDS);
@@ -191,12 +194,12 @@ describe("rollAllFields („Alles zufällig“)", () => {
   });
   it("benutzt vorhandene Zeilen mit anderer Bezeichnung, statt doppelte anzulegen", () => {
     const base = emptySheet();
-    base.personalFields = [...base.personalFields, { label: "Hobby", value: "" }, { label: "Äußeres", value: "" }];
+    base.personalFields = [...base.personalFields, { label: "Hobby", value: "" }, { label: "Wunsch", value: "" }];
     const out = rollAllFields(base, undefined, seeded(3));
     expect(out.personalFields.filter((f) => /hobb/i.test(f.label)).length).toBe(1);
-    expect(out.personalFields.filter((f) => /aussehen|äußeres/i.test(f.label)).length).toBe(1);
+    expect(out.personalFields.filter((f) => /wunsch|lebensziel/i.test(f.label)).length).toBe(1);
     expect(value(out, "Hobby")!.length).toBeGreaterThan(0);
-    expect(value(out, "Äußeres")!.length).toBeGreaterThan(0);
+    expect(value(out, "Wunsch")!.length).toBeGreaterThan(0);
   });
   it("hält die Höchstzahl an Zeilen ein", () => {
     const base = emptySheet();
