@@ -174,6 +174,10 @@ export type StoryEntry = {
   kind?: "entry" | "narrator" | "chapter";
   chapter_title?: string | null;
   chapter_summary?: string | null;
+  // Datum der Kapitel-Marke im Kalender der Welt
+  event_year?: number | null;
+  event_month?: number | null;
+  event_day?: number | null;
 };
 
 export type Chat = {

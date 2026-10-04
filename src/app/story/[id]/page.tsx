@@ -317,6 +317,8 @@ export default async function StoryPostDetailPage({
                 mentionCharacters={mentionableCharacters}
                 chapterNumber={entry.kind === "chapter" ? ++chapterCounter : undefined}
                 displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
+                calendar={calendar}
+                canEditChapter={entry.kind === "chapter" && (myCharacterIds.has(entry.character_id) || isAuthor || isWorldOwner)}
               />
             ),
           }));

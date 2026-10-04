@@ -425,6 +425,42 @@ export async function startNextScene(previousId: string, formData: FormData): Pr
   return { id: created.id };
 }
 
+// Kapitel-Marke in einer Szene bearbeiten: Name, Zusammenfassung („Was ist bisher geschehen?“) und Datum im Kalender der Welt.
+// Das dürfen die Schreibende, die Autor:in der Szene und die Welt-Besitzer:in (RLS-Policies auf story_entries).
+export async function updateChapter(entryId: string, storyPostId: string, formData: FormData): Promise<string | null> {
+  const title = String(formData.get("title") ?? "").trim().slice(0, 100);
+  const summary = String(formData.get("summary") ?? "").trim().slice(0, 1500);
+  if (!title) return "Gib dem Kapitel einen Namen.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: post } = await supabase.from("story_posts").select("world_id").eq("id", storyPostId).maybeSingle();
+  if (!post) return "Szene nicht gefunden.";
+  const sceneDates = await readSceneDates(formData, post.world_id);
+  if (sceneDates.error !== null) return sceneDates.error;
+  const c = sceneDates.columns;
+
+  const { error, count } = await supabase
+    .from("story_entries")
+    .update(
+      { content: title, chapter_title: title, chapter_summary: summary || null, event_year: c.event_year, event_month: c.event_month, event_day: c.event_day },
+      { count: "exact" },
+    )
+    .eq("id", entryId)
+    .eq("story_post_id", storyPostId)
+    .eq("kind", "chapter");
+  if (error) return error.message;
+  if (!count) return "Keine Berechtigung dafür.";
+
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/wiki/zeitleiste");
+  revalidatePath("/wiki/kalender");
+  return null;
+}
+
 // Die vorherige Szene (Kapitel-Verknüpfung) nachträglich ändern oder lösen (null). Das dürfen die Autor:in und die Welt-Besitzer:in.
 export async function setPreviousScene(storyPostId: string, previousId: string | null): Promise<string | null> {
   const supabase = await createClient();

@@ -3,7 +3,9 @@
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import { Clover, Dices, Pencil, Trash2, Type } from "lucide-react";
-import { updateStoryEntry, deleteStoryEntry } from "../actions";
+import { updateStoryEntry, deleteStoryEntry, updateChapter } from "../actions";
+import { EventDateFields } from "@/components/event-date-fields";
+import { formatDate, type WikiCalendar } from "@/lib/wiki-calendar";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
@@ -17,6 +19,8 @@ export function StoryEntryItem({
   mentionCharacters,
   chapterNumber,
   displayHtml,
+  calendar,
+  canEditChapter = false,
 }: {
   entry: StoryEntry;
   storyPostId: string;
@@ -25,6 +29,9 @@ export function StoryEntryItem({
   chapterNumber?: number;
   // Mit Wiki-Links und Hashtag-Links angereicherte Fassung von entry.content.
   displayHtml?: string;
+  // Für Kapitel-Marken: Kalender der Welt (Datum) und ob man sie bearbeiten darf
+  calendar?: WikiCalendar;
+  canEditChapter?: boolean;
 }) {
   const isRoll = !!entry.roll_label;
   const isNarrator = entry.kind === "narrator";
@@ -39,6 +46,21 @@ export function StoryEntryItem({
     wasPending.current = pending;
   }, [pending, error]);
 
+  const [chapterEditing, setChapterEditing] = useState(false);
+  const [chapterError, setChapterError] = useState<string | null>(null);
+  const [chapterPending, setChapterPending] = useState(false);
+
+  async function saveChapter(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    setChapterError(null);
+    setChapterPending(true);
+    const err = await updateChapter(entry.id, storyPostId, formData);
+    setChapterPending(false);
+    if (err) setChapterError(err);
+    else setChapterEditing(false);
+  }
+
   async function handleDelete() {
     if (!confirm("Diesen Eintrag wirklich löschen?")) return;
     const err = await deleteStoryEntry(entry.id, storyPostId);
@@ -46,6 +68,40 @@ export function StoryEntryItem({
   }
 
   if (entry.kind === "chapter") {
+    const chapterDate = entry.event_year != null && calendar ? formatDate(calendar, { year: entry.event_year, month: entry.event_month ?? null, day: entry.event_day ?? null }) : null;
+    if (chapterEditing && calendar) {
+      return (
+        <form id={`kapitel-${chapterNumber}`} onSubmit={saveChapter} className="my-4 flex scroll-mt-20 flex-col gap-3 rounded-lg bg-surface-2 p-3">
+          <input
+            type="text"
+            name="title"
+            required
+            maxLength={100}
+            defaultValue={entry.chapter_title ?? entry.content}
+            aria-label="Name des Kapitels"
+            className="rounded-md border border-line bg-surface px-3 py-2 font-serif text-xl text-fg outline-none focus:border-accent"
+          />
+          <EventDateFields prefix="date" calendar={calendar} initial={entry.event_year != null ? { year: entry.event_year, month: entry.event_month ?? null, day: entry.event_day ?? null } : null} label="Datum im Kalender der Welt" />
+          <textarea
+            name="summary"
+            maxLength={1500}
+            rows={2}
+            defaultValue={entry.chapter_summary ?? ""}
+            placeholder="Was ist bisher geschehen? (für den Rückblick)"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm"
+          />
+          {chapterError && <p className="text-xs text-red-600 dark:text-red-400">{chapterError}</p>}
+          <div className="flex gap-2">
+            <button type="submit" disabled={chapterPending} className="rounded-md bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
+              {chapterPending ? "Speichert..." : "Speichern"}
+            </button>
+            <button type="button" onClick={() => setChapterEditing(false)} className="rounded-md px-3 py-1.5 text-xs text-muted hover:text-fg">
+              Abbrechen
+            </button>
+          </div>
+        </form>
+      );
+    }
     return (
       <div id={`kapitel-${chapterNumber}`} className="group my-4 scroll-mt-20 text-center">
         <div className="flex items-center gap-3 text-muted">
@@ -54,17 +110,31 @@ export function StoryEntryItem({
           <span className="h-px flex-1 bg-line" />
         </div>
         <h3 className="mt-2 font-serif text-2xl text-fg">{entry.chapter_title ?? entry.content}</h3>
+        {chapterDate && <p className="mt-0.5 text-xs text-muted">{chapterDate}</p>}
         {entry.chapter_summary && (
           <p className="mx-auto mt-1 max-w-md text-sm italic text-muted">{entry.chapter_summary}</p>
         )}
-        {canManage && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="mt-1 text-xs text-muted transition hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
-          >
-            Kapitel entfernen
-          </button>
+        {(canEditChapter || canManage) && (
+          <div className="mt-1 flex justify-center gap-3">
+            {canEditChapter && calendar && (
+              <button
+                type="button"
+                onClick={() => setChapterEditing(true)}
+                className="text-xs text-muted transition hover:text-fg md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+              >
+                Kapitel bearbeiten
+              </button>
+            )}
+            {canManage && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="text-xs text-muted transition hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+              >
+                Kapitel entfernen
+              </button>
+            )}
+          </div>
         )}
       </div>
     );

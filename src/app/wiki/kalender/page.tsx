@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Clock, Feather } from "lucide-react";
+import { BookMarked, ChevronLeft, ChevronRight, Clock, Feather } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiPageRows } from "@/lib/wiki-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import { datesFromRow, formatLabeled, monthName, placeInMonth, type Dated } from "@/lib/wiki-calendar";
+import { getDatedChapters } from "@/lib/chapter-dates";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { CalendarForm } from "./calendar-form";
 
@@ -19,8 +20,8 @@ type SceneRow = {
   event_end_month: number | null;
   event_end_day: number | null;
 };
-type Entry = { kind: "wiki" | "scene"; id: string; title: string; labels: { start?: string | null; end?: string | null } };
-const hrefOf = (e: Entry) => (e.kind === "scene" ? `/story/${e.id}` : `/wiki/${e.id}`);
+type Entry = { kind: "wiki" | "scene" | "chapter"; id: string; title: string; labels: { start?: string | null; end?: string | null }; href?: string };
+const hrefOf = (e: Entry) => e.href ?? (e.kind === "scene" ? `/story/${e.id}` : `/wiki/${e.id}`);
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
@@ -35,7 +36,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [rows, calendar, { data: sceneRows }] = await Promise.all([
+  const [rows, calendar, { data: sceneRows }, chapters] = await Promise.all([
     getWikiPageRows(world.id),
     getWikiCalendar(world.id),
     // Szenen mit Datum stehen im Kalender an ihrem Tag (RLS: nur sichtbare Szenen)
@@ -46,10 +47,12 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
       .eq("archived", false)
       .not("event_year", "is", null)
       .returns<SceneRow[]>(),
+    getDatedChapters(supabase, world.id),
   ]);
   const dated: Dated<Entry>[] = [
     ...rows.map((r): Dated<Entry> => ({ kind: "wiki", id: r.id, title: r.title, labels: { start: r.event_label, end: r.event_end_label }, dates: datesFromRow(r) })).filter((r) => r.dates.start),
     ...(sceneRows ?? []).map((r): Dated<Entry> => ({ kind: "scene", id: r.id, title: r.title, labels: {}, dates: datesFromRow(r) })),
+    ...chapters.map((c): Dated<Entry> => ({ kind: "chapter", id: c.id, title: c.title, labels: {}, href: `/story/${c.sceneId}#kapitel-${c.number}`, dates: datesFromRow(c) })),
   ];
 
   // Startmonat: aus der Adresse, sonst der Monat der frühesten datierten Seite, sonst Jahr 1.
@@ -122,6 +125,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
                 <li key={p.id}>
                   <Link href={hrefOf(p)} className="flex flex-wrap items-baseline gap-x-2 text-fg hover:text-accent">
                     {p.kind === "scene" && <Feather className="h-3.5 w-3.5 self-center text-accent" strokeWidth={2} aria-label="Szene" />}
+                    {p.kind === "chapter" && <BookMarked className="h-3.5 w-3.5 self-center text-accent" strokeWidth={2} aria-label="Kapitel" />}
                     <span className="font-medium">{p.title}</span>
                     <span className="text-sm text-muted">{formatLabeled(calendar, p.dates, p.labels)}</span>
                   </Link>
@@ -140,6 +144,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
                 {list.map((p) => (
                   <Link key={`${p.kind}-${p.id}`} href={hrefOf(p)} className="line-clamp-2 text-sm leading-snug text-fg hover:text-accent">
                     {p.kind === "scene" && <Feather className="mr-1 inline h-3 w-3 -translate-y-px text-accent" strokeWidth={2} aria-label="Szene" />}
+                    {p.kind === "chapter" && <BookMarked className="mr-1 inline h-3 w-3 -translate-y-px text-accent" strokeWidth={2} aria-label="Kapitel" />}
                     {p.title}
                   </Link>
                 ))}

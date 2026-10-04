@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, Clock, Feather, FileText, MapPin } from "lucide-react";
+import { BookMarked, CalendarDays, Clock, Feather, FileText, MapPin } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
@@ -13,6 +13,7 @@ import { stripHtml } from "@/lib/strip-html";
 import { WikiTypeBadge, WikiTypeIcon } from "@/components/wiki-type-icon";
 import { WikiTile } from "@/components/wiki-tile";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { getDatedChapters } from "@/lib/chapter-dates";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { TimelineEventForm } from "./event-form";
 
@@ -42,7 +43,8 @@ type SceneRow = {
 
 type Entry =
   | { kind: "wiki"; labels: DateLabels; id: string; title: string; lead: string | null; type: string | null; draft: boolean; icon: string | null; cover: string | null }
-  | { kind: "scene"; id: string; title: string; excerpt: string; location: string | null; extra: string | null; author: string; avatar: string | null; arc: string | null };
+  | { kind: "scene"; id: string; title: string; excerpt: string; location: string | null; extra: string | null; author: string; avatar: string | null; arc: string | null }
+  | { kind: "chapter"; id: string; sceneId: string; number: number; title: string; sceneTitle: string; excerpt: string };
 
 const excerpt = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trimEnd()} …` : s);
 
@@ -66,6 +68,26 @@ function WikiEntryCard({ e, label }: { e: Extract<Entry, { kind: "wiki" }>; labe
         <span className="font-serif text-xl leading-snug text-fg @xl:text-2xl">{e.title}</span>
         {e.lead && <span className="line-clamp-2 text-sm text-fg-soft">{e.lead}</span>}
       </span>
+    </Link>
+  );
+}
+
+function ChapterEntryCard({ e, label }: { e: Extract<Entry, { kind: "chapter" }>; label: string }) {
+  return (
+    <Link
+      href={`/story/${e.sceneId}#kapitel-${e.number}`}
+      className="flex flex-col gap-1.5 rounded-2xl border border-line border-l-[3px] border-l-accent bg-surface p-3.5 transition hover:border-accent/50 hover:border-l-accent hover:bg-surface-2/50 @xl:p-4"
+    >
+      <span className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-accent">{label}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-strong/15 px-2.5 py-0.5 text-xs font-medium text-accent">
+          <BookMarked className="h-3.5 w-3.5" strokeWidth={2} />
+          Kapitel
+        </span>
+      </span>
+      <span className="font-serif text-xl leading-snug text-fg @xl:text-2xl">{e.title}</span>
+      {e.excerpt && <span className="line-clamp-3 text-sm text-fg-soft">{e.excerpt}</span>}
+      <span className="text-xs text-muted">{e.sceneTitle}</span>
     </Link>
   );
 }
@@ -132,7 +154,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
 
-  const [rows, calendar, types, { data: sceneData }] = await Promise.all([
+  const [rows, calendar, types, { data: sceneData }, chapters] = await Promise.all([
     getWikiPageRows(world.id),
     getWikiCalendar(world.id),
     getWikiTypes(world.id),
@@ -145,6 +167,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
       .eq("archived", false)
       .not("event_year", "is", null)
       .returns<SceneRow[]>(),
+    getDatedChapters(supabase, world.id),
   ]);
 
   const wikiDated = rows.map((r) => ({ ...r, dates: datesFromRow(r) })).filter((r) => r.dates.start);
@@ -153,7 +176,22 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   const wikiShown = source === "szenen" ? [] : wikiDated.filter((r) => (!type || r.page_type === type) && (!tag || hasTag(r, tag)));
   const scenesShown = source === "welt" || type ? [] : scenesDated.filter((s) => !tag || hasTag(s, tag));
 
+  // Datierte Kapitel gehören zu den Szenen: bei „Weltgeschichte“, einer Art oder einem Tag blenden sie sich aus
+  const chaptersShown = source === "welt" || type || tag ? [] : chapters;
+
   const items: Dated<Entry>[] = [
+    ...chaptersShown.map(
+      (c): Dated<Entry> => ({
+        kind: "chapter",
+        id: c.id,
+        sceneId: c.sceneId,
+        number: c.number,
+        title: c.title,
+        sceneTitle: c.sceneTitle,
+        excerpt: excerpt(c.summary ?? "", 220),
+        dates: datesFromRow(c),
+      }),
+    ),
     ...wikiShown.map(
       (r): Dated<Entry> => ({
         kind: "wiki",
@@ -191,6 +229,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   const counts = [
     wikiShown.length > 0 ? `${wikiShown.length} ${wikiShown.length === 1 ? "Seite" : "Seiten"}` : null,
     scenesShown.length > 0 ? `${scenesShown.length} ${scenesShown.length === 1 ? "Szene" : "Szenen"}` : null,
+    chaptersShown.length > 0 ? `${chaptersShown.length} Kapitel` : null,
   ].filter(Boolean);
 
   const chip = (active: boolean) =>
@@ -315,6 +354,8 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
                           <li key={`${p.kind}-${p.id}`}>
                             {p.kind === "wiki" ? (
                               <WikiEntryCard e={p} label={labelOf(calendar, p.dates, p.labels)} />
+                            ) : p.kind === "chapter" ? (
+                              <ChapterEntryCard e={p} label={labelOf(calendar, p.dates)} />
                             ) : (
                               <SceneEntryCard e={p} label={labelOf(calendar, p.dates)} />
                             )}
