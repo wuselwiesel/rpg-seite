@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
-import { getAppMode } from "@/lib/app-mode";
+import { useAppMode } from "@/components/mode-context";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
 import type { Character } from "@/lib/types";
@@ -22,7 +22,7 @@ export function SidebarNav({
   activeCharacter: Character | null;
 }) {
   const pathname = usePathname();
-  const mode = getAppMode(pathname);
+  const mode = useAppMode();
   const inWiki = pathname?.startsWith("/wiki");
 
   if (mode === "redaktion") {

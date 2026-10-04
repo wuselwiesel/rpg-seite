@@ -31,6 +31,9 @@ import { OnlineProvider } from "@/components/online-status";
 import { getOwnPresence } from "@/lib/online-status-server";
 import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
+import { ModeProvider } from "@/components/mode-context";
+import { MODE_COOKIE, parseRememberedMode } from "@/lib/app-mode";
+import { cookies } from "next/headers";
 import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
 import { AppLogoSync } from "@/components/app-logo-sync";
 import { SelectionCookieKeeper } from "@/components/selection-cookie-keeper";
@@ -151,7 +154,8 @@ if (location.pathname.indexOf('/redaktion') === 0) document.documentElement.setA
 `;
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [emojiMap, accountFont, ownPresence] = await Promise.all([getEmojiMap(), getAccountDefaultFont(), getOwnPresence()]);
+  const [emojiMap, accountFont, ownPresence, cookieStore] = await Promise.all([getEmojiMap(), getAccountDefaultFont(), getOwnPresence(), cookies()]);
+  const rememberedMode = parseRememberedMode(cookieStore.get(MODE_COOKIE)?.value);
   return (
     <html
       lang="de"
@@ -164,6 +168,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-app text-fg" suppressHydrationWarning>
+        <ModeProvider initial={rememberedMode}>
         <ModeTheme />
         <AppLogoSync />
         <SelectionCookieKeeper />
@@ -183,6 +188,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <ChatBubbleLoader />
           </CustomEmojiProvider>
         </OnlineProvider>
+        </ModeProvider>
       </body>
     </html>
   );
