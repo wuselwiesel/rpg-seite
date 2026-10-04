@@ -7,6 +7,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { MentionInput, MentionText } from "./mention-input";
+import { stripMentionAt } from "@/lib/sheet-mentions";
 import type { Character } from "@/lib/types";
 import { folderColorHex } from "@/lib/wiki-folder-style";
 import { createClient } from "@/lib/supabase/client";
@@ -74,8 +75,8 @@ function LockToggle({ secret, onToggle }: { secret: boolean; onToggle: () => voi
       type="button"
       onClick={onToggle}
       aria-pressed={secret}
-      aria-label="Geheim"
-      title={secret ? "Geheim: nur du siehst das" : "Nicht geheim: alle in der Welt sehen das"}
+      aria-label="Geheim halten"
+      title="Geheim halten"
       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition ${secret ? "bg-accent/15 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
     >
       {secret ? <Lock className="h-4 w-4" strokeWidth={2} /> : <LockOpen className="h-4 w-4" strokeWidth={2} />}
@@ -570,7 +571,7 @@ export function Chabo({
                     {b.secret && <SecretMark />}
                     {b.label || "Notizen"}
                   </summary>
-                  <EmojiHtml className="post-content mt-2 text-sm text-fg-soft" html={b.html} />
+                  <EmojiHtml className="post-content mt-2 text-sm text-fg-soft" html={stripMentionAt(b.html)} />
                 </details>
               ))}
           </div>

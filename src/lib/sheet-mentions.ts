@@ -56,3 +56,11 @@ export function insertMention(text: string, caret: number, start: number, name: 
   const inserted = `@${name} `;
   return { text: before + inserted + after, caret: (before + inserted).length };
 }
+
+// In der Ansicht steht bei erwähnten Charakteren nur der Name ohne „@“ (im Editor bleibt das @ als Auslöser).
+export const withoutAt = (text: string) => (text.startsWith("@") ? text.slice(1) : text);
+
+// Dasselbe für Erwähnungen in formatierten Notizen: <span data-type="mention">@Name</span> → Name
+export function stripMentionAt(html: string): string {
+  return html.replace(/(<span\b[^>]*data-type="mention"[^>]*>)\s*@/gi, "$1");
+}

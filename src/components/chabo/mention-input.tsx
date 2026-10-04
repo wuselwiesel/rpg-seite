@@ -3,7 +3,7 @@
 import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { insertMention, matchTargets, mentionQuery, splitMentions, type MentionTarget } from "@/lib/sheet-mentions";
+import { insertMention, matchTargets, mentionQuery, splitMentions, withoutAt, type MentionTarget } from "@/lib/sheet-mentions";
 
 // Text mit anklickbaren @Namen (Link zum Profil des Charakters).
 export function MentionText({ text, targets, className }: { text: string; targets: MentionTarget[]; className?: string }) {
@@ -12,7 +12,7 @@ export function MentionText({ text, targets, className }: { text: string; target
       {splitMentions(text, targets).map((p, i) =>
         p.kind === "mention" ? (
           <Link key={i} href={`/characters/${p.target.id}`} className="font-medium text-accent underline-offset-2 hover:underline">
-            {p.text}
+            {withoutAt(p.text)}
           </Link>
         ) : (
           <span key={i}>{p.text}</span>

@@ -225,7 +225,7 @@ export default function HelpPage() {
           <li>Änderungen werden automatisch gespeichert, sobald alle Werte gültig sind. Ungültige Felder sind rot markiert, solange wird nicht gespeichert.</li>
           <li>Das Bild im ChaBo ist unabhängig vom Profilbild des Charakters.</li>
           <li>
-            Mit dem <strong>Schloss</strong> neben einer Zeile (persönliche Infos, Familie) oder einem Notiz-Block machst du sie <strong>geheim</strong>. Geheimes sieht nur du, niemand sonst in der Welt, auch nicht in der Ansicht oder im Verlauf.
+            Mit dem <strong>Schloss</strong> („Geheim halten“) neben einer Zeile (persönliche Infos, Familie) oder einem Notiz-Block machst du sie <strong>geheim</strong>. Geheimes sieht nur du, niemand sonst in der Welt, auch nicht in der Ansicht oder im Verlauf.
           </li>
           <li>
             Wer wann was am ChaBo geändert hat, steht in der Redaktion unter <strong>Verlauf</strong>, zum Beispiel „Hörnchen hat Mut bearbeitet 13 → 11“ und darunter der Name des Charakters.
@@ -235,7 +235,7 @@ export default function HelpPage() {
             In der Sektion <strong>Familie</strong> legst du eigene Zeilen an, zum Beispiel „Mutter“. Die Bezeichnung tippst du frei oder wählst einen Vorschlag.
           </li>
           <li>
-            In den persönlichen Infos, in der Familie und in den Notizen kannst du mit <strong>@</strong> Charaktere deiner Welt markieren. Tippe @ und wähle den Namen aus der Liste. In der Ansicht ist der Name ein Link zum Profil.
+            In den persönlichen Infos, in der Familie und in den Notizen kannst du mit <strong>@</strong> Charaktere deiner Welt markieren. Tippe @ und wähle den Namen aus der Liste. In der Ansicht steht nur der Name (ohne @) und ist ein Link zum Profil.
           </li>
           <li>Hattest du einen Bogen auf der alten Charakterbogen-Seite, übernimmst du ihn beim Bearbeiten mit „Aus altem Charakterbogen übernehmen“.</li>
         </ul>
