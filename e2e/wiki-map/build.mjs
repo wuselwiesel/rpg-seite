@@ -23,9 +23,14 @@ export async function updateWikiMap(id: string, input: any) { log({ rename: { id
 export async function deleteWikiMap(id: string) { log({ delMap: id }); return { ok: true }; }`,
 );
 
+fs.writeFileSync(path.join(out, "shim-dynamic.tsx"), `export default function dynamic() { return function Lazy(props: any) { return <div><button type="button" onClick={() => props.onPick("🦊")}>Katalog Fuchs</button><button type="button" onClick={() => props.onPick(":katze:")}>Katalog Katze</button></div>; }; }`);
+fs.writeFileSync(path.join(out, "stub-supabase.ts"), `export const createClient = () => ({});`);
+fs.writeFileSync(path.join(out, "stub-emoji-actions.ts"), `export async function createCustomEmoji() { return null; }`);
 const stubs = {
   name: "stubs",
   setup(b) {
+    b.onResolve({ filter: /supabase\/client$/ }, () => ({ path: path.join(out, "stub-supabase.ts") }));
+    b.onResolve({ filter: /profile\/emojis\/actions$/ }, () => ({ path: path.join(out, "stub-emoji-actions.ts") }));
     b.onResolve({ filter: /^\.\.\/actions$/ }, (a) => (a.importer.includes("karten") ? { path: path.join(out, "stub-actions.ts") } : undefined));
   },
 };
@@ -36,7 +41,7 @@ await build({
   outfile: path.join(out, "out.js"),
   format: "iife",
   jsx: "automatic",
-  alias: { "@": path.join(root, "src"), "next/link": path.join(out, "shim-link.tsx"), "next/navigation": path.join(out, "shim-nav.ts") },
+  alias: { "@": path.join(root, "src"), "next/link": path.join(out, "shim-link.tsx"), "next/navigation": path.join(out, "shim-nav.ts"), "next/dynamic": path.join(out, "shim-dynamic.tsx") },
   nodePaths: [path.join(root, "node_modules")],
   plugins: [stubs],
   banner: { js: "var process = { env: {} };" },
