@@ -136,10 +136,88 @@ const sum = (xs) => xs.reduce((s, x) => s + (Number(x) || 0), 0);
   check("in der Ansicht nicht vorhanden", (await page.getByRole("button", { name: "Attribute würfeln" }).count()) === 0 && (await page.getByRole("radio", { name: "Wild" }).count()) === 0);
   await ctx.close();
 }
-// 8. Layout: Desktop, Tablet, Handy ohne Überlauf und Überlappung
+// 8. Persönliche Angaben: Alles zufällig, Würfel je Zeile, Rückgängig, Wesen
+{
+  const { ctx, page, errors } = await fresh();
+  const rows = () =>
+    page.locator('input[aria-label="Bezeichnung"]').evaluateAll((labels) =>
+      labels.map((l) => {
+        const grid = l.parentElement;
+        const value = grid.querySelector('input[role="combobox"]');
+        return { label: l.value, value: value ? value.value : null, dice: Boolean(grid.querySelector('button[aria-label$="würfeln"]')) };
+      }),
+    );
+  const start = await rows();
+  check("Standardzeilen: Würfel nur bei erkannten Bezeichnungen", start.filter((r) => r.dice).map((r) => r.label).join() === "Vorname,Nachname,Spitzname,Alter,Wesen", JSON.stringify(start.map((r) => [r.label, r.dice])));
+  check("Rückgängig bei den Angaben anfangs gesperrt", await page.getByRole("button", { name: "Angaben rückgängig" }).isDisabled());
+  await page.getByRole("button", { name: "Alles zufällig würfeln" }).click();
+  const all = await rows();
+  const by = (l) => all.find((r) => r.label === l);
+  check("Vorname „Lyra“ bleibt, leere Felder sind gefüllt", by("Vorname").value === "Lyra" && ["Nachname", "Spitzname", "Alter", "Wesen"].every((l) => by(l).value?.trim()), JSON.stringify(all.map((r) => [r.label, r.value])));
+  check("Fehlende Felder wurden angelegt (Hobbys, Beruf, Eigenheiten, Aussehen)", ["Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Aussehen"].every((l) => by(l)?.value?.trim() && by(l).dice));
+  check("Titel und Rang bleiben leer, ohne Würfel", by("Titel").value === "" && !by("Titel").dice && by("Rang").value === "" && !by("Rang").dice);
+  const race = await page.locator("select").first().inputValue();
+  const wesen = by("Wesen").value;
+  check("Besondere Natur passt zum Wesen", ({ Mensch: "none", Werwolf: "werwolf", Vampir: "vampir" })[wesen] === race, `${wesen} / ${race}`);
+  await page.getByRole("button", { name: "Alles zufällig würfeln" }).click();
+  const again = await rows();
+  check("zweites „Alles zufällig“ ändert nichts mehr", JSON.stringify(again) === JSON.stringify(all));
+  await page.waitForTimeout(1300);
+  const saves = await page.evaluate(() => window.__saves);
+  const last = saves[saves.length - 1];
+  check("Angaben werden automatisch gespeichert", last && last.personalFields.some((f) => f.label === "Hobbys" && f.value) && last.personalFields.find((f) => f.label === "Vorname").value === "Lyra");
+  await page.getByRole("button", { name: "Angaben rückgängig" }).click();
+  check("Rückgängig stellt die Angaben vor „Alles zufällig“ wieder her (Zeilen, Werte)", JSON.stringify(await rows()) === JSON.stringify(start), JSON.stringify(await rows()));
+  check("…und die Besondere Natur samt Boni", (await page.locator("select").first().inputValue()) === "none" && (await page.locator('section[aria-label="Attribute"] li:has(span:text-is("GE"))').locator('input[min="-19"]').inputValue()) === "");
+  await ctx.close();
+  check("keine Seitenfehler", errors.length === 0, errors.join("|"));
+}
+{
+  const { ctx, page } = await fresh();
+  const spitz = page.locator('input[role="combobox"][aria-label="Spitzname"]');
+  const before = await spitz.inputValue();
+  check("Spitzname ist anfangs leer", before === "");
+  await page.getByRole("button", { name: "Spitzname würfeln" }).click();
+  const rolled = await spitz.inputValue();
+  check("Würfel in der Zeile füllt den Wert", rolled.trim().length > 0);
+  await page.getByRole("button", { name: "Angaben rückgängig" }).click();
+  check("Rückgängig leert ihn wieder", (await spitz.inputValue()) === "");
+  check("Rückgängig danach wieder gesperrt", await page.getByRole("button", { name: "Angaben rückgängig" }).isDisabled());
+  // Wesen-Würfel mehrmals: Natur und Wesen bleiben im Gleichschritt, Boni passen
+  let ok = true;
+  const seen = new Set();
+  for (let i = 0; i < 30; i++) {
+    await page.getByRole("button", { name: "Wesen würfeln" }).click();
+    const w = await page.locator('input[role="combobox"][aria-label="Wesen"]').inputValue();
+    seen.add(w);
+    const r = await page.locator("select").first().inputValue();
+    const ge = await page.locator('section[aria-label="Attribute"] li:has(span:text-is("GE"))').locator('input[min="-19"]').inputValue();
+    const want = ({ Mensch: ["none", ""], Werwolf: ["werwolf", "5"], Vampir: ["vampir", "5"] })[w];
+    if (!want || r !== want[0] || ge !== want[1]) ok = false;
+  }
+  check("Wesen-Würfel: Besondere Natur und Boni stimmen jedes Mal", ok, [...seen].join());
+  check("alle drei Wesen kamen vor", seen.size === 3);
+  await ctx.close();
+}
+// 9. Layout: Desktop, Tablet, Handy ohne Überlauf und Überlappung
 for (const [w, h] of [[1280, 800], [768, 900], [375, 800]]) {
   const { ctx, page } = await fresh("?gefuellt=1", { viewport: { width: w, height: h } });
+  await page.getByRole("button", { name: "Alles zufällig würfeln" }).click();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  const rowsOk = await page.evaluate(() => {
+    // Würfel liegt im Eingabefeld und überlappt weder Schloss noch Entfernen-Knopf
+    return [...document.querySelectorAll('button[aria-label$=" würfeln"]')].filter((b) => b.closest(".relative")).every((b) => {
+      const r = b.getBoundingClientRect();
+      const grid = b.closest(".grid");
+      if (!grid) return true;
+      const input = grid.querySelector('input[role="combobox"]').getBoundingClientRect();
+      const others = [...grid.querySelectorAll('button[aria-label="Geheim halten"], button[aria-label="Zeile entfernen"]')].map((o) => o.getBoundingClientRect());
+      const inside = r.left >= input.left - 1 && r.right <= input.right + 1;
+      const clash = others.some((o) => r.left < o.right - 1 && o.left < r.right - 1 && r.top < o.bottom - 1 && o.top < r.bottom - 1);
+      return inside && !clash;
+    });
+  });
+  check(`${w} px: Würfel in den Zeilen liegen im Feld, ohne Überlappung`, rowsOk);
   check(`${w} px: kein seitliches Scrollen`, overflow <= 0, String(overflow));
   const boxes = await page.evaluate(() => {
     const out = {};
