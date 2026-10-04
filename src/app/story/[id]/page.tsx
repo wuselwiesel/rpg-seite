@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SceneSummary } from "./scene-summary";
 import { recapToHtml } from "@/lib/recap-html";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter, getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
+import { getActiveCharacter, getMentionableCharacters, getOwnCharacters, getOwnNpcs } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { formatDateTime, timeAgoShort } from "@/lib/format";
@@ -76,7 +76,8 @@ export default async function StoryPostDetailPage({
     .returns<StoryEntry[]>();
 
   const mentionableCharacters = await getMentionableCharacters(user.id, storyPost.world_id);
-  const ownCharacters = await getOwnCharacters(user.id, storyPost.world_id);
+  // In Szenen schreibt man als eigener Charakter oder als eigener NPC (die Auswahl trennt beides)
+  const ownCharacters = [...(await getOwnCharacters(user.id, storyPost.world_id)), ...(await getOwnNpcs(user.id, storyPost.world_id))];
 
   const { data: myCharacters } = await supabase
     .from("characters")

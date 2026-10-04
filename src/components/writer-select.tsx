@@ -70,22 +70,34 @@ export function WriterSelect({
           aria-label={label}
           className="menu-pop absolute left-0 top-full z-30 mt-1 max-h-64 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-lg"
         >
-          {characters.map((c) => (
-            <li key={c.id} role="option" aria-selected={c.id === selected.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  onChange(c.id);
-                  setOpen(false);
-                }}
-                className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm text-fg transition hover:bg-surface-2 active:bg-surface-3"
-              >
-                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={28} />
-                <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                {c.id === selected.id && <Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.5} />}
-              </button>
-            </li>
-          ))}
+          {[
+            { key: "characters", title: "Charaktere", items: characters.filter((c) => !c.is_npc) },
+            { key: "npcs", title: "NPCs", items: characters.filter((c) => c.is_npc) },
+          ]
+            .filter((g) => g.items.length > 0)
+            .map((g, index, groups) => (
+              <li key={g.key} role="presentation">
+                {groups.length > 1 && <p className={`px-2.5 pb-1 text-xs text-muted ${index > 0 ? "pt-2" : "pt-0.5"}`}>{g.title}</p>}
+                <ul role="group" aria-label={g.title}>
+                  {g.items.map((c) => (
+                    <li key={c.id} role="option" aria-selected={c.id === selected.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onChange(c.id);
+                          setOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm text-fg transition hover:bg-surface-2 active:bg-surface-3"
+                      >
+                        <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={28} />
+                        <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                        {c.id === selected.id && <Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.5} />}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
         </ul>
       )}
     </div>

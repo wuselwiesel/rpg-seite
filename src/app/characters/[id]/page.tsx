@@ -22,6 +22,8 @@ import { PostMedia } from "@/components/post-media";
 import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
 import { BookOpen, Plus } from "lucide-react";
 import { getWikiPagesAboutCharacter } from "@/lib/wiki-characters";
+import { getCharacterAccess } from "@/lib/npc-data";
+import { NpcBadge } from "@/components/npc-badge";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { WikiTypesProvider } from "@/components/wiki-types-context";
 import { getWikiTypes } from "@/lib/wiki-data";
@@ -49,8 +51,11 @@ export default async function CharacterProfilePage({
   if (!character) notFound();
 
   const isOwnerView = character.owner_id === user.id;
+  // Bearbeiten (Profil, ChaBo, Geheimes): Besitzer:in, bei NPCs auch die Welt-Besitzerin
+  const canEdit = (await getCharacterAccess(character, user.id)).canEdit;
+  const isNpcProfile = character.is_npc === true;
   const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
-  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id, isOwnerView), getMentionableCharacters(user.id, character.world_id)]);
+  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id, canEdit), getMentionableCharacters(user.id, character.world_id)]);
   const listView = ansicht === "liste";
   const nowIso = new Date().toISOString();
 
@@ -220,16 +225,16 @@ export default async function CharacterProfilePage({
                 </Link>
               ) : (
                 <>
-                  {activeCharacter && activeWorld?.id === character.world_id && (
+                  {!isNpcProfile && activeCharacter && activeWorld?.id === character.world_id && (
                     <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
                   )}
-                  {canMessage && (
+                  {canMessage && !isNpcProfile && (
                     <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                       <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
                       Nachricht
                     </Link>
                   )}
-                  {isOwn && (
+                  {canEdit && (
                     <Link href={`/characters/${character.id}/edit`} aria-label="Bearbeiten" className={`${buttonBase} flex-none bg-surface-2 text-fg hover:bg-surface-3`}>
                       <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                     </Link>
@@ -240,6 +245,7 @@ export default async function CharacterProfilePage({
           </div>
 
           <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}
+            {isNpcProfile && <NpcBadge className="ml-2" />}
             {character.name_symbol && (
               <span className="ml-1.5 inline-block align-middle" >
                 <EmojiText text={character.name_symbol} />
@@ -318,15 +324,15 @@ export default async function CharacterProfilePage({
             </Link>
           ) : (
             <>
-              {activeCharacter && activeWorld?.id === character.world_id && (
+              {!isNpcProfile && activeCharacter && activeWorld?.id === character.world_id && (
                 <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
               )}
-              {canMessage && (
+              {canMessage && !isNpcProfile && (
                 <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                   Nachricht
                 </Link>
               )}
-              {isOwn && (
+              {canEdit && (
                 <Link href={`/characters/${character.id}/edit`} aria-label="Bearbeiten" className={`${buttonBase} flex-none bg-surface-2 text-fg hover:bg-surface-3`}>
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                 </Link>
@@ -394,7 +400,7 @@ export default async function CharacterProfilePage({
           {[
             { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
             { id: "tagged", label: "Getaggt", icon: AtSign, show: true },
-            { id: "chabo", label: "ChaBo", icon: IdCard, show: Boolean(sheet) || isOwnerView },
+            { id: "chabo", label: "ChaBo", icon: IdCard, show: Boolean(sheet) || canEdit },
             { id: "scheduled", label: "Geplant", icon: Clock, show: isOwnerView },
           ]
             .filter((t) => t.show)
@@ -417,7 +423,7 @@ export default async function CharacterProfilePage({
 
         {tab === "chabo" ? (
           <div className="px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
-            <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwnerView} mentionCharacters={mentionCharacters} variant="panel" />
+            <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} variant="panel" />
           </div>
         ) : (
           <>
