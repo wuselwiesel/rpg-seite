@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { useAppMode } from "@/components/mode-context";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -23,7 +23,7 @@ export function SidebarNav({
 }) {
   const pathname = usePathname();
   const mode = useAppMode();
-  const inWiki = pathname?.startsWith("/wiki");
+  const inWiki = pathname?.startsWith("/wiki") || pathname?.startsWith("/characters/relationships");
 
   if (mode === "redaktion") {
     return (
@@ -61,11 +61,8 @@ export function SidebarNav({
           <NavLink href="/story" icon={<BookOpen className={ICON} strokeWidth={2} />} exclude="/story/wuerfe">
             Story
           </NavLink>
-          <NavLink href="/wiki" icon={<Library className={ICON} strokeWidth={2} />}>
+          <NavLink href="/wiki" icon={<Library className={ICON} strokeWidth={2} />} also={["/characters/relationships"]}>
             Wiki
-          </NavLink>
-          <NavLink href="/characters/relationships" icon={<Network className={ICON} strokeWidth={2} />}>
-            Beziehungen
           </NavLink>
           <NavLink href="/story/wuerfe" icon={<Dices className={ICON} strokeWidth={2} />}>
             Würfelverlauf
