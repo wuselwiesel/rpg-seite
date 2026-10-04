@@ -390,7 +390,7 @@ export default async function CharacterProfilePage({
         <CharacterTimeline character={character} />
         </div>
 
-        <div className="mt-6 flex justify-center gap-2 border-t border-line sm:gap-6">
+        <div className="mt-6 flex justify-center gap-0.5 border-t border-line sm:gap-6">
           {[
             { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
             { id: "tagged", label: "Getaggt", icon: AtSign, show: true },
@@ -405,11 +405,11 @@ export default async function CharacterProfilePage({
                 replace
                 scroll={false}
                 aria-current={tab === tabId ? "page" : undefined}
-                className={`-mt-px flex items-center gap-1.5 border-t px-4 py-3 text-xs font-semibold uppercase tracking-widest transition ${
+                className={`-mt-px flex items-center gap-1.5 border-t px-2.5 py-3 text-[11px] font-semibold uppercase tracking-wider transition sm:px-4 sm:text-xs sm:tracking-widest ${
                   tab === tabId ? "border-fg text-fg" : "border-transparent text-muted hover:text-fg-soft"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                <Icon className="hidden h-3.5 w-3.5 sm:block" strokeWidth={2} />
                 {label}
               </Link>
             ))}

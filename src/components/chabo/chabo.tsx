@@ -58,8 +58,9 @@ const ATTR_COLOR: Record<string, string> = {
 const card = "flex flex-col gap-6 rounded-2xl border border-line bg-surface p-5 @xl:p-8";
 const numInput =
   "w-full min-w-0 rounded-lg border border-line bg-app px-2 py-2 text-center text-base text-fg outline-none focus:border-accent aria-[invalid=true]:border-red-500";
-// Spalten der Talent-Tabelle: Name, Basis, Bonus, Gesamt (schmal am Handy, breiter ab mittlerer Breite)
-const talentGrid = "grid grid-cols-[minmax(0,1fr)_2.5rem_4rem_3rem] items-center gap-x-3 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
+// Spalten der Talent-Tabelle: Name, Basis, Bonus, Gesamt. Am Handy schmal (in der Ansicht noch schmaler als beim Bearbeiten), ab mittlerer Breite großzügig.
+const talentGridView = "grid grid-cols-[minmax(0,1fr)_2.25rem_2.75rem_3rem] items-center gap-x-2.5 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
+const talentGridEdit = "grid grid-cols-[minmax(0,1fr)_2.25rem_3.75rem_3rem] items-center gap-x-2.5 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
 const textInput = "w-full rounded-lg border border-line bg-app px-3 py-2.5 text-sm text-fg outline-none focus:border-accent";
 
 type Status = { kind: "idle" } | { kind: "pending" } | { kind: "saved" } | { kind: "invalid" } | { kind: "error"; message: string };
@@ -481,7 +482,7 @@ export function Chabo({
           )}
         </div>
         <div className="flex flex-col">
-          <div className={`${talentGrid} border-b border-line pb-2 text-xs font-medium text-muted`}>
+          <div className={`${editing ? talentGridEdit : talentGridView} border-b border-line pb-2 text-xs font-medium text-muted`}>
             <span>Talent</span>
             <span className="text-center">Basis</span>
             <span className="text-center">Bonus</span>
@@ -492,9 +493,9 @@ export function Chabo({
               const names = t.attrs.map((c) => attrs.find((a) => a.code === c));
               const calc = t.basis == null ? "Noch nicht berechenbar" : `(${names[0]?.total} + ${names[1]?.total}) ÷ 2 = ${t.basis}`;
               return (
-                <li key={t.slug} className={`${talentGrid} border-b border-line py-3.5 last:border-0`}>
+                <li key={t.slug} className={`${editing ? talentGridEdit : talentGridView} border-b border-line py-3.5 last:border-0`}>
                   <div className="min-w-0">
-                    <p className="text-[15px] leading-snug text-fg">{t.name}</p>
+                    <p className="text-[15px] leading-snug text-fg [overflow-wrap:anywhere] hyphens-auto">{t.name}</p>
                     <p className="text-xs text-muted">
                       {names[0]?.name} + {names[1]?.name}
                     </p>

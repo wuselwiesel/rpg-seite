@@ -250,8 +250,8 @@ export default function HelpPage() {
           <ul className="divide-y divide-line">
             {TALENT_LIST.map((name) => (
               <li key={name} className="grid grid-cols-2 gap-2 px-4 py-2 text-sm">
-                <span className="text-fg">{name}</span>
-                <span className="text-fg-soft">{TALENT_ATTRS[name].map((c) => nameByCode.get(c)).join(" + ")}</span>
+                <span className="text-fg [overflow-wrap:anywhere]">{name}</span>
+                <span className="text-fg-soft [overflow-wrap:anywhere]">{TALENT_ATTRS[name].map((c) => nameByCode.get(c)).join(" + ")}</span>
               </li>
             ))}
           </ul>

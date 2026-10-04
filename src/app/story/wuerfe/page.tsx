@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
-import { DeleteRollButton } from "./delete-roll-button";
+import { RollRow } from "./roll-row";
 
 const PAGE_SIZE = 40;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
@@ -119,11 +119,7 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
       ) : (
         <ul className="flex flex-col gap-2">
           {rolls.map((r) => (
-            <li key={r.id} className="relative">
-              <Link
-                href={`/story/${r.story_post_id}#beitrag-${r.id}`}
-                className={`flex items-start gap-3 rounded-2xl border border-line bg-surface p-3.5 transition hover:border-accent/50 hover:bg-surface-2/50 ${r.characters?.owner_id === user.id ? "pr-24" : ""}`}
-              >
+            <RollRow key={r.id} entryId={r.id} storyPostId={r.story_post_id} mine={r.characters?.owner_id === user.id}>
                 <CharacterAvatar name={r.characters?.name ?? "?"} avatarUrl={r.characters?.avatar_url} size={40} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
@@ -166,17 +162,11 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
                       </span>
                     )}
                   </span>
-                  <span className="truncate text-xs text-muted">
+                  <span className="break-words text-xs text-muted">
                     {r.story_posts?.title} · {formatDateTime(r.created_at)}
                   </span>
                 </span>
-              </Link>
-              {r.characters?.owner_id === user.id && (
-                <div className="absolute right-3 top-3">
-                  <DeleteRollButton entryId={r.id} storyPostId={r.story_post_id} />
-                </div>
-              )}
-            </li>
+            </RollRow>
           ))}
         </ul>
       )}
