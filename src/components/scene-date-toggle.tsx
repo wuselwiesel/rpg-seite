@@ -39,7 +39,6 @@ export function SceneDateToggle({ storyPostId, dates, calendar }: { storyPostId:
 
   return (
     <form onSubmit={save} className="mt-1 flex w-full flex-col gap-3 rounded-xl border border-line bg-surface p-3">
-      <p className="text-xs text-muted">Datum im Kalender der Welt. Leere Felder entfernen das Datum.</p>
       <EventDateRange calendar={calendar} dates={dates} />
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className="rounded-md bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong disabled:opacity-50">

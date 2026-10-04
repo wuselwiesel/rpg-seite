@@ -123,7 +123,6 @@ export function NewStoryPostForm({
       <details className="rounded-lg border border-line bg-surface px-3 py-2">
         <summary className="cursor-pointer text-sm text-fg-soft">Datum im Kalender der Welt (optional, für die Zeitleiste)</summary>
         <div className="mt-3 flex flex-col gap-3">
-          <p className="text-xs text-muted">Mit Datum erscheint die Szene auf der Zeitleiste im Wiki, zwischen den Ereignissen der Welt. Das Jahr genügt.</p>
           <EventDateRange calendar={calendar} dates={{ start: null, end: null }} />
         </div>
       </details>

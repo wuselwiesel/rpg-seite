@@ -193,13 +193,6 @@ export function WikiForm({
       <section className={card}>
         <div>
           <h2 className="font-serif text-xl text-fg">Zeitpunkt (optional)</h2>
-          <p className="text-sm text-muted">
-            Wann spielt das? Das Jahr genügt, Monat und Tag sind freiwillig. Datierte Seiten erscheinen in der Zeitleiste und im Kalender (
-            <Link href="/wiki/kalender" className="text-accent underline underline-offset-2">
-              Kalender der Welt
-            </Link>
-            ).
-          </p>
         </div>
         <EventDateRange calendar={calendar} dates={dates} labels={{ start: page?.event_label ?? null, end: page?.event_end_label ?? null }} type={pageType} />
       </section>

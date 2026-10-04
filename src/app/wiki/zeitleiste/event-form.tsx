@@ -44,7 +44,6 @@ export function TimelineEventForm({ calendar, eventType }: { calendar: WikiCalen
       {eventType && <input type="hidden" name="page_type" value={eventType} />}
       <div>
         <h2 className="font-serif text-xl text-fg">Neues Ereignis</h2>
-        <p className="text-sm text-muted">Es wird als Wiki-Seite angelegt. Den ausführlichen Text kannst du dort später ergänzen.</p>
       </div>
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Titel

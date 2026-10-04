@@ -60,7 +60,6 @@ export function SceneMeta({
           />
         </div>
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-muted">Datum im Kalender der Welt: Mit Datum steht die Szene auf der Zeitleiste im Wiki.</p>
           <EventDateRange calendar={calendar} dates={dates} />
         </div>
         <div className="flex items-center gap-2">

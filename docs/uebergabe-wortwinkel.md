@@ -4,6 +4,7 @@ Von: Agent A (Sitzung im Ordner `~/Desktop/coding`) und Agent B (Branch `claude/
 Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind v4, Vercel. Sprache der App und aller Antworten an die Nutzerin: **Deutsch**.
 
 ## Regeln der Nutzerin
+- **Keine Erklärtexte in der Oberfläche** (Beschreibungen unter Überschriften, Hilfetexte, Hinweiszeilen); nur Beschriftungen, Platzhalter und Fehlermeldungen. Erklärungen nur, wenn die Nutzerin sie ausdrücklich will (3. Oktober 2026).
 - Verifizierte Änderungen ohne Rückfrage committen und pushen. Danach Vercel-Status prüfen: `gh api repos/wuselwiesel/rpg-seite/commits/<sha>/status --jq .state`.
 - Supabase-Migrationen führt der Agent selbst im SQL-Editor des Browser-Panes aus (Projekt `vdflmmdmezaersrssdci`; die Nutzerin loggt sich selbst ein, nie Zugangsdaten tippen). Danach per `pg_policies` / `pg_get_constraintdef` prüfen. `supabase/schema.sql` ist ein Append-only-Log: neue Blöcke vor das abschließende `notify pgrst, 'reload schema'` setzen.
 - Testaccount für localhost:3000: `logotestuser` (Welt „Testwelt“); das Passwort steht bewusst nicht im Repo, sondern in der Agent-Memory bzw. bei der Nutzerin.

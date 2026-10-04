@@ -204,10 +204,6 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
           <Clock className="h-8 w-8 text-accent" strokeWidth={1.5} />
           Zeitleiste
         </h1>
-        <p className="max-w-prose text-fg-soft">
-          Die Geschichte der Welt und die Szenen der Story auf einer Achse, von früh nach spät. Das Datum trägst du bei einer Wiki-Seite im Abschnitt „Zeitpunkt“ ein, bei einer
-          Szene unter „Ort und Zeit“.
-        </p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <Link href="/wiki/kalender" className="flex items-center gap-1.5 text-accent hover:underline">
             <CalendarDays className="h-4 w-4" strokeWidth={2} />
@@ -269,7 +265,6 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
           )}
         </form>
         </details>
-        {type && source !== "szenen" && <p className="text-xs text-muted">Mit einer Art der Seite werden Szenen ausgeblendet.</p>}
       </div>
 
       {sections.length === 0 ? (
