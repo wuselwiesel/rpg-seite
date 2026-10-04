@@ -54,7 +54,7 @@ const card = "flex flex-col gap-6 rounded-2xl border border-line bg-surface p-5 
 const numInput =
   "w-full min-w-0 rounded-lg border border-line bg-app px-2 py-2 text-center text-base text-fg outline-none focus:border-accent aria-[invalid=true]:border-red-500";
 // Spalten der Talent-Tabelle: Name, Basis, Bonus, Gesamt (schmal am Handy, breiter ab mittlerer Breite)
-const talentGrid = "grid grid-cols-[minmax(0,1fr)_2.5rem_4rem_2.75rem] items-center gap-x-3 gap-y-2 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4rem] @xl:gap-x-5";
+const talentGrid = "grid grid-cols-[minmax(0,1fr)_2.5rem_4rem_3rem] items-center gap-x-3 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
 const textInput = "w-full rounded-lg border border-line bg-app px-3 py-2.5 text-sm text-fg outline-none focus:border-accent";
 
 type Status = { kind: "idle" } | { kind: "pending" } | { kind: "saved" } | { kind: "invalid" } | { kind: "error"; message: string };
@@ -408,28 +408,30 @@ export function Chabo({
               const names = t.attrs.map((c) => attrs.find((a) => a.code === c));
               const calc = t.basis == null ? "Noch nicht berechenbar" : `(${names[0]?.total} + ${names[1]?.total}) ÷ 2 = ${t.basis}`;
               return (
-                <li key={t.slug} className={`${talentGrid} border-b border-line py-3 last:border-0`}>
+                <li key={t.slug} className={`${talentGrid} border-b border-line py-3.5 last:border-0`}>
                   <div className="min-w-0">
                     <p className="text-[15px] leading-snug text-fg">{t.name}</p>
                     <p className="text-xs text-muted">
                       {names[0]?.name} + {names[1]?.name}
                     </p>
                   </div>
-                  <span className="text-center text-sm text-fg-soft" title={calc}>
+                  <span className="text-center text-base text-fg-soft" title={calc}>
                     {t.basis ?? "–"}
                   </span>
                   {editing ? (
                     <input type="number" inputMode="numeric" min={TALENT_BONUS_MIN} max={TALENT_BONUS_MAX} value={data.talentBonus[t.slug] ?? ""} placeholder="0" aria-label={`Bonus ${t.name}`} aria-invalid={Boolean(errors.talentBonus[t.slug])} title={errors.talentBonus[t.slug]} onChange={(e) => setTalentBonus(t.slug, e.target.value)} className={numInput} />
                   ) : (
-                    <span className={`text-center text-sm ${t.bonus ? "font-medium text-accent" : "text-muted"}`}>{t.bonus ? `${t.bonus > 0 ? "+" : "−"}${Math.abs(t.bonus)}` : "–"}</span>
+                    <span className={`text-center text-base ${t.bonus ? "font-medium text-accent" : "text-muted"}`}>{t.bonus ? `${t.bonus > 0 ? "+" : "−"}${Math.abs(t.bonus)}` : "–"}</span>
                   )}
-                  <span className="text-right font-serif text-2xl text-fg" title={t.capped ? `Auf ${TALENT_BONUS_MAX} gedeckelt` : undefined}>
-                    {t.total ?? "–"}
-                    {t.capped && "*"}
+                  <span className="flex justify-end">
+                    <span
+                      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-xl px-2 font-serif text-2xl ${t.total == null ? "text-muted" : "bg-surface-2 text-fg"}`}
+                      title={t.capped ? `Auf ${TALENT_BONUS_MAX} gedeckelt` : undefined}
+                    >
+                      {t.total ?? "–"}
+                      {t.capped && <span className="text-sm text-muted">*</span>}
+                    </span>
                   </span>
-                  <div className="col-span-4 h-1.5 overflow-hidden rounded-full bg-surface-3">
-                    <div className="h-full rounded-full bg-accent/70" style={{ width: `${((t.total ?? 0) / TALENT_BONUS_MAX) * 100}%` }} />
-                  </div>
                 </li>
               );
             })}
