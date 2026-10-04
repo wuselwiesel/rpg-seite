@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ExternalLink, MessageCircle, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { OnlineAnyDot } from "@/components/online-status";
 import { getBubbleChats, getBubbleUnread, type BubbleChat, type BubbleData } from "@/app/bubble-actions";
 import { chatTime } from "@/lib/chat-preview";
 import { CharacterAvatar } from "./character-avatar";
@@ -367,7 +368,10 @@ function BubbleInner({
             <div className="min-w-0 flex-1">
               {view && current ? (
                 <div className="flex items-center gap-2">
-                  <CharacterAvatar name={current.title} avatarUrl={current.avatarUrl} size={28} />
+                  <span className="relative shrink-0">
+                    <CharacterAvatar name={current.title} avatarUrl={current.avatarUrl} size={28} />
+                    <OnlineAnyDot userIds={current.otherUserIds} overlay />
+                  </span>
                   <span className="truncate text-sm font-semibold text-fg">{current.title}</span>
                 </div>
               ) : (
@@ -463,7 +467,10 @@ function BubbleInner({
                       onClick={() => openChat(c.kind, c.id)}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-surface-2"
                     >
-                      <CharacterAvatar name={c.title} avatarUrl={c.avatarUrl} size={42} />
+                      <span className="relative shrink-0">
+                        <CharacterAvatar name={c.title} avatarUrl={c.avatarUrl} size={42} />
+                        <OnlineAnyDot userIds={c.otherUserIds} overlay />
+                      </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline gap-2">
                           <span className={`min-w-0 flex-1 truncate text-sm text-fg ${unread ? "font-semibold" : "font-medium"}`}>

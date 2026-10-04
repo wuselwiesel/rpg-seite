@@ -17,6 +17,8 @@ export type BubbleChat = {
   lastAt: string | null;
   lastMine: boolean;
   unread: number;
+  // Accounts der anderen Seite (für die Online-Anzeige)
+  otherUserIds: string[];
 };
 
 export type BubbleCharacter = { id: string; name: string; avatarUrl: string | null };
@@ -41,6 +43,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
     lastAt: c.lastMessage?.created_at ?? null,
     lastMine: c.lastMessage?.sender_id === user.id,
     unread: c.unread,
+    otherUserIds: c.partner ? [c.partner.id] : [],
   }));
 
   let activeCharacterId: string | null = null;
@@ -58,7 +61,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
       const [{ data: rpChats }, unread, { data: recent }] = await Promise.all([
         supabase
           .from("chats")
-          .select("id, name, is_group, avatar_url, created_at, chat_participants(characters(id, name, avatar_url))")
+          .select("id, name, is_group, avatar_url, created_at, chat_participants(characters(id, name, avatar_url, owner_id))")
           .in("id", ids)
           .returns<
             {
@@ -67,7 +70,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
               is_group: boolean;
               avatar_url: string | null;
               created_at: string;
-              chat_participants: { characters: Pick<Character, "id" | "name" | "avatar_url"> }[];
+              chat_participants: { characters: Pick<Character, "id" | "name" | "avatar_url" | "owner_id"> }[];
             }[]
           >(),
         getUnreadCounts(user.id, own.map((c) => c.id), active.id),
@@ -92,6 +95,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
           lastAt: l?.created_at ?? c.created_at,
           lastMine: l?.character_id === active.id,
           unread: unread[c.id] ?? 0,
+          otherUserIds: [...new Set(others.map((o) => o.owner_id).filter((id) => id !== user.id))],
         });
       }
     }

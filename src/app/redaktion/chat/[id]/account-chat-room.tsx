@@ -13,6 +13,8 @@ import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
+import { useTyping } from "@/lib/use-typing";
+import { TypingLine } from "@/components/typing-line";
 
 export type { AccountMessage };
 
@@ -43,6 +45,7 @@ export function AccountChatRoom({
 }) {
   const { messages, partnerRead, error, send, edit, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
   const [draft, setDraft] = useState("");
+  const typing = useTyping(`account-typing-${chatId}`, userId, "");
   const enterSends = useEnterSends();
   const [muted, setMuted] = useState(initialMuted);
   const [theme, setTheme] = useState(initialTheme);
@@ -55,7 +58,14 @@ export function AccountChatRoom({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [messages.length]);
+  }, [messages.length, typing.names.length]);
+
+  // Kommt eine Nachricht vom Gegenüber an, tippt die Person nicht mehr
+  const lastIncomingId = [...messages].reverse().find((m) => m.sender_id !== userId)?.id;
+  const clearTyping = typing.clear;
+  useEffect(() => {
+    clearTyping();
+  }, [lastIncomingId, clearTyping]);
 
   function submit() {
     const text = draft;
@@ -212,6 +222,7 @@ export function AccountChatRoom({
               </div>
             );
           })}
+          <TypingLine names={typing.names.length ? [partnerName] : []} className="px-1 pt-1" />
         </div>
         <div ref={bottomRef} />
       </div>
@@ -234,7 +245,10 @@ export function AccountChatRoom({
           value={draft}
           rows={1}
           maxLength={4000}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (e.target.value) typing.announce();
+          }}
           onKeyDown={(e) => {
             if (isSendKey(e, enterSends)) {
               e.preventDefault();

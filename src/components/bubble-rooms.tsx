@@ -11,6 +11,8 @@ import { messagePreview } from "@/lib/chat-preview";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
+import { useTyping } from "@/lib/use-typing";
+import { TypingLine } from "@/components/typing-line";
 
 // Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
 function useChatThemeStyle(kind: "account" | "rp", chatId: string, userId: string) {
@@ -51,11 +53,15 @@ function MiniThread({
   onSend,
   onEdit,
   onDelete,
+  typingNames = [],
+  onTyping,
 }: {
   items: ThreadItem[];
   error: string | null;
   showNames: boolean;
   onSend: (text: string) => void;
+  typingNames?: string[];
+  onTyping?: () => void;
   onEdit?: (id: string, text: string) => void;
   onDelete?: (id: string) => void;
 }) {
@@ -68,7 +74,7 @@ function MiniThread({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [items.length]);
+  }, [items.length, typingNames.length]);
 
   function submit() {
     if (!draft.trim()) return;
@@ -176,6 +182,7 @@ function MiniThread({
               </div>
             );
           })}
+          <TypingLine names={typingNames} className="px-1" />
         </div>
         <div ref={bottomRef} />
       </div>
@@ -199,7 +206,10 @@ function MiniThread({
           value={draft}
           rows={1}
           maxLength={4000}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (e.target.value) onTyping?.();
+          }}
           onKeyDown={(e) => {
             if (isSendKey(e, enterSends)) {
               e.preventDefault();
@@ -239,6 +249,12 @@ function AccountThread({
     initial,
     null,
   );
+  const typing = useTyping(`account-typing-${chatId}`, userId, "");
+  const clearTyping = typing.clear;
+  const lastIncomingId = [...messages].reverse().find((m) => m.sender_id !== userId)?.id;
+  useEffect(() => {
+    clearTyping();
+  }, [lastIncomingId, clearTyping]);
   const items: ThreadItem[] = messages.map((m) => ({
     id: m.id,
     mine: m.sender_id === userId,
@@ -252,6 +268,8 @@ function AccountThread({
       items={items}
       error={error}
       showNames={false}
+      typingNames={typing.names.length ? [""] : []}
+      onTyping={typing.announce}
       onSend={(t) => void send(t)}
       onEdit={(id, t) => void edit(id, t)}
       onDelete={(id) => void remove(id)}
@@ -323,6 +341,7 @@ function RpThread({
 }) {
   const [rows, setRows] = useState(initial);
   const [error, setError] = useState<string | null>(null);
+  const typing = useTyping(`chat-${chatId}`, activeCharacterId, people[activeCharacterId]?.name ?? "");
 
   useEffect(() => {
     const supabase = createClient();
@@ -414,6 +433,8 @@ function RpThread({
       items={items}
       error={error}
       showNames={Object.keys(people).length > 2}
+      typingNames={typing.names}
+      onTyping={typing.announce}
       onSend={(t) => void send(t)}
     />
   );

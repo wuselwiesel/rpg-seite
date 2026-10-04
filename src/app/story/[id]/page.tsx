@@ -27,6 +27,8 @@ import { SceneDateToggle } from "@/components/scene-date-toggle";
 import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
+import { OnlineMembers } from "@/components/online-members";
+import { getWorldMembers } from "@/lib/world-members";
 
 export default async function StoryPostDetailPage({
   params,
@@ -52,6 +54,7 @@ export default async function StoryPostDetailPage({
   if (!storyPost) notFound();
 
   const activeCharacter = await getActiveCharacter(user.id, storyPost.world_id);
+  const worldMembers = await getWorldMembers(storyPost.world_id);
 
   // Aus einer Benachrichtigung ("… wartet auf dich"): zum angesprochenen Charakter wechseln.
   if (typeof asCharacterId === "string" && asCharacterId !== activeCharacter?.id) {
@@ -151,6 +154,7 @@ export default async function StoryPostDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl px-4 py-10">
+      <OnlineMembers members={worldMembers} selfId={user.id} className="-mt-6 mb-2 flex justify-end" />
       <article className="mb-8 rounded-lg border border-line bg-surface p-6">
         <StoryPostControls
           storyPostId={storyPost.id}

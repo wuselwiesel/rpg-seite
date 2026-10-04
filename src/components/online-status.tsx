@@ -219,3 +219,19 @@ export function OnlineCount({ userIds, selfId, className = "" }: { userIds: stri
     </span>
   );
 }
+
+// Punkt auf dem Bild einer Chat-Zeile: bei einer Person ihr Status (Punkt oder Emoji), bei mehreren ein Punkt, sobald jemand online ist
+export function OnlineAnyDot({ userIds, overlay = false }: { userIds: string[]; overlay?: boolean }) {
+  const { enabled, onlineIds } = useOnline();
+  if (!enabled) return null;
+  if (userIds.length === 1) return <OnlineDot userId={userIds[0]} overlay={overlay} />;
+  if (!userIds.some((id) => onlineIds.has(id))) return null;
+  return (
+    <span
+      role="img"
+      aria-label="Online"
+      title="Online"
+      className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 ${overlay ? "absolute bottom-0 right-0 box-content h-3 w-3 border-2 border-app" : ""}`}
+    />
+  );
+}
