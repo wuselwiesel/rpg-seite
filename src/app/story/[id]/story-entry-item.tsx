@@ -3,7 +3,8 @@
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import { Clover, Dices, Pencil, Trash2, Type } from "lucide-react";
-import { updateStoryEntry, deleteStoryEntry, updateChapter } from "../actions";
+import { useRouter } from "next/navigation";
+import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene } from "../actions";
 import { EventDateFields } from "@/components/event-date-fields";
 import { formatDate, type WikiCalendar } from "@/lib/wiki-calendar";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -46,7 +47,19 @@ export function StoryEntryItem({
     wasPending.current = pending;
   }, [pending, error]);
 
+  const router = useRouter();
   const [chapterEditing, setChapterEditing] = useState(false);
+  const [splitting, setSplitting] = useState(false);
+
+  async function splitChapter() {
+    if (!confirm("Dieses Kapitel zur eigenen Szene machen? Die Beiträge ab hier ziehen in die neue Szene um, die alte Szene wird abgeschlossen.")) return;
+    setSplitting(true);
+    const result = await chapterToScene(entry.id, storyPostId);
+    if ("error" in result) {
+      setSplitting(false);
+      alert(result.error);
+    } else router.push(`/story/${result.id}`);
+  }
   const [chapterError, setChapterError] = useState<string | null>(null);
   const [chapterPending, setChapterPending] = useState(false);
 
@@ -123,6 +136,16 @@ export function StoryEntryItem({
                 className="text-xs text-muted transition hover:text-fg md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
               >
                 Kapitel bearbeiten
+              </button>
+            )}
+            {canEditChapter && (
+              <button
+                type="button"
+                onClick={splitChapter}
+                disabled={splitting}
+                className="text-xs text-muted transition hover:text-fg disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+              >
+                {splitting ? "Wandle um..." : "Als eigene Szene"}
               </button>
             )}
             {canManage && (

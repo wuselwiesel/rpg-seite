@@ -461,6 +461,24 @@ export async function updateChapter(entryId: string, storyPostId: string, formDa
   return null;
 }
 
+// Ältere Kapitel-Marke in einer Szene zur eigenen Szene machen (RPC chapter_to_scene): Name und Datum des Kapitels werden Titel und Datum der
+// neuen Szene, die Beiträge nach der Marke ziehen um, die alte Szene wird abgeschlossen.
+export async function chapterToScene(entryId: string, storyPostId: string): Promise<{ error: string } | { id: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { data, error } = await supabase.rpc("chapter_to_scene", { p_entry: entryId });
+  if (error || !data) return { error: error?.message === "Keine Berechtigung" ? "Das dürfen nur die Autor:in der Szene, die Schreibende des Kapitels und die Welt-Besitzer:in." : (error?.message ?? "Umwandeln hat nicht geklappt.") };
+  revalidatePath("/story");
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath(`/story/${data}`);
+  revalidatePath("/wiki/zeitleiste");
+  revalidatePath("/wiki/kalender");
+  return { id: data as string };
+}
+
 // Die vorherige Szene (Kapitel-Verknüpfung) nachträglich ändern oder lösen (null). Das dürfen die Autor:in und die Welt-Besitzer:in.
 export async function setPreviousScene(storyPostId: string, previousId: string | null): Promise<string | null> {
   const supabase = await createClient();
