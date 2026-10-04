@@ -20,10 +20,15 @@ export async function renameWikiFolder() { return null; }
 export async function deleteWikiFolder() { return null; }`,
 );
 
+fs.writeFileSync(path.join(out, "stub-world-actions.ts"), `export async function setActiveWorld() { return null; }\nexport async function followWorld() { return null; }\nexport async function unfollowWorld() { return null; }`);
+fs.writeFileSync(path.join(out, "stub-emoji-actions.ts"), `export async function createCustomEmoji() { return null; }\nexport async function deleteCustomEmoji() { return null; }`);
+
 // Server-Aktionen des Wikis durch Platzhalter ersetzen.
 const stubServerActions = {
   name: "stub-wiki-actions",
   setup(b) {
+    b.onResolve({ filter: /worlds\/actions$/ }, () => ({ path: path.join(out, "stub-world-actions.ts") }));
+    b.onResolve({ filter: /profile\/emojis\/actions$/ }, () => ({ path: path.join(out, "stub-emoji-actions.ts") }));
     b.onResolve({ filter: /^\.\/(folder-actions|actions)$/ }, (args) =>
       args.importer.includes(path.join("src", "app", "wiki")) ? { path: path.join(out, "stub-actions.ts") } : undefined,
     );

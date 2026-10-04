@@ -21,7 +21,7 @@ async function fresh(opts = {}) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.goto(url);
-  await page.getByRole("button", { name: "Alle aufklappen" }).click();
+  await page.getByRole("button", { name: "Alle Ordner aufklappen" }).click();
   const moves = () => page.evaluate(() => window.__moves);
   const row = (text) => page.locator('[role="treeitem"] > div', { hasText: text }).first();
   return { ctx, page, errors, moves, row };
