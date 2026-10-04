@@ -42,8 +42,62 @@ export function StoryEntryForm({
   const wasPending = useRef(false);
   const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
 
+  // Wie im Chat: Nach dem Senden bleibt das Schreibfeld an derselben Stelle auf dem Bildschirm (die neue Nachricht schiebt sich darüber),
+  // die Seite springt nicht nach oben, und man kann gleich weiterschreiben. Sobald man selbst scrollt, hört das auf.
+  const stopKeeping = useRef<(() => void) | null>(null);
+  function keepInPlace() {
+    const form = formRef.current;
+    if (!form) return;
+    const startTop = form.getBoundingClientRect().top;
+    if (startTop < 0 || startTop > window.innerHeight) return;
+    stopKeeping.current?.();
+    const started = performance.now();
+    let raf = 0;
+    // Die Höhe der Seite ändert sich, wenn die neue Nachricht erscheint: gleich vor dem Zeichnen nachziehen, damit nichts flackert.
+    const observer = new ResizeObserver(() => correct());
+    const stop = () => {
+      observer.disconnect();
+      cancelAnimationFrame(raf);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchmove", stop);
+      stopKeeping.current = null;
+    };
+    stopKeeping.current = stop;
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchmove", stop, { passive: true });
+    function correct() {
+      const el = formRef.current;
+      if (!el) return;
+      const diff = el.getBoundingClientRect().top - startTop;
+      if (Math.abs(diff) > 1) window.scrollBy(0, diff);
+    }
+    observer.observe(document.body);
+    const tick = () => {
+      if (!formRef.current || performance.now() - started > 4000) return stop();
+      correct();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+  useEffect(() => () => stopKeeping.current?.(), []);
+
+  // Nach dem Zurücksetzen steht der Cursor sofort wieder im Schreibfeld
+  useEffect(() => {
+    if (resetKey === 0) return;
+    let tries = 0;
+    let raf = 0;
+    const focus = () => {
+      const editor = formRef.current?.querySelector<HTMLElement>(".ProseMirror");
+      if (editor) editor.focus({ preventScroll: true });
+      else if (++tries < 30) raf = requestAnimationFrame(focus);
+    };
+    raf = requestAnimationFrame(focus);
+    return () => cancelAnimationFrame(raf);
+  }, [resetKey]);
+
   // Sofort beim Absenden leeren; schlägt das Senden fehl, kommt der Text zurück.
   function handleSubmit() {
+    keepInPlace();
     sentHtml.current = latestHtml.current;
     // Erst nach dem Absenden leeren: Das Formular hat seine Daten dann schon eingesammelt.
     setTimeout(() => {
