@@ -154,7 +154,7 @@ const sum = (xs) => xs.reduce((s, x) => s + (Number(x) || 0), 0);
   const all = await rows();
   const by = (l) => all.find((r) => r.label === l);
   check("Vorname „Lyra“ bleibt, leere Felder sind gefüllt", by("Vorname").value === "Lyra" && ["Nachname", "Spitzname", "Alter", "Wesen"].every((l) => by(l).value?.trim()), JSON.stringify(all.map((r) => [r.label, r.value])));
-  check("Fehlende Felder wurden angelegt (Hobbys, Beruf, Eigenheiten, Aussehen)", ["Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Aussehen"].every((l) => by(l)?.value?.trim() && by(l).dice));
+  check("Fehlende Felder wurden angelegt (Hobbys, Beruf, Eigenheiten, Lebensziel, Geheimnis, Angst)", ["Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Lebensziel / Wunsch", "Geheimnis", "Größte Angst"].every((l) => by(l)?.value?.trim() && by(l).dice));
   check("Titel und Rang bleiben leer, ohne Würfel", by("Titel").value === "" && !by("Titel").dice && by("Rang").value === "" && !by("Rang").dice);
   const race = await page.locator("select").first().inputValue();
   const wesen = by("Wesen").value;

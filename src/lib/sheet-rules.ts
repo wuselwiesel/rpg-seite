@@ -69,6 +69,8 @@ export type SheetData = {
   personalFields: SheetItem[];
   // Sektion „Familie“: eigene Zeilen (Bezeichnung + Angabe, mit @ auf Charaktere verlinkbar)
   family: SheetItem[];
+  // Überschrift dieser Sektion (frei wählbar, z. B. „Freunde“); leer = „Familie“
+  familyTitle: string;
   attrBasis: Record<string, string>;
   attrBonus: Record<string, string>;
   // Wird beim Speichern aus den Attributen berechnet; so lesen die Würfel-Auswahl und der alte Bogen dieselbe Form.
@@ -84,6 +86,7 @@ export function emptySheet(): SheetData {
     luckPointsUsed: 0,
     personalFields: PERSONAL_DEFAULT_LABELS.map((label) => ({ label, value: "" })),
     family: [],
+    familyTitle: "Familie",
     attrBasis: {},
     attrBonus: {},
     talentBasis: {},
@@ -238,6 +241,8 @@ export function normalizeSheet(raw: unknown): SheetData {
   const familyRaw = Array.isArray(r.family) ? r.family : [];
   const family = familyRaw.slice(0, MAX_FAMILY_FIELDS).map((f) => item(f));
 
+  const familyTitle = clip(r.familyTitle, 40).trim() || "Familie";
+
   const blocks = Array.isArray(r.notesBlocks) ? r.notesBlocks : null;
   const notesBlocks = blocks?.length
     ? blocks.slice(0, MAX_NOTE_BLOCKS).map((b) => ({ label: clip(rec(b).label, 60), html: clip(rec(b).html, MAX_NOTE_HTML), ...(rec(b).secret === true ? { secret: true } : {}) }))
@@ -253,6 +258,7 @@ export function normalizeSheet(raw: unknown): SheetData {
     luckPointsUsed: Number.isInteger(used) && used >= 0 && used <= 99 ? used : 0,
     personalFields,
     family,
+    familyTitle,
     attrBasis,
     attrBonus,
     talentBasis: {},

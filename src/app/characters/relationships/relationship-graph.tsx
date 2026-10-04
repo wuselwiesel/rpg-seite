@@ -118,7 +118,9 @@ export function RelationshipGraph({
   // 1000 = heute, 0 = erster Eintrag.
   const [timePos, setTimePos] = useState(1000);
   const [playing, setPlaying] = useState(false);
-  const asOf = canTravel && timePos < 1000 ? minTs + ((now - minTs) * timePos) / 1000 : null;
+  // Die Zeitleiste ist nur auf Wunsch sichtbar.
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const asOf = canTravel && timelineOpen && timePos < 1000 ? minTs + ((now - minTs) * timePos) / 1000 : null;
 
   const shownRels = useMemo(
     () => (asOf == null ? baseRels : relationshipsAsOf(baseRels, historyByRel, asOf)),
@@ -320,7 +322,12 @@ export function RelationshipGraph({
         )}
       </div>
 
-      {canTravel && (
+      {canTravel && !timelineOpen && (
+        <button type="button" onClick={() => setTimelineOpen(true)} className="w-fit rounded-full bg-surface px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-fg">
+          Zeitleiste anzeigen
+        </button>
+      )}
+      {canTravel && timelineOpen && (
         <div className="flex flex-col gap-1.5 rounded-xl bg-surface px-3 py-2.5">
           <div className="flex items-center justify-between gap-2 text-xs">
             <span className="font-medium text-fg">
@@ -362,6 +369,17 @@ export function RelationshipGraph({
                 className="rounded-full bg-surface-2 px-2.5 py-1 text-fg-soft hover:text-fg"
               >
                 Heute
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPlaying(false);
+                  setTimePos(1000);
+                  setTimelineOpen(false);
+                }}
+                className="rounded-full bg-surface-2 px-2.5 py-1 text-fg-soft hover:text-fg"
+              >
+                Schließen
               </button>
             </span>
           </div>

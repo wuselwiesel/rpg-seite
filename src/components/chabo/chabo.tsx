@@ -414,8 +414,12 @@ export function Chabo({
       </header>
 
       {(editing || seen(data.family).some((f) => f.label.trim() || f.value.trim())) && (
-        <section aria-label="Familie" className={card}>
-          <h2 className="font-serif text-xl text-fg">Familie</h2>
+        <section aria-label={data.familyTitle || "Familie"} className={card}>
+          {editing ? (
+            <input value={data.familyTitle} maxLength={40} placeholder="Familie" aria-label="Titel des Abschnitts" onChange={(e) => commit({ ...data, familyTitle: e.target.value })} className={`${textInput} font-serif text-xl`} />
+          ) : (
+            <h2 className="font-serif text-xl text-fg">{data.familyTitle || "Familie"}</h2>
+          )}
           {editing ? (
             <div className="flex flex-col gap-3">
               <datalist id="chabo-familie-vorschlaege">

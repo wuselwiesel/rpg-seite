@@ -1,10 +1,10 @@
-// Zufallsfelder für den ChaBo (Name, Alter, Wesen, Hobbys, Beruf/Schule, Eigenheiten, Aussehen): mitgelieferte Listen (Namen englisch, amerikanisch, irisch; Rest deutsch) für eine
+// Zufallsfelder für den ChaBo (Name, Alter, Wesen, Hobbys, Beruf/Schule, Eigenheiten, Lebensziel, Geheimnis, Größte Angst): mitgelieferte Listen (Namen englisch, amerikanisch, irisch; Rest deutsch) für eine
 // moderne Schul- und Alltagswelt mit Wesen, dazu eigene Einträge je Welt (siehe world_random_entries), die eingemischt werden.
 // Rein; die Zufallsquelle kommt als Parameter (`Rng`), damit Tests mit festem Seed laufen.
 import { pick, randInt, type Rng } from "@/lib/sheet-random";
 import { MAX_PERSONAL_FIELDS, applyRace, type Race, type SheetData, type SheetItem } from "@/lib/sheet-rules";
 
-export const POOL_KINDS = ["vorname", "nachname", "spitzname", "hobby", "beruf", "eigenheit", "aussehen"] as const;
+export const POOL_KINDS = ["vorname", "nachname", "spitzname", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"] as const;
 export type PoolKind = (typeof POOL_KINDS)[number];
 export type FieldKind = PoolKind | "alter" | "wesen";
 // Eigene Einträge je Art (die mitgelieferten Listen sind eingebaut)
@@ -17,11 +17,13 @@ export const POOL_LABELS: Record<PoolKind, string> = {
   hobby: "Hobbys",
   beruf: "Beruf, Schule, AG",
   eigenheit: "Eigenheiten",
-  aussehen: "Aussehen",
+  lebensziel: "Lebensziel / Wunsch",
+  geheimnis: "Geheimnisse",
+  angst: "Größte Ängste",
 };
 
 export function emptyCustomPools(): CustomPools {
-  return { vorname: [], nachname: [], spitzname: [], hobby: [], beruf: [], eigenheit: [], aussehen: [] };
+  return { vorname: [], nachname: [], spitzname: [], hobby: [], beruf: [], eigenheit: [], lebensziel: [], geheimnis: [], angst: [] };
 }
 
 // ---- mitgelieferte Listen ----
@@ -82,14 +84,32 @@ const EIGENHEITEN = [
   "Verläuft sich in der eigenen Stadt", "Sammelt Muscheln und Steine", "Meidet Spiegel", "Spielt mit Ringen am Finger", "Mag den Geruch von Büchern", "Räumt nie das Zimmer auf", "Telefoniert nur im Gehen", "Ist nachtaktiv",
 ];
 
-const HAARE = ["Dunkle Locken", "Lange schwarze Haare", "Kurzer blonder Schnitt", "Wilde rote Mähne", "Glatte braune Haare", "Silbergraue Strähnen", "Zotteliger Pferdeschwanz", "Kinnlanger Bob", "Rasierter Kopf", "Lockige blonde Haare", "Dicker Zopf", "Wellige kastanienbraune Haare", "Haare in einem Dutt", "Kurze dunkle Haare", "Bunt gefärbte Spitzen", "Strubbelige Haare"];
-const AUGEN = ["graue Augen", "grüne Augen", "braune Augen", "blaue Augen", "bernsteinfarbene Augen", "dunkle Augen", "haselnussbraune Augen", "eisblaue Augen", "Augen verschiedener Farbe", "tiefschwarze Augen"];
-const EXTRAS = [
-  "Sommersprossen", "eine kleine Narbe an der Augenbraue", "ein schiefes Lächeln", "auffallend blasse Haut", "kräftig gebräunt", "ein Muttermal an der Wange", "ein Piercing in der Nase", "eine Brille mit runden Gläsern", "oft zerzauste Kleidung", "immer ein Hoodie",
-  "stets gepflegt und ordentlich", "ein Tattoo am Handgelenk", "sportliche Statur", "schmal und hochgewachsen", "klein und flink", "breite Schultern", "trägt viele Armbänder", "langer Mantel, auch im Sommer", "Ohrringe in verschiedenen Formen", "Grübchen beim Lachen",
+const LEBENSZIELE = [
+  "Will die Stadt verlassen und neu anfangen", "Sucht jemanden aus der Vergangenheit", "Möchte endlich dazugehören", "Will beweisen, dass alle sich in ihr oder ihm irren", "Träumt von einem eigenen Laden", "Will die Wahrheit über die eigene Familie herausfinden",
+  "Möchte einmal die Welt umrunden", "Will ein Buch veröffentlichen", "Sehnt sich nach einem ruhigen Leben", "Will jemanden beschützen, der ihr oder ihm wichtig ist", "Möchte die eigene Natur verstehen und akzeptieren", "Will sich mit der Familie versöhnen",
+  "Träumt davon, Musik zum Beruf zu machen", "Will nie wieder allein sein", "Möchte ein Unrecht von früher wiedergutmachen", "Will einen Ort finden, der sich wie Zuhause anfühlt", "Möchte das Studium oder die Ausbildung schaffen", "Will stärker werden, körperlich und innerlich",
+  "Sucht nach einem Heilmittel", "Möchte einmal im Leben wirklich frei sein", "Will die große Liebe finden", "Möchte die Menschen in der Stadt vor einer Gefahr warnen", "Will das Vermächtnis der Großeltern bewahren", "Möchte endlich keine Geheimnisse mehr haben",
+  "Will einen eigenen Weg gehen, unabhängig von der Familie", "Träumt davon, ein Haus am Meer zu besitzen", "Will ein Rätsel lösen, das sie oder ihn seit Jahren verfolgt", "Möchte wenigstens einmal ganz sie oder er selbst sein", "Will jemandem verzeihen können", "Möchte etwas Bleibendes erschaffen",
 ];
 
-// Mitgelieferte Einträge als Liste (für Tests und Anzeige); Beruf und Aussehen setzen sich aus Teilen zusammen.
+const GEHEIMNISSE = [
+  "Hat als Kind etwas gesehen, worüber sie oder er nie spricht", "Ist heimlich in die beste Freundin oder den besten Freund verliebt", "Hat ein Tagebuch, das niemand finden darf", "Schleicht sich nachts aus dem Haus", "Ist nicht der Mensch, für den alle sie oder ihn halten",
+  "Hat einmal jemanden im Stich gelassen", "Kennt den wahren Grund für einen alten Unfall", "Wurde einmal von der Schule verwiesen und hat es verschwiegen", "Schreibt anonym Briefe oder Texte", "Hat Schulden, von denen niemand weiß",
+  "Besitzt einen Gegenstand, der der Familie nicht gehört", "Hat die eigene Herkunft erfunden", "Weiß, wer hinter einem Gerücht der Stadt steckt", "Trifft sich heimlich mit jemandem, den die Familie nicht mag", "Hat bei einer wichtigen Prüfung geschummelt",
+  "Verliert in manchen Nächten die Kontrolle", "Hört Stimmen, die sonst niemand hört", "Hat ein Versprechen gebrochen, das ihr oder ihm alles bedeutete", "Kann etwas, das sie oder er niemandem zeigt", "Ist heimlich auf der Suche nach den leiblichen Eltern",
+  "Hat jemandem das Leben gerettet und es nie erzählt", "Führt ein zweites Leben unter anderem Namen", "Hat einen Brief, den sie oder er nie abgeschickt hat", "Weiß mehr über das Verschwinden von früher, als sie oder er zugibt", "Trägt eine Narbe, deren Geschichte niemand kennt",
+  "Hat einmal etwas gestohlen und es nie zurückgegeben", "Fürchtet, dass die eigene Natur entdeckt wird", "Ist bei jemandem in der Schuld und will es nicht zeigen", "Hat sich vor langer Zeit mit dem besten Freund oder der besten Freundin überworfen, aus Stolz", "Verbirgt eine Krankheit vor allen",
+];
+
+const AENGSTE = [
+  "Die Dunkelheit", "Vergessen zu werden", "Die Kontrolle zu verlieren", "Allein zurückgelassen zu werden", "Enttäuschung bei den Eltern auszulösen", "Tiefes Wasser",
+  "Dass die eigene Natur entdeckt wird", "Menschen zu verletzen, die ihr oder ihm nahestehen", "Enge Räume", "Der Vollmond", "Zu versagen, wenn es darauf ankommt", "Dass niemand ihr oder ihm wirklich zuhört",
+  "Gewitter und Sturm", "Alt zu werden und nichts erreicht zu haben", "Die eigene Vergangenheit", "Blut", "Von anderen durchschaut zu werden", "Verrat durch einen engen Freund oder eine enge Freundin",
+  "Feuer", "Zurückgewiesen zu werden", "Große Höhen", "Das Alleinsein in großen, leeren Häusern", "Ein Versprechen nicht halten zu können", "Dass jemand anderes für ihre oder seine Fehler büßt",
+  "Aufmerksamkeit in großen Gruppen", "Albträume, die sich wiederholen", "Den Verlust der Menschlichkeit", "Dass die Familie auseinanderbricht", "Spiegel in der Nacht", "Nie ein Zuhause zu finden",
+];
+
+// Mitgelieferte Einträge als Liste (für Tests und Anzeige); Beruf setzt sich aus Teilen zusammen.
 export const BUILTIN_SIZES = { vorname: VORNAMEN.length, nachname: NACHNAMEN.length, spitzname: SPITZNAMEN.length, hobby: HOBBYS.length, eigenheit: EIGENHEITEN.length };
 export const BERUF_POOLS = { schule: BERUF_SCHULE, jung: BERUF_JUNG, arbeit: BERUF_ARBEIT };
 
@@ -125,12 +145,6 @@ function berufBuiltin(age: number | null): readonly string[] {
   if (age <= 18) return BERUF_SCHULE;
   if (age <= 25) return BERUF_JUNG;
   return BERUF_ARBEIT;
-}
-
-function aussehen(rng: Rng): string {
-  const parts = [`${pick(HAARE, rng)}, ${pick(AUGEN, rng)}`];
-  if (rng() < 0.7) parts.push(pick(EXTRAS, rng));
-  return parts.join(", ");
 }
 
 function hobbys(custom: readonly string[] | undefined, rng: Rng): string {
@@ -170,11 +184,12 @@ export function rollValue(kind: FieldKind, ctx: RollContext): string {
       return clip(pickMixed(berufBuiltin(ctx.age ?? null), custom?.beruf, rng), 200);
     case "eigenheit":
       return clip(pickMixed(EIGENHEITEN, custom?.eigenheit, rng), 200);
-    case "aussehen": {
-      const own = (custom?.aussehen ?? []).filter((x) => x.trim());
-      if (own.length > 0 && rng() < own.length / (own.length + 8)) return clip(pick(own, rng), 200);
-      return clip(aussehen(rng), 200);
-    }
+    case "lebensziel":
+      return clip(pickMixed(LEBENSZIELE, custom?.lebensziel, rng), 200);
+    case "geheimnis":
+      return clip(pickMixed(GEHEIMNISSE, custom?.geheimnis, rng), 200);
+    case "angst":
+      return clip(pickMixed(AENGSTE, custom?.angst, rng), 200);
   }
 }
 
@@ -194,7 +209,9 @@ export function fieldKind(label: string): FieldKind | null {
   if (/hobb|interess|freizeit/.test(l)) return "hobby";
   if (/beruf|schule|(^| |\/)ag($| |\/)|job|ausbildung|studium|klasse|tätigkeit|arbeit/.test(l)) return "beruf";
   if (/eigenheit|marotte|macke|angewohnheit|eigenart|schrulle/.test(l)) return "eigenheit";
-  if (/aussehen|äußeres|erscheinung/.test(l)) return "aussehen";
+  if (/lebensziel|wunsch|traum|ziel/.test(l)) return "lebensziel";
+  if (/geheimnis/.test(l)) return "geheimnis";
+  if (/angst|furcht|phobie/.test(l)) return "angst";
   return null;
 }
 
@@ -207,11 +224,13 @@ export const FIELD_DEFAULT_LABEL: Record<FieldKind, string> = {
   hobby: "Hobbys",
   beruf: "Beruf / Schule / AG",
   eigenheit: "Eigenheiten",
-  aussehen: "Aussehen",
+  lebensziel: "Lebensziel / Wunsch",
+  geheimnis: "Geheimnis",
+  angst: "Größte Angst",
 };
 
 // Reihenfolge, in der „Alles zufällig“ arbeitet (Alter nach dem Wesen, Beruf nach dem Alter).
-export const FIELD_ORDER: FieldKind[] = ["vorname", "nachname", "spitzname", "wesen", "alter", "hobby", "beruf", "eigenheit", "aussehen"];
+export const FIELD_ORDER: FieldKind[] = ["vorname", "nachname", "spitzname", "wesen", "alter", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"];
 
 // Besondere Natur eines Bogens: die gewählte, sonst aus dem Wesen-Feld gelesen.
 export function raceOfSheet(data: SheetData): Race {
