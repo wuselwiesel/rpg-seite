@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, CircleHelp, Clover, Lock, LockOpen, Pencil, Plus, X } from "lucide-react";
+import { Check, CircleHelp, Clover, Dices, Lock, LockOpen, Pencil, Plus, Undo2, X } from "lucide-react";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { MentionInput, MentionText } from "./mention-input";
 import { RollBar } from "./roll-bar";
 import { rollAttributes, rollTalents, type AttrStyle, type TalentStyle } from "@/lib/sheet-random";
+import { fieldKind, rollAllFields, rollRow, worldNames, type CustomPools } from "@/lib/random-pools";
 import { stripMentionAt } from "@/lib/sheet-mentions";
 import type { Character } from "@/lib/types";
 import { folderColorHex } from "@/lib/wiki-folder-style";
@@ -66,9 +67,9 @@ const talentGridEdit = "grid grid-cols-[minmax(0,1fr)_2.25rem_3.75rem_3rem] item
 const textInput = "w-full rounded-lg border border-line bg-app px-3 py-2.5 text-sm text-fg outline-none focus:border-accent";
 
 // Rückgängig-Schritte je Bereich: gemerkt wird nur, was das Würfeln geändert hat, damit andere Eingaben nicht verloren gehen.
-type RollSection = "attrs" | "talents";
+type RollSection = "attrs" | "talents" | "fields";
 type Snapshots = Record<RollSection, Partial<SheetData>[]>;
-const NO_SNAPSHOTS: Snapshots = { attrs: [], talents: [] };
+const NO_SNAPSHOTS: Snapshots = { attrs: [], talents: [], fields: [] };
 const MAX_UNDO = 15;
 
 type Status = { kind: "idle" } | { kind: "pending" } | { kind: "saved" } | { kind: "invalid" } | { kind: "error"; message: string };
@@ -123,6 +124,7 @@ export function Chabo({
   editable,
   legacyUrl,
   mentionCharacters = [],
+  randomLists,
   variant = "page",
 }: {
   characterId: string;
@@ -133,6 +135,8 @@ export function Chabo({
   legacyUrl?: string | null;
   // Charaktere der Welt für @-Erwähnungen in Feldern und Notizen
   mentionCharacters?: Character[];
+  // Eigene Zufallseinträge der Welt (werden unter die mitgelieferten gemischt)
+  randomLists?: Partial<CustomPools>;
   // panel: kompakte Ansicht, z. B. im seitlichen Fenster einer Szene
   variant?: "page" | "panel";
 }) {
@@ -237,6 +241,26 @@ export function Chabo({
     commit(next);
   }
 
+  // Persönliche Angaben würfeln: gemerkt werden Zeilen, Besondere Natur und deren Boni (das Wesen setzt sie mit).
+  function rememberFields() {
+    const before: Partial<SheetData> = { personalFields: data.personalFields, race: data.race, attrBonus: data.attrBonus };
+    setSnapshots((s) => ({ ...s, fields: [...s.fields, before].slice(-MAX_UNDO) }));
+  }
+  const takenNames = worldNames(mentionCharacters);
+
+  function rollAllPersonal() {
+    const next = rollAllFields(data, randomLists, Math.random, takenNames);
+    // Hat sich nichts geändert (alles ist schon ausgefüllt), gibt es auch nichts rückgängig zu machen.
+    if (next.race === data.race && JSON.stringify(next.personalFields) === JSON.stringify(data.personalFields)) return;
+    rememberFields();
+    commit(next);
+  }
+
+  function rollOnePersonal(index: number) {
+    rememberFields();
+    commit(rollRow(data, index, randomLists, Math.random, takenNames));
+  }
+
   function undoSection(section: RollSection) {
     const last = snapshots[section][snapshots[section].length - 1];
     if (!last) return;
@@ -327,10 +351,27 @@ export function Chabo({
             <div>
               {editing ? (
                 <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2 pb-1">
+                    <button type="button" onClick={rollAllPersonal} aria-label="Alles zufällig würfeln" className="flex items-center gap-1.5 rounded-lg bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
+                      <Dices className="h-4 w-4" strokeWidth={2} />
+                      Alles zufällig
+                    </button>
+                    <button type="button" onClick={() => undoSection("fields")} disabled={snapshots.fields.length === 0} aria-label="Angaben rückgängig" className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-fg-soft transition hover:text-fg disabled:opacity-40">
+                      <Undo2 className="h-4 w-4" strokeWidth={2} />
+                      Rückgängig
+                    </button>
+                  </div>
                   {data.personalFields.map((f, i) => (
-                    <div key={i} className="grid grid-cols-[7rem_1fr_auto_auto] gap-2 @xl:grid-cols-[9rem_1fr_auto_auto]">
-                      <input value={f.label} maxLength={40} placeholder="Bezeichnung" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
-                      <MentionInput value={f.value} targets={mentionCharacters} placeholder="Angabe, mit @ Charaktere verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, value } : x)) })} className={textInput} />
+                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2 gap-y-1.5 @xl:grid-cols-[9rem_minmax(0,1fr)_auto_auto]">
+                      <input value={f.label} maxLength={40} placeholder="Bezeichnung" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={`${textInput} col-span-3 @xl:col-span-1`} />
+                      <div className="relative min-w-0">
+                        <MentionInput value={f.value} targets={mentionCharacters} placeholder="Angabe, mit @ Charaktere verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, value } : x)) })} className={fieldKind(f.label) ? `${textInput} pr-10` : textInput} />
+                        {fieldKind(f.label) && (
+                          <button type="button" onClick={() => rollOnePersonal(i)} aria-label={`${f.label} würfeln`} className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted transition hover:bg-surface-2 hover:text-accent">
+                            <Dices className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                        )}
+                      </div>
                       <LockToggle secret={Boolean(f.secret)} onToggle={() => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, secret: x.secret ? undefined : true } : x)) })} />
                       <button type="button" aria-label="Zeile entfernen" onClick={() => commit({ ...data, personalFields: data.personalFields.filter((_, j) => j !== i) })} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
                         <X className="h-4 w-4" strokeWidth={2} />
@@ -377,8 +418,8 @@ export function Chabo({
                 ))}
               </datalist>
               {data.family.map((f, i) => (
-                <div key={i} className="grid grid-cols-[7rem_1fr_auto_auto] items-start gap-2 @xl:grid-cols-[11rem_1fr_auto_auto]">
-                  <input value={f.label} maxLength={40} list="chabo-familie-vorschlaege" placeholder="z. B. Mutter" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
+                <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-2 gap-y-1.5 @xl:grid-cols-[11rem_minmax(0,1fr)_auto_auto]">
+                  <input value={f.label} maxLength={40} list="chabo-familie-vorschlaege" placeholder="z. B. Mutter" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={`${textInput} col-span-3 @xl:col-span-1`} />
                   <MentionInput value={f.value} targets={mentionCharacters} placeholder="Name, mit @ Charakter verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, value } : x)) })} className={textInput} />
                   <LockToggle secret={Boolean(f.secret)} onToggle={() => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, secret: x.secret ? undefined : true } : x)) })} />
                   <button type="button" aria-label="Zeile entfernen" onClick={() => commit({ ...data, family: data.family.filter((_, j) => j !== i) })} className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
