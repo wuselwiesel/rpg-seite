@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Dices } from "lucide-react";
 import { createCharacter } from "../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { genderOfSheet } from "@/lib/random-pools";
 import { npcBio, npcName, rollNpcSheet, speciesOfSheet } from "@/lib/npc-random";
 import type { CustomPools } from "@/lib/random-pools";
 
@@ -14,6 +15,7 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }
   const isWelcome = searchParams.get("welcome") === "1";
   const [name, setName] = useState("");
   const [species, setSpecies] = useState("mensch");
+  const [gender, setGender] = useState("");
   const [bio, setBio] = useState("");
   const [isNpc, setIsNpc] = useState(startAsNpc && !isWelcome);
   // Gewürfelter Bogen: wird mit dem Formular abgeschickt und zusammen mit dem Charakter angelegt
@@ -23,6 +25,8 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }
     const sheet = rollNpcSheet({ rng: Math.random, custom: randomLists, avoid: new Set(takenNames) });
     setName(npcName(sheet));
     setSpecies(speciesOfSheet(sheet));
+    const g = genderOfSheet(sheet);
+    setGender(g === "männlich" ? "maennlich" : (g ?? ""));
     setBio(npcBio(sheet));
     setSheetJson(JSON.stringify(sheet));
   }
@@ -101,7 +105,8 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }
             Geschlecht (optional)
             <select
               name="gender"
-              defaultValue=""
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
               className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
             >
               <option value="">Unbekannt</option>

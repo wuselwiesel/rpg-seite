@@ -3,7 +3,7 @@
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Plus, SendHorizontal, Trash2, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineBadge, OnlineCount } from "@/components/online-status";
@@ -73,6 +73,16 @@ export function ChatRoom({
   const [theme, setTheme] = useState(initialTheme);
   const dark = useIsDark();
   const [gifOpen, setGifOpen] = useState(false);
+  // Handy: Bild, GIF und Emoji liegen hinter einem „+“
+  const [plusOpen, setPlusOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const plusRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!plusOpen) return;
+    const onDown = (e: PointerEvent) => !plusRef.current?.contains(e.target as Node) && setPlusOpen(false);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [plusOpen]);
   const [mentions, setMentions] = useState<{ name: string; id: string }[]>([]);
   const [editMentions, setEditMentions] = useState<{ name: string; id: string }[]>([]);
   const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null);
@@ -654,7 +664,7 @@ export function ChatRoom({
           </div>
         )}
         {imageError && <p className="text-xs text-red-600 dark:text-red-400">{imageError}</p>}
-        <div className="relative flex gap-2">
+        <div className="relative flex items-end gap-2 sm:items-stretch">
           {gifOpen && (
             <div className="absolute bottom-full left-0 right-0 mb-2 sm:right-auto">
               <GifPicker onPick={sendGif} onClose={() => setGifOpen(false)} />
@@ -680,23 +690,80 @@ export function ChatRoom({
               ))}
             </div>
           )}
+          <div ref={plusRef} className="relative shrink-0 sm:hidden">
+            <button
+              type="button"
+              onClick={() => setPlusOpen((v) => !v)}
+              aria-expanded={plusOpen}
+              aria-label="Bild, GIF oder Emoji hinzufügen"
+              className={`flex h-12 w-11 items-center justify-center rounded-md border border-line text-fg-soft transition ${plusOpen ? "bg-surface-2 text-fg" : ""}`}
+            >
+              <Plus className={`h-5 w-5 transition ${plusOpen ? "rotate-45" : ""}`} strokeWidth={2} />
+            </button>
+            {plusOpen && (
+              <div role="menu" className="absolute bottom-full left-0 z-20 mb-2 w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setPlusOpen(false);
+                    setEmojiOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-fg hover:bg-surface-2"
+                >
+                  <span aria-hidden>😊</span> Emoji
+                </button>
+                <p className="px-3 pb-0.5 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted">Medien</p>
+                <label role="menuitem" className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-sm text-fg hover:bg-surface-2">
+                  <ImagePlus className="h-4 w-4 text-fg-soft" strokeWidth={1.75} />
+                  Bild
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      pickImage(e);
+                      setPlusOpen(false);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setPlusOpen(false);
+                    setGifOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-fg hover:bg-surface-2"
+                >
+                  <span className="w-4 text-center text-[10px] font-bold tracking-wide text-fg-soft">GIF</span>
+                  GIF
+                </button>
+              </div>
+            )}
+            <div className="sm:hidden">
+              <CustomEmojiPicker hideButton open={emojiOpen} onOpenChange={setEmojiOpen} onPick={(t) => setDraft((d) => d + t)} />
+            </div>
+          </div>
+          <div className="hidden gap-2 sm:flex">
           <label
-            title="Bild senden"
-            className="flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-line px-2.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
-            <input type="file" accept="image/*" onChange={pickImage} className="hidden" />
-          </label>
-          <button
-            type="button"
-            onClick={() => setGifOpen((v) => !v)}
-            aria-expanded={gifOpen}
-            title="GIF senden"
-            className="shrink-0 rounded-md border border-line px-2.5 text-xs font-bold tracking-wide text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            GIF
-          </button>
-          <CustomEmojiPicker onPick={(t) => setDraft((d) => d + t)} />
+              title="Bild senden"
+              className="flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-line px-2.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
+              <input type="file" accept="image/*" onChange={pickImage} className="hidden" />
+            </label>
+            <button
+              type="button"
+              onClick={() => setGifOpen((v) => !v)}
+              aria-expanded={gifOpen}
+              title="GIF senden"
+              className="shrink-0 rounded-md border border-line px-2.5 text-xs font-bold tracking-wide text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              GIF
+            </button>
+            <CustomEmojiPicker onPick={(t) => setDraft((d) => d + t)} />
+          </div>
           <textarea
             ref={inputRef}
             rows={1}
@@ -725,15 +792,17 @@ export function ChatRoom({
                 e.currentTarget.form?.requestSubmit();
               }
             }}
-            placeholder={`Schreib als ${activeCharacter.name}... (@ zum Erwähnen)`}
-            className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none [field-sizing:content] focus:border-accent sm:text-sm"
+            placeholder={`Schreib als ${firstName(activeCharacter.name)}…`}
+            className="max-h-44 min-h-12 min-w-0 flex-1 resize-none rounded-md border border-line bg-surface px-3 py-3 text-base text-fg outline-none [field-sizing:content] focus:border-accent sm:max-h-32 sm:min-h-10 sm:py-2 sm:text-sm"
           />
           <button
             type="submit"
             disabled={sending || (!draft.trim() && !pendingImage)}
-            className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:bg-surface-2 disabled:text-muted disabled:opacity-100"
+            className="flex h-12 w-12 items-center justify-center rounded-md bg-accent-strong text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:bg-surface-2 sm:h-auto sm:w-auto sm:px-4 sm:py-2 disabled:text-muted disabled:opacity-100"
           >
-            Senden
+            <span className="hidden sm:inline">Senden</span>
+            <SendHorizontal className="h-5 w-5 sm:hidden" strokeWidth={2} aria-hidden />
+            <span className="sr-only sm:hidden">Senden</span>
           </button>
         </div>
       </form>

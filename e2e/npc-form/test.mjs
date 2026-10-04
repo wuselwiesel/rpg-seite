@@ -43,6 +43,9 @@ const sum = (o) => Object.values(o).reduce((s, v) => s + (Number(v) || 0), 0);
   const species = await page.locator('select[name="species"]').inputValue();
   const wesen = s1.personalFields.find((f) => f.label === "Wesen").value;
   check("Wesen-Auswahl passt zum Bogen", ({ Mensch: "mensch", Werwolf: "werwolf", Vampir: "vampir" })[wesen] === species, `${wesen}/${species}`);
+  const gSel = await page.locator('select[name="gender"]').inputValue();
+  const gSheet = s1.personalFields.find((f) => f.label === "Geschlecht")?.value;
+  check("Geschlecht wird gewürfelt und passt zur Profil-Auswahl", ({ weiblich: "weiblich", männlich: "maennlich", divers: "divers" })[gSheet] === gSel, `${gSheet}/${gSel}`);
   const bio = await page.locator('textarea[name="bio"]').inputValue();
   check("Kurzbeschreibung ist gesetzt", bio.trim().length > 0, bio);
 
