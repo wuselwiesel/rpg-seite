@@ -4,13 +4,26 @@ import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { createTimelineEvent } from "../actions";
 import { EventDateRange } from "@/components/event-date-fields";
-import type { WikiCalendar } from "@/lib/wiki-calendar";
+import type { EventDate, WikiCalendar } from "@/lib/wiki-calendar";
 
 const input = "rounded-lg border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent";
 
-// Ereignis direkt in der Zeitleiste eintragen (legt eine Wiki-Seite der Art „Ereignis“ an).
-export function TimelineEventForm({ calendar, eventType }: { calendar: WikiCalendar; eventType: string | null }) {
-  const [open, setOpen] = useState(false);
+// Ereignis direkt in der Zeitleiste oder im Kalender eintragen (legt eine Wiki-Seite der Art „Ereignis“ an; beide Ansichten lesen dieselben Seiten).
+// Im Kalender startet das Formular offen und mit dem angeklickten Tag (initial); onClose räumt dort die Adresse auf.
+export function TimelineEventForm({
+  calendar,
+  eventType,
+  initial = null,
+  defaultOpen = false,
+  onClose,
+}: {
+  calendar: WikiCalendar;
+  eventType: string | null;
+  initial?: EventDate | null;
+  defaultOpen?: boolean;
+  onClose?: () => void;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -22,11 +35,15 @@ export function TimelineEventForm({ calendar, eventType }: { calendar: WikiCalen
     startTransition(async () => {
       const err = await createTimelineEvent(null, fd);
       if (err) setError(err);
-      else setOpen(false);
+      else {
+        setOpen(false);
+        onClose?.();
+      }
     });
   }
 
   if (!open) {
+    if (defaultOpen) return null;
     return (
       <button
         type="button"
@@ -53,13 +70,20 @@ export function TimelineEventForm({ calendar, eventType }: { calendar: WikiCalen
         Kurz beschrieben (optional)
         <textarea name="lead" rows={2} maxLength={300} placeholder="Ein bis zwei Sätze" className={input} />
       </label>
-      <EventDateRange calendar={calendar} dates={{ start: null, end: null }} labels={{ start: null, end: null }} type={eventType} />
+      <EventDateRange calendar={calendar} dates={{ start: initial, end: null }} labels={{ start: null, end: null }} type={eventType} />
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className="rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
           {pending ? "Speichert …" : "Eintragen"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-sm text-muted hover:text-fg">
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            onClose?.();
+          }}
+          className="text-sm text-muted hover:text-fg"
+        >
           Abbrechen
         </button>
       </div>

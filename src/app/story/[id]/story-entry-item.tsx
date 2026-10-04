@@ -2,11 +2,14 @@
 
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
-import { Clover, Dices, Pencil, Trash2, Type } from "lucide-react";
+import Link from "next/link";
+import { Clover, Dices, Flag, Pencil, Trash2, Type } from "lucide-react";
+import { MarkEventForm } from "./mark-event-form";
 import { useRouter } from "next/navigation";
 import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene } from "../actions";
 import { EventDateFields } from "@/components/event-date-fields";
-import { formatDate, type WikiCalendar } from "@/lib/wiki-calendar";
+import { formatDate, type EventDate, type WikiCalendar } from "@/lib/wiki-calendar";
+import { stripHtml } from "@/lib/strip-html";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
@@ -22,6 +25,10 @@ export function StoryEntryItem({
   displayHtml,
   calendar,
   canEditChapter = false,
+  canMark = false,
+  markedEvent = null,
+  eventType = null,
+  sceneDate = null,
 }: {
   entry: StoryEntry;
   storyPostId: string;
@@ -33,6 +40,11 @@ export function StoryEntryItem({
   // Für Kapitel-Marken: Kalender der Welt (Datum) und ob man sie bearbeiten darf
   calendar?: WikiCalendar;
   canEditChapter?: boolean;
+  // Nachricht als Ereignis für die Zeitleiste markieren: erlaubt?, schon markiert (Ereignisseite)?, Art „Ereignis“ der Welt, Datum der Szene als Vorschlag
+  canMark?: boolean;
+  markedEvent?: { id: string; title: string } | null;
+  eventType?: string | null;
+  sceneDate?: EventDate | null;
 }) {
   const isRoll = !!entry.roll_label;
   const isNarrator = entry.kind === "narrator";
@@ -48,6 +60,7 @@ export function StoryEntryItem({
   }, [pending, error]);
 
   const router = useRouter();
+  const [markOpen, setMarkOpen] = useState(false);
   const [chapterEditing, setChapterEditing] = useState(false);
   const [splitting, setSplitting] = useState(false);
 
@@ -174,7 +187,7 @@ export function StoryEntryItem({
           size={32}
         />
       )}
-      <div id={`beitrag-${entry.id}`} className="flex-1 scroll-mt-24 rounded-lg border border-line bg-surface px-4 py-2">
+      <div id={`beitrag-${entry.id}`} className={`flex-1 scroll-mt-24 rounded-lg border bg-surface px-4 py-2 ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}>
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
             <p className="text-sm font-medium text-fg">{isNarrator ? "Erzähler:in" : entry.characters?.name}</p>
@@ -183,9 +196,31 @@ export function StoryEntryItem({
               {entry.updated_at && " · bearbeitet"}
             </p>
           </div>
-          {canManage && !editing && (
+          {(canManage || canMark) && !editing && (
             <div className="flex shrink-0 items-center gap-1">
-              {!isRoll && (
+              {canMark && calendar &&
+                (markedEvent ? (
+                  <Link
+                    href={`/wiki/${markedEvent.id}`}
+                    title={`Ereignis: ${markedEvent.title}`}
+                    aria-label={`Ereignis: ${markedEvent.title}`}
+                    className="rounded p-1 text-accent transition hover:bg-surface-2"
+                  >
+                    <Flag className="h-3.5 w-3.5 fill-current" strokeWidth={2} />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setMarkOpen((v) => !v)}
+                    title="Als Ereignis markieren"
+                    aria-label="Als Ereignis markieren"
+                    aria-pressed={markOpen}
+                    className="rounded p-1 text-muted transition hover:bg-surface-2 hover:text-accent"
+                  >
+                    <Flag className="h-3.5 w-3.5" strokeWidth={2} />
+                  </button>
+                ))}
+              {canManage && !isRoll && (
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
@@ -195,17 +230,30 @@ export function StoryEntryItem({
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={handleDelete}
-                title="Löschen"
-                className="rounded p-1 text-muted transition hover:bg-surface-2 hover:text-red-500"
-              >
-                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  title="Löschen"
+                  className="rounded p-1 text-muted transition hover:bg-surface-2 hover:text-red-500"
+                >
+                  <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              )}
             </div>
           )}
         </div>
+
+        {markOpen && !markedEvent && calendar && (
+          <MarkEventForm
+            entryId={entry.id}
+            excerpt={stripHtml(entry.content).slice(0, 280)}
+            calendar={calendar}
+            eventType={eventType}
+            defaultDate={sceneDate}
+            onDone={() => setMarkOpen(false)}
+          />
+        )}
 
         {editing ? (
           <form action={formAction} className="flex flex-col gap-2">

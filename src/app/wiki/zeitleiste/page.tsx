@@ -20,7 +20,8 @@ import { TimelineEventForm } from "./event-form";
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
-type Source = "" | "welt" | "szenen";
+// Weltereignisse und Szenen sind getrennte Ansichten (Wunsch der Nutzerin): nie beides in einer Liste
+type Source = "welt" | "szenen";
 
 type SceneRow = {
   id: string;
@@ -42,7 +43,7 @@ type SceneRow = {
 };
 
 type Entry =
-  | { kind: "wiki"; labels: DateLabels; id: string; title: string; lead: string | null; type: string | null; draft: boolean; icon: string | null; cover: string | null }
+  | { kind: "wiki"; labels: DateLabels; id: string; title: string; lead: string | null; type: string | null; draft: boolean; icon: string | null; cover: string | null; source: string | null }
   | { kind: "scene"; id: string; title: string; excerpt: string; location: string | null; extra: string | null; author: string; avatar: string | null; arc: string | null }
   | { kind: "chapter"; id: string; sceneId: string; number: number; title: string; sceneTitle: string; excerpt: string };
 
@@ -50,8 +51,10 @@ const excerpt = (s: string, n: number) => (s.length > n ? `${s.slice(0, n).trimE
 
 function WikiEntryCard({ e, label }: { e: Extract<Entry, { kind: "wiki" }>; label: string }) {
   const hasImage = Boolean(e.icon || e.cover);
+  // Ereignisse aus einer Story-Nachricht führen zur Nachricht zurück (die Ereignisseite bleibt über „Seite öffnen“ erreichbar)
   return (
-    <Link href={`/wiki/${e.id}`} className="flex gap-3 rounded-2xl border border-line bg-surface p-3.5 transition hover:border-accent/50 hover:bg-surface-2/50 @xl:gap-4 @xl:p-4">
+    <div className="relative">
+    <Link href={e.source ?? `/wiki/${e.id}`} className="flex gap-3 rounded-2xl border border-line bg-surface p-3.5 transition hover:border-accent/50 hover:bg-surface-2/50 @xl:gap-4 @xl:p-4">
       {hasImage ? (
         <WikiTile id={e.id} title={e.title} cover={e.cover} icon={e.icon} size="md" />
       ) : (
@@ -67,8 +70,16 @@ function WikiEntryCard({ e, label }: { e: Extract<Entry, { kind: "wiki" }>; labe
         </span>
         <span className="font-serif text-xl leading-snug text-fg @xl:text-2xl">{e.title}</span>
         {e.lead && <span className="line-clamp-2 text-sm text-fg-soft">{e.lead}</span>}
+        {e.source && <span className="h-5" aria-hidden />}
       </span>
     </Link>
+    {e.source && (
+      <Link href={`/wiki/${e.id}`} className="absolute bottom-2 right-4 flex items-center gap-1 text-xs text-muted transition hover:text-accent @xl:right-5">
+        <FileText className="h-3 w-3" strokeWidth={2} />
+        Seite öffnen
+      </Link>
+    )}
+    </div>
   );
 }
 
@@ -132,7 +143,7 @@ function SceneEntryCard({ e, label }: { e: Extract<Entry, { kind: "scene" }>; la
 
 function sourceHref(source: Source, type: string, tag: string) {
   const q = new URLSearchParams();
-  if (source) q.set("quelle", source);
+  if (source === "szenen") q.set("quelle", source);
   if (type) q.set("type", type);
   if (tag) q.set("tag", tag);
   const s = q.toString();
@@ -144,7 +155,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   const type = first(sp.type).slice(0, 40);
   const tag = first(sp.tag).slice(0, 40);
   const q = first(sp.quelle);
-  const source: Source = q === "welt" || q === "szenen" ? q : "";
+  const source: Source = q === "szenen" ? "szenen" : "welt";
 
   const supabase = await createClient();
   const {
@@ -203,6 +214,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
         draft: Boolean(r.is_draft),
         icon: r.icon_url ?? null,
         cover: r.cover_image_url ?? null,
+        source: r.source_entry_id && r.source_story_id ? `/story/${r.source_story_id}#beitrag-${r.source_entry_id}` : null,
         dates: r.dates,
       }),
     ),
@@ -223,7 +235,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   ];
   const sections = timelineSections(items);
   const tags = tagCounts([...wikiDated, ...scenesDated]);
-  const filtered = Boolean(source || type || tag);
+  const filtered = Boolean(type || tag);
   const era = calendar.era.trim();
 
   const counts = [
@@ -244,7 +256,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
           Zeitleiste
         </h1>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <Link href="/wiki/kalender" className="flex items-center gap-1.5 text-accent hover:underline">
+          <Link href={source === "szenen" ? "/wiki/kalender?quelle=szenen" : "/wiki/kalender"} className="flex items-center gap-1.5 text-accent hover:underline">
             <CalendarDays className="h-4 w-4" strokeWidth={2} />
             Zum Kalender
           </Link>
@@ -256,20 +268,17 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
 
       <div className="flex flex-col gap-3">
         <nav aria-label="Was die Zeitleiste zeigt" className="flex flex-wrap gap-2">
-          <Link href={sourceHref("", type, tag)} className={chip(source === "")} aria-current={source === "" ? "true" : undefined}>
-            Alles
-          </Link>
           <Link href={sourceHref("welt", type, tag)} className={chip(source === "welt")} aria-current={source === "welt" ? "true" : undefined}>
-            Weltgeschichte
+            Weltereignisse
           </Link>
           <Link href={sourceHref("szenen", "", tag)} className={chip(source === "szenen")} aria-current={source === "szenen" ? "true" : undefined}>
-            Story-Szenen
+            Szenen
           </Link>
         </nav>
         <details open={Boolean(type || tag)} className="rounded-2xl border border-line bg-surface px-4 py-3">
           <summary className="cursor-pointer text-sm text-fg-soft">Nach Art oder Tag filtern</summary>
         <form method="get" action="/wiki/zeitleiste" className="mt-3 flex flex-wrap items-end gap-3">
-          {source && <input type="hidden" name="quelle" value={source} />}
+          {source === "szenen" && <input type="hidden" name="quelle" value={source} />}
           {source !== "szenen" && (
             <label className="flex flex-col gap-1 text-xs text-muted">
               Art der Seite
@@ -298,7 +307,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
             Filtern
           </button>
           {filtered && (
-            <Link href="/wiki/zeitleiste" className="py-2 text-sm text-muted hover:text-fg">
+            <Link href={sourceHref(source, "", "")} className="py-2 text-sm text-muted hover:text-fg">
               Zurücksetzen
             </Link>
           )}

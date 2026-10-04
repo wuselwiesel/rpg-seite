@@ -13,6 +13,7 @@ import { autolinkHtml } from "@/lib/autolink";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
+import { getWikiTypes } from "@/lib/wiki-data";
 import { datesFromRow } from "@/lib/wiki-calendar";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
@@ -101,6 +102,14 @@ export default async function StoryPostDetailPage({
     supabase.from("story_posts").select("id, title").eq("previous_story_id", storyPost.id).maybeSingle(),
     supabase.from("story_posts").select("location").eq("world_id", storyPost.world_id).not("location", "is", null),
   ]);
+  // Nachrichten dieser Szene, aus denen schon ein Ereignis gemacht wurde (Flagge an der Nachricht)
+  const [{ data: markedRows }, wikiTypes] = await Promise.all([
+    supabase.from("wiki_pages").select("id, title, source_entry_id").eq("source_story_id", storyPost.id).not("source_entry_id", "is", null),
+    getWikiTypes(storyPost.world_id),
+  ]);
+  const markedByEntry = new Map((markedRows ?? []).map((r) => [r.source_entry_id as string, { id: r.id as string, title: r.title as string }]));
+  const eventType = wikiTypes.some((t) => t.id === "ereignis") ? "ereignis" : null;
+
   // Auswahl für „Vorherige Szene“: andere Szenen der Welt, die noch keine Folgeszene haben (außer der jetzigen vorherigen)
   const { data: chainRows } = await supabase
     .from("story_posts")
@@ -321,6 +330,10 @@ export default async function StoryPostDetailPage({
                 displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
                 calendar={calendar}
                 canEditChapter={entry.kind === "chapter" && (myCharacterIds.has(entry.character_id) || isAuthor || isWorldOwner)}
+                canMark={entry.kind !== "chapter" && (myCharacterIds.size > 0 || isWorldOwner)}
+                markedEvent={markedByEntry.get(entry.id) ?? null}
+                eventType={eventType}
+                sceneDate={datesFromRow(storyPost).start}
               />
             ),
           }));

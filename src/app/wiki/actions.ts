@@ -163,12 +163,22 @@ export async function createTimelineEvent(_prev: string | null, formData: FormDa
   if ("error" in parsed) return parsed.error;
   if (parsed.input.event_year == null) return "Ein Ereignis braucht mindestens ein Jahr.";
 
+  // Ereignis aus einer Story-Nachricht: Nachricht und Szene müssen existieren (und für dich sichtbar sein) und zur aktiven Welt gehören
+  const sourceEntryId = String(formData.get("source_entry_id") ?? "").trim();
+  let source: { source_entry_id: string; source_story_id: string } | null = null;
+  if (sourceEntryId) {
+    const { data: entry } = await supabase.from("story_entries").select("id, story_post_id, story_posts!inner(world_id)").eq("id", sourceEntryId).maybeSingle<{ id: string; story_post_id: string; story_posts: { world_id: string } }>();
+    if (!entry || entry.story_posts.world_id !== world.id) return "Die Nachricht wurde nicht gefunden.";
+    source = { source_entry_id: entry.id, source_story_id: entry.story_post_id };
+  }
+
   const { error } = await supabase
     .from("wiki_pages")
-    .insert({ ...parsed.input, world_id: world.id, category: "sonstiges", created_by: user.id });
+    .insert({ ...parsed.input, ...(source ?? {}), world_id: world.id, category: "sonstiges", created_by: user.id });
   if (error) return error.message;
 
   revalidatePath("/wiki", "layout");
+  if (source) revalidatePath(`/story/${source.source_story_id}`);
   return null;
 }
 

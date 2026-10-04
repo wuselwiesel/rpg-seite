@@ -30,6 +30,9 @@ export type PageRow = {
   icon_url?: string | null;
   updated_at?: string;
   created_by?: string | null;
+  // Ereignis aus einer Story-Nachricht
+  source_entry_id?: string | null;
+  source_story_id?: string | null;
 };
 
 export type TreePage = PageRow & { children: TreePage[] };
