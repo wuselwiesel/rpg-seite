@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { setActiveCharacter } from "@/app/characters/actions";
+import { characterPathAfterSwitch } from "@/lib/character-switch";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
 
@@ -68,12 +69,12 @@ export function ActiveCharacterMenu({
                 onClick={() => {
                   setOpen(false);
                   if (c.id === activeCharacter.id) return;
-                  // Steht man gerade auf dem Profil eines eigenen Charakters, soll nach dem
-                  // Wechsel das Profil des neu aktiven Charakters angezeigt werden.
-                  const onOwnProfile = characters.some((own) => pathname === `/characters/${own.id}`);
+                  // Steht man gerade auf dem Profil oder dem ChaBo eines eigenen Charakters, soll nach dem
+                  // Wechsel dieselbe Seite des neu aktiven Charakters angezeigt werden.
+                  const target = characterPathAfterSwitch(pathname, characters.map((own) => own.id), c.id);
                   startTransition(async () => {
                     await setActiveCharacter(c.id);
-                    if (onOwnProfile) router.push(`/characters/${c.id}`);
+                    if (target) router.push(target);
                     else router.refresh();
                   });
                 }}

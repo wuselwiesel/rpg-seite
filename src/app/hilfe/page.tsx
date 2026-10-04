@@ -113,7 +113,7 @@ export default function HelpPage() {
       <Section id="verlauf" title="2. Würfelverlauf">
         <p className={p}>
           Alle Würfe deiner aktuellen Welt stehen im <strong>Würfelverlauf</strong>, neueste zuerst. Du erreichst ihn über das Würfel-Symbol oben in der Story. Mit den Filtern zeigst du nur einen Charakter oder nur
-          Erfolge beziehungsweise Misserfolge. Ein Klick auf einen Wurf öffnet die Szene, in der er gefallen ist. Würfe aus privaten Szenen siehst du nur, wenn du die Szene auch sonst sehen darfst.
+          Erfolge beziehungsweise Misserfolge. Ein Klick auf einen Wurf führt direkt zu seiner Zeile in der Szene und hebt sie kurz hervor. Mit dem Papierkorb löschst du eigene Würfe. Ein gelöschter Wurf verschwindet auch aus der Szene. Würfe aus privaten Szenen siehst du nur, wenn du die Szene auch sonst sehen darfst.
         </p>
       </Section>
 

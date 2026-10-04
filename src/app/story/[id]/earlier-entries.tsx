@@ -9,17 +9,18 @@ export function EarlierEntries({ count, children }: { count: number; children: R
   const ref = useRef<HTMLDivElement>(null);
   const label = `${count} ${count === 1 ? "früherer Beitrag" : "frühere Beiträge"}`;
 
-  // Kapitel-Links (#kapitel-N) führen auch zu eingeklappten Beiträgen: dann erst aufklappen, dann hinscrollen.
+  // Kapitel-Links (#kapitel-N) und Links auf einen einzelnen Beitrag (#beitrag-…, z. B. aus dem Würfelverlauf) führen auch zu eingeklappten Beiträgen: dann erst aufklappen, dann hinscrollen.
   useEffect(() => {
     function reveal(id: string) {
-      if (!id.startsWith("kapitel-")) return;
+      if (!id.startsWith("kapitel-") && !id.startsWith("beitrag-")) return;
       const target = ref.current?.querySelector(`#${CSS.escape(id)}`);
       if (!target) return;
       setOpen(true);
-      requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+      // Einzelne Beiträge scrollt ScrollToEntry hin (und hebt sie hervor); Kapitel-Links scrollen hier.
+      if (id.startsWith("kapitel-")) requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
     }
     function onClick(e: MouseEvent) {
-      const a = (e.target as Element | null)?.closest?.('a[href^="#kapitel-"]');
+      const a = (e.target as Element | null)?.closest?.('a[href^="#kapitel-"], a[href^="#beitrag-"]');
       if (a) reveal(a.getAttribute("href")!.slice(1));
     }
     if (location.hash) reveal(location.hash.slice(1));

@@ -81,7 +81,7 @@ export function StoryEntryItem({
           size={32}
         />
       )}
-      <div className="flex-1 rounded-lg border border-line bg-surface px-4 py-2">
+      <div id={`beitrag-${entry.id}`} className="flex-1 scroll-mt-24 rounded-lg border border-line bg-surface px-4 py-2">
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
             <p className="text-sm font-medium text-fg">{isNarrator ? "Erzähler:in" : entry.characters?.name}</p>

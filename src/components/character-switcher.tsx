@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { setActiveCharacter } from "@/app/characters/actions";
+import { characterPathAfterSwitch } from "@/lib/character-switch";
 import type { Character } from "@/lib/types";
 
 export function CharacterSwitcher({
@@ -26,12 +27,12 @@ export function CharacterSwitcher({
       disabled={isPending}
       onChange={(e) => {
         const id = e.target.value;
-        // Steht man gerade auf dem Profil eines eigenen Charakters, soll nach dem Wechsel
-        // das Profil des neu aktiven Charakters angezeigt werden (nicht das alte stehen bleiben).
-        const onOwnProfile = characters.some((c) => pathname === `/characters/${c.id}`);
+        // Steht man gerade auf dem Profil oder dem ChaBo eines eigenen Charakters, soll nach dem Wechsel
+        // dieselbe Seite des neu aktiven Charakters angezeigt werden (nicht die alte stehen bleiben).
+        const target = characterPathAfterSwitch(pathname, characters.map((c) => c.id), id);
         startTransition(async () => {
           await setActiveCharacter(id);
-          if (onOwnProfile) router.push(`/characters/${id}`);
+          if (target) router.push(target);
           else router.refresh();
         });
       }}

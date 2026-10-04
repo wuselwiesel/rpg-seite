@@ -596,6 +596,7 @@ export async function deleteStoryEntry(entryId: string, storyPostId: string) {
   if (!count) return "Eintrag konnte nicht gelöscht werden.";
 
   revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story/wuerfe");
   return null;
 }
 
