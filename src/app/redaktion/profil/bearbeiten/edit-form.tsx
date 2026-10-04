@@ -6,6 +6,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { ProfileThemeFields } from "@/components/profile-theme-fields";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import { NameSymbolField } from "@/components/name-symbol-field";
+import { PresenceSettings } from "@/components/presence-settings";
 import type { RedaktionProfile } from "@/lib/types";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent";
@@ -32,6 +33,8 @@ export function EditRedaktionProfileForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-8">
+      <PresenceSettings />
+
       <section className="flex flex-col gap-3">
         <h2 className="font-serif text-lg text-fg">Banner</h2>
         <AvatarUpload name="banner_url" initialUrl={initial?.banner_url} displayName={name} variant="cover" />

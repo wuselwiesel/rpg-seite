@@ -23,6 +23,7 @@ export function NavLink({
   children,
   exact,
   exclude,
+  also,
 }: {
   href: string;
   icon: React.ReactNode;
@@ -30,9 +31,12 @@ export function NavLink({
   exact?: boolean;
   // Unterseite, die nicht mitzählt (z. B. hat „Würfelverlauf“ unter /story seinen eigenen Eintrag)
   exclude?: string;
+  // Weitere Pfade, bei denen der Eintrag ebenfalls aktiv ist (z. B. liegen die Beziehungen im Wiki)
+  also?: string[];
 }) {
   const pathname = usePathname();
   const isActive =
+    (also?.some((a) => pathname === a || pathname?.startsWith(`${a}/`)) ?? false) ||
     (exact ? pathname === href : pathname === href || pathname?.startsWith(`${href}/`)) && !(exclude && (pathname === exclude || pathname?.startsWith(`${exclude}/`)));
 
   return (

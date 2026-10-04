@@ -180,7 +180,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <KeyboardFix />
         <OfflineBanner />
         <AppTour />
-        <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"}>
+        <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"} initialEmoji={ownPresence?.emoji ?? null} initialText={ownPresence?.text ?? null}>
           <CustomEmojiProvider map={emojiMap}>
             <AppFrame sidebar={<Sidebar />}>
               <MobileMain>{children}</MobileMain>

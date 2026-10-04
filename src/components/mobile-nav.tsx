@@ -1,10 +1,9 @@
 "use client";
 
-import { OnlineToggle } from "@/components/online-status";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { ActiveCharacterMenu } from "./active-character-menu";
 import { InstallAppButton } from "./install-app-button";
@@ -217,11 +216,6 @@ export function MobileNav({
         )}
 
         <div className="mb-4">
-          <p className="mb-1 px-1 text-xs text-muted">Mein Status</p>
-          <OnlineToggle />
-        </div>
-
-        <div className="mb-4">
           <p className="mb-1 px-1 text-xs text-muted">Welt</p>
           <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} inline />
         </div>
@@ -234,14 +228,6 @@ export function MobileNav({
           >
             <Dices className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Würfelverlauf
-          </Link>
-          <Link
-            href="/characters/relationships"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Network className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Beziehungen
           </Link>
           {activeCharacter && (
             <Link

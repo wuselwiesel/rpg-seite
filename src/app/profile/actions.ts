@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cleanPresenceEmoji, cleanPresenceText } from "@/lib/presence-emoji";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { NOTIFICATION_TYPE_GROUPS } from "@/lib/notification-types";
@@ -99,5 +100,18 @@ export async function setPresenceMode(mode: "online" | "offline"): Promise<strin
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
   const { error } = await supabase.from("profiles").update({ presence_mode: mode }).eq("id", user.id);
+  return error ? error.message : null;
+}
+
+// Eigenes Emoji (ersetzt den grünen Punkt) und optionaler Text; leer = nur der Punkt.
+export async function setPresenceStatus(emoji: string, text: string): Promise<string | null> {
+  const cleanEmoji = cleanPresenceEmoji(emoji);
+  if (emoji.trim() && !cleanEmoji) return "Bitte nur ein Emoji eintragen.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.from("profiles").update({ presence_emoji: cleanEmoji, presence_text: cleanPresenceText(text) }).eq("id", user.id);
   return error ? error.message : null;
 }

@@ -3687,4 +3687,42 @@ create trigger characters_npc_toggle_trg after update of is_npc on public.charac
   for each row when (old.is_npc is distinct from new.is_npc) execute function public.npc_toggle_follows();
 
 
+
+-- Online-Status: Der grüne Punkt kann durch ein eigenes Emoji (und optional einen kurzen Text) ersetzt werden.
+-- Einstellbar im Redaktionsprofil; die Werte gehören zum eigenen Account (Policy profiles_update_own).
+alter table public.profiles add column if not exists presence_emoji text;
+alter table public.profiles add column if not exists presence_text text;
+alter table public.profiles drop constraint if exists profiles_presence_emoji_len;
+alter table public.profiles add constraint profiles_presence_emoji_len check (presence_emoji is null or char_length(presence_emoji) <= 16);
+alter table public.profiles drop constraint if exists profiles_presence_text_len;
+alter table public.profiles add constraint profiles_presence_text_len check (presence_text is null or char_length(presence_text) <= 40);
+
+
+-- Wer hat meine Story gesehen? Pro Story und Charakter ein Eintrag. Sehen darf die Liste nur der Account, dem die Story gehört
+-- (nicht die Welt-Besitzerin, nicht andere Mitglieder). Eintragen darf jede Person mit einem eigenen Charakter, nicht für die eigene Story.
+create table if not exists public.story_views (
+  story_id uuid not null references public.stories (id) on delete cascade,
+  character_id uuid not null references public.characters (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (story_id, character_id)
+);
+create index if not exists story_views_character_idx on public.story_views (character_id);
+alter table public.story_views enable row level security;
+
+create policy "story_views_select_story_owner" on public.story_views
+  for select to authenticated using (
+    exists (
+      select 1 from public.stories s join public.characters c on c.id = s.character_id
+      where s.id = story_id and c.owner_id = auth.uid()
+    )
+  );
+create policy "story_views_insert_own" on public.story_views
+  for insert to authenticated with check (
+    exists (select 1 from public.characters c where c.id = character_id and c.owner_id = auth.uid())
+    and not exists (
+      select 1 from public.stories s join public.characters c on c.id = s.character_id
+      where s.id = story_id and c.owner_id = auth.uid()
+    )
+  );
+
 notify pgrst, 'reload schema';

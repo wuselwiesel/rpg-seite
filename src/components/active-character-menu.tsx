@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { setActiveCharacter } from "@/app/characters/actions";
 import { characterPathAfterSwitch } from "@/lib/character-switch";
-import { OnlineToggle } from "@/components/online-status";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
 
@@ -86,10 +85,6 @@ export function ActiveCharacterMenu({
                 {c.id === activeCharacter.id && <Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
               </button>
             ))}
-          </div>
-          <div className="mt-1 border-t border-line px-1 pb-1 pt-2.5">
-            <p className="mb-1.5 px-1 text-xs text-muted">Mein Status</p>
-            <OnlineToggle />
           </div>
           <Link
             href="/characters/new"
