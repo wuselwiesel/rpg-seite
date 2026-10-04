@@ -18,7 +18,7 @@ export function EditWorldForm({ world }: { world: World }) {
           initialUrl={world.cover_image_url}
           displayName={world.name}
           bucket="world-covers"
-          variant="cover"
+          variant="world"
         />
       </div>
       <label className="flex flex-col gap-1 text-sm text-fg-soft">

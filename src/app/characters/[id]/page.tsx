@@ -12,6 +12,7 @@ import { POST_SELECT, toFeedPost } from "@/lib/feed";
 import { SocialPostCard } from "@/components/social-post-card";
 import { FollowButton } from "@/components/follow-button";
 import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
+import { ZoomableImage } from "@/components/zoomable-image";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
 import { Chabo } from "@/components/chabo/chabo";
@@ -206,7 +207,15 @@ export default async function CharacterProfilePage({
                         {avatar}
                       </StoryLauncher>
                     ) : (
-                      <div className="rounded-full bg-app p-[4px]">{avatar}</div>
+                      <div className="rounded-full bg-app p-[4px]">
+                        {character.avatar_url ? (
+                          <ZoomableImage src={character.avatar_url} alt={character.name}>
+                            {avatar}
+                          </ZoomableImage>
+                        ) : (
+                          avatar
+                        )}
+                      </div>
                     )}
                     {isActiveProfile && (
                       <Link

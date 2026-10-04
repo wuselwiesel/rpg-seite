@@ -23,7 +23,7 @@ export function AvatarUpload({
   bucket?: string;
   // icon: Symbol ohne Hintergrund (PNG/SVG/WebP/GIF), wird weder zugeschnitten noch verkleinert, damit die Transparenz bleibt;
   // circle: rundes Profilbild; cover: breites Titelbild; standard: normales Querformat 4:3 (Wiki); portrait: normales Hochformat-Bild (z. B. Person im Wiki)
-  variant?: "circle" | "cover" | "portrait" | "standard" | "icon";
+  variant?: "circle" | "cover" | "world" | "portrait" | "standard" | "icon";
   // Meldet die neue Adresse (z. B. für Formulare, die nicht über das versteckte Feld laufen)
   onChange?: (url: string) => void;
 }) {
@@ -105,13 +105,13 @@ export function AvatarUpload({
   }
 
   return (
-    <div className={variant === "cover" ? "flex flex-col gap-3" : "flex items-center gap-4"}>
+    <div className={variant === "cover" || variant === "world" ? "flex flex-col gap-3" : "flex items-center gap-4"}>
       {cropFile && (
         <ImageCropper
           file={cropFile}
-          aspects={variant === "cover" ? [ASPECTS.cover, ASPECTS.landscape] : variant === "portrait" ? [ASPECTS.portrait, ASPECTS.square] : variant === "standard" ? [ASPECTS.standard, ASPECTS.square, ASPECTS.portrait] : [ASPECTS.square]}
+          aspects={variant === "cover" ? [ASPECTS.cover, ASPECTS.landscape] : variant === "world" ? [ASPECTS.square, ASPECTS.standard, ASPECTS.landscape, ASPECTS.cover] : variant === "portrait" ? [ASPECTS.portrait, ASPECTS.square] : variant === "standard" ? [ASPECTS.standard, ASPECTS.square, ASPECTS.portrait] : [ASPECTS.square]}
           round={variant === "circle"}
-          title={variant === "cover" ? "Titelbild zuschneiden" : variant === "portrait" || variant === "standard" ? "Bild zuschneiden" : "Profilbild zuschneiden"}
+          title={variant === "cover" || variant === "world" ? "Titelbild zuschneiden" : variant === "portrait" || variant === "standard" ? "Bild zuschneiden" : "Profilbild zuschneiden"}
           onCancel={() => setCropFile(null)}
           onDone={(cropped) => {
             setCropFile(null);
@@ -122,6 +122,13 @@ export function AvatarUpload({
       <input type="hidden" name={name} value={url} />
       {variant === "cover" ? (
         <WorldCover name={displayName} coverUrl={url} className="h-32 w-full" />
+      ) : variant === "world" ? (
+        url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="h-auto max-h-40 w-auto max-w-full self-start rounded-xl bg-surface-2" />
+        ) : (
+          <WorldCover name={displayName} coverUrl={null} className="h-32 w-32" />
+        )
       ) : variant === "icon" ? (
         <span
           tabIndex={0}

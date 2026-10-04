@@ -44,7 +44,13 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
-      <WorldCover name={world.name} coverUrl={world.cover_image_url} className="mb-6 h-40 w-full" />
+      {world.cover_image_url ? (
+        // Das Bild bleibt in seinem Format (quadratisch, 4:3, breit), nur in der Höhe begrenzt
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={world.cover_image_url} alt={world.name} className="mb-6 h-auto max-h-80 w-auto max-w-full rounded-xl bg-surface-2" />
+      ) : (
+        <WorldCover name={world.name} coverUrl={null} className="mb-6 h-40 w-full" />
+      )}
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
