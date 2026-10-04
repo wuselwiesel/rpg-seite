@@ -27,7 +27,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
   if (!isOwn && !sheet) notFound();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 xl:max-w-4xl">
+    <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6">
       <Link href={`/characters/${id}`} className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
         <ChevronLeft className="h-4 w-4" strokeWidth={2} />
         Zum Profil

@@ -50,10 +50,12 @@ const ATTR_COLOR: Record<string, string> = {
   GL: "gold",
 };
 
-const card = "flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 @xl:p-6";
+const card = "flex flex-col gap-6 rounded-2xl border border-line bg-surface p-5 @xl:p-8";
 const numInput =
-  "w-full rounded-lg border border-line bg-app px-2 py-1.5 text-center text-sm text-fg outline-none focus:border-accent aria-[invalid=true]:border-red-500";
-const textInput = "w-full rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
+  "w-full min-w-0 rounded-lg border border-line bg-app px-2 py-2 text-center text-base text-fg outline-none focus:border-accent aria-[invalid=true]:border-red-500";
+// Spalten der Talent-Tabelle: Name, Basis, Bonus, Gesamt (schmal am Handy, breiter ab mittlerer Breite)
+const talentGrid = "grid grid-cols-[minmax(0,1fr)_2.5rem_4rem_2.75rem] items-center gap-x-3 gap-y-2 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4rem] @xl:gap-x-5";
+const textInput = "w-full rounded-lg border border-line bg-app px-3 py-2.5 text-sm text-fg outline-none focus:border-accent";
 
 type Status = { kind: "idle" } | { kind: "pending" } | { kind: "saved" } | { kind: "invalid" } | { kind: "error"; message: string };
 
@@ -309,64 +311,70 @@ export function Chabo({
             </div>
           )}
         </div>
-        <ul className="grid grid-cols-2 gap-2.5 @xl:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 @4xl:grid-cols-5 @4xl:gap-4">
           {attrs.map((a) => {
             const hex = folderColorHex(ATTR_COLOR[a.code]);
             const isLuck = a.code === "GL";
             return (
-              <li key={a.code} className="flex flex-col gap-1 rounded-2xl p-3" style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} 16%, transparent)` } : undefined}>
-                <p className="flex items-baseline justify-between gap-2 text-sm">
-                  <span className="font-medium text-fg">{a.name}</span>
-                  <span className="text-xs font-semibold text-muted">{a.code}</span>
-                </p>
+              <li key={a.code} className="flex flex-col gap-3 rounded-2xl p-4 @xl:p-5" style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} 16%, transparent)` } : undefined}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 text-[15px] font-medium leading-snug text-fg [overflow-wrap:anywhere] @4xl:text-sm">{a.name}</p>
+                  <span className="shrink-0 rounded-md bg-app/60 px-1.5 py-0.5 text-xs font-semibold text-muted">{a.code}</span>
+                </div>
                 {editing ? (
-                  <div className="mt-1 grid grid-cols-2 gap-1.5">
-                    <label className="flex flex-col gap-0.5 text-[11px] text-muted">
-                      Basis
-                      <input type="number" inputMode="numeric" min={BASIS_MIN} max={BASIS_MAX} value={data.attrBasis[a.code] ?? ""} aria-invalid={Boolean(errors.attrBasis[a.code])} title={errors.attrBasis[a.code]} onChange={(e) => setAttr(a.code, "attrBasis", e.target.value)} className={numInput} />
-                    </label>
-                    {isLuck ? (
-                      <span className="flex flex-col gap-0.5 text-[11px] text-muted">
-                        Punkte
-                        <span className="flex h-[34px] items-center justify-center gap-0.5">
-                          {Array.from({ length: clovers }, (_, i) => (
-                            <Clover key={i} className="h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
-                          ))}
-                          {clovers === 0 && <span className="text-sm text-muted">–</span>}
-                        </span>
-                      </span>
-                    ) : (
-                      <label className="flex flex-col gap-0.5 text-[11px] text-muted">
-                        Bonus
-                        <input type="number" inputMode="numeric" min={BONUS_MIN} max={BONUS_MAX} value={data.attrBonus[a.code] ?? ""} aria-invalid={Boolean(errors.attrBonus[a.code])} title={errors.attrBonus[a.code]} onChange={(e) => setAttr(a.code, "attrBonus", e.target.value)} className={numInput} />
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <label className="flex flex-col gap-1 text-xs text-muted">
+                        Basis
+                        <input type="number" inputMode="numeric" min={BASIS_MIN} max={BASIS_MAX} value={data.attrBasis[a.code] ?? ""} aria-invalid={Boolean(errors.attrBasis[a.code])} title={errors.attrBasis[a.code]} onChange={(e) => setAttr(a.code, "attrBasis", e.target.value)} className={numInput} />
                       </label>
+                      {isLuck ? (
+                        <span className="flex flex-col gap-1 text-xs text-muted">
+                          Punkte
+                          <span className="flex min-h-[42px] flex-wrap items-center justify-center gap-0.5">
+                            {Array.from({ length: clovers }, (_, i) => (
+                              <Clover key={i} className="h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
+                            ))}
+                            {clovers === 0 && <span className="text-sm text-muted">–</span>}
+                          </span>
+                        </span>
+                      ) : (
+                        <label className="flex flex-col gap-1 text-xs text-muted">
+                          Bonus
+                          <input type="number" inputMode="numeric" min={BONUS_MIN} max={BONUS_MAX} value={data.attrBonus[a.code] ?? ""} aria-invalid={Boolean(errors.attrBonus[a.code])} title={errors.attrBonus[a.code]} onChange={(e) => setAttr(a.code, "attrBonus", e.target.value)} className={numInput} />
+                        </label>
+                      )}
+                    </div>
+                    {!isLuck && (
+                      <p className="flex items-baseline justify-between text-xs text-muted">
+                        Gesamt <span className="font-serif text-2xl text-fg">{a.total ?? "–"}</span>
+                      </p>
                     )}
                   </div>
                 ) : isLuck ? (
-                  <div className="mt-1 flex flex-col gap-1">
-                    <span className="font-serif text-4xl leading-none text-fg">{a.basis ?? "–"}</span>
-                    <span className="flex items-center gap-0.5" title={`${clovers} Glückspunkt${clovers === 1 ? "" : "e"} pro Szene`}>
+                  <div className="flex flex-row items-end justify-between gap-3 @4xl:flex-col @4xl:items-start @4xl:justify-start @4xl:gap-2">
+                    <span className="font-serif text-5xl leading-none text-fg">{a.basis ?? "–"}</span>
+                    <span className="flex flex-wrap items-center justify-end gap-1 @4xl:justify-start" title={`${clovers} Glückspunkt${clovers === 1 ? "" : "e"} pro Szene`}>
                       {Array.from({ length: clovers }, (_, i) => (
                         <Clover key={i} className="h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
                       ))}
+                      <span className="text-xs text-muted">{clovers} pro Szene</span>
                     </span>
                   </div>
                 ) : (
-                  <div className="mt-1 flex flex-col gap-1">
-                    <span className="font-serif text-4xl leading-none text-fg">{a.total ?? "–"}</span>
-                    {a.bonus ? (
-                      <span className="text-xs text-muted">
-                        {a.basis ?? 0} {a.bonus > 0 ? "+" : "−"} {Math.abs(a.bonus)}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-transparent select-none">·</span>
-                    )}
+                  <div className="flex flex-row items-end justify-between gap-3 @4xl:flex-col @4xl:items-start @4xl:justify-start @4xl:gap-2">
+                    <span className="font-serif text-5xl leading-none text-fg">{a.total ?? "–"}</span>
+                    <span className="text-right text-xs text-muted @4xl:text-left">
+                      {a.basis != null || a.bonus != null ? (
+                        <>
+                          Basis {a.basis ?? 0}
+                          {a.bonus ? <> · Bonus {a.bonus > 0 ? "+" : "−"}{Math.abs(a.bonus)}</> : null}
+                        </>
+                      ) : (
+                        "nicht ausgefüllt"
+                      )}
+                    </span>
                   </div>
-                )}
-                {editing && !isLuck && (
-                  <p className="mt-0.5 text-right text-xs text-muted">
-                    Gesamt <span className="font-serif text-lg text-fg">{a.total ?? "–"}</span>
-                  </p>
                 )}
               </li>
             );
@@ -388,38 +396,45 @@ export function Chabo({
             </div>
           )}
         </div>
-        <ul className="grid gap-x-8 gap-y-3 @2xl:grid-cols-2">
-          {talents.map((t) => {
-            const names = t.attrs.map((c) => attrs.find((a) => a.code === c));
-            const calc = t.basis == null ? "Noch nicht berechenbar" : `${names[0]?.name} ${names[0]?.total} + ${names[1]?.name} ${names[1]?.total} ÷ 2 = ${t.basis}`;
-            return (
-              <li key={t.slug} className="flex flex-col gap-1">
-                <div className="flex items-center gap-3">
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg" title={`${names[0]?.name} + ${names[1]?.name}`}>
-                    {t.name}
-                  </span>
-                  <span className="w-8 text-right text-xs text-muted" title={calc}>
+        <div className="flex flex-col">
+          <div className={`${talentGrid} border-b border-line pb-2 text-xs font-medium text-muted`}>
+            <span>Talent</span>
+            <span className="text-center">Basis</span>
+            <span className="text-center">Bonus</span>
+            <span className="text-right">Gesamt</span>
+          </div>
+          <ul>
+            {talents.map((t) => {
+              const names = t.attrs.map((c) => attrs.find((a) => a.code === c));
+              const calc = t.basis == null ? "Noch nicht berechenbar" : `(${names[0]?.total} + ${names[1]?.total}) ÷ 2 = ${t.basis}`;
+              return (
+                <li key={t.slug} className={`${talentGrid} border-b border-line py-3 last:border-0`}>
+                  <div className="min-w-0">
+                    <p className="text-[15px] leading-snug text-fg">{t.name}</p>
+                    <p className="text-xs text-muted">
+                      {names[0]?.name} + {names[1]?.name}
+                    </p>
+                  </div>
+                  <span className="text-center text-sm text-fg-soft" title={calc}>
                     {t.basis ?? "–"}
                   </span>
                   {editing ? (
-                    <input type="number" inputMode="numeric" min={TALENT_BONUS_MIN} max={TALENT_BONUS_MAX} value={data.talentBonus[t.slug] ?? ""} placeholder="±" aria-label={`Bonus ${t.name}`} aria-invalid={Boolean(errors.talentBonus[t.slug])} title={errors.talentBonus[t.slug]} onChange={(e) => setTalentBonus(t.slug, e.target.value)} className={`${numInput} w-14`} />
+                    <input type="number" inputMode="numeric" min={TALENT_BONUS_MIN} max={TALENT_BONUS_MAX} value={data.talentBonus[t.slug] ?? ""} placeholder="0" aria-label={`Bonus ${t.name}`} aria-invalid={Boolean(errors.talentBonus[t.slug])} title={errors.talentBonus[t.slug]} onChange={(e) => setTalentBonus(t.slug, e.target.value)} className={numInput} />
                   ) : (
-                    <span className={`w-9 text-right text-xs ${t.bonus ? "font-medium text-accent" : "text-transparent select-none"}`}>
-                      {t.bonus ? `${t.bonus > 0 ? "+" : "−"}${Math.abs(t.bonus)}` : "·"}
-                    </span>
+                    <span className={`text-center text-sm ${t.bonus ? "font-medium text-accent" : "text-muted"}`}>{t.bonus ? `${t.bonus > 0 ? "+" : "−"}${Math.abs(t.bonus)}` : "–"}</span>
                   )}
-                  <span className="w-8 text-right font-serif text-xl text-fg" title={t.capped ? `Auf ${TALENT_BONUS_MAX} gedeckelt` : undefined}>
+                  <span className="text-right font-serif text-2xl text-fg" title={t.capped ? `Auf ${TALENT_BONUS_MAX} gedeckelt` : undefined}>
                     {t.total ?? "–"}
                     {t.capped && "*"}
                   </span>
-                </div>
-                <div className="h-1 overflow-hidden rounded-full bg-surface-3">
-                  <div className="h-full rounded-full bg-accent/70" style={{ width: `${((t.total ?? 0) / TALENT_BONUS_MAX) * 100}%` }} />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                  <div className="col-span-4 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                    <div className="h-full rounded-full bg-accent/70" style={{ width: `${((t.total ?? 0) / TALENT_BONUS_MAX) * 100}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </section>
 
       <section aria-label="Notizen" className={card}>
