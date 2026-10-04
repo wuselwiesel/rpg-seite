@@ -8,7 +8,7 @@ let initial = null;
 if (params.get("gefuellt")) {
   initial = emptySheet();
   initial.attrBasis = { MU: "12", IG: "11", GE: "9", KO: "8", IN: "10", KK: "7", FF: "6", CH: "9", SB: "8", GL: "10" };
-  initial.talentBonus = { klettern: "5", singen: "7" };
+  initial.talentBonus = { talent_klettern: "5", talent_singen: "7" };
   initial.personalFields = initial.personalFields.map((f) => (f.label === "Vorname" ? { ...f, value: "Lyra" } : f));
   if (params.get("vampir")) initial = applyRace(initial, "vampir");
 }
