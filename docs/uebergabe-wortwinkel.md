@@ -1,4 +1,4 @@
-# Übergabe Wortwinkel (rpg-seite) – Stand 3. Oktober 2026 (letzte Code-Änderung f6cf366 = PR 26, Vercel-Status der PRs 11–26 **nicht geprüft**)
+# Übergabe Wortwinkel (rpg-seite) – Stand 4. Oktober 2026 (letzte Code-Änderung = PR 40; Vercel-Deploys von PR 37 und PR 40 **erfolgreich**, die der PRs 11–36, 38 und 39 nicht einzeln geprüft)
 
 Von: Agent A (Sitzung im Ordner `~/Desktop/coding`) und Agent B (Branch `claude/modest-bardeen-q29kyy`, PRs in `wuselwiesel/rpg-seite`). Der **Wiki-Gesamtüberblick** (Agent B, 3. Oktober) steht im Abschnitt „Wiki: Gesamtüberblick“ unten; die Einzelheiten je Runde folgen weiter hinten unter „Von Agent B“.
 Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind v4, Vercel. Sprache der App und aller Antworten an die Nutzerin: **Deutsch**.
@@ -10,6 +10,28 @@ Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind
 - Testaccount für localhost:3000: `logotestuser` (Welt „Testwelt“); das Passwort steht bewusst nicht im Repo, sondern in der Agent-Memory bzw. bei der Nutzerin.
 - Zuerst Desktop testen, dann Handy. Neue Badges/Erfolge sind inzwischen gewünscht und gebaut (siehe unten); weitere Ideen kurz mit der Nutzerin abstimmen.
 - **Vor dem Limit dieses Protokoll aktualisieren. Vor neuer Arbeit `git fetch` und prüfen, ob der andere Agent es schon gebaut hat** (Schrift-Vorschau und Status-Menü wurden doppelt gebaut).
+
+## Stand 4. Oktober 2026 – Zusammenfassung (PRs 28–40, alles in `main`)
+**Reihenfolge der Arbeit:** ChaBo-Generator und NPCs (Schritte 1–5 des Plans unten, alle gebaut und live), dazu viele Wünsche der Nutzerin mitten in der Arbeit. Details je Punkt stehen im Abschnitt „Plan: ChaBo-Generator und NPCs“ (Unterabschnitte „Schritt 1…5 gebaut“ und die Liste darunter); hier nur die Übersicht.
+- **PR 28–31:** Werte-Generator, Felder-Generator, Modus (Story/Ingame) bleibt beim Profil, Handy-Story-Leiste (ChaBo statt Beziehungen), Talent-Hover.
+- **PR 32:** NPCs (DB, Rechte, Formular, Liste, ChaBo-Wechsler), Charakterbogen-Link-Feld entfernt, Würfel-Namen nur englisch/amerikanisch/irisch.
+- **PR 33–35:** Würfel: Lebensziel, Geheimnis, Größte Angst statt Aussehen, Geschlecht (Vorname passt); ChaBo „Familie“ umbenennbar; Beziehungsnetz aufgeräumt, Zeitleiste nur auf Wunsch; Wiki-Reiter; ChaBo am Laptop kompakter; Chat-Leiste am Handy mit „+“-Menü.
+- **PR 36:** Online-Status nur als Punkt (offline = nichts), Emoji + Text im Redaktionsprofil (`profiles.presence_emoji/presence_text`), „Beziehungen“ aus Seitenleiste und Handy-Menü (nur im Wiki), Emoji-Fenster nicht mehr abgeschnitten.
+- **PR 37:** Eigene Zufallslisten pro Welt (`world_random_entries`, Einstellungen → Zufallslisten), `/hilfe` „10. Zufall und NPCs“, Story-Ansichten/Likes (`story_views`), Emoji hinzufügen im Fenster (verschachteltes Formular), Wiki-Ordner-Menü, ausgeschriebene Wiki-Werkzeuge (Laptop: Reiter unter der Kopfzeile).
+- **PR 38:** Badges von Account zu Account in der Redaktion (gestalten, an Freund:innen verleihen).
+- **PR 39:** Orte (Karten-Pins) nehmen Emojis aus dem Katalog, auch eigene Emojis als Bild.
+- **PR 40:** Chat-Blase lässt sich auch mit Absender-Bild wieder verschieben (nativer Bild-Zug des Browsers).
+
+**Migrationen dieser Runde (alle per Supabase-MCP ausgeführt, in `schema.sql` und als `supabase/migration_*.sql`, Rechte jeweils per Rollback-Test geprüft):** `migration_character_npc.sql`, `migration_presence_status.sql`, `migration_story_views.sql`, `migration_world_random_entries.sql`, `migration_account_badges.sql`.
+
+**Neue Browser-Test-Suiten (alle in `npm run test:e2e`):** `chabo-random` (70), `mode-memory` (18), `npc-form` (22), `chat-composer` (15), `presence-status` (27), `emoji-popup` (82), `story-audience` (19), `random-lists` (25), `account-badges` (17), `chat-bubble` (13); erweitert: `wiki-dnd` (Ordner-Menü, Wiki-Werkzeuge), `wiki-map` (Pin-Emojis), `relationship-graph` (Zeitleiste). Zuletzt grün: `tsc`, ESLint (0 Fehler, 4 Warnungen), 288 Vitest-Tests, alle Suiten.
+
+**Nicht geprüft / zu tun:**
+- **Nichts davon wurde mit einem echten Konto in der echten App angesehen** (kein Passwort für den Testaccount `logotestuser`): vor allem NPC anlegen/umwandeln/löschen, Story-Ansichten, Account-Badges verleihen, Online-Status mit Emoji, Zufallslisten speichern. Die Oberfläche ist nur in den Browser-Test-Harnessen (Platzhalter für Supabase/Server-Aktionen) geprüft, die Datenbank-Rechte per Rollback-Test.
+- Vercel-Status: PR 37 und PR 40 sind **erfolgreich** ausgeliefert; PRs 11–36, 38, 39 nicht einzeln geprüft (per GitHub-MCP: `pull_request_read` → `get_status`).
+- Löschen in `world_random_entries`, `story_views` und NPC-Löschen: nur Policy-Definition gelesen, nicht per Test (der Supabase-MCP hängt bei `DELETE`).
+- Das „…“-Menü an Wiki-Ordnern öffnet sich am Handy nur über Hover/Fokus (Verhalten unverändert, evtl. verbesserungswürdig).
+- Offen von der Nutzerin ab 4. Oktober: keine weiteren Wünsche bekannt.
 
 ## Live auf main (Grundlage, Stand 1bf8714)
 - Redaktion als eigener Modus: 3-teiliger Schalter Ingame · Story · Redaktion (`src/components/mode-switch.tsx`, Handy: Menü am Modus-Knopf), eigene Seitenleiste/Tabs (`sidebar-nav.tsx`, `mobile-nav.tsx`), eigenes Farbschema `html[data-mode="redaktion"]` (`globals.css`, `mode-theme.tsx`, Init-Script in `layout.tsx`).
@@ -241,6 +263,8 @@ Alles in `main` (PRs 18–26). Zuletzt grün: `tsc`, ESLint (0 Fehler, 3 Warnung
 3. (erledigt) Eigene Emojis pro Welt inkl. Notion-artigem Katalog – siehe „Emoji-Katalog“ oben.
 4. (erledigt) Badges, Katalog, Sammlungen und Mini-Timeline – siehe „Badges und Verlauf“.
 5. (erledigt, 3. Oktober) Wiki nach dem Vorbild von World Anvil: @-Verlinken, Typen, Tags, Entwürfe, Suche, Karten, Graph, Textbausteine, Zeitleiste/Kalender – siehe „Wiki: Gesamtüberblick“. Die Nutzerin hat bei den Fragen die Auswahl per Klick (AskUserQuestion) bevorzugt, nicht per Textliste.
+6. (erledigt, 4. Oktober) ChaBo-Generator (Werte, Felder, Komplett würfeln), NPCs, eigene Zufallslisten pro Welt – siehe Plan oben.
+7. (erledigt, 4. Oktober) Mitten in der Arbeit gewünscht und gebaut: Profil bleibt im Modus; Talente-Attribute nur beim Hover; Charakterbogen-Link-Feld weg; Online-Status nur als Punkt mit Emoji/Text im Redaktionsprofil; Story-Ansichten/Likes pro Account; Beziehungen nur im Wiki; Beziehungsnetz aufgeräumt, Zeitleiste nur auf Wunsch; Chat-Leiste am Handy; Emoji-Fenster und Ordner-Menü nicht abgeschnitten; ausgeschriebene Wiki-Werkzeuge; Account-Badges; Pin-Emojis als Bild; Chat-Blase wieder verschiebbar.
 
 ## Offene Ideen / bekannte Lücken
 - Redaktions-Profil: Highlight-Kreise unter der Bio, Sichtbarkeit pro Feld; Zähler „Freund:innen“ nur im eigenen Profil (RLS auf Freundschaften nicht geprüft).
@@ -248,6 +272,9 @@ Alles in `main` (PRs 18–26). Zuletzt grün: `tsc`, ESLint (0 Fehler, 3 Warnung
 - Emoji-Katalog: Emoji-Upload-Verwaltung liegt weiter unter Einstellungen → Eigene Emojis; eigene Emojis in Feld-Symbolen der Profile werden per `EmojiText` angezeigt, aber dort gibt es noch keinen Katalog-Picker (nur Texteingabe `:name:`).
 - Testdaten im Test-Account (darf die Nutzerin löschen): Selbsttest-Chat `00000000-0000-4000-8000-0000000000c1`, Emoji `:testgesicht:` (+ eine Redaktions-Reaktion damit), Welt-Badge „Ritter des Nebelhafens“, ein Test-Like.
 - Bestehende ESLint-Fehler (siehe Fallstricke) sind nicht von den neuen Dateien.
+- Account-Badges: Verleihen nur an Freund:innen; „Entziehen“ durch Gestalter:in oder Empfänger:in. Eine Übersicht aller selbst verliehenen Account-Badges außerhalb des Reiters Redaktion fehlt.
+- Zufallslisten: kein Bearbeiten einzelner Einträge (nur löschen und neu anlegen); Verwaltung nur für die aktive Welt.
+- Story-Ansichten: Zähler gelten pro Story, nicht pro Highlight; Likes sind für alle Mitglieder lesbar (wie vorher), nur die Ansichten-Liste ist auf den Account der Story beschränkt.
 
 ## Sicherheit und Datenschutz (Audit 2. Oktober 2026)
 - **Das GitHub-Repo ist öffentlich.** Nie committen: `.env*` (ist per `.gitignore` ausgeschlossen, nur `.env.example` mit Platzhaltern), Schlüssel, Passwörter, echte E-Mail-Adressen, Nutzerdaten. Geprüft: aktueller Stand enthält keine Geheimnisse; `NEXT_PUBLIC_*` (Supabase-URL, Anon-Key, VAPID-Public-Key) sind öffentlich gedacht, `VAPID_PRIVATE_KEY` und `CRON_SECRET` nur als Vercel-/lokale Umgebungsvariablen.
@@ -266,6 +293,12 @@ Alles in `main` (PRs 18–26). Zuletzt grün: `tsc`, ESLint (0 Fehler, 3 Warnung
 - **Rechte prüfen ohne Spuren:** `do $$ … raise exception 'ERGEBNIS: …' $$;` mit `set local role authenticated` und `set_config('request.jwt.claims', '{"sub":"<uuid>","role":"authenticated"}', true)` läuft als Nutzer:in und rollt durch den Abbruch alles zurück (so wurden Entwürfe, Karten, Kalender geprüft).
 - Neue Seiten unter `src/app/**` brauchen für `PageProps<"/pfad">` einmal `npx next typegen` (sonst meldet `tsc` „does not satisfy AppRoutes“).
 - Browser-Tests: `PLAYWRIGHT_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run test:e2e` (Pfad des vorhandenen Chromium; nicht `playwright install` ausführen). Die Harnesse unter `e2e/*/` bündeln mit esbuild und ersetzen `next/link`, `next/navigation` und Server-Aktionen durch Platzhalter; `wiki-map`, `wiki-mention` und `wiki-graph` laden das echte `globals.css` per `@tailwindcss/postcss`, `wiki-dnd` und `wiki-form` nicht (wiki-dnd mit echtem CSS: ein Klick-Test schlug fehl, daher bewusst beim kleinen Test-CSS belassen).
+- **Auch `DELETE` in `DO`-Blöcken hängt im Supabase-MCP** (Timeout nach 60 s); Rechte-Tests ohne `DELETE` schreiben und die Delete-Policy über `pg_policies` lesen. Bestehende Policies ändert `ALTER POLICY … USING/WITH CHECK` (funktioniert, ohne DROP). Nach einem Timeout prüfen, ob etwas hängt oder Zeilen übrig sind (`pg_stat_activity`, `count(*)`).
+- **Keine verschachtelten `<form>`:** Komponenten, die in anderen Formularen stehen können (Emoji-Fenster!), dürfen selbst kein `<form>` rendern, sonst löst „Hinzufügen“ das äußere Formular aus. `EmojiUploadForm` ist deshalb ein `<div>` mit Knopf.
+- **Bilder in ziehbaren Elementen:** `<img>` ist standardmäßig ziehbar und beendet Zeigerereignisse (`pointercancel`); `CharacterAvatar` setzt `draggable={false}`.
+- **Fenster/Menüs in scrollenden Containern:** `position: absolute` wird abgeschnitten; `position: fixed` mit Koordinaten aus `getBoundingClientRect` (siehe `CustomEmojiPicker`, Ordner-Menü in `wiki-shell.tsx`) und beim Scrollen schließen.
+- **Dateinamen mit Umlauten:** Regexe mit `\u00fc` statt eingetippter Umlaute (NFC/NFD-Unterschied macOS vs. Windows/Linux).
+- **E2E-Harnesse:** Für Komponenten mit Server-Aktionen oder Supabase-Client per esbuild-`onResolve` Platzhalter einsetzen (`@/lib/supabase/client`, `@supabase/*`, `app/**/actions`), `next/dynamic` durch eine Attrappe ersetzen; Stylesheet per `@tailwindcss/postcss` aus `globals.css` bauen (ohne echtes CSS sind Layout-Tests wertlos, `hidden`/`group-hover` greifen nicht). In einer frischen Shell `PLAYWRIGHT_CHROMIUM` neu setzen.
 - `@tiptap/extension-table` und `-details` müssen dieselbe Version wie `@tiptap/pm` haben (3.31.3), sonst `ERESOLVE`.
 
 ## Von Agent B (Branch `claude/modest-bardeen-q29kyy`), Stand 2. Oktober 2026
