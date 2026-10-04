@@ -58,9 +58,9 @@ const ATTR_COLOR: Record<string, string> = {
   GL: "gold",
 };
 
-const card = "flex flex-col gap-6 rounded-2xl border border-line bg-surface p-5 @xl:p-8";
+const card = "flex flex-col gap-6 rounded-2xl border border-line bg-surface p-5 @xl:p-8 @4xl:gap-5 @4xl:p-6";
 const numInput =
-  "w-full min-w-0 rounded-lg border border-line bg-app px-2 py-2 text-center text-base text-fg outline-none focus:border-accent aria-[invalid=true]:border-red-500";
+  "w-full min-w-0 rounded-lg border border-line bg-app px-2 py-2 text-center text-base @4xl:py-1 @4xl:text-sm text-fg outline-none focus:border-accent aria-[invalid=true]:border-red-500";
 // Spalten der Talent-Tabelle: Name, Basis, Bonus, Gesamt. Am Handy schmal (in der Ansicht noch schmaler als beim Bearbeiten), ab mittlerer Breite großzügig.
 const talentGridView = "grid grid-cols-[minmax(0,1fr)_2.25rem_2.75rem_3rem] items-center gap-x-2.5 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
 const talentGridEdit = "grid grid-cols-[minmax(0,1fr)_2.25rem_3.75rem_3rem] items-center gap-x-2.5 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
@@ -487,12 +487,12 @@ export function Chabo({
             canUndo={snapshots.attrs.length > 0}
           />
         )}
-        <ul className="grid grid-cols-2 gap-3 @4xl:grid-cols-5 @4xl:gap-4">
+        <ul className="grid grid-cols-2 gap-3 @4xl:grid-cols-5 @4xl:gap-3">
           {attrs.map((a) => {
             const hex = folderColorHex(ATTR_COLOR[a.code]);
             const isLuck = a.code === "GL";
             return (
-              <li key={a.code} data-attr={a.code} data-highlight={activeAttrs.has(a.code) ? "true" : undefined} className={`flex flex-col gap-3 rounded-2xl p-4 transition duration-200 @xl:p-5 ${activeAttrs.has(a.code) ? "scale-[1.03] shadow-md ring-2 ring-accent" : ""}`} style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} ${activeAttrs.has(a.code) ? 30 : 16}%, transparent)` } : undefined}>
+              <li key={a.code} data-attr={a.code} data-highlight={activeAttrs.has(a.code) ? "true" : undefined} className={`flex flex-col gap-3 rounded-2xl p-4 transition duration-200 @xl:p-5 @4xl:gap-2 @4xl:p-3.5 ${activeAttrs.has(a.code) ? "scale-[1.03] shadow-md ring-2 ring-accent" : ""}`} style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} ${activeAttrs.has(a.code) ? 30 : 16}%, transparent)` } : undefined}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 text-[15px] font-medium leading-snug text-fg [overflow-wrap:anywhere] @4xl:text-sm">{a.name}</p>
                   <span className="shrink-0 rounded-md bg-app/60 px-1.5 py-0.5 text-xs font-semibold text-muted">{a.code}</span>
@@ -507,7 +507,7 @@ export function Chabo({
                       {isLuck ? (
                         <span className="flex flex-col gap-1 text-xs text-muted">
                           Punkte
-                          <span className="flex min-h-[42px] flex-wrap items-center justify-center gap-0.5">
+                          <span className="flex min-h-[42px] flex-wrap @4xl:min-h-[32px] items-center justify-center gap-0.5">
                             {Array.from({ length: clovers }, (_, i) => (
                               <Clover key={i} className="h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
                             ))}
@@ -529,7 +529,7 @@ export function Chabo({
                   </div>
                 ) : isLuck ? (
                   <div className="flex flex-row items-end justify-between gap-3 @4xl:flex-col @4xl:items-start @4xl:justify-start @4xl:gap-2">
-                    <span className="font-serif text-5xl leading-none text-fg">{a.basis ?? "–"}</span>
+                    <span className="font-serif text-5xl leading-none text-fg @4xl:text-4xl">{a.basis ?? "–"}</span>
                     <span className="flex flex-wrap items-center justify-end gap-1 @4xl:justify-start" title={`${clovers} Glückspunkt${clovers === 1 ? "" : "e"} pro Szene`}>
                       {Array.from({ length: clovers }, (_, i) => (
                         <Clover key={i} className="h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
@@ -539,7 +539,7 @@ export function Chabo({
                   </div>
                 ) : (
                   <div className="flex flex-row items-end justify-between gap-3 @4xl:flex-col @4xl:items-start @4xl:justify-start @4xl:gap-2">
-                    <span className="font-serif text-5xl leading-none text-fg">{a.total ?? "–"}</span>
+                    <span className="font-serif text-5xl leading-none text-fg @4xl:text-4xl">{a.total ?? "–"}</span>
                     <span className="text-right text-xs text-muted @4xl:text-left">
                       {a.basis != null || a.bonus != null ? (
                         <>
@@ -617,10 +617,10 @@ export function Chabo({
                     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActiveTalent((cur) => (cur === t.slug ? null : cur));
                   }}
                   onKeyDown={(e) => e.key === "Escape" && setActiveTalent(null)}
-                  className={`${editing ? talentGridEdit : talentGridView} relative cursor-default border-b border-line py-3.5 outline-none transition-colors last:border-0 focus-visible:bg-surface-2/60 ${activeTalent === t.slug ? "bg-surface-2/50" : ""}`}
+                  className={`${editing ? talentGridEdit : talentGridView} relative cursor-default border-b border-line py-3.5 outline-none @4xl:py-2 transition-colors last:border-0 focus-visible:bg-surface-2/60 ${activeTalent === t.slug ? "bg-surface-2/50" : ""}`}
                 >
                   <div className="min-w-0">
-                    <p className="text-[15px] leading-snug text-fg [overflow-wrap:anywhere] hyphens-auto">{t.name}</p>
+                    <p className="text-[15px] leading-snug text-fg [overflow-wrap:anywhere] hyphens-auto @4xl:text-sm">{t.name}</p>
                   </div>
                   {activeTalent === t.slug && (
                     <div role="tooltip" className="absolute left-0 top-[calc(100%-0.5rem)] z-20 flex max-w-full flex-wrap items-center gap-1.5 rounded-xl border border-line bg-surface p-2 text-xs shadow-lg animate-[pop-in_0.14s_ease-out]">
@@ -648,7 +648,7 @@ export function Chabo({
                   )}
                   <span className="flex justify-end">
                     <span
-                      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-xl px-2 font-serif text-2xl ${t.total == null ? "text-muted" : "bg-surface-2 text-fg"}`}
+                      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-xl px-2 font-serif text-2xl @4xl:h-8 @4xl:min-w-9 @4xl:text-xl ${t.total == null ? "text-muted" : "bg-surface-2 text-fg"}`}
                       title={t.capped ? `Auf ${TALENT_BONUS_MAX} gedeckelt` : undefined}
                     >
                       {t.total ?? "–"}

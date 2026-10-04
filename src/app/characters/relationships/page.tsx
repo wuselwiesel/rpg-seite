@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Network } from "lucide-react";
+import { ChevronDown, Network } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -62,6 +62,8 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
   const treeChars = haus ? allChars.filter((c) => c.house === haus) : allChars;
   const treeIds = new Set(treeChars.map((c) => c.id));
   const treeRels = haus ? allRels.filter((r) => treeIds.has(r.character_a_id) && treeIds.has(r.character_b_id)) : allRels;
+
+  const listRels = view === "stammbaum" ? allRels.filter((r) => r.category === "familie") : shownRels;
 
   const href = (next: { ansicht?: string; art?: string; haus?: string }) => {
     const q = new URLSearchParams();
@@ -188,18 +190,27 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
         </div>
       )}
 
-      <h2 className="mb-3 font-serif text-lg text-fg">Neue Beziehung</h2>
-      <div className="mb-8">
-        <RelationshipForm characters={allChars} />
-      </div>
+      <details className="group mb-4 rounded-2xl border border-line bg-surface">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
+          Neue Beziehung
+          <ChevronDown className="h-4 w-4 text-muted transition group-open:rotate-180" strokeWidth={2} />
+        </summary>
+        <div className="px-4 pb-4">
+          <RelationshipForm characters={allChars} />
+        </div>
+      </details>
 
-      <h2 className="mb-3 font-serif text-lg text-fg">Alle Beziehungen</h2>
-      <RelationshipList
-        relationships={view === "stammbaum" ? allRels.filter((r) => r.category === "familie") : shownRels}
-        characters={allChars}
-        currentUserId={user.id}
-        isWorldOwner={isWorldOwner}
-      />
+      <details className="group rounded-2xl border border-line bg-surface">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
+          <span>
+            Alle Beziehungen <span className="font-normal text-muted">({listRels.length})</span>
+          </span>
+          <ChevronDown className="h-4 w-4 text-muted transition group-open:rotate-180" strokeWidth={2} />
+        </summary>
+        <div className="px-4 pb-4">
+          <RelationshipList relationships={listRels} characters={allChars} currentUserId={user.id} isWorldOwner={isWorldOwner} />
+        </div>
+      </details>
     </div>
   );
 }
