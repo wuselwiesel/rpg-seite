@@ -88,7 +88,6 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
           <h2 className="mb-3 font-serif text-xl text-fg">Freund:innen einladen</h2>
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <InviteLink worldId={world.id} />
-            <p className="text-xs text-muted">Jede:r Angemeldete kann damit direkt beitreten.</p>
           </div>
           <InviteFriendForm worldId={world.id} friends={invitableFriends} />
         </>

@@ -119,9 +119,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
         </form>
       </header>
 
-      {!filtering ? (
-        <p className="text-fg-soft">Gib einen Suchbegriff ein oder wähle einen Filter, zum Beispiel eine Art oder einen Tag.</p>
-      ) : hits.length === 0 ? (
+      {!filtering ? null : hits.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line p-6 text-fg-soft">
           Nichts gefunden.{" "}
           {q && (

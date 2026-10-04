@@ -180,7 +180,6 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
 
       <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-fg">Benachrichtigungen personalisieren</p>
-        <p className="-mt-2 text-xs text-muted">Bestimme, worüber du per Push informiert wirst. In der Glocke siehst du trotzdem alles.</p>
         <div className="flex flex-col divide-y divide-line rounded-xl bg-surface-2 px-3">
           {NOTIFICATION_TYPE_GROUPS.map((g) => (
             <label key={g.key} className="flex items-center justify-between gap-3 py-2.5 text-sm text-fg">
@@ -199,7 +198,6 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
       {worlds.length > 0 && (
         <div className="flex flex-col gap-3">
           <p className="text-sm font-medium text-fg">Stumm schalten</p>
-          <p className="-mt-2 text-xs text-muted">Für stumme Welten und Charaktere kommt kein Push. Die Glocke zeigt sie weiter an.</p>
           {worlds.map((w) => (
             <div key={w.id} className="rounded-xl bg-surface-2 p-3">
               <label className="flex items-center gap-3 text-sm font-medium text-fg">

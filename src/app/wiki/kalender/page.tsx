@@ -46,7 +46,6 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
       <header className="flex flex-col gap-3">
         <WikiCrumbs crumbs={[]} />
         <h1 className="font-serif text-4xl text-fg @xl:text-5xl">Kalender</h1>
-        <p className="max-w-prose text-fg-soft">Was passiert wann in eurer Welt? Seiten mit Zeitpunkt erscheinen an ihrem Tag.</p>
         <Link href="/wiki/zeitleiste" className="flex w-fit items-center gap-1.5 text-sm text-accent hover:underline">
           <Clock className="h-4 w-4" strokeWidth={2} />
           Zur Zeitleiste

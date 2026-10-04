@@ -90,7 +90,6 @@ export function EditRedaktionProfileForm({
       <section className="flex flex-col gap-3">
         <div>
           <h2 className="font-serif text-lg text-fg">Angeheftete Beiträge</h2>
-          <p className="text-xs text-muted">Bis zu {MAX_PINNED} Beiträge erscheinen ganz oben in deinem Profil.</p>
         </div>
         {postChoices.length === 0 ? (
           <p className="text-sm text-muted">Du hast noch keine Beiträge.</p>

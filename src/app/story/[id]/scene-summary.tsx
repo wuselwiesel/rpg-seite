@@ -58,7 +58,6 @@ export function SceneSummary({
         className="mb-4 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4"
       >
         <p className="text-sm font-medium text-fg">Zusammenfassung dieser Szene</p>
-        <p className="-mt-1 text-xs text-muted">Für alle zum Nachlesen: Was ist geschehen, was wurde entschieden, was ist offen geblieben?</p>
         <RichTextEditor name="recap" initialContent={initialHtml} onChange={setHtml} mentionCharacters={mentionCharacters} minHeight={160} allowFontSelection />
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex flex-wrap items-center gap-2">

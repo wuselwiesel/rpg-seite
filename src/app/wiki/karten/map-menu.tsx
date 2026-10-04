@@ -149,7 +149,6 @@ function EditDialog({ map, onClose }: { map: MapInfo; onClose: () => void }) {
           </span>
           <input type="file" accept="image/*" onChange={pick} className="sr-only" aria-label="Anderes Kartenbild wählen" />
         </label>
-        {file && <p className="-mt-2 text-xs text-muted">Die Pins behalten ihre Position auf dem Bild. Passt das neue Bild anders, verschiebst du sie danach.</p>}
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Name
           <input required maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} autoFocus className={field} />

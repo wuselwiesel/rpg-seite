@@ -200,19 +200,12 @@ export function WikiForm({
       <section className={card}>
         <div>
           <h2 className="font-serif text-xl text-fg">Steckbrief</h2>
-          <p className="text-sm text-muted">Die wichtigsten Fakten als Tabelle neben dem Text. Mit [[Seite]] oder [[Figur]] verlinkst du auch hier. Felder ohne Titel oder Inhalt werden nicht gespeichert.</p>
         </div>
         <ProfileFieldsEditor key={fieldsKey} initial={fieldRows} />
       </section>
 
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Text</h2>
-        <p className="text-sm text-muted">
-          Tippe <code className="rounded bg-surface-2 px-1">@</code> und wähle eine Seite oder eine Figur, oder schreibe{" "}
-          <code className="rounded bg-surface-2 px-1">[[Titel]]</code>, um Seiten zu verlinken. Gibt es die Seite noch nicht, wird der Link
-          rot und lässt sich mit einem Klick anlegen. Mit <code className="rounded bg-surface-2 px-1">[[Titel|Text]]</code> bestimmst du den
-          angezeigten Text.
-        </p>
         {(restored || !isNew) && (
           <RichTextEditor
             key={editorKey}

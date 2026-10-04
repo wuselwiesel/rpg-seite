@@ -26,7 +26,6 @@ export default async function WikiMapsPage() {
           <MapIcon className="h-8 w-8 text-accent" strokeWidth={1.5} />
           Karten
         </h1>
-        <p className="max-w-prose text-fg-soft">Lade Karten eurer Welt hoch und setze Pins, die auf Wiki-Seiten oder auf weitere Karten verweisen.</p>
       </header>
 
       {maps.length > 0 && (

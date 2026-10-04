@@ -20,7 +20,6 @@ export default async function WorldsPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div>
           <h1 className="font-serif text-3xl text-fg">Deine Welten</h1>
-          <p className="text-sm text-muted">Wähle eine Welt oder erschaffe eine neue.</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Link

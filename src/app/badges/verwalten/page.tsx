@@ -116,7 +116,6 @@ export default async function ManageBadgesPage({ searchParams }: PageProps<"/bad
             />
           </div>
           <h2 className="mb-1 mt-8 font-serif text-xl text-fg">Welche Abzeichen anzeigen?</h2>
-          <p className="mb-2 text-sm text-fg-soft">Ausgeblendete Abzeichen erscheinen nicht in deinem Redaktions-Profil.</p>
           <VisibilityList
             items={accBadges.map((b) => ({ awardId: b.awardId, icon: b.icon, name: b.name, hidden: !!b.hidden }))}
           />

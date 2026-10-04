@@ -153,7 +153,6 @@ export default async function WikiHomePage() {
           <h2 id="entwuerfe" className={sectionTitle}>
             Meine Entwürfe <span className="text-base text-muted">{drafts.length}</span>
           </h2>
-          <p className="-mt-2 mb-3 text-sm text-muted">Nur du siehst diese Seiten, bis du sie veröffentlichst.</p>
           <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
             {drafts.map((p) => (
               <li key={p.id}>

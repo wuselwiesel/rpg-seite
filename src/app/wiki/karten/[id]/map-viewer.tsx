@@ -269,7 +269,6 @@ export function MapViewer({
           </button>
         </div>
       </div>
-      {editing && <p className="text-sm text-muted">Tippe auf die Karte, um einen Pin zu setzen. Pins lassen sich mit gedrückter Maustaste oder dem Finger verschieben.</p>}
 
       <div
         ref={viewportRef}

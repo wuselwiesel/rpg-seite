@@ -82,11 +82,10 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
-      <div className="mb-1 flex items-center gap-2">
+      <div className="mb-4 flex items-center gap-2">
         <Network className="h-6 w-6 text-accent" strokeWidth={2} />
         <h1 className="font-serif text-3xl text-fg">Beziehungsnetz</h1>
       </div>
-      <p className="mb-6 text-sm text-muted">Wer steht wie zueinander in {activeWorld.name}.</p>
 
       <div className="mb-4 flex gap-1 rounded-lg bg-surface-2 p-1" role="tablist">
         {VIEWS.map((v) => (

@@ -109,7 +109,6 @@ export function StoryStickerEditor({
           />
         </div>
       )}
-      {(poll || question) && <p className="text-xs text-muted">Mitspielende antworten mit ihrem aktiven Charakter. Antworten auf die Fragen-Box siehst nur du.</p>}
     </div>
   );
 }
