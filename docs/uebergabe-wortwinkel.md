@@ -1,4 +1,4 @@
-# Übergabe Wortwinkel (rpg-seite) – Stand 4. Oktober 2026 (letzte Code-Änderung = PR 40, Vercel-Status der PRs 11–40 **nicht geprüft**; PR 37 stand zuletzt auf „deploying“)
+# Übergabe Wortwinkel (rpg-seite) – Stand 4. Oktober 2026 (letzte Code-Änderung = PR 40; Vercel-Deploys von PR 37 und PR 40 **erfolgreich**, die der PRs 11–36, 38 und 39 nicht einzeln geprüft)
 
 Von: Agent A (Sitzung im Ordner `~/Desktop/coding`) und Agent B (Branch `claude/modest-bardeen-q29kyy`, PRs in `wuselwiesel/rpg-seite`). Der **Wiki-Gesamtüberblick** (Agent B, 3. Oktober) steht im Abschnitt „Wiki: Gesamtüberblick“ unten; die Einzelheiten je Runde folgen weiter hinten unter „Von Agent B“.
 Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind v4, Vercel. Sprache der App und aller Antworten an die Nutzerin: **Deutsch**.
@@ -28,7 +28,7 @@ Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind
 
 **Nicht geprüft / zu tun:**
 - **Nichts davon wurde mit einem echten Konto in der echten App angesehen** (kein Passwort für den Testaccount `logotestuser`): vor allem NPC anlegen/umwandeln/löschen, Story-Ansichten, Account-Badges verleihen, Online-Status mit Emoji, Zufallslisten speichern. Die Oberfläche ist nur in den Browser-Test-Harnessen (Platzhalter für Supabase/Server-Aktionen) geprüft, die Datenbank-Rechte per Rollback-Test.
-- **Vercel-Status der PRs 11–40 nicht geprüft** (per GitHub-MCP: `pull_request_read` → `get_status`).
+- Vercel-Status: PR 37 und PR 40 sind **erfolgreich** ausgeliefert; PRs 11–36, 38, 39 nicht einzeln geprüft (per GitHub-MCP: `pull_request_read` → `get_status`).
 - Löschen in `world_random_entries`, `story_views` und NPC-Löschen: nur Policy-Definition gelesen, nicht per Test (der Supabase-MCP hängt bei `DELETE`).
 - Das „…“-Menü an Wiki-Ordnern öffnet sich am Handy nur über Hover/Fokus (Verhalten unverändert, evtl. verbesserungswürdig).
 - Offen von der Nutzerin ab 4. Oktober: keine weiteren Wünsche bekannt.
