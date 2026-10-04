@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, CircleHelp } from "lucide-react";
 import { ATTR_TABLE, TALENT_LIST } from "@/lib/charakterbogen-stats";
+import { DICE_CONDITIONS } from "@/lib/dice-conditions";
 import { BASIS_BUDGET, BASIS_MAX, BASIS_MIN, TALENT_ATTRS, TALENT_BONUS_BUDGET, TALENT_BONUS_MAX, TALENT_BONUS_MIN } from "@/lib/sheet-rules";
 
 export const metadata = { title: "Hilfe" };
@@ -83,6 +84,15 @@ export default function HelpPage() {
           </li>
           <li>
             <strong>Bonus:</strong> Ein positiver Bonus erleichtert die Probe, ein negativer erschwert sie. Er wird auf den Wert gerechnet, nicht auf den Wurf.
+          </li>
+          <li>
+            <strong>Zustand:</strong> Bei einer Probe mit Wert kannst du einen Zustand wählen, der den Wurf erschwert. Es gibt{" "}
+            {DICE_CONDITIONS.map((c) => (
+              <span key={c.id}>
+                „{c.label}“ in den Stufen {c.levels.map((l) => `${l.label.toLowerCase()} (${l.malus})`).join(", ")}
+              </span>
+            ))}
+            . Die Stufe zieht ihren Wert vom Wert ab, zusätzlich zu einem eigenen Bonus. Im Eintrag des Wurfs steht der Zustand dabei.
           </li>
           <li>
             <strong>Ohne Wert:</strong> Es wird einfach nur gewürfelt, ohne Erfolg oder Misserfolg.

@@ -158,6 +158,7 @@ export function StoryEntryItem({
             <span className="text-fg-soft">
               würfelt auf <span className="font-medium text-fg">„{entry.roll_label}“</span>
               {entry.roll_stat_name && <span className="text-muted"> ({entry.roll_stat_name})</span>}
+              {entry.roll_condition && <span className="text-muted"> · {entry.roll_condition}</span>}
               {entry.roll_target_character?.name && (
                 <>
                   {" "}

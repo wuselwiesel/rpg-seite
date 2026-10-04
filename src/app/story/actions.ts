@@ -15,6 +15,7 @@ import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacterIds, createNotification } from "@/lib/notifications";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import { isRateLimited } from "@/lib/rate-limit";
+import { resolveCondition } from "@/lib/dice-conditions";
 import { columnsFromDates, parsePageDates } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 
@@ -611,6 +612,8 @@ type RollParams = {
   bonus: number;
   die: number;
   targetCharacterId: string | null;
+  // Bezeichnung eines Zustands wie „Betrunken (stark)“ (der Malus steckt schon im bonus), nur für die Anzeige
+  condition?: string | null;
 };
 
 // Für die Anzeige im Würfeln-Formular, bevor überhaupt gewürfelt wurde.
@@ -656,6 +659,7 @@ async function performDiceRoll(
   spentLuck: boolean,
 ): Promise<DiceRollState> {
   const { characterId, label, statName, value, bonus, die, targetCharacterId } = params;
+  const condition = params.condition?.trim().slice(0, 40) || null;
 
   if (await isRateLimited(supabase, "story_entries", "character_id", characterId, 10, 15)) {
     return { error: "Zu viele Würfe in kurzer Zeit. Kurz warten und nochmal versuchen.", luckRemaining: null };
@@ -668,10 +672,11 @@ async function performDiceRoll(
   const success = effectiveValue === null ? null : result <= effectiveValue;
 
   const verb = spentLuck ? "setzt einen Glückspunkt ein und würfelt erneut auf" : "würfelt auf";
+  const what = `„${label}“${condition ? ` (${condition})` : ""}`;
   const content =
     value === null
-      ? `${verb} „${label}“: ${result} (W${die})`
-      : `${verb} „${label}“: ${result}/${effectiveValue}${bonus !== 0 ? ` (${value}${bonus > 0 ? "+" : ""}${bonus})` : ""} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`;
+      ? `${verb} ${what}: ${result} (W${die})`
+      : `${verb} ${what}: ${result}/${effectiveValue}${bonus !== 0 ? ` (${value}${bonus > 0 ? "+" : ""}${bonus})` : ""} (W${die}) – ${success ? "Erfolg" : "Misserfolg"}`;
 
   const { error } = await supabase.from("story_entries").insert({
     story_post_id: storyPostId,
@@ -686,6 +691,7 @@ async function performDiceRoll(
     roll_success: success,
     roll_target_character_id: targetCharacterId,
     roll_luck_remaining: luckRemaining,
+    roll_condition: condition,
   });
 
   if (error) return { error: error.message, luckRemaining: null };
@@ -740,7 +746,9 @@ export async function createDiceRoll(
   // Ohne Wert wird nur der reine Würfelwurf angezeigt, ohne Erfolg/Misserfolg-Auswertung.
   const value = rawValue === "" ? null : Number(rawValue);
   const rawBonus = String(formData.get("bonus") ?? "").trim();
-  const bonus = rawBonus === "" ? 0 : Number(rawBonus);
+  // Zustand (z. B. Betrunken, stark): sein Malus wird hier auf den Bonus gerechnet, damit niemand ihn weglassen oder ändern kann
+  const condition = resolveCondition(String(formData.get("condition") ?? ""));
+  const bonus = (rawBonus === "" ? 0 : Number(rawBonus)) + (condition?.malus ?? 0);
   const die = Number(formData.get("die"));
   const targetCharacterId = String(formData.get("target_character_id") ?? "").trim() || null;
   const rawLuckMax = String(formData.get("luck_max") ?? "").trim();
@@ -778,7 +786,7 @@ export async function createDiceRoll(
     supabase,
     user.id,
     storyPostId,
-    { characterId, label, statName, value, bonus, die, targetCharacterId },
+    { characterId, label, statName, value, bonus, die, targetCharacterId, condition: condition?.text ?? null },
     luckRemaining,
     false,
   );

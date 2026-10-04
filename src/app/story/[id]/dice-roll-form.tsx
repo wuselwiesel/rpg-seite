@@ -6,6 +6,7 @@ import { createDiceRoll, getLuckPointsRemaining, rerollWithLuck, type DiceRollSt
 import { parseSheetUrl, fetchPublicSheet } from "@/lib/charakterbogen";
 import { getStatOptions, luckPointsFromGl, type StatOption } from "@/lib/charakterbogen-stats";
 import { normalizeSheet } from "@/lib/sheet-rules";
+import { DICE_CONDITIONS, resolveCondition } from "@/lib/dice-conditions";
 import { createClient } from "@/lib/supabase/client";
 import type { Character } from "@/lib/types";
 
@@ -19,6 +20,7 @@ type LastRoll = {
   bonus: number;
   die: number;
   targetCharacterId: string | null;
+  condition: string | null;
 };
 
 function CloverRow({ remaining }: { remaining: number }) {
@@ -53,6 +55,10 @@ export function DiceRollForm({
   const [statName, setStatName] = useState("");
   const [value, setValue] = useState("");
   const [bonus, setBonus] = useState("");
+  // Zustand wie „Betrunken“: Auswahl (Zustand) und Stufe, z. B. „betrunken“ und „stark“
+  const [conditionId, setConditionId] = useState("");
+  const [conditionLevel, setConditionLevel] = useState("");
+  const condition = resolveCondition(conditionId && conditionLevel ? `${conditionId}:${conditionLevel}` : "");
   const [die, setDie] = useState(20);
   const [target, setTarget] = useState("");
   const [statOptions, setStatOptions] = useState<StatOption[]>([]);
@@ -121,7 +127,9 @@ export function DiceRollForm({
         label,
         statName: statName || null,
         value: value === "" ? null : Number(value),
-        bonus: bonus === "" ? 0 : Number(bonus),
+        // Bonus samt Malus des Zustands (so rechnet auch der Server)
+        bonus: (bonus === "" ? 0 : Number(bonus)) + (value === "" ? 0 : (condition?.malus ?? 0)),
+        condition: value === "" ? null : (condition?.text ?? null),
         die,
         targetCharacterId: target || null,
       });
@@ -133,6 +141,8 @@ export function DiceRollForm({
       setStatName("");
       setValue("");
       setBonus("");
+      setConditionId("");
+      setConditionLevel("");
       setTarget("");
       setRerollError(null);
     }
@@ -280,6 +290,47 @@ export function DiceRollForm({
           </select>
         </label>
       </div>
+      {value !== "" && (
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col gap-1 text-sm text-fg-soft">
+            Zustand (optional)
+            <select
+              value={conditionId}
+              onChange={(e) => {
+                setConditionId(e.target.value);
+                setConditionLevel(DICE_CONDITIONS.find((c) => c.id === e.target.value)?.levels[0]?.id ?? "");
+              }}
+              className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
+            >
+              <option value="">Keiner</option>
+              {DICE_CONDITIONS.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {conditionId && (
+            <div role="radiogroup" aria-label="Stärke" className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              {DICE_CONDITIONS.find((c) => c.id === conditionId)?.levels.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={conditionLevel === l.id}
+                  onClick={() => setConditionLevel(l.id)}
+                  className={`flex flex-col items-center rounded-lg border px-2 py-2 text-sm transition ${conditionLevel === l.id ? "border-accent bg-surface text-fg" : "border-line text-fg-soft hover:border-accent/50"}`}
+                >
+                  <span className="font-medium">{l.label}</span>
+                  <span className="text-xs text-muted">{l.malus}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {value !== "" && condition && <input type="hidden" name="condition" value={`${conditionId}:${conditionLevel}`} />}
+
       <p className="-mt-1 text-xs text-muted">
         Ohne Wert wird nur der Wurf angezeigt, ohne Erfolg/Misserfolg. Bonus erschwert (negativ) oder
         erleichtert (positiv) die Probe, indem er auf den Wert angerechnet wird.

@@ -21,6 +21,7 @@ type RollRow = {
   roll_result: number | null;
   roll_success: boolean | null;
   roll_luck_remaining: number | null;
+  roll_condition: string | null;
   characters: { id: string; name: string; avatar_url: string | null } | null;
   roll_target_character: { name: string } | null;
   story_posts: { title: string; world_id: string } | null;
@@ -59,7 +60,7 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
 
   // Spaltenliste als einfacher String, sonst wird die Typ-Auswertung der Verknüpfungen zu tief
   const columns: string =
-    "id, story_post_id, created_at, roll_label, roll_stat_name, roll_value, roll_bonus, roll_die, roll_result, roll_success, roll_luck_remaining, characters!story_entries_character_id_fkey(id, name, avatar_url), roll_target_character:roll_target_character_id(name), story_posts!inner(title, world_id)";
+    "id, story_post_id, created_at, roll_label, roll_stat_name, roll_value, roll_bonus, roll_die, roll_result, roll_success, roll_luck_remaining, roll_condition, characters!story_entries_character_id_fkey(id, name, avatar_url), roll_target_character:roll_target_character_id(name), story_posts!inner(title, world_id)";
   const base = supabase
     .from("story_entries")
     .select(columns, { count: "exact" })
@@ -129,6 +130,7 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
                     <span className="text-fg-soft">
                       würfelt auf <span className="font-medium text-fg">„{r.roll_label}“</span>
                       {r.roll_stat_name && <span className="text-muted"> ({r.roll_stat_name})</span>}
+                      {r.roll_condition && <span className="text-muted"> · {r.roll_condition}</span>}
                       {r.roll_target_character?.name && (
                         <>
                           {" "}
