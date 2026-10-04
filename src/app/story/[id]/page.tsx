@@ -91,6 +91,16 @@ export default async function StoryPostDetailPage({
   const [wikiTerms, calendar] = await Promise.all([getWikiTerms(storyPost.world_id), getWikiCalendar(storyPost.world_id)]);
   const link = (html: string) => autolinkHtml(html, { wiki: wikiTerms, tagHref: "/story" });
 
+  // Kapitel = neue Szene: vorherige und nächste Szene (die Sichtbarkeit regelt die Datenbank), dazu die Orte der Welt für die Auswahl
+  const [{ data: prevScene }, { data: nextScene }, { data: locationRows }] = await Promise.all([
+    storyPost.previous_story_id
+      ? supabase.from("story_posts").select("id, title, recap").eq("id", storyPost.previous_story_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from("story_posts").select("id, title").eq("previous_story_id", storyPost.id).maybeSingle(),
+    supabase.from("story_posts").select("location").eq("world_id", storyPost.world_id).not("location", "is", null),
+  ]);
+  const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
+
   const [{ data: world }, { data: bookmark }] = await Promise.all([
     supabase.from("worlds").select("created_by").eq("id", storyPost.world_id).maybeSingle(),
     supabase
@@ -180,6 +190,20 @@ export default async function StoryPostDetailPage({
             <p className="text-xs text-muted">{formatDateTime(storyPost.created_at)}</p>
           </div>
         </div>
+        {(prevScene || nextScene) && (
+          <nav aria-label="Szenen" className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+            {prevScene && (
+              <Link href={`/story/${prevScene.id}`} className="max-w-full truncate transition hover:text-accent">
+                ← {prevScene.title}
+              </Link>
+            )}
+            {nextScene && (
+              <Link href={`/story/${nextScene.id}`} className="max-w-full truncate transition hover:text-accent">
+                {nextScene.title} →
+              </Link>
+            )}
+          </nav>
+        )}
         {storyPost.story_arcs?.name && storyPost.arc_id && (
           <Link
             href={`/story?arc=${storyPost.arc_id}`}
@@ -236,8 +260,8 @@ export default async function StoryPostDetailPage({
 
       <SceneRecap
         storyPostId={storyPost.id}
-        chapterTitle={lastChapter?.chapter_title ?? null}
-        chapterSummary={lastChapter?.chapter_summary ?? null}
+        chapterTitle={lastChapter ? (lastChapter.chapter_title ?? null) : (prevScene?.recap ? prevScene.title : null)}
+        chapterSummary={lastChapter ? (lastChapter.chapter_summary ?? null) : prevScene?.recap ? stripHtml(prevScene.recap).slice(0, 1500) : null}
         items={recapItems}
         aiSummary={storyPost.ai_summary ?? null}
         aiSummaryCount={storyPost.ai_summary_count ?? null}
@@ -324,7 +348,17 @@ export default async function StoryPostDetailPage({
       )}
 
       {storyPost.locked ? (
-        <p className="text-sm text-muted">Diese Szene ist abgeschlossen – keine neuen Fortsetzungen möglich.</p>
+        <p className="text-sm text-muted">
+          Diese Szene ist abgeschlossen – keine neuen Fortsetzungen möglich.
+          {nextScene && (
+            <>
+              {" "}
+              <Link href={`/story/${nextScene.id}`} className="text-accent hover:underline">
+                Weiter mit „{nextScene.title}“
+              </Link>
+            </>
+          )}
+        </p>
       ) : (
         <div data-tour="story-composer">
           <StoryComposer
@@ -334,6 +368,9 @@ export default async function StoryPostDetailPage({
             activeCharacterId={activeCharacter?.id ?? null}
             characters={mentionableCharacters}
             participantIds={participantIds}
+            calendar={calendar}
+            locations={locations}
+            sceneLocation={storyPost.location}
           />
         </div>
       )}

@@ -327,37 +327,88 @@ async function afterWriting(
   }
 }
 
-export async function createChapter(
-  storyPostId: string,
-  worldId: string,
-  title: string,
-  summary: string,
-  chosenCharacterId = "",
-): Promise<string | null> {
-  const chapterTitle = title.trim().slice(0, 100);
-  const chapterSummary = summary.trim().slice(0, 1500);
-  if (!chapterTitle) return "Gib dem Kapitel einen Titel.";
+// Neues Kapitel = neue Szene: legt die Folgeszene an (Titel, Anfangstext, Datum/Zeit im Kalender, Ort), schließt die alte Szene ab und
+// gibt ihr auf Wunsch die Zusammenfassung. Die neue Szene erbt Handlungsstrang und Geheim-Einstellung der alten.
+export async function startNextScene(previousId: string, formData: FormData): Promise<{ error: string } | { id: string }> {
+  const title = String(formData.get("title") ?? "").trim().slice(0, 100);
+  const content = sanitizePostHtml(String(formData.get("content") ?? "").trim());
+  if (!title) return { error: "Gib der neuen Szene einen Titel." };
+  if (stripHtml(content).length === 0 && !content.includes("<img")) return { error: "Schreib einen Anfangstext für die neue Szene." };
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return "Nicht angemeldet.";
-  const characterId = await resolveWriter(user.id, worldId, chosenCharacterId);
-  if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
+  if (!user) return { error: "Nicht angemeldet." };
 
-  const { error } = await supabase.from("story_entries").insert({
-    story_post_id: storyPostId,
-    character_id: characterId,
-    content: chapterTitle,
-    kind: "chapter",
-    chapter_title: chapterTitle,
-    chapter_summary: chapterSummary || null,
+  const { data: prev } = await supabase
+    .from("story_posts")
+    .select("id, world_id, arc_id, is_private, locked, character_id")
+    .eq("id", previousId)
+    .maybeSingle();
+  if (!prev) return { error: "Szene nicht gefunden." };
+  const { data: existing } = await supabase.from("story_posts").select("id").eq("previous_story_id", previousId).maybeSingle();
+  if (existing) return { error: "Zu dieser Szene gibt es schon eine Folgeszene." };
+
+  const characterId = await resolveWriter(user.id, prev.world_id, String(formData.get("character_id") ?? "").trim());
+  if (!characterId) return { error: "Du brauchst zuerst einen Charakter in dieser Welt." };
+
+  const location = String(formData.get("location") ?? "").trim().slice(0, 80) || null;
+  const inWorldTime = String(formData.get("in_world_time") ?? "").trim().slice(0, 80) || null;
+  const sceneDates = await readSceneDates(formData, prev.world_id);
+  if (sceneDates.error !== null) return { error: sceneDates.error };
+
+  const recapHtml = sanitizePostHtml(recapToHtml(String(formData.get("recap") ?? "")));
+  if (recapHtml.length > 30000) return { error: "Die Zusammenfassung ist zu lang." };
+
+  const { data: created, error } = await supabase
+    .from("story_posts")
+    .insert({
+      world_id: prev.world_id,
+      character_id: characterId,
+      arc_id: prev.arc_id,
+      title,
+      content,
+      tags: extractHashtags(`${title} ${stripHtml(content)}`),
+      is_private: prev.is_private,
+      location,
+      in_world_time: inWorldTime,
+      previous_story_id: previousId,
+      ...sceneDates.columns,
+    })
+    .select("id")
+    .single();
+  if (error || !created) return { error: error?.code === "23505" ? "Zu dieser Szene gibt es schon eine Folgeszene." : (error?.message ?? "Szene konnte nicht erstellt werden.") };
+
+  const { error: finishError } = await supabase.rpc("finish_scene_for_next", {
+    p_previous: previousId,
+    p_next: created.id,
+    p_recap: isEmptyRecap(recapHtml) ? "" : recapHtml,
   });
-  if (error) return error.message;
+  if (finishError) {
+    // Ohne Abschluss der alten Szene gäbe es eine verwaiste Folgeszene
+    await supabase.from("story_posts").delete().eq("id", created.id);
+    return { error: finishError.message === "Keine Berechtigung" ? "Nur wer in dieser Szene mitgespielt hat, kann ein neues Kapitel beginnen." : finishError.message };
+  }
 
-  revalidatePath(`/story/${storyPostId}`);
-  return null;
+  // Geheime Szene: dieselben Charaktere dürfen auch die Folgeszene sehen
+  if (prev.is_private) {
+    const { data: viewers } = await supabase.from("story_post_viewers").select("character_id").eq("story_post_id", previousId);
+    const ids = new Set((viewers ?? []).map((v) => v.character_id as string));
+    ids.add(prev.character_id);
+    ids.delete(characterId);
+    if (ids.size > 0) await supabase.from("story_post_viewers").insert([...ids].map((cid) => ({ story_post_id: created.id, character_id: cid })));
+  }
+
+  if (location) await ensureLocationWikiPage(supabase, prev.world_id, user.id, location);
+
+  after(() => syncCharacterBadges(characterId));
+  revalidatePath("/story");
+  revalidatePath(`/story/${previousId}`);
+  revalidatePath("/wiki");
+  revalidatePath("/wiki/zeitleiste");
+  revalidatePath("/wiki/kalender");
+  return { id: created.id };
 }
 
 // Zusammenfassung einer Szene schreiben, ändern oder (leer) entfernen.

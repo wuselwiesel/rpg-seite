@@ -6,12 +6,13 @@ import { BookMarked, CircleHelp, Feather, Type } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
-import { ChapterForm } from "./chapter-form";
+import { NextSceneForm } from "./next-scene-form";
 import { usePresenceStatus } from "@/lib/presence-status";
 import { StatusList, StatusPicker } from "@/components/presence-status-ui";
 import { WriterSelect } from "@/components/writer-select";
 import { ChaboDrawer } from "@/components/chabo/chabo-drawer";
 import type { Character } from "@/lib/types";
+import type { WikiCalendar } from "@/lib/wiki-calendar";
 
 export function StoryComposer({
   storyPostId,
@@ -20,6 +21,9 @@ export function StoryComposer({
   activeCharacterId,
   characters,
   participantIds,
+  calendar,
+  locations,
+  sceneLocation,
 }: {
   storyPostId: string;
   worldId: string;
@@ -29,6 +33,9 @@ export function StoryComposer({
   // Alle ansprechbaren Charaktere der Welt (Erwähnungen, Wurf-Ziel, "Danach dran").
   characters: Character[];
   participantIds: string[];
+  calendar: WikiCalendar;
+  locations: string[];
+  sceneLocation: string | null;
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
 
@@ -185,7 +192,7 @@ export function StoryComposer({
                 type="button"
                 onClick={() => setShowChapter((v) => !v)}
                 aria-pressed={showChapter}
-                title="Neues Kapitel beginnen"
+                title="Neues Kapitel (neue Szene) beginnen"
                 className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
                   showChapter ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
                 }`}
@@ -217,7 +224,7 @@ export function StoryComposer({
       )}
 
       {mode === "write" && showChapter && (
-        <ChapterForm storyPostId={storyPostId} worldId={worldId} writerId={writerId} onDone={() => setShowChapter(false)} />
+        <NextSceneForm storyPostId={storyPostId} writerId={writerId} calendar={calendar} locations={locations} location={sceneLocation} onDone={() => setShowChapter(false)} />
       )}
 
       {Object.keys(typing).length > 0 && (

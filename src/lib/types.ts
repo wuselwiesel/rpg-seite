@@ -139,6 +139,8 @@ export type StoryPost = {
   // Selbst geschriebene Zusammenfassung der Szene zum Nachlesen
   recap?: string | null;
   recap_at?: string | null;
+  // Kapitel = neue Szene: die Szene, auf die diese folgt
+  previous_story_id?: string | null;
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];
