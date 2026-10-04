@@ -7,6 +7,8 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { MentionInput, MentionText } from "./mention-input";
+import { RollBar } from "./roll-bar";
+import { rollAttributes, rollTalents, type AttrStyle, type TalentStyle } from "@/lib/sheet-random";
 import { stripMentionAt } from "@/lib/sheet-mentions";
 import type { Character } from "@/lib/types";
 import { folderColorHex } from "@/lib/wiki-folder-style";
@@ -62,6 +64,12 @@ const numInput =
 const talentGridView = "grid grid-cols-[minmax(0,1fr)_2.25rem_2.75rem_3rem] items-center gap-x-2.5 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
 const talentGridEdit = "grid grid-cols-[minmax(0,1fr)_2.25rem_3.75rem_3rem] items-center gap-x-2.5 @xl:grid-cols-[minmax(0,1fr)_4rem_6rem_4.5rem] @xl:gap-x-5";
 const textInput = "w-full rounded-lg border border-line bg-app px-3 py-2.5 text-sm text-fg outline-none focus:border-accent";
+
+// Rückgängig-Schritte je Bereich: gemerkt wird nur, was das Würfeln geändert hat, damit andere Eingaben nicht verloren gehen.
+type RollSection = "attrs" | "talents";
+type Snapshots = Record<RollSection, Partial<SheetData>[]>;
+const NO_SNAPSHOTS: Snapshots = { attrs: [], talents: [] };
+const MAX_UNDO = 15;
 
 type Status = { kind: "idle" } | { kind: "pending" } | { kind: "saved" } | { kind: "invalid" } | { kind: "error"; message: string };
 
@@ -139,6 +147,9 @@ export function Chabo({
   const [importError, setImportError] = useState<string | null>(null);
   const [blockIds, setBlockIds] = useState(() => (initial ?? emptySheet()).notesBlocks.map((_, i) => `s${i}`));
   const [portraitKey, setPortraitKey] = useState(0);
+  const [attrStyle, setAttrStyle] = useState<AttrStyle>("ausgewogen");
+  const [talentStyle, setTalentStyle] = useState<TalentStyle>("allrounder");
+  const [snapshots, setSnapshots] = useState<Snapshots>(NO_SNAPSHOTS);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<SheetData | null>(null);
 
@@ -210,12 +221,27 @@ export function Chabo({
       }
       setBlockIds(next.notesBlocks.map(uid));
       setPortraitKey((k) => k + 1);
+      setSnapshots(NO_SNAPSHOTS);
       commit(next);
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Übernehmen fehlgeschlagen.");
     } finally {
       setImporting(false);
     }
+  }
+
+  function rollSection(section: RollSection) {
+    const next = section === "attrs" ? rollAttributes(data, attrStyle, Math.random) : rollTalents(data, talentStyle, Math.random);
+    const before: Partial<SheetData> = section === "attrs" ? { attrBasis: data.attrBasis } : { talentBonus: data.talentBonus };
+    setSnapshots((s) => ({ ...s, [section]: [...s[section], before].slice(-MAX_UNDO) }));
+    commit(next);
+  }
+
+  function undoSection(section: RollSection) {
+    const last = snapshots[section][snapshots[section].length - 1];
+    if (!last) return;
+    setSnapshots((s) => ({ ...s, [section]: s[section].slice(0, -1) }));
+    commit({ ...data, ...last });
   }
 
   const setAttr = (code: string, key: "attrBasis" | "attrBonus", value: string) => commit({ ...data, [key]: { ...data[key], [code]: value } });
@@ -254,7 +280,7 @@ export function Chabo({
               </Link>
               {canEdit &&
                 (editing ? (
-                  <button type="button" onClick={() => setEditing(false)} className="flex items-center gap-1.5 rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
+                  <button type="button" onClick={() => { setEditing(false); setSnapshots(NO_SNAPSHOTS); }} className="flex items-center gap-1.5 rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
                     <Check className="h-4 w-4" strokeWidth={2.25} />
                     Fertig
                   </button>
@@ -396,6 +422,20 @@ export function Chabo({
             </div>
           )}
         </div>
+        {editing && (
+          <RollBar
+            label="Attribute"
+            options={[
+              { id: "ausgewogen", label: "Ausgewogen" },
+              { id: "wild", label: "Wild" },
+            ]}
+            value={attrStyle}
+            onStyle={setAttrStyle}
+            onRoll={() => rollSection("attrs")}
+            onUndo={() => undoSection("attrs")}
+            canUndo={snapshots.attrs.length > 0}
+          />
+        )}
         <ul className="grid grid-cols-2 gap-3 @4xl:grid-cols-5 @4xl:gap-4">
           {attrs.map((a) => {
             const hex = folderColorHex(ATTR_COLOR[a.code]);
@@ -481,6 +521,20 @@ export function Chabo({
             </div>
           )}
         </div>
+        {editing && (
+          <RollBar
+            label="Talente"
+            options={[
+              { id: "spezialist", label: "Spezialist:in" },
+              { id: "allrounder", label: "Allrounder:in" },
+            ]}
+            value={talentStyle}
+            onStyle={setTalentStyle}
+            onRoll={() => rollSection("talents")}
+            onUndo={() => undoSection("talents")}
+            canUndo={snapshots.talents.length > 0}
+          />
+        )}
         <div className="flex flex-col">
           <div className={`${editing ? talentGridEdit : talentGridView} border-b border-line pb-2 text-xs font-medium text-muted`}>
             <span>Talent</span>

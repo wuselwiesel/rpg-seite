@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:e2e": "node e2e/relationship-graph/test.mjs && node e2e/wiki-dnd/test.mjs && node e2e/wiki-mention/test.mjs && node e2e/wiki-form/test.mjs && node e2e/wiki-map/test.mjs && node e2e/wiki-graph/test.mjs"
+    "test:e2e": "node e2e/relationship-graph/test.mjs && node e2e/wiki-dnd/test.mjs && node e2e/wiki-mention/test.mjs && node e2e/wiki-form/test.mjs && node e2e/wiki-map/test.mjs && node e2e/wiki-graph/test.mjs && node e2e/chabo-random/test.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
