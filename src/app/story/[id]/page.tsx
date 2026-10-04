@@ -21,6 +21,7 @@ import { EntryList } from "./entry-list";
 import { ScrollToLast } from "./scroll-to-last";
 import { ScrollToEntry } from "./scroll-to-entry";
 import { JumpToLast } from "./jump-to-last";
+import { ChapterJump } from "./chapter-jump";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
 import { SceneDateToggle } from "@/components/scene-date-toggle";
@@ -300,6 +301,7 @@ export default async function StoryPostDetailPage({
         {(entries?.length ?? 0) > 1 && <JumpToLast variant="inline" />}
       </div>
       {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
+      {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content }))} />}
 
       <EntryList
         items={(() => {
