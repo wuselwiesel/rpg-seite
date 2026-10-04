@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookMarked, Feather, Type } from "lucide-react";
+import Link from "next/link";
+import { BookMarked, CircleHelp, Feather, Type } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
@@ -9,6 +10,7 @@ import { ChapterForm } from "./chapter-form";
 import { usePresenceStatus } from "@/lib/presence-status";
 import { StatusList, StatusPicker } from "@/components/presence-status-ui";
 import { WriterSelect } from "@/components/writer-select";
+import { ChaboDrawer } from "@/components/chabo/chabo-drawer";
 import type { Character } from "@/lib/types";
 
 export function StoryComposer({
@@ -159,42 +161,50 @@ export function StoryComposer({
             Würfeln
           </button>
         </div>
-        {mode === "write" && (
-          <div className="flex items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => setNarrator((v) => !v)}
-              aria-pressed={narrator}
-              title={narrator ? "Als Erzähler:in schreiben: an" : "Als Erzähler:in schreiben"}
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
-                narrator ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
-              }`}
-            >
-              <Feather className="h-4 w-4" strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowChapter((v) => !v)}
-              aria-pressed={showChapter}
-              title="Neues Kapitel beginnen"
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
-                showChapter ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
-              }`}
-            >
-              <BookMarked className="h-4 w-4" strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowToolbar((v) => !v)}
-              title={showToolbar ? "Formatierung ausblenden" : "Formatierung anzeigen"}
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
-                showToolbar ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
-              }`}
-            >
-              <Type className="h-4 w-4" strokeWidth={2} />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-0.5">
+          {mode === "roll" && (
+            <Link href="/hilfe#wuerfeln" title="Hilfe zum Würfeln" aria-label="Hilfe zum Würfeln" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+              <CircleHelp className="h-4 w-4" strokeWidth={2} />
+            </Link>
+          )}
+          {writer && <ChaboDrawer characterId={writer.id} characterName={writer.name} />}
+          {mode === "write" && (
+            <>
+              <button
+                type="button"
+                onClick={() => setNarrator((v) => !v)}
+                aria-pressed={narrator}
+                title={narrator ? "Als Erzähler:in schreiben: an" : "Als Erzähler:in schreiben"}
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
+                  narrator ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
+                }`}
+              >
+                <Feather className="h-4 w-4" strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowChapter((v) => !v)}
+                aria-pressed={showChapter}
+                title="Neues Kapitel beginnen"
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
+                  showChapter ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
+                }`}
+              >
+                <BookMarked className="h-4 w-4" strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowToolbar((v) => !v)}
+                title={showToolbar ? "Formatierung ausblenden" : "Formatierung anzeigen"}
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
+                  showToolbar ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
+                }`}
+              >
+                <Type className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {(mode === "roll" || !narrator) && (

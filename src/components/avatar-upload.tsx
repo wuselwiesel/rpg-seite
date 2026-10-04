@@ -15,6 +15,7 @@ export function AvatarUpload({
   displayName,
   bucket = "avatars",
   variant = "circle",
+  onChange,
 }: {
   name: string;
   initialUrl?: string | null;
@@ -23,6 +24,8 @@ export function AvatarUpload({
   // icon: Symbol ohne Hintergrund (PNG/SVG/WebP/GIF), wird weder zugeschnitten noch verkleinert, damit die Transparenz bleibt;
   // circle: rundes Profilbild; cover: breites Titelbild; standard: normales Querformat 4:3 (Wiki); portrait: normales Hochformat-Bild (z. B. Person im Wiki)
   variant?: "circle" | "cover" | "portrait" | "standard" | "icon";
+  // Meldet die neue Adresse (z. B. für Formulare, die nicht über das versteckte Feld laufen)
+  onChange?: (url: string) => void;
 }) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [uploading, setUploading] = useState(false);
@@ -97,6 +100,7 @@ export function AvatarUpload({
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     setUrl(data.publicUrl);
+    onChange?.(data.publicUrl);
     setUploading(false);
   }
 
@@ -180,7 +184,7 @@ export function AvatarUpload({
           </button>
         )}
         {variant === "icon" && url && (
-          <button type="button" onClick={() => setUrl("")} className="w-fit text-left text-sm text-muted hover:text-fg">
+          <button type="button" onClick={() => { setUrl(""); onChange?.(""); }} className="w-fit text-left text-sm text-muted hover:text-fg">
             Icon entfernen
           </button>
         )}

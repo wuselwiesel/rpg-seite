@@ -4,7 +4,7 @@ import { getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/ba
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AtSign, ChevronDown, Clock, Grid3x3, Images, MessageCircle, Pencil, Pin, Rows3 } from "lucide-react";
+import { AtSign, ChevronDown, Clock, Grid3x3, IdCard, Images, MessageCircle, Pencil, Pin, Rows3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
@@ -14,6 +14,8 @@ import { FollowButton } from "@/components/follow-button";
 import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
 import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
+import { Chabo } from "@/components/chabo/chabo";
+import { getCharacterSheet } from "@/lib/character-sheet-data";
 import { storyBackground } from "@/lib/stories";
 import { PostMedia } from "@/components/post-media";
 import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
@@ -46,7 +48,8 @@ export default async function CharacterProfilePage({
   if (!character) notFound();
 
   const isOwnerView = character.owner_id === user.id;
-  const tab = tabParam === "tagged" ? "tagged" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
+  const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
+  const sheet = await getCharacterSheet(id);
   const listView = ansicht === "liste";
   const nowIso = new Date().toISOString();
 
@@ -370,7 +373,7 @@ export default async function CharacterProfilePage({
           </div>
         )}
 
-        {character.sheet_url && (
+        {character.sheet_url && !sheet && (
           <details open className="group mt-6 rounded-2xl border border-line">
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
               Charakterbogen
@@ -390,6 +393,7 @@ export default async function CharacterProfilePage({
           {[
             { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
             { id: "tagged", label: "Getaggt", icon: AtSign, show: true },
+            { id: "chabo", label: "ChaBo", icon: IdCard, show: Boolean(sheet) || isOwnerView },
             { id: "scheduled", label: "Geplant", icon: Clock, show: isOwnerView },
           ]
             .filter((t) => t.show)
@@ -410,6 +414,12 @@ export default async function CharacterProfilePage({
             ))}
         </div>
 
+        {tab === "chabo" ? (
+          <div className="px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
+            <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwnerView} variant="panel" />
+          </div>
+        ) : (
+          <>
         <div className="flex justify-end gap-1 px-3 pt-2 sm:px-0" role="group" aria-label="Ansicht">
           <Link
             href={profileHref(tab, false)}
@@ -500,6 +510,8 @@ export default async function CharacterProfilePage({
           <p className="py-16 text-center text-muted">
             {tab === "tagged" ? "Noch nicht in Beiträgen markiert." : tab === "scheduled" ? "Keine geplanten Beiträge." : "Noch keine Beiträge."}
           </p>
+        )}
+          </>
         )}
       </div>
     </ProfileThemeWrapper>

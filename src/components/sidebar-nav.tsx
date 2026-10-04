@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle } from "lucide-react";
+import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle, IdCard } from "lucide-react";
 import { getAppMode } from "@/lib/app-mode";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -65,7 +65,12 @@ export function SidebarNav({
             Beziehungen
           </NavLink>
           {activeCharacter && (
-            <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
+            <NavLink href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
+              ChaBo
+            </NavLink>
+          )}
+          {activeCharacter && (
+            <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />} exact>
               Profil
             </NavLink>
           )}

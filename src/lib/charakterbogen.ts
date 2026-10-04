@@ -36,6 +36,8 @@ export type CharakterbogenAttr = { basis: string; bonus: string };
 export type CharakterbogenData = {
   universe?: string;
   race?: string;
+  // Altes Bild: als Daten-Adresse im Dokument
+  portrait?: { dataUrl?: string } | null;
   luckPointsUsed?: number;
   personalFields?: { label: string; value: string }[];
   attrBasis?: Record<string, string>;

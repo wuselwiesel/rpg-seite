@@ -5,6 +5,8 @@ import { Clover, Dices } from "lucide-react";
 import { createDiceRoll, getLuckPointsRemaining, rerollWithLuck, type DiceRollState } from "../actions";
 import { parseSheetUrl, fetchPublicSheet } from "@/lib/charakterbogen";
 import { getStatOptions, luckPointsFromGl, type StatOption } from "@/lib/charakterbogen-stats";
+import { normalizeSheet } from "@/lib/sheet-rules";
+import { createClient } from "@/lib/supabase/client";
 import type { Character } from "@/lib/types";
 
 const DICE_SIZES = [4, 6, 8, 10, 12, 20, 100];
@@ -65,23 +67,33 @@ export function DiceRollForm({
   // Anzahl der Glückspunkte pro Szene (nicht der Glück-Wert selbst).
   const luckMax = glueckOption ? luckPointsFromGl(glueckOption.base ?? glueckOption.value) : 0;
 
+  // Werte aus dem ChaBo des Charakters; gibt es keinen, aus dem alten Charakterbogen (öffentlicher Link).
   useEffect(() => {
-    if (!sheetUrl) return;
-    const ref = parseSheetUrl(sheetUrl);
-    if (!ref) return;
-
     let cancelled = false;
-    fetchPublicSheet(ref)
-      .then((sheet) => {
-        if (cancelled || !sheet) return;
-        setStatOptions(getStatOptions(sheet.data));
-      })
-      .catch(() => {});
+    void (async () => {
+      try {
+        const { data } = await createClient().from("character_sheets").select("data").eq("character_id", writerId).maybeSingle<{ data: unknown }>();
+        if (cancelled) return;
+        if (data) {
+          setStatOptions(getStatOptions(normalizeSheet(data.data)));
+          return;
+        }
+        const ref = sheetUrl ? parseSheetUrl(sheetUrl) : null;
+        if (!ref) {
+          setStatOptions([]);
+          return;
+        }
+        const sheet = await fetchPublicSheet(ref);
+        if (!cancelled) setStatOptions(sheet ? getStatOptions(sheet.data) : []);
+      } catch {
+        // Ohne Bogen kann man trotzdem frei würfeln.
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [sheetUrl]);
+  }, [sheetUrl, writerId]);
 
   // Vor dem ersten Wurf schon anzeigen, wie viele Glückspunkte in dieser Szene noch übrig sind.
   useEffect(() => {

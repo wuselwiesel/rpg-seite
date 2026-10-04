@@ -21,6 +21,8 @@ export const TALENT_LIST = [
   "Sinnesschärfe", "Überleben",
 ];
 
+export const TALENT_MAX = 19;
+
 export function talentSlug(name: string) {
   return (
     "talent_" +
@@ -69,7 +71,8 @@ export function getStatOptions(data: CharakterbogenData): StatOption[] {
       const tid = talentSlug(name);
       return {
         name,
-        value: num(data.talentBasis?.[tid]) + num(data.talentBonus?.[tid]),
+        // Ein Talent zählt höchstens 19, auch wenn Basiswert und Bonus mehr ergeben.
+        value: Math.min(TALENT_MAX, num(data.talentBasis?.[tid]) + num(data.talentBonus?.[tid])),
         category: "Talent" as const,
       };
     }),
