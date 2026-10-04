@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter, getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
+import { getActiveCharacter, getMentionableCharacters, getOwnCharacters, getOwnNpcs } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import type { StoryArc } from "@/lib/types";
@@ -30,7 +30,8 @@ export default async function NewStoryPostPage() {
   ]);
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
-  const [ownCharacters, calendar] = await Promise.all([getOwnCharacters(user.id, activeWorld.id), getWikiCalendar(activeWorld.id)]);
+  const [ownChars, ownNpcs, calendar] = await Promise.all([getOwnCharacters(user.id, activeWorld.id), getOwnNpcs(user.id, activeWorld.id), getWikiCalendar(activeWorld.id)]);
+  const ownCharacters = [...ownChars, ...ownNpcs];
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">

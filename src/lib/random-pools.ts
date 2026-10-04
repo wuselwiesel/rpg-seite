@@ -1,4 +1,4 @@
-// Zufallsfelder für den ChaBo (Name, Alter, Wesen, Hobbys, Beruf/Schule, Eigenheiten, Aussehen): mitgelieferte deutsche Listen für eine
+// Zufallsfelder für den ChaBo (Name, Alter, Wesen, Hobbys, Beruf/Schule, Eigenheiten, Aussehen): mitgelieferte Listen (Namen englisch, amerikanisch, irisch; Rest deutsch) für eine
 // moderne Schul- und Alltagswelt mit Wesen, dazu eigene Einträge je Welt (siehe world_random_entries), die eingemischt werden.
 // Rein; die Zufallsquelle kommt als Parameter (`Rng`), damit Tests mit festem Seed laufen.
 import { pick, randInt, type Rng } from "@/lib/sheet-random";
@@ -27,26 +27,26 @@ export function emptyCustomPools(): CustomPools {
 // ---- mitgelieferte Listen ----
 
 const VORNAMEN = [
-  "Anna", "Ben", "Charlotte", "David", "Emilia", "Felix", "Greta", "Hannah", "Ida", "Jonas", "Klara", "Luca", "Mia", "Noah", "Olivia", "Paul", "Rosa", "Samuel", "Tilda", "Ulrike",
-  "Valentin", "Wanda", "Xaver", "Yara", "Zoe", "Alina", "Bastian", "Carla", "Damian", "Elias", "Fiona", "Gabriel", "Helena", "Ivo", "Jana", "Kilian", "Lena", "Matteo", "Nina", "Oskar",
-  "Pia", "Quentin", "Rafael", "Sophie", "Theo", "Uma", "Vera", "Wiebke", "Yannick", "Zara", "Amelie", "Benno", "Clara", "Dario", "Eva", "Finn", "Giulia", "Henri", "Isabel", "Jakob",
-  "Katharina", "Leon", "Marlene", "Nils", "Ophelia", "Philipp", "Ronja", "Stella", "Tamara", "Ulf", "Viola", "Wilhelm", "Yasmin", "Zeno", "Aaron", "Bianca", "Cedric", "Dorothea", "Emil", "Frieda",
-  "Gustav", "Hedwig", "Imke", "Jasper", "Kira", "Lennard", "Mathilda", "Noel", "Odette", "Pascal", "Romy", "Silas", "Thea", "Urs", "Vivien", "Winona", "Ylvie", "Zacharias", "Leni", "Joris",
-  "Mira", "Nico", "Lilith", "Elvira", "Kasimir", "Lucian", "Selma", "Tabea", "Malte", "Runa",
+  "Emma", "Liam", "Olivia", "Noah", "Ava", "Ethan", "Sophia", "Mason", "Isabella", "Lucas", "Mia", "Logan", "Charlotte", "James", "Amelia", "Henry", "Harper", "Jack", "Evelyn", "Owen",
+  "Abigail", "Caleb", "Ella", "Wyatt", "Scarlett", "Nathan", "Grace", "Isaac", "Chloe", "Dylan", "Lily", "Ryan", "Hannah", "Tyler", "Zoe", "Hunter", "Nora", "Connor", "Riley", "Jordan",
+  "Aoife", "Ciaran", "Saoirse", "Niamh", "Cillian", "Siobhan", "Declan", "Roisin", "Oisin", "Maeve", "Fionn", "Aisling", "Cormac", "Orla", "Eoin", "Caoimhe", "Padraig", "Brigid", "Finnegan", "Eilish",
+  "Thomas", "Eleanor", "Oliver", "Beatrice", "George", "Florence", "Arthur", "Matilda", "Alfie", "Poppy", "Freddie", "Imogen", "Harry", "Daisy", "Archie", "Rosie", "Edward", "Lucy", "Oscar", "Ivy",
+  "William", "Violet", "Benjamin", "Hazel", "Elijah", "Willow", "Samuel", "Piper", "Sebastian", "Stella", "Gabriel", "Savannah", "Julian", "Aurora", "Brooklyn", "Cole", "Paisley", "Jesse", "Quinn", "Rory",
+  "Kieran", "Shane", "Brendan", "Sinead", "Una", "Tara", "Keira", "Alannah", "Colm",
 ];
 
 const NACHNAMEN = [
-  "Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Meyer", "Wagner", "Becker", "Schulz", "Hoffmann", "Koch", "Richter", "Klein", "Wolf", "Schröder", "Neumann", "Schwarz", "Zimmermann", "Braun", "Krüger",
-  "Hartmann", "Lange", "Werner", "Krause", "Lehmann", "Köhler", "Herrmann", "König", "Walter", "Huber", "Kaiser", "Fuchs", "Peters", "Scholz", "Möller", "Weiß", "Jung", "Hahn", "Schubert", "Vogel",
-  "Friedrich", "Keller", "Günther", "Frank", "Berger", "Winkler", "Roth", "Beck", "Lorenz", "Baumann", "Albrecht", "Schuster", "Simon", "Ludwig", "Böhm", "Winter", "Kraus", "Martin", "Schumacher", "Krämer",
-  "Vogt", "Stein", "Jäger", "Otto", "Sommer", "Groß", "Seidel", "Heinrich", "Brandt", "Haas", "Schreiber", "Graf", "Dietrich", "Ziegler", "Kuhn", "Pohl", "Engel", "Horn", "Busch", "Bergmann",
-  "Voigt", "Sauer", "Arnold", "Pfeiffer", "Nachtigall", "Rabenstein", "Falkenberg", "Nebel", "Wolfsberg", "Eichhorn", "Tannenberg", "Mondorf", "Sternberg", "Birkenfeld", "Waldmann", "Kupfer", "Lindner", "Hirsch", "Marder", "Specht",
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", "Harris", "Clark", "Lewis",
+  "Walker", "Hall", "Allen", "Young", "King", "Wright", "Scott", "Green", "Baker", "Adams", "Nelson", "Hill", "Campbell", "Mitchell", "Roberts", "Carter", "Phillips", "Evans", "Turner", "Parker",
+  "Murphy", "Kelly", "O'Brien", "Walsh", "Ryan", "O'Connor", "Byrne", "Doyle", "McCarthy", "Gallagher", "Kennedy", "Lynch", "Murray", "Quinn", "McLoughlin", "Fitzgerald", "Brennan", "Sullivan", "Healy", "Cooper",
+  "Morgan", "Bell", "Bailey", "Cook", "Reed", "Foster", "Hughes", "Price", "Bennett", "Wood", "Barnes", "Ross", "Henderson", "Coleman", "Jenkins", "Perry", "Powell", "Long", "Patterson", "Hayes",
+  "Fletcher", "Harrison", "Palmer", "Stone", "Hunt", "Ashford", "Blackwood", "Whitaker", "Hawthorne", "Fairfax", "Sinclair", "Thornton", "Ellis", "Holloway", "Wells", "Marsh", "Rowan", "Calloway", "Ward",
 ];
 
 const SPITZNAMEN = [
-  "Lu", "Fix", "Mimi", "Dino", "Spatz", "Bär", "Fuchs", "Käpt'n", "Schatten", "Funke", "Nacht", "Blitz", "Keks", "Pixel", "Mücke", "Murmel", "Zwerg", "Hase", "Lotte", "Mops",
-  "Biene", "Krümel", "Rabe", "Flo", "Tinte", "Wirbel", "Sunny", "Moon", "Piet", "Joe", "Maus", "Igel", "Flummi", "Nuss", "Püppi", "Luchs", "Wolke", "Brummbär", "Smilla", "Tiger",
-  "Kiwi", "Zimt", "Pfeffer", "Locke", "Flocke", "Racker", "Kobold", "Glühwürmchen", "Specht", "Nebel", "Dachs", "Kater", "Elster", "Sputnik", "Boss", "Doc", "Ziggy", "Mo", "Nele", "Banjo",
+  "Lu", "Fix", "Mimi", "Dino", "Sparrow", "Bear", "Fox", "Cap", "Shadow", "Spark", "Night", "Bolt", "Cookie", "Pixel", "Bug", "Muffin", "Tiny", "Bunny", "Lottie", "Pug",
+  "Bee", "Crumb", "Raven", "Flo", "Ink", "Whirl", "Sunny", "Moon", "Pete", "Joe", "Mouse", "Hedge", "Fluff", "Nutmeg", "Dolly", "Lynx", "Cloud", "Grizzly", "Smalls", "Tiger",
+  "Kiwi", "Cinnamon", "Pepper", "Curly", "Flake", "Rascal", "Imp", "Firefly", "Woody", "Mist", "Badger", "Tomcat", "Magpie", "Sputnik", "Boss", "Doc", "Ziggy", "Mo", "Nell", "Banjo",
 ];
 
 const HOBBYS = [

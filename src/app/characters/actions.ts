@@ -8,6 +8,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
+import { sanitizePostHtml } from "@/lib/sanitize";
+import { hasErrors, normalizeSheet, validateSheet, withDerived, type SheetData } from "@/lib/sheet-rules";
+import { getCharacterAccess } from "@/lib/npc-data";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
 const GENDERS = ["maennlich", "weiblich", "divers"] as const;
@@ -54,12 +57,27 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
   const gender = parseGender(formData.get("gender"));
   const species = parseSpecies(formData.get("species"));
+  const isNpc = formData.get("is_npc") === "on";
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
   }
   const username = parseUsername(formData.get("username"));
   if (username.error) return username.error;
+
+  // Gewürfelter Bogen (Komplett würfeln): wird vor dem Anlegen geprüft und danach mit dem Charakter gespeichert
+  let sheet: SheetData | null = null;
+  const sheetRaw = String(formData.get("sheet_json") ?? "").trim();
+  if (sheetRaw) {
+    try {
+      sheet = normalizeSheet(JSON.parse(sheetRaw));
+    } catch {
+      return "Der gewürfelte Bogen ist ungültig.";
+    }
+    const errors = validateSheet(sheet);
+    if (hasErrors(errors)) return errors.budget[0] ?? "Der gewürfelte Bogen ist ungültig.";
+    sheet = withDerived({ ...sheet, notesBlocks: sheet.notesBlocks.map((b) => ({ label: b.label, html: sanitizePostHtml(b.html) })) });
+  }
 
   const supabase = await createClient();
   const {
@@ -87,7 +105,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       gender,
       species,
       avatar_url: avatarUrl || null,
-      sheet_url: sheetUrl || null,
+      ...(sheetUrl ? { sheet_url: sheetUrl } : {}),
+      is_npc: isNpc,
     })
     .select("id")
     .single();
@@ -96,10 +115,21 @@ export async function createCharacter(_prevState: string | null, formData: FormD
     return error ? usernameErrorMessage(error.message) : "Charakter konnte nicht erstellt werden.";
   }
 
-  const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_CHARACTER_COOKIE, data.id, SELECTION_COOKIE_OPTIONS);
+  if (sheet) {
+    const { error: sheetError } = await supabase.from("character_sheets").insert({ character_id: data.id, data: sheet });
+    if (sheetError) {
+      // Lieber nichts anlegen als einen Charakter ohne den gewürfelten Bogen: wieder entfernen
+      await supabase.from("characters").delete().eq("id", data.id);
+      return `Der Bogen konnte nicht gespeichert werden: ${sheetError.message}`;
+    }
+  }
 
   revalidatePath("/", "layout");
+  // Ein NPC wird nicht zum aktiven Charakter (er hat keine:n Spieler:in); man landet in seinem ChaBo
+  if (isNpc) redirect(`/characters/${data.id}/chabo`);
+
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_CHARACTER_COOKIE, data.id, SELECTION_COOKIE_OPTIONS);
   redirect("/");
 }
 
@@ -143,9 +173,13 @@ export async function updateCharacter(
 
   if (!user) return "Nicht angemeldet.";
 
+  // Wer darf bearbeiten? Besitzer:in, bei NPCs auch die Welt-Besitzerin (die Datenbank erzwingt dasselbe).
+  const { data: own } = await supabase.from("characters").select("world_id, owner_id, is_npc").eq("id", characterId).maybeSingle<{ world_id: string; owner_id: string; is_npc: boolean }>();
+  if (!own) return "Charakter nicht gefunden.";
+  if (!(await getCharacterAccess(own, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter bearbeiten.";
+
   // Partner:in / beste:r Freund:in müssen echte, für die Person erreichbare Charaktere sein
   // (Welt-Mitglied), sonst still auf "keine Angabe" zurückfallen statt einen Fehler zu werfen.
-  const { data: own } = await supabase.from("characters").select("world_id").eq("id", characterId).maybeSingle();
   let validPartnerId = partnerCharacterId;
   let validBestFriendId = bestFriendCharacterId;
   if (own && (partnerCharacterId || bestFriendCharacterId)) {
@@ -175,10 +209,10 @@ export async function updateCharacter(
       partner_character_id: relationshipStatus && relationshipStatus !== "single" ? validPartnerId : null,
       best_friend_character_id: validBestFriendId,
       avatar_url: avatarUrl || null,
-      sheet_url: sheetUrl || null,
+      // Der Link zum alten Charakterbogen steht nicht mehr im Formular; ein vorhandener bleibt unangetastet
+      ...(formData.has("sheet_url") ? { sheet_url: sheetUrl || null } : {}),
     })
-    .eq("id", characterId)
-    .eq("owner_id", user.id);
+    .eq("id", characterId);
 
   if (error) return usernameErrorMessage(error.message);
 
@@ -186,8 +220,7 @@ export async function updateCharacter(
   const { error: symbolError } = await supabase
     .from("characters")
     .update({ name_symbol: cleanNameSymbol(String(formData.get("name_symbol") ?? "")) || null })
-    .eq("id", characterId)
-    .eq("owner_id", user.id);
+    .eq("id", characterId);
   if (symbolError && /name_symbol/.test(symbolError.message) && cleanNameSymbol(String(formData.get("name_symbol") ?? ""))) {
     return "Gespeichert, aber das Zeichen neben dem Namen nicht: Die Datenbank-Spalte name_symbol fehlt noch (supabase/migration_name_symbol.sql).";
   }
@@ -203,11 +236,11 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const { error, count } = await supabase
-    .from("characters")
-    .delete({ count: "exact" })
-    .eq("id", characterId)
-    .eq("owner_id", user.id);
+  const { data: target } = await supabase.from("characters").select("owner_id, is_npc, world_id").eq("id", characterId).maybeSingle<{ owner_id: string; is_npc: boolean; world_id: string }>();
+  if (!target) return "Charakter konnte nicht gelöscht werden. Bitte später erneut versuchen.";
+  if (!(await getCharacterAccess(target, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter löschen.";
+
+  const { error, count } = await supabase.from("characters").delete({ count: "exact" }).eq("id", characterId);
 
   if (error) return error.message;
   if (!count) return "Charakter konnte nicht gelöscht werden. Bitte später erneut versuchen.";
@@ -219,6 +252,25 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
 
   revalidatePath("/", "layout");
   redirect("/characters");
+}
+
+// Charakter in einen NPC umwandeln und zurück: nur die Person, die ihn angelegt hat (die Datenbank sichert das zusätzlich per Trigger).
+export async function setCharacterNpc(characterId: string, isNpc: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data, error } = await supabase.from("characters").update({ is_npc: isNpc }).eq("id", characterId).eq("owner_id", user.id).select("id");
+  if (error) return error.message;
+  if (!data?.length) return "Nur die Person, die den Charakter angelegt hat, kann ihn umwandeln.";
+  // Ein NPC ist kein aktiver Charakter mehr
+  if (isNpc) {
+    const cookieStore = await cookies();
+    if (cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value === characterId) cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  }
+  revalidatePath("/", "layout");
+  return null;
 }
 
 export async function setActiveCharacter(characterId: string) {

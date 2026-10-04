@@ -25,6 +25,7 @@ export default async function NewChatPage({ searchParams }: PageProps<"/chats/ne
     .from("characters")
     .select("*")
     .eq("world_id", activeWorld.id)
+    .eq("is_npc", false)
     .order("name")
     .returns<Character[]>();
 

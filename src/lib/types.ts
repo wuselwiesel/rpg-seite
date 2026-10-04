@@ -48,6 +48,8 @@ export type Character = {
   species?: CharacterSpecies;
   // Frei gewähltes Zeichen neben dem Namen (Emoji, Symbol oder :eigenes-emoji:).
   name_symbol?: string | null;
+  // NPC: Charakter ohne Spieler:in dahinter (owner_id = Anleger:in)
+  is_npc?: boolean;
   relationship_status?: CharacterRelationshipStatus | null;
   partner_character_id?: string | null;
   best_friend_character_id?: string | null;

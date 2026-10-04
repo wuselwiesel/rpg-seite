@@ -15,6 +15,7 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
       .from("characters")
       .select("*")
       .eq("world_id", worldId)
+      .eq("is_npc", false)
       .order("created_at", { ascending: false })
       .limit(30)
       .returns<Character[]>(),

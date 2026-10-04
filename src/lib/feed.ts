@@ -45,6 +45,7 @@ export async function fetchFeedPage(
     .from("posts")
     .select(POST_SELECT.replace("characters!posts_character_id_fkey(", "characters!posts_character_id_fkey!inner("))
     .eq("characters.world_id", activeWorldId)
+    .eq("characters.is_npc", false)
     .lte("publish_at", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(FEED_PAGE_SIZE);

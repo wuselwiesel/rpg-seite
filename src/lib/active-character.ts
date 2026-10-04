@@ -7,6 +7,7 @@ import { getAcceptedFriends } from "@/lib/friends";
 
 // cache() dedupliziert mehrfache Aufrufe innerhalb eines Requests (z.B. einmal
 // aus der Sidebar, einmal aus der jeweiligen Seite) zu einer einzigen Abfrage.
+// Eigene Charaktere ohne NPCs: Charakterwechsler, Feed, Chats usw. (NPCs: getOwnNpcs, getWorldNpcs).
 export const getOwnCharacters = cache(async (userId: string, worldId: string): Promise<Character[]> => {
   const supabase = await createClient();
   const { data } = await supabase
@@ -14,8 +15,30 @@ export const getOwnCharacters = cache(async (userId: string, worldId: string): P
     .select("*")
     .eq("owner_id", userId)
     .eq("world_id", worldId)
+    .eq("is_npc", false)
     .order("created_at", { ascending: true });
 
+  return data ?? [];
+});
+
+// NPCs, die man selbst angelegt hat (nur sie darf man in Szenen schreiben lassen).
+export const getOwnNpcs = cache(async (userId: string, worldId: string): Promise<Character[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("characters")
+    .select("*")
+    .eq("owner_id", userId)
+    .eq("world_id", worldId)
+    .eq("is_npc", true)
+    .order("name")
+    .returns<Character[]>();
+  return data ?? [];
+});
+
+// Alle NPCs der Welt (für Mitglieder lesbar).
+export const getWorldNpcs = cache(async (worldId: string): Promise<Character[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("characters").select("*").eq("world_id", worldId).eq("is_npc", true).order("name").returns<Character[]>();
   return data ?? [];
 });
 
@@ -36,11 +59,12 @@ export const getMentionableCharacters = cache(async (userId: string, worldId: st
   const friends = await getAcceptedFriends(userId);
   const ownerIds = [userId, ...friends.map((f) => f.id)];
 
+  // Außerdem alle NPCs der Welt: in @-Erwähnungen sollen sie auffindbar sein.
   const { data } = await supabase
     .from("characters")
     .select("*")
     .eq("world_id", worldId)
-    .in("owner_id", ownerIds)
+    .or(`owner_id.in.(${ownerIds.join(",")}),is_npc.eq.true`)
     .order("name")
     .returns<Character[]>();
 

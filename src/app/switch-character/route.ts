@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     .select("id, world_id")
     .eq("id", characterId)
     .eq("owner_id", user.id)
+    .eq("is_npc", false)
     .maybeSingle();
 
   const response = NextResponse.redirect(new URL(target, request.url));
