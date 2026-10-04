@@ -18,7 +18,8 @@ export function ProfileThemeWrapper({ theme, children }: { theme: ProfileTheme; 
 
   return (
     <div style={profileThemeStyle(theme, dark)} className="min-h-full bg-app text-fg">
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 bg-app" />
+      {/* Am Handy färbt der Hintergrund den ganzen Bildschirm; am Laptop nur den Inhalt, die Seitenleiste behält ihre Farben. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 bg-app lg:hidden" />
       {children}
     </div>
   );
