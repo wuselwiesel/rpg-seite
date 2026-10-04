@@ -22,14 +22,18 @@ export function NavLink({
   icon,
   children,
   exact,
+  exclude,
 }: {
   href: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   exact?: boolean;
+  // Unterseite, die nicht mitzählt (z. B. hat „Würfelverlauf“ unter /story seinen eigenen Eintrag)
+  exclude?: string;
 }) {
   const pathname = usePathname();
-  const isActive = exact ? pathname === href : pathname === href || pathname?.startsWith(`${href}/`);
+  const isActive =
+    (exact ? pathname === href : pathname === href || pathname?.startsWith(`${href}/`)) && !(exclude && (pathname === exclude || pathname?.startsWith(`${exclude}/`)));
 
   return (
     <Link href={href} className="group block">

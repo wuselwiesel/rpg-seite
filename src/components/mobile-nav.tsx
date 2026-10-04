@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History } from "lucide-react";
+import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Network, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { ActiveCharacterMenu } from "./active-character-menu";
 import { InstallAppButton } from "./install-app-button";
@@ -220,6 +220,14 @@ export function MobileNav({
         </div>
 
         <div className="flex flex-col gap-1">
+          <Link
+            href="/story/wuerfe"
+            onClick={() => setMoreOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            <Dices className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Würfelverlauf
+          </Link>
           {activeCharacter && (
             <Link
               href={`/characters/${activeCharacter.id}/chabo`}

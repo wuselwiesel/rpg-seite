@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History } from "lucide-react";
+import { House, Search, BookOpen, Library, Network, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { getAppMode } from "@/lib/app-mode";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -58,7 +58,7 @@ export function SidebarNav({
     return (
       <>
         <nav className="flex flex-col gap-1">
-          <NavLink href="/story" icon={<BookOpen className={ICON} strokeWidth={2} />}>
+          <NavLink href="/story" icon={<BookOpen className={ICON} strokeWidth={2} />} exclude="/story/wuerfe">
             Story
           </NavLink>
           <NavLink href="/wiki" icon={<Library className={ICON} strokeWidth={2} />}>
@@ -66,6 +66,9 @@ export function SidebarNav({
           </NavLink>
           <NavLink href="/characters/relationships" icon={<Network className={ICON} strokeWidth={2} />}>
             Beziehungen
+          </NavLink>
+          <NavLink href="/story/wuerfe" icon={<Dices className={ICON} strokeWidth={2} />}>
+            Würfelverlauf
           </NavLink>
           {activeCharacter && (
             <NavLink href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
