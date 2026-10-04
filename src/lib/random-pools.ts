@@ -6,7 +6,9 @@ import { MAX_PERSONAL_FIELDS, applyRace, type Race, type SheetData, type SheetIt
 
 export const POOL_KINDS = ["vorname", "nachname", "spitzname", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"] as const;
 export type PoolKind = (typeof POOL_KINDS)[number];
-export type FieldKind = PoolKind | "alter" | "wesen";
+export type FieldKind = PoolKind | "alter" | "wesen" | "geschlecht";
+export type Gender = "weiblich" | "männlich" | "divers";
+export const GENDER_WORDS: Gender[] = ["weiblich", "männlich", "divers"];
 // Eigene Einträge je Art (die mitgelieferten Listen sind eingebaut)
 export type CustomPools = Record<PoolKind, string[]>;
 
@@ -28,14 +30,24 @@ export function emptyCustomPools(): CustomPools {
 
 // ---- mitgelieferte Listen ----
 
-const VORNAMEN = [
-  "Emma", "Liam", "Olivia", "Noah", "Ava", "Ethan", "Sophia", "Mason", "Isabella", "Lucas", "Mia", "Logan", "Charlotte", "James", "Amelia", "Henry", "Harper", "Jack", "Evelyn", "Owen",
-  "Abigail", "Caleb", "Ella", "Wyatt", "Scarlett", "Nathan", "Grace", "Isaac", "Chloe", "Dylan", "Lily", "Ryan", "Hannah", "Tyler", "Zoe", "Hunter", "Nora", "Connor", "Riley", "Jordan",
-  "Aoife", "Ciaran", "Saoirse", "Niamh", "Cillian", "Siobhan", "Declan", "Roisin", "Oisin", "Maeve", "Fionn", "Aisling", "Cormac", "Orla", "Eoin", "Caoimhe", "Padraig", "Brigid", "Finnegan", "Eilish",
-  "Thomas", "Eleanor", "Oliver", "Beatrice", "George", "Florence", "Arthur", "Matilda", "Alfie", "Poppy", "Freddie", "Imogen", "Harry", "Daisy", "Archie", "Rosie", "Edward", "Lucy", "Oscar", "Ivy",
-  "William", "Violet", "Benjamin", "Hazel", "Elijah", "Willow", "Samuel", "Piper", "Sebastian", "Stella", "Gabriel", "Savannah", "Julian", "Aurora", "Brooklyn", "Cole", "Paisley", "Jesse", "Quinn", "Rory",
-  "Kieran", "Shane", "Brendan", "Sinead", "Una", "Tara", "Keira", "Alannah", "Colm",
+const VORNAMEN_W = [
+  "Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail", "Ella", "Scarlett", "Grace", "Chloe", "Lily", "Hannah", "Zoe", "Nora", "Aoife",
+  "Saoirse", "Niamh", "Siobhan", "Roisin", "Maeve", "Aisling", "Orla", "Caoimhe", "Brigid", "Eilish", "Eleanor", "Beatrice", "Florence", "Matilda", "Poppy", "Imogen", "Daisy", "Rosie", "Lucy", "Ivy",
+  "Violet", "Hazel", "Willow", "Piper", "Stella", "Savannah", "Aurora", "Paisley", "Sinead", "Una", "Tara", "Keira", "Alannah",
 ];
+
+const VORNAMEN_M = [
+  "Liam", "Noah", "Ethan", "Mason", "Lucas", "Logan", "James", "Henry", "Jack", "Owen", "Caleb", "Wyatt", "Nathan", "Isaac", "Dylan", "Ryan", "Tyler", "Hunter", "Connor", "Ciaran",
+  "Cillian", "Declan", "Oisin", "Fionn", "Cormac", "Eoin", "Padraig", "Finnegan", "Thomas", "Oliver", "George", "Arthur", "Alfie", "Freddie", "Harry", "Archie", "Edward", "Oscar", "William", "Benjamin",
+  "Elijah", "Samuel", "Sebastian", "Gabriel", "Julian", "Cole", "Jesse", "Rory", "Kieran", "Shane", "Brendan", "Colm",
+];
+
+const VORNAMEN_N = [
+  "Riley", "Jordan", "Brooklyn", "Quinn",
+];
+
+const VORNAMEN = [...VORNAMEN_W, ...VORNAMEN_M, ...VORNAMEN_N];
+export const FIRST_NAMES = { w: [...VORNAMEN_W, ...VORNAMEN_N], m: [...VORNAMEN_M, ...VORNAMEN_N] };
 
 const NACHNAMEN = [
   "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", "Harris", "Clark", "Lewis",
@@ -124,6 +136,26 @@ export function pickMixed(builtin: readonly string[], custom: readonly string[] 
   return pick(builtin, rng);
 }
 
+export function rollGender(rng: Rng): Gender {
+  const r = rng();
+  return r < 0.48 ? "weiblich" : r < 0.96 ? "männlich" : "divers";
+}
+
+// Vornamen passend zum Geschlecht; „divers“ und unbekannt mischen alle.
+function vornamenFor(gender: Gender | null | undefined): readonly string[] {
+  if (gender === "weiblich") return [...VORNAMEN_W, ...VORNAMEN_N];
+  if (gender === "männlich") return [...VORNAMEN_M, ...VORNAMEN_N];
+  return VORNAMEN;
+}
+
+export function genderFromText(text: string): Gender | null {
+  const t = text.toLowerCase();
+  if (/divers|nichtbin|non-?bin|queer|agender/.test(t)) return "divers";
+  if (/weibl|frau|female|mädchen|\bw\b/.test(t)) return "weiblich";
+  if (/männl|mann|male|junge|\bm\b/.test(t)) return "männlich";
+  return null;
+}
+
 export function rollRace(rng: Rng): Race {
   const r = rng();
   return r < 0.7 ? "none" : r < 0.85 ? "werwolf" : "vampir";
@@ -157,18 +189,21 @@ function hobbys(custom: readonly string[] | undefined, rng: Rng): string {
   return out.join(", ");
 }
 
-export type RollContext = { rng: Rng; custom?: Partial<CustomPools>; race?: Race; age?: number | null; avoid?: ReadonlySet<string> };
+export type RollContext = { rng: Rng; gender?: Gender | null; custom?: Partial<CustomPools>; race?: Race; age?: number | null; avoid?: ReadonlySet<string> };
 
 // Einen Wert für eine Art von Feld würfeln. `avoid` (kleingeschriebene Vornamen) verhindert Doppelungen mit vorhandenen Namen.
 export function rollValue(kind: FieldKind, ctx: RollContext): string {
   const { rng, custom } = ctx;
   switch (kind) {
+    case "geschlecht":
+      return ctx.gender ?? rollGender(rng);
     case "vorname": {
+      const pool = vornamenFor(ctx.gender);
       for (let i = 0; i < 40; i++) {
-        const v = pickMixed(VORNAMEN, custom?.vorname, rng);
+        const v = pickMixed(pool, custom?.vorname, rng);
         if (!ctx.avoid?.has(v.toLowerCase())) return clip(v, 200);
       }
-      return clip(pickMixed(VORNAMEN, custom?.vorname, rng), 200);
+      return clip(pickMixed(pool, custom?.vorname, rng), 200);
     }
     case "nachname":
       return clip(pickMixed(NACHNAMEN, custom?.nachname, rng), 200);
@@ -204,6 +239,7 @@ export function fieldKind(label: string): FieldKind | null {
   if (/^vorname/.test(l) || l === "rufname") return "vorname";
   if (/^(nachname|familienname|zuname)/.test(l)) return "nachname";
   if (/^spitzname|^nickname|^alias$/.test(l)) return "spitzname";
+  if (/^(geschlecht|gender)$/.test(l)) return "geschlecht";
   if (/^alter$/.test(l)) return "alter";
   if (/^(wesen|rasse|spezies|besondere natur|natur)$/.test(l)) return "wesen";
   if (/hobb|interess|freizeit/.test(l)) return "hobby";
@@ -219,6 +255,7 @@ export const FIELD_DEFAULT_LABEL: Record<FieldKind, string> = {
   vorname: "Vorname",
   nachname: "Nachname",
   spitzname: "Spitzname",
+  geschlecht: "Geschlecht",
   alter: "Alter",
   wesen: "Wesen",
   hobby: "Hobbys",
@@ -230,13 +267,18 @@ export const FIELD_DEFAULT_LABEL: Record<FieldKind, string> = {
 };
 
 // Reihenfolge, in der „Alles zufällig“ arbeitet (Alter nach dem Wesen, Beruf nach dem Alter).
-export const FIELD_ORDER: FieldKind[] = ["vorname", "nachname", "spitzname", "wesen", "alter", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"];
+export const FIELD_ORDER: FieldKind[] = ["geschlecht", "vorname", "nachname", "spitzname", "wesen", "alter", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"];
 
 // Besondere Natur eines Bogens: die gewählte, sonst aus dem Wesen-Feld gelesen.
 export function raceOfSheet(data: SheetData): Race {
   if (data.race !== "none") return data.race;
   const wesen = data.personalFields.find((f) => fieldKind(f.label) === "wesen")?.value.toLowerCase() ?? "";
   return wesen.includes("werwolf") ? "werwolf" : wesen.includes("vampir") ? "vampir" : "none";
+}
+
+export function genderOfSheet(data: SheetData): Gender | null {
+  const v = data.personalFields.find((f) => fieldKind(f.label) === "geschlecht")?.value ?? "";
+  return genderFromText(v);
 }
 
 function ageOfSheet(data: SheetData): number | null {
@@ -268,7 +310,7 @@ export function rollRow(data: SheetData, index: number, custom: Partial<CustomPo
     const next = applyRace(data, race);
     return { ...next, personalFields: setValue(next.personalFields, index, RACE_WORDS[race]) };
   }
-  const value = rollValue(kind, { rng, custom, race: raceOfSheet(data), age: ageOfSheet(data), avoid });
+  const value = rollValue(kind, { rng, custom, race: raceOfSheet(data), age: ageOfSheet(data), gender: kind === "geschlecht" ? null : genderOfSheet(data), avoid });
   return { ...data, personalFields: setValue(data.personalFields, index, value) };
 }
 
@@ -289,7 +331,7 @@ export function rollAllFields(data: SheetData, custom: Partial<CustomPools> | un
       cur = applyRace(cur, race);
       cur = { ...cur, personalFields: setValue(cur.personalFields, index, RACE_WORDS[race]) };
     } else {
-      cur = { ...cur, personalFields: setValue(cur.personalFields, index, rollValue(kind, { rng, custom, race: raceOfSheet(cur), age: ageOfSheet(cur), avoid })) };
+      cur = { ...cur, personalFields: setValue(cur.personalFields, index, rollValue(kind, { rng, custom, race: raceOfSheet(cur), age: ageOfSheet(cur), gender: genderOfSheet(cur), avoid })) };
     }
   }
   return cur;

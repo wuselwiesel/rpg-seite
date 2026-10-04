@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BERUF_POOLS,
   FIELD_DEFAULT_LABEL,
+  FIRST_NAMES,
   RACE_WORDS,
   emptyCustomPools,
   fieldKind,
@@ -86,7 +87,7 @@ describe("rollValue", () => {
   it("liefert für jede Art nicht-leere, kurze Werte", () => {
     for (const seed of SEEDS) {
       const rng = seeded(seed);
-      for (const k of ["vorname", "nachname", "spitzname", "alter", "wesen", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"] as const) {
+      for (const k of ["vorname", "nachname", "spitzname", "alter", "wesen", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst", "geschlecht"] as const) {
         const v = rollValue(k, { rng });
         expect(v.trim().length).toBeGreaterThan(0);
         expect(v.length).toBeLessThanOrEqual(200);
@@ -141,7 +142,7 @@ describe("rollAllFields („Alles zufällig“)", () => {
     for (const seed of SEEDS) {
       const out = rollAllFields(emptySheet(), undefined, seeded(seed));
       for (const label of ["Vorname", "Nachname", "Spitzname", "Alter", "Wesen"]) expect(value(out, label)?.trim().length).toBeGreaterThan(0);
-      for (const label of ["Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Lebensziel / Wunsch", "Geheimnis", "Größte Angst"]) expect(value(out, label)?.trim().length).toBeGreaterThan(0);
+      for (const label of ["Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Lebensziel / Wunsch", "Geheimnis", "Größte Angst", "Geschlecht"]) expect(value(out, label)?.trim().length).toBeGreaterThan(0);
       expect(value(out, "Titel")).toBe("");
       expect(value(out, "Rang")).toBe("");
       expect(out.personalFields.length).toBeLessThanOrEqual(MAX_PERSONAL_FIELDS);
@@ -248,5 +249,28 @@ describe("rollRow (Würfel je Zeile)", () => {
   });
   it("Standard-Bezeichnungen sind alle erkennbar", () => {
     for (const [kind, label] of Object.entries(FIELD_DEFAULT_LABEL)) expect(fieldKind(label)).toBe(kind);
+  });
+});
+
+describe("Geschlecht", () => {
+  it("wird erkannt, gewürfelt und der Vorname passt dazu", () => {
+    expect(fieldKind("Geschlecht")).toBe("geschlecht");
+    const seen = new Set<string>();
+    for (const seed of SEEDS) {
+      const out = rollAllFields(emptySheet(), undefined, seeded(seed));
+      const g = value(out, "Geschlecht")!;
+      seen.add(g);
+      expect(["weiblich", "männlich", "divers"]).toContain(g);
+      const first = value(out, "Vorname")!;
+      if (g === "weiblich") expect(FIRST_NAMES.w).toContain(first);
+      if (g === "männlich") expect(FIRST_NAMES.m).toContain(first);
+    }
+    expect(seen.size).toBe(3);
+  });
+  it("Würfel der Zeile würfelt das Geschlecht neu", () => {
+    const base = rollAllFields(emptySheet(), undefined, seeded(1));
+    const index = base.personalFields.findIndex((f) => f.label === "Geschlecht");
+    const seen = new Set(SEEDS.map((s) => rollRow(base, index, undefined, seeded(s)).personalFields[index].value));
+    expect(seen.size).toBeGreaterThan(1);
   });
 });

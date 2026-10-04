@@ -26,7 +26,7 @@ describe("rollNpcSheet", () => {
       expect(budgets(d).talentRemaining).toBe(0);
       expect(attrRows(d).every((r) => r.basis != null)).toBe(true);
       expect(talentRows(d).every((r) => (r.total ?? 0) <= 19)).toBe(true);
-      for (const label of ["Spitzname", "Alter", "Wesen", "Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Lebensziel / Wunsch", "Geheimnis", "Größte Angst"]) {
+      for (const label of ["Spitzname", "Alter", "Wesen", "Hobbys", "Beruf / Schule / AG", "Eigenheiten", "Lebensziel / Wunsch", "Geheimnis", "Größte Angst", "Geschlecht"]) {
         expect(d.personalFields.find((f) => f.label === label)?.value.trim().length).toBeGreaterThan(0);
       }
     }
