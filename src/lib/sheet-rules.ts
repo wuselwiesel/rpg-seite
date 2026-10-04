@@ -27,7 +27,7 @@ export const RACES: { id: Race; label: string }[] = [
 
 export const RACE_BONUSES: Record<Exclude<Race, "none">, Partial<Record<AttrCode, number>>> = {
   werwolf: { MU: 3, GE: 5, KO: 5, KK: 5, CH: 1, SB: -5 },
-  vampir: { IG: 3, GE: 5, IN: 3, KK: 3, CH: 5, SB: -5 },
+  vampir: { GE: 5, KO: 5, IN: 3, KK: 3, CH: 5, SB: -5 },
 };
 
 // Jedes Talent ist der gerundete Durchschnitt zweier Attribut-Gesamtwerte (Glück fließt in keins ein).

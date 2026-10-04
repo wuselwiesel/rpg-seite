@@ -110,8 +110,14 @@ describe("Besondere Natur", () => {
   });
   it("Wechsel Werwolf → Vampir überschreibt die Werte beider", () => {
     const v = applyRace(applyRace(emptySheet(), "werwolf"), "vampir");
-    expect(v.attrBonus.KO).toBe(""); // nur Werwolf
+    expect(v.attrBonus.MU).toBe(""); // nur Werwolf
+    expect(v.attrBonus.KO).toBe("5");
     expect(v.attrBonus.CH).toBe("5");
+  });
+  it("Vampir: Konstitution +5, kein Intelligenz-Bonus", () => {
+    const v = applyRace(emptySheet(), "vampir");
+    expect(v.attrBonus.KO).toBe("5");
+    expect(v.attrBonus.IG ?? "").toBe("");
   });
   it("Boni anderer Attribute bleiben unberührt", () => {
     const d = { ...emptySheet(), attrBonus: { FF: "2" } };

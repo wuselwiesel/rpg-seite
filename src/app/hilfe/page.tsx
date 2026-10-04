@@ -203,7 +203,7 @@ export default function HelpPage() {
           </li>
           <li className="rounded-xl border border-line bg-surface px-4 py-3 text-sm text-fg-soft">
             <p className="font-medium text-fg">Vampir</p>
-            Intelligenz +3, Gewandtheit +5, Intuition +3, Körperkraft +3, Charisma +5, Selbstbeherrschung −5
+            Gewandtheit +5, Konstitution +5, Intuition +3, Körperkraft +3, Charisma +5, Selbstbeherrschung −5
           </li>
         </ul>
       </Section>
