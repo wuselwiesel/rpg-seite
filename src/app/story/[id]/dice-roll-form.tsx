@@ -292,7 +292,7 @@ export function DiceRollForm({
       </div>
       {value !== "" && (
         <div className="flex flex-col gap-2">
-          <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          <label className="flex w-48 max-w-full flex-col gap-1 text-sm text-fg-soft">
             Zustand (optional)
             <select
               value={conditionId}
@@ -311,7 +311,7 @@ export function DiceRollForm({
             </select>
           </label>
           {conditionId && (
-            <div role="radiogroup" aria-label="Stärke" className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            <div role="radiogroup" aria-label="Stärke" className="flex flex-wrap gap-1.5">
               {DICE_CONDITIONS.find((c) => c.id === conditionId)?.levels.map((l) => (
                 <button
                   key={l.id}
@@ -319,7 +319,7 @@ export function DiceRollForm({
                   role="radio"
                   aria-checked={conditionLevel === l.id}
                   onClick={() => setConditionLevel(l.id)}
-                  className={`flex flex-col items-center rounded-lg border px-2 py-2 text-sm transition ${conditionLevel === l.id ? "border-accent bg-surface text-fg" : "border-line text-fg-soft hover:border-accent/50"}`}
+                  className={`flex flex-col items-center rounded-lg border px-3 py-1.5 text-sm transition ${conditionLevel === l.id ? "border-accent bg-surface text-fg" : "border-line text-fg-soft hover:border-accent/50"}`}
                 >
                   <span className="font-medium">{l.label}</span>
                   <span className="text-xs text-muted">{l.malus}</span>
@@ -331,10 +331,6 @@ export function DiceRollForm({
       )}
       {value !== "" && condition && <input type="hidden" name="condition" value={`${conditionId}:${conditionLevel}`} />}
 
-      <p className="-mt-1 text-xs text-muted">
-        Ohne Wert wird nur der Wurf angezeigt, ohne Erfolg/Misserfolg. Bonus erschwert (negativ) oder
-        erleichtert (positiv) die Probe, indem er auf den Wert angerechnet wird.
-      </p>
 
       {targets.length > 0 && (
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
