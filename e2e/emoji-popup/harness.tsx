@@ -11,8 +11,25 @@ const spots: Record<string, React.CSSProperties> = {
 const which = new URLSearchParams(location.search).get("spot") ?? "bottom";
 const dir = (new URLSearchParams(location.search).get("dir") ?? "down") as "up" | "down";
 
-createRoot(document.getElementById("root")!).render(
+const inForm = new URLSearchParams(location.search).get("form") === "1";
+const picker = (
   <div style={{ position: "fixed", ...spots[which] }}>
-    <CustomEmojiPicker direction={dir} onPick={() => {}} />
-  </div>,
+    <CustomEmojiPicker direction={dir} onPick={(t) => (window as unknown as { __picked: string[] }).__picked.push(t)} />
+  </div>
+);
+
+createRoot(document.getElementById("root")!).render(
+  inForm ? (
+    // wie im Chat oder im Ordner-Dialog: das Emoji-Fenster steckt in einem anderen Formular
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        (window as unknown as { __outerSubmits: number }).__outerSubmits++;
+      }}
+    >
+      {picker}
+    </form>
+  ) : (
+    picker
+  ),
 );

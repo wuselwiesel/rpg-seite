@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { IdCard, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { mergeSecrets, normalizeSheet, parseSecrets, stripSecrets, type SheetData } from "@/lib/sheet-rules";
+import { fetchRandomLists } from "@/lib/random-lists";
+import type { CustomPools } from "@/lib/random-pools";
 import { Chabo } from "./chabo";
 import type { Character } from "@/lib/types";
 
@@ -11,6 +13,7 @@ import type { Character } from "@/lib/types";
 export function ChaboDrawer({ characterId, characterName, mentionCharacters = [] }: { characterId: string; characterName: string; mentionCharacters?: Character[] }) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<SheetData | null | undefined>(undefined);
+  const [randomLists, setRandomLists] = useState<CustomPools | undefined>(undefined);
 
   useEffect(() => {
     if (!open) return;
@@ -25,6 +28,10 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
       // Geheimes bekommt nur die Besitzer:in (RLS); das Fenster zeigt immer den Bogen eines eigenen Charakters
       const { data: secret } = await supabase.from("character_sheet_secrets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
       const open = stripSecrets(normalizeSheet(data.data));
+      // Eigene Zufallslisten der Welt dieses Charakters
+      const { data: ch } = await supabase.from("characters").select("world_id").eq("id", characterId).maybeSingle<{ world_id: string }>();
+      const lists = ch ? await fetchRandomLists(supabase, ch.world_id) : undefined;
+      if (!cancelled) setRandomLists(lists);
       if (!cancelled) setSheet(secret ? mergeSecrets(open, parseSecrets(secret.data)) : open);
     })();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -63,7 +70,7 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
                 </a>
               </p>
             ) : (
-              <Chabo key={characterId} characterId={characterId} characterName={characterName} initial={sheet} editable mentionCharacters={mentionCharacters} variant="panel" />
+              <Chabo key={characterId} characterId={characterId} characterName={characterName} initial={sheet} editable mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" />
             )}
           </aside>
         </div>

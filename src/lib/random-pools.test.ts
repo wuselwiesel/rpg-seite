@@ -274,3 +274,24 @@ describe("Geschlecht", () => {
     expect(seen.size).toBeGreaterThan(1);
   });
 });
+
+describe("eigene Listen der Welt", () => {
+  it("jede Art mischt eigene Einträge ein (und gibt weiter mitgelieferte aus)", () => {
+    const kinds = ["vorname", "nachname", "spitzname", "hobby", "beruf", "eigenheit", "lebensziel", "geheimnis", "angst"] as const;
+    for (const kind of kinds) {
+      const custom = { ...emptyCustomPools(), [kind]: ["EIGENER EINTRAG"] };
+      const values = SEEDS.map((s) => rollValue(kind, { rng: seeded(s), custom }));
+      const own = values.filter((v) => v.includes("EIGENER EINTRAG")).length;
+      expect(own, kind).toBeGreaterThan(0);
+      expect(own, kind).toBeLessThan(values.length);
+    }
+  });
+  it("Alles zufällig nutzt eigene Einträge (Geheimnis, Lebensziel, Angst)", () => {
+    const custom = { ...emptyCustomPools(), geheimnis: ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10"], angst: ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10"] };
+    const hits = SEEDS.filter((s) => {
+      const out = rollAllFields(emptySheet(), custom, seeded(s));
+      return /^G\d+$/.test(value(out, "Geheimnis") ?? "") && /^A\d+$/.test(value(out, "Größte Angst") ?? "");
+    }).length;
+    expect(hits).toBeGreaterThan(10);
+  });
+});

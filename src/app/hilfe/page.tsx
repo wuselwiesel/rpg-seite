@@ -30,6 +30,7 @@ const TOC = [
   ["glueck", "Glückspunkte: Nochmal würfeln bei Pech"],
   ["natur", "Besondere Natur: Werwolf und Vampir"],
   ["bogen", "Den ChaBo bearbeiten und speichern"],
+  ["zufall", "Zufall und NPCs"],
   ["uebersicht", "Welches Talent braucht welche Attribute?"],
 ] as const;
 
@@ -232,16 +233,51 @@ export default function HelpPage() {
           </li>
           <li>Die Notizen sind frei formatierbar. Du kannst beliebig viele Blöcke mit eigenen Überschriften anlegen.</li>
           <li>
-            In der Sektion <strong>Familie</strong> legst du eigene Zeilen an, zum Beispiel „Mutter“. Die Bezeichnung tippst du frei oder wählst einen Vorschlag.
+            In der Sektion <strong>Familie</strong> legst du eigene Zeilen an, zum Beispiel „Mutter“. Die Bezeichnung tippst du frei oder wählst einen Vorschlag. Auch die Überschrift lässt sich beim Bearbeiten ändern, zum Beispiel in „Freunde“.
           </li>
           <li>
             In den persönlichen Infos, in der Familie und in den Notizen kannst du mit <strong>@</strong> Charaktere deiner Welt markieren. Tippe @ und wähle den Namen aus der Liste. In der Ansicht steht nur der Name (ohne @) und ist ein Link zum Profil.
           </li>
-          <li>Hattest du einen Bogen auf der alten Charakterbogen-Seite, übernimmst du ihn beim Bearbeiten mit „Aus altem Charakterbogen übernehmen“.</li>
+          <li>Ist bei einem Charakter noch ein Link zu einem alten Charakterbogen gespeichert, übernimmst du ihn beim Bearbeiten mit „Aus altem Charakterbogen übernehmen“. Neue Links lassen sich nicht mehr eintragen.</li>
         </ul>
       </Section>
 
-      <Section id="uebersicht" title="10. Welches Talent braucht welche Attribute?">
+      <Section id="zufall" title="10. Zufall und NPCs">
+        <h3 className="font-medium text-fg">Würfeln im ChaBo</h3>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
+          <li>
+            Beim Bearbeiten steht neben vielen Angaben ein <strong>Würfel</strong>: Vorname, Nachname, Spitzname, Geschlecht, Alter, Wesen, Hobbys, Beruf / Schule / AG, Eigenheiten, Lebensziel / Wunsch, Geheimnis und Größte Angst. Ein Klick würfelt nur diese Zeile neu.
+          </li>
+          <li>
+            <strong>Alles zufällig</strong> füllt alle leeren Angaben auf einmal und legt fehlende Zeilen an. Was du schon eingetragen hast, bleibt. Mit <strong>Rückgängig</strong> holst du den Stand davor zurück.
+          </li>
+          <li>Die gewürfelten Namen sind englisch, amerikanisch oder irisch. Der Vorname passt zum gewürfelten Geschlecht und ist in deiner Welt noch nicht vergeben.</li>
+          <li>Das Alter richtet sich nach dem Wesen: Vampire sind deutlich älter als Menschen und Werwölfe. Beruf oder Schule passen zum Alter.</li>
+          <li>
+            <strong>Attribute</strong> und <strong>Talente</strong> haben einen eigenen Würfel. Bei den Attributen wählst du „Ausgewogen“ oder „Wild“, bei den Talenten „Spezialist:in“ oder „Allrounder:in“. Es werden immer genau die {BASIS_BUDGET} Attribut- und {TALENT_BONUS_BUDGET} Talentpunkte verteilt, und alle Grenzen aus den Abschnitten 3 bis 6 gelten weiter. Jeder Wurf hat sein eigenes Rückgängig.
+          </li>
+        </ul>
+
+        <h3 className="mt-2 font-medium text-fg">Eigene Listen deiner Welt</h3>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
+          <li>
+            Unter <strong>Einstellungen → Zufallslisten</strong> ergänzt du eigene Vornamen, Nachnamen, Spitznamen, Hobbys, Berufe, Eigenheiten, Lebensziele, Geheimnisse und Ängste. Du kannst viele auf einmal einfügen, <strong>eine Zeile pro Eintrag</strong>.
+          </li>
+          <li>Die Listen gehören zur Welt. Alle Mitglieder sehen und nutzen sie. Löschen darf, wer einen Eintrag angelegt hat, und die Besitzerin der Welt.</li>
+          <li>Der Würfel mischt deine Einträge unter die mitgelieferten. Je mehr du einträgst, desto öfter kommen sie vor.</li>
+        </ul>
+
+        <h3 className="mt-2 font-medium text-fg">NPCs</h3>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
+          <li>Ein <strong>NPC</strong> ist ein Charakter ohne Spieler:in dahinter, zum Beispiel eine Lehrerin oder ein Händler. Du legst ihn wie einen Charakter an und schaltest dabei „NPC“ ein. Unter „Charaktere“ gibt es den Reiter <strong>NPCs</strong>.</li>
+          <li>Mit <strong>Komplett würfeln</strong> entsteht ein fertiger NPC mit Name, Wesen, Kurzbeschreibung, allen Angaben und einem gültigen ChaBo.</li>
+          <li>NPCs schreiben nur in <strong>Story-Szenen</strong>. Sie posten nicht im Feed, folgen niemandem und tauchen nicht in Chats und Suche auf. Im Wiki, bei @-Erwähnungen und im Beziehungsnetz kommen sie dagegen vor.</li>
+          <li>Bearbeiten dürfen den NPC die Person, die ihn angelegt hat, und die Besitzerin der Welt. Zwischen NPC und normalem Charakter umschalten darf nur, wer ihn angelegt hat.</li>
+          <li>Im ChaBo wechselst du oben zwischen deinen Charakteren und den NPCs, ohne den aktiven Charakter zu ändern.</li>
+        </ul>
+      </Section>
+
+      <Section id="uebersicht" title="11. Welches Talent braucht welche Attribute?">
         <div className="overflow-hidden rounded-2xl border border-line bg-surface">
           <div className="grid grid-cols-2 border-b border-line bg-surface-2 px-4 py-2 text-xs font-medium text-muted">
             <span>Talent</span>

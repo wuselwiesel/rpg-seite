@@ -17,6 +17,7 @@ import { CharacterSheetEmbed } from "@/components/character-sheet-embed";
 import { Chabo } from "@/components/chabo/chabo";
 import { getCharacterSheet } from "@/lib/character-sheet-data";
 import { getMentionableCharacters } from "@/lib/active-character";
+import { fetchRandomLists } from "@/lib/random-lists";
 import { storyBackground } from "@/lib/stories";
 import { PostMedia } from "@/components/post-media";
 import { StoryLauncher, type StoryGroup } from "@/components/story-viewer";
@@ -55,7 +56,11 @@ export default async function CharacterProfilePage({
   const canEdit = (await getCharacterAccess(character, user.id)).canEdit;
   const isNpcProfile = character.is_npc === true;
   const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
-  const [sheet, mentionCharacters] = await Promise.all([getCharacterSheet(id, canEdit), getMentionableCharacters(user.id, character.world_id)]);
+  const [sheet, mentionCharacters, randomLists] = await Promise.all([
+    getCharacterSheet(id, canEdit),
+    getMentionableCharacters(user.id, character.world_id),
+    canEdit ? fetchRandomLists(supabase, character.world_id) : Promise.resolve(undefined),
+  ]);
   const listView = ansicht === "liste";
   const nowIso = new Date().toISOString();
 
@@ -423,7 +428,7 @@ export default async function CharacterProfilePage({
 
         {tab === "chabo" ? (
           <div className="px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
-            <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} variant="panel" />
+            <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" />
           </div>
         ) : (
           <>

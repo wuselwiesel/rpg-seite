@@ -33,6 +33,40 @@ for (const [w, h, label] of [[1280, 800, "Laptop"], [1280, 560, "Laptop (niedrig
     }
   }
 }
+// Eigenes Emoji hinzufügen, auch wenn das Emoji-Fenster in einem anderen Formular steckt
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+for (const [w, h, label] of [[1280, 800, "Laptop"], [375, 740, "Handy"]]) {
+  for (const inForm of [false, true]) {
+    const mobile = w < 500;
+    const page = await (await browser.newContext({ viewport: { width: w, height: h }, hasTouch: mobile, isMobile: mobile })).newPage();
+    page.on("pageerror", (e) => errors.push(String(e)));
+    await page.goto(`file://${path.join(here, ".build", "index.html")}?spot=middle&dir=down${inForm ? "&form=1" : ""}`);
+    await page.getByRole("button", { name: "Emojis" }).click();
+    await page.getByText("Eigenes Emoji hochladen").click();
+    await page.locator('input[type="file"]').setInputFiles({ name: "Süße Katze.png", mimeType: "image/png", buffer: PNG });
+    await page.getByPlaceholder("katze").waitFor();
+    check(`${label}${inForm ? " (im Formular)" : ""}: Name wird aus der Datei vorgeschlagen`, (await page.getByPlaceholder("katze").inputValue()) === "suesse_katze");
+    await page.getByRole("button", { name: "Hinzufügen" }).click();
+    await page.waitForFunction(() => window.__created.length > 0, null, { timeout: 5000 }).catch(() => {});
+    const created = await page.evaluate(() => window.__created.at(-1));
+    check(`${label}${inForm ? " (im Formular)" : ""}: Hinzufügen lädt hoch und legt das Emoji an`, created?.[0] === "suesse_katze" && /\.png$/.test(created?.[1] ?? "") && (await page.evaluate(() => window.__uploads.length)) === 1, JSON.stringify(created));
+    check(`${label}${inForm ? " (im Formular)" : ""}: das äußere Formular wird nicht abgeschickt`, (await page.evaluate(() => window.__outerSubmits)) === 0);
+    check(`${label}${inForm ? " (im Formular)" : ""}: neues Emoji wird eingefügt (:suesse_katze: )`, (await page.evaluate(() => window.__picked.at(-1))) === ":suesse_katze: ");
+    await page.context().close();
+  }
+}
+// Enter im Namensfeld
+{
+  const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+  await page.goto(`file://${path.join(here, ".build", "index.html")}?spot=middle&dir=down&form=1`);
+  await page.getByRole("button", { name: "Emojis" }).click();
+  await page.getByText("Eigenes Emoji hochladen").click();
+  await page.locator('input[type="file"]').setInputFiles({ name: "x.png", mimeType: "image/png", buffer: PNG });
+  await page.getByPlaceholder("katze").fill("blume");
+  await page.getByPlaceholder("katze").press("Enter");
+  await page.waitForFunction(() => window.__created.length > 0, null, { timeout: 5000 }).catch(() => {});
+  check("Enter im Namensfeld legt das Emoji an, ohne das äußere Formular abzuschicken", (await page.evaluate(() => window.__created.at(-1)?.[0])) === "blume" && (await page.evaluate(() => window.__outerSubmits)) === 0);
+}
 check("keine Seitenfehler", errors.length === 0, errors.join(" | ").slice(0, 300));
 await browser.close();
 const failed = results.filter((r) => !r).length;

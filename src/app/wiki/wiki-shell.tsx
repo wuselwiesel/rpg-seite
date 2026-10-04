@@ -57,6 +57,16 @@ function currentFromPath(pathname: string): { folder: string | null; page: strin
 }
 
 // Wiki-Rahmen: links die Ordner (einklappbar, mit Unterordnern, Seiten und Unterseiten), rechts der Inhalt.
+// Werkzeuge des Wikis: am Laptop als Reiter unter der Kopfzeile, am Handy im aufklappbaren Bereich (ausgeschrieben, nichts wird gekürzt)
+const WIKI_TOOLS = [
+  { href: "/wiki/karten", label: "Karten", Icon: MapIcon },
+  { href: "/wiki/graph", label: "Graph", Icon: Network },
+  { href: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },
+  { href: "/wiki/kalender", label: "Kalender", Icon: CalendarDays },
+  { href: "/characters/relationships", label: "Beziehungen", Icon: Users },
+  { href: "/wiki/einstellungen", label: "Einstellungen", title: "Wiki-Einstellungen (Seitenarten)", Icon: Settings },
+] as const;
+
 export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -167,7 +177,6 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
         <nav aria-label="Zurück in die App" className="flex items-center gap-1 text-sm">
           {[
             { href: "/story", label: "Story" },
-            { href: "/characters/relationships", label: "Beziehungen" },
             { href: "/profile", label: "Profil" },
           ].map((l) => (
             <Link key={l.href} href={l.href} className="rounded-lg px-3 py-1.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg">
@@ -176,6 +185,24 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
           ))}
         </nav>
       </header>
+
+      <nav aria-label="Wiki-Werkzeuge" className="-mt-2 mb-6 hidden flex-wrap items-center gap-1 lg:flex">
+        {WIKI_TOOLS.map((t) => {
+          const active = pathname.startsWith(t.href);
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              title={"title" in t ? t.title : t.label}
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition ${active ? "bg-accent/10 font-medium text-accent" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}
+            >
+              <t.Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+              {t.label}
+            </Link>
+          );
+        })}
+      </nav>
 
       <div className={`grid gap-6 ${navHidden ? "lg:grid-cols-1" : "lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10"}`}>
         <div className={navHidden ? "lg:hidden" : ""}>
@@ -243,28 +270,20 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
               )}
             </div>
 
-            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-surface p-1">
-              {[
-                { href: "/wiki/karten", base: "/wiki/karten", label: "Karten", short: "Karten", Icon: MapIcon },
-                { href: "/wiki/graph", base: "/wiki/graph", label: "Graph", short: "Graph", Icon: Network },
-                { href: "/wiki/zeitleiste", base: "/wiki/zeitleiste", label: "Zeitleiste", short: "Zeitleiste", Icon: Clock },
-                { href: "/wiki/kalender", base: "/wiki/kalender", label: "Kalender", short: "Kalender", Icon: CalendarDays },
-                { href: "/characters/relationships", base: "/characters/relationships", label: "Beziehungen", short: "Beziehungen", Icon: Users },
-                { href: "/wiki/einstellungen", base: "/wiki/einstellungen", label: "Wiki-Einstellungen (Seitenarten)", short: "Einstellungen", Icon: Settings },
-              ].map(({ href, base, label, short, Icon }) => {
-                const active = pathname.startsWith(base);
+            <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1 lg:hidden">
+              {WIKI_TOOLS.map((t) => {
+                const active = pathname.startsWith(t.href);
                 return (
                   <Link
-                    key={base}
-                    href={href}
-                    title={label}
-                    aria-label={label}
+                    key={t.href}
+                    href={t.href}
+                    title={"title" in t ? t.title : t.label}
                     aria-current={active ? "page" : undefined}
                     onClick={() => setNavOpen(false)}
-                    className={`flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-xs transition ${active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+                    className={`flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition ${active ? "bg-accent/10 font-medium text-accent" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}
                   >
-                    <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-                    <span className="truncate">{short}</span>
+                    <t.Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+                    {t.label}
                   </Link>
                 );
               })}
@@ -480,17 +499,38 @@ function FolderNode({
   const open = isOpen(folder.id) && hasContent;
   const active = cur.folder === folder.id;
   const [menu, setMenu] = useState(false);
+  // Das Menü sitzt fest am Bildschirm (nicht im scrollenden Baum, sonst wird es abgeschnitten) und klappt nach oben, wenn unten kein Platz ist.
+  const [menuPos, setMenuPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  function toggleMenu() {
+    if (menu) return setMenu(false);
+    const r = menuButtonRef.current?.getBoundingClientRect();
+    if (r) {
+      const width = 208;
+      const needed = 230;
+      const left = Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8));
+      setMenuPos(window.innerHeight - r.bottom >= needed || window.innerHeight - r.bottom >= r.top ? { left, top: r.bottom + 4 } : { left, bottom: window.innerHeight - r.top + 4 });
+    }
+    setMenu(true);
+  }
 
   useEffect(() => {
     if (!menu) return;
     const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setMenu(false);
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    const close = () => setMenu(false);
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
+    // Das Menü steht fest am Bildschirm: beim Scrollen oder Ändern der Größe schließen
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
     };
   }, [menu]);
 
@@ -524,8 +564,9 @@ function FolderNode({
         </Link>
         <span className="pr-2 text-xs text-muted group-hover:hidden group-focus-within:hidden">{folder.total}</span>
         <button
+          ref={menuButtonRef}
           type="button"
-          onClick={() => setMenu((v) => !v)}
+          onClick={toggleMenu}
           aria-haspopup="menu"
           aria-expanded={menu}
           aria-label={`Menü für ${folder.name}`}
@@ -534,7 +575,7 @@ function FolderNode({
           <MoreHorizontal className="h-4 w-4" strokeWidth={2} />
         </button>
         {menu && (
-          <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-52 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
+          <div role="menu" style={menuPos ?? undefined} className="fixed z-50 w-52 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
             <Link role="menuitem" href={`/wiki/new?folder=${folder.id}`} onClick={() => { setMenu(false); onNavigate(); }} className={item}>
               Artikel hier anlegen
             </Link>

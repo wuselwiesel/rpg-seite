@@ -130,6 +130,49 @@ async function mouseDrag(page, from, to) {
   await ctx.close();
 }
 
+// 8. Ordner-Menü bleibt vollständig sichtbar (auch am unteren Rand eines niedrigen Fensters)
+for (const [w, h, label] of [[1100, 420, "niedriger Laptop"], [1100, 800, "Laptop"], [1280, 360, "sehr niedriges Fenster"]]) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 500 });
+  const page = await ctx.newPage();
+  await page.goto(url.replace("index.html", "index-css.html"));
+  await page.getByRole("button", { name: "Alle Ordner aufklappen" }).click();
+  const buttons = page.locator('button[aria-label^="Menü für "]');
+  const n = await buttons.count();
+  let allInside = true;
+  let detail = "";
+  for (let i = 0; i < n; i++) {
+    const row = buttons.nth(i).locator("xpath=ancestor::div[contains(@class,'group')][1]");
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+    await buttons.nth(i).click();
+    const menu = page.getByRole("menu");
+    await menu.waitFor();
+    const box = await menu.evaluate((el) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, vw: innerWidth, vh: innerHeight }; });
+    const items = await menu.getByRole("menuitem").count();
+    const lastVisible = await menu.getByRole("menuitem").last().isVisible();
+    const inside = box.l >= 0 && box.t >= 0 && box.r <= box.vw && box.b <= box.vh && items >= 4 && lastVisible;
+    if (!inside) { allInside = false; detail += ` #${i}:${JSON.stringify(box)}`; }
+    await page.keyboard.press("Escape");
+  }
+  check(`Ordner-Menü liegt bei allen ${n} Ordnern vollständig im Bild (${label})`, n > 0 && allInside, detail);
+  await ctx.close();
+}
+
+// 9. Wiki-Werkzeuge sind ausgeschrieben (nichts mit „…“ gekürzt), am Laptop als Reiter, am Handy im Ordnerbereich
+for (const [w, h, label, mobile] of [[1280, 700, "Laptop", false], [375, 800, "Handy", true]]) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+  const page = await ctx.newPage();
+  await page.goto(url.replace("index.html", "index-css.html"));
+  if (mobile) await page.getByRole("button", { name: "Ordner und Suche" }).click();
+  const group = mobile ? page.getByRole("group", { name: "Wiki-Werkzeuge" }) : page.getByRole("navigation", { name: "Wiki-Werkzeuge" });
+  const names = await group.getByRole("link").allTextContents();
+  check(`Wiki-Werkzeuge (${label}): alle sechs ausgeschrieben`, ["Karten", "Graph", "Zeitleiste", "Kalender", "Beziehungen", "Einstellungen"].every((n, i) => names[i]?.trim() === n) && names.length === 6, names.join("|"));
+  const clipped = await group.getByRole("link").evaluateAll((els) => els.filter((el) => { const t = el.lastChild; const r = document.createRange(); r.selectNodeContents(t); return r.getBoundingClientRect().width > el.getBoundingClientRect().width - 2 || el.scrollWidth > el.clientWidth + 1; }).length);
+  check(`Wiki-Werkzeuge (${label}): nichts abgeschnitten`, clipped === 0, String(clipped));
+  check(`Wiki-Werkzeuge (${label}): kein seitliches Scrollen`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} FEHLGESCHLAGEN` : "ALLE BESTANDEN");
