@@ -1,5 +1,6 @@
 // Testseite für den Karten-Betrachter. Server-Aktionen sind Platzhalter, die ihre Aufrufe in window.__calls sammeln.
 import { createRoot } from "react-dom/client";
+import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { MapViewer } from "@/app/wiki/karten/[id]/map-viewer";
 import type { WikiMap, WikiMapPin } from "@/lib/wiki-map";
 
@@ -21,6 +22,7 @@ const pins: WikiMapPin[] = [
 
 (window as unknown as { __calls: unknown[] }).__calls = [];
 createRoot(document.getElementById("root")!).render(
+  <CustomEmojiProvider map={{ katze: "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><circle cx='16' cy='16' r='14' fill='orange'/></svg>") }}>
   <div style={{ maxWidth: 900, padding: 16 }}>
     <MapViewer
       map={map}
@@ -31,5 +33,6 @@ createRoot(document.getElementById("root")!).render(
       ]}
       otherMaps={[{ id: "m2", title: "Burgkarte" }]}
     />
-  </div>,
+  </div>
+  </CustomEmojiProvider>,
 );

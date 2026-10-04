@@ -14,6 +14,8 @@ export function CustomEmojiPicker({
   open: openProp,
   onOpenChange,
   hideButton = false,
+  children,
+  label = "Emojis",
 }: {
   onPick: (token: string) => void;
   className?: string;
@@ -22,6 +24,9 @@ export function CustomEmojiPicker({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideButton?: boolean;
+  // Eigener Inhalt im Knopf (statt des Symbols) und seine Beschriftung
+  children?: React.ReactNode;
+  label?: string;
 }) {
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
@@ -93,14 +98,14 @@ export function CustomEmojiPicker({
           onMouseDown={(e) => e.preventDefault()}
           onClick={toggle}
           aria-expanded={open}
-          title="Emojis"
-          aria-label="Emojis"
+          title={label}
+          aria-label={label}
           className={
             className ||
             "flex h-full items-center justify-center rounded-md border border-line px-2.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
           }
         >
-          <SmilePlus className="h-5 w-5" strokeWidth={1.75} />
+          {children ?? <SmilePlus className="h-5 w-5" strokeWidth={1.75} />}
         </button>
       )}
       {open && (

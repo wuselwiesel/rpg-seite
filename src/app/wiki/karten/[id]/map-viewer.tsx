@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MapPin, Minus, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { SymbolPicker } from "@/components/symbol-picker";
+import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
+import { EmojiText } from "@/components/custom-emoji-provider";
 import {
   clampView,
   pointToPercent,
@@ -43,7 +44,6 @@ export function MapViewer({
   const [editing, setEditing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(initialPinId ?? null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -147,7 +147,6 @@ export function MapViewer({
       const p = pointToPercent(innerRef.current.getBoundingClientRect(), e.clientX, e.clientY);
       setSelectedId(null);
       setDraft({ ...p, label: "", icon: "", pageId: "", targetMapId: "" });
-      setPickerOpen(false);
     } else {
       setSelectedId(null);
     }
@@ -191,7 +190,6 @@ export function MapViewer({
         ? { id: pin.id, x: pin.x, y: pin.y, label: pin.label, icon: pin.icon ?? "", pageId: pin.page_id ?? "", targetMapId: pin.target_map_id ?? "" }
         : null,
     );
-    setPickerOpen(false);
   }
 
   function toggleEditing() {
@@ -307,7 +305,7 @@ export function MapViewer({
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface text-base shadow-md ${active ? "bg-accent-strong text-on-accent-strong" : "bg-accent text-on-accent-strong"}`}
                 >
-                  {pin.icon ? pin.icon : <MapPin className="h-4 w-4" strokeWidth={2.25} />}
+                  {pin.icon ? <EmojiText text={pin.icon} /> : <MapPin className="h-4 w-4" strokeWidth={2.25} />}
                 </span>
               </button>
             );
@@ -338,16 +336,16 @@ export function MapViewer({
             </label>
             <div className="flex flex-col gap-1 text-xs text-muted">
               Symbol
-              <button type="button" onClick={() => setPickerOpen((v) => !v)} className={`${field} min-w-16 text-center`} aria-label="Symbol wählen">
-                {draft.icon || "Standard"}
-              </button>
+              <CustomEmojiPicker
+                direction="down"
+                label="Symbol wählen"
+                onPick={(t) => setDraft({ ...draft, icon: t.trim() })}
+                className={`${field} flex min-w-16 items-center justify-center text-center`}
+              >
+                {draft.icon ? <EmojiText text={draft.icon} /> : "Standard"}
+              </CustomEmojiPicker>
             </div>
           </div>
-          {pickerOpen && (
-            <div className="absolute right-4 top-24 z-30">
-              <SymbolPicker onPick={(s) => { setDraft({ ...draft, icon: s }); setPickerOpen(false); }} onClose={() => setPickerOpen(false)} />
-            </div>
-          )}
           <div className="grid gap-3 @xl:grid-cols-2">
             <label className="flex flex-col gap-1 text-xs text-muted">
               Führt zur Wiki-Seite
@@ -390,7 +388,7 @@ export function MapViewer({
       ) : selected && !editing ? (
         <section aria-label="Pin" className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4">
           <h2 className="flex items-center gap-2 font-serif text-xl text-fg">
-            <span aria-hidden>{selected.icon || <MapPin className="inline h-5 w-5" strokeWidth={2} />}</span>
+            <span aria-hidden className="inline-flex items-center">{selected.icon ? <EmojiText text={selected.icon} /> : <MapPin className="inline h-5 w-5" strokeWidth={2} />}</span>
             {selected.label}
           </h2>
           {!selected.page_id && !selected.target_map_id && <p className="text-sm text-muted">Dieser Pin führt nirgendwohin.</p>}
@@ -413,7 +411,7 @@ export function MapViewer({
             {pins.map((p) => (
               <li key={p.id}>
                 <button type="button" onClick={() => { select(p); const s = size(); setView(viewCenteredOn(p.x, p.y, Math.max(view.scale, 2.5), s.w, s.h)); }} className="rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft transition hover:text-accent">
-                  {p.icon ? `${p.icon} ` : ""}
+                  {p.icon ? <><EmojiText text={p.icon} />{" "}</> : null}
                   {p.label}
                 </button>
               </li>

@@ -119,6 +119,33 @@ async function fresh(opts = {}) {
   check("Koordinaten stimmen auch hineingezoomt", c2 && Math.abs(c2.add.x - 50) < 2 && Math.abs(c2.add.y - 50) < 2, JSON.stringify(c2));
   await ctx.close();
 }
+// 5b. Symbol des Pins: Emoji oder eigenes Emoji (als Bild) aus dem Emoji-Katalog
+{
+  const { ctx, page, viewport, calls } = await fresh();
+  await page.getByRole("button", { name: "Pins bearbeiten" }).click();
+  const box = await viewport.boundingBox();
+  await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3);
+  await page.getByLabel("Name", { exact: true }).first().fill("Katzenhain");
+  await page.getByRole("button", { name: "Symbol wählen" }).click();
+  await page.getByRole("button", { name: "Katalog Katze" }).click();
+  check("Auswahl zeigt das eigene Emoji als Bild im Formular", (await page.getByRole("button", { name: "Symbol wählen" }).locator("img.custom-emoji").count()) === 1);
+  check("Pin-Vorschau auf der Karte zeigt das Bild", (await page.locator('[data-pin="__neu"] img.custom-emoji').count()) === 1);
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await page.waitForTimeout(150);
+  const c = (await calls()).find((x) => x.add && x.add.label === "Katzenhain");
+  check("gespeichert wird :katze:", c && c.add.icon === ":katze:", JSON.stringify(c));
+  check("gesetzter Pin zeigt das Emoji-Bild statt Text", (await page.locator('[data-pin="new1"] img.custom-emoji').count()) === 1 && !((await page.locator('[data-pin="new1"]').textContent()) ?? "").includes(":katze:"));
+  // normales Emoji
+  await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.2);
+  await page.getByLabel("Name", { exact: true }).first().fill("Fuchsbau");
+  await page.getByRole("button", { name: "Symbol wählen" }).click();
+  await page.getByRole("button", { name: "Katalog Fuchs" }).click();
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await page.waitForTimeout(150);
+  const f = (await calls()).find((x) => x.add && x.add.label === "Fuchsbau");
+  check("normales Emoji wird weiter gespeichert (🦊)", f && f.add.icon === "🦊", JSON.stringify(f));
+  await ctx.close();
+}
 // 6. Pin ziehen
 {
   const { ctx, page, viewport, calls } = await fresh();
