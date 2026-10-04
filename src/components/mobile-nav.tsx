@@ -15,7 +15,7 @@ import { Wordmark } from "./wordmark";
 import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
 import { MobileModeButton } from "./mode-switch";
-import { getAppMode } from "@/lib/app-mode";
+import { useAppMode } from "@/components/mode-context";
 import { startTour } from "@/lib/tour";
 import { isImmersiveChatPath } from "@/lib/immersive-routes";
 import type { AppNotification } from "@/lib/notifications";
@@ -58,10 +58,9 @@ export function MobileNav({
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const pathname = usePathname();
+  const mode = useAppMode();
 
   if (isImmersiveChatPath(pathname)) return null;
-
-  const mode = getAppMode(pathname);
 
   return (
     <>
@@ -133,11 +132,13 @@ export function MobileNav({
             ) : (
               <MobileCreateTab href="/story/new" label="Neue Story" />
             )}
-            <MobileTabLink
-              href="/characters/relationships"
-              icon={<Network className="h-5 w-5" strokeWidth={2} />}
-              label="Beziehungen"
-            />
+            {activeCharacter && (
+              <MobileTabLink
+                href={`/characters/${activeCharacter.id}/chabo`}
+                icon={<IdCard className="h-5 w-5" strokeWidth={2} />}
+                label="ChaBo"
+              />
+            )}
             {activeCharacter && (
               <MobileTabLink
                 href={`/characters/${activeCharacter.id}`}
@@ -233,6 +234,14 @@ export function MobileNav({
           >
             <Dices className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Würfelverlauf
+          </Link>
+          <Link
+            href="/characters/relationships"
+            onClick={() => setMoreOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            <Network className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Beziehungen
           </Link>
           {activeCharacter && (
             <Link

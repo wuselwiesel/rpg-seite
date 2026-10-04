@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { BookOpen, Camera, ChevronDown, Newspaper } from "lucide-react";
-import { getAppMode, type AppMode } from "@/lib/app-mode";
+import { type AppMode } from "@/lib/app-mode";
+import { useAppMode } from "@/components/mode-context";
 
 const MODES: { id: AppMode; href: string; label: string; Icon: typeof Camera }[] = [
   { id: "ingame", href: "/", label: "Ingame", Icon: Camera },
@@ -13,7 +13,7 @@ const MODES: { id: AppMode; href: string; label: string; Icon: typeof Camera }[]
 ];
 
 export function ModeSwitch() {
-  const mode = getAppMode(usePathname());
+  const mode = useAppMode();
 
   return (
     <div className="flex gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium" data-tour="mode-switch">
@@ -34,8 +34,7 @@ export function ModeSwitch() {
 
 // Handy: ein Knopf mit dem aktuellen Modus, der ein kleines Menü zum Wechseln öffnet.
 export function MobileModeButton() {
-  const pathname = usePathname();
-  const mode = getAppMode(pathname);
+  const mode = useAppMode();
   const current = MODES.find((m) => m.id === mode) ?? MODES[0];
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
