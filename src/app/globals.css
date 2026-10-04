@@ -1187,3 +1187,8 @@ a.wiki-missing,
 .post-content div[data-type="details"] summary { display: block; list-style: none; font-weight: 600; }
 .post-content div[data-type="details"] summary::-webkit-details-marker { display: none; }
 .post-content div[data-type="details"] [data-type="detailsContent"] { padding: 0; border: 0; }
+
+/* Kleine Karte (z. B. Attribute beim Talent im ChaBo) blendet kurz ein */
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(-3px); }
+}

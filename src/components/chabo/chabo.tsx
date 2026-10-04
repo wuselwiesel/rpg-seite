@@ -154,6 +154,11 @@ export function Chabo({
   const [attrStyle, setAttrStyle] = useState<AttrStyle>("ausgewogen");
   const [talentStyle, setTalentStyle] = useState<TalentStyle>("allrounder");
   const [snapshots, setSnapshots] = useState<Snapshots>(NO_SNAPSHOTS);
+  // Talent, dessen Attribute gerade gezeigt werden (Darüberfahren, Fokus oder Tippen am Handy)
+  const [activeTalent, setActiveTalent] = useState<string | null>(null);
+  const pointerType = useRef("mouse");
+  // War das angetippte Talent schon offen? (Der Fokus beim Antippen öffnet es sonst vor dem Klick.)
+  const wasOpen = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<SheetData | null>(null);
 
@@ -190,6 +195,7 @@ export function Chabo({
   const bud = budgets(data);
   const errors = validateSheet(data);
   const clovers = luckTotal(data);
+  const activeAttrs = new Set(talents.find((t) => t.slug === activeTalent)?.attrs ?? []);
   const raceLabel = RACES.find((r) => r.id === data.race)?.label;
 
   async function importLegacy() {
@@ -482,7 +488,7 @@ export function Chabo({
             const hex = folderColorHex(ATTR_COLOR[a.code]);
             const isLuck = a.code === "GL";
             return (
-              <li key={a.code} className="flex flex-col gap-3 rounded-2xl p-4 @xl:p-5" style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} 16%, transparent)` } : undefined}>
+              <li key={a.code} data-attr={a.code} data-highlight={activeAttrs.has(a.code) ? "true" : undefined} className={`flex flex-col gap-3 rounded-2xl p-4 transition duration-200 @xl:p-5 ${activeAttrs.has(a.code) ? "scale-[1.03] shadow-md ring-2 ring-accent" : ""}`} style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} ${activeAttrs.has(a.code) ? 30 : 16}%, transparent)` } : undefined}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 text-[15px] font-medium leading-snug text-fg [overflow-wrap:anywhere] @4xl:text-sm">{a.name}</p>
                   <span className="shrink-0 rounded-md bg-app/60 px-1.5 py-0.5 text-xs font-semibold text-muted">{a.code}</span>
@@ -588,13 +594,46 @@ export function Chabo({
               const names = t.attrs.map((c) => attrs.find((a) => a.code === c));
               const calc = t.basis == null ? "Noch nicht berechenbar" : `(${names[0]?.total} + ${names[1]?.total}) ÷ 2 = ${t.basis}`;
               return (
-                <li key={t.slug} className={`${editing ? talentGridEdit : talentGridView} border-b border-line py-3.5 last:border-0`}>
+                <li
+                  key={t.slug}
+                  data-talent={t.slug}
+                  tabIndex={0}
+                  onPointerDown={(e) => {
+                    pointerType.current = e.pointerType;
+                    wasOpen.current = activeTalent === t.slug;
+                  }}
+                  onPointerEnter={(e) => e.pointerType === "mouse" && setActiveTalent(t.slug)}
+                  onPointerLeave={(e) => e.pointerType === "mouse" && setActiveTalent((cur) => (cur === t.slug ? null : cur))}
+                  onClick={(e) => {
+                    // Am Handy zeigt Tippen die Attribute, erneutes Tippen verbirgt sie; mit der Maus genügt das Darüberfahren
+                    if (pointerType.current !== "mouse" && !(e.target instanceof HTMLInputElement)) setActiveTalent(wasOpen.current ? null : t.slug);
+                  }}
+                  onFocus={() => setActiveTalent(t.slug)}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActiveTalent((cur) => (cur === t.slug ? null : cur));
+                  }}
+                  onKeyDown={(e) => e.key === "Escape" && setActiveTalent(null)}
+                  className={`${editing ? talentGridEdit : talentGridView} relative cursor-default border-b border-line py-3.5 outline-none transition-colors last:border-0 focus-visible:bg-surface-2/60 ${activeTalent === t.slug ? "bg-surface-2/50" : ""}`}
+                >
                   <div className="min-w-0">
                     <p className="text-[15px] leading-snug text-fg [overflow-wrap:anywhere] hyphens-auto">{t.name}</p>
-                    <p className="text-xs text-muted">
-                      {names[0]?.name} + {names[1]?.name}
-                    </p>
                   </div>
+                  {activeTalent === t.slug && (
+                    <div role="tooltip" className="absolute left-0 top-[calc(100%-0.5rem)] z-20 flex max-w-full flex-wrap items-center gap-1.5 rounded-xl border border-line bg-surface p-2 text-xs shadow-lg animate-[pop-in_0.14s_ease-out]">
+                      {names.map((n, i) => {
+                        const c = n ? folderColorHex(ATTR_COLOR[n.code]) : null;
+                        return (
+                          <span key={n?.code ?? i} className="flex items-center gap-1.5">
+                            {i > 0 && <span className="text-muted">+</span>}
+                            <span className="rounded-lg px-2 py-1 font-medium text-fg" style={c ? { backgroundColor: `color-mix(in srgb, ${c} 28%, transparent)` } : undefined}>
+                              {n?.name} <span className="font-serif text-sm">{n?.total ?? "–"}</span>
+                            </span>
+                          </span>
+                        );
+                      })}
+                      <span className="text-muted">{t.basis == null ? "" : `Ø ${t.basis}`}</span>
+                    </div>
+                  )}
                   <span className="text-center text-base text-fg-soft" title={calc}>
                     {t.basis ?? "–"}
                   </span>

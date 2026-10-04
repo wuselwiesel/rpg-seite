@@ -186,7 +186,7 @@ const sum = (xs) => xs.reduce((s, x) => s + (Number(x) || 0), 0);
   // Wesen-Würfel mehrmals: Natur und Wesen bleiben im Gleichschritt, Boni passen
   let ok = true;
   const seen = new Set();
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 200 && (i < 30 || seen.size < 3); i++) {
     await page.getByRole("button", { name: "Wesen würfeln" }).click();
     const w = await page.locator('input[role="combobox"][aria-label="Wesen"]').inputValue();
     seen.add(w);
@@ -199,7 +199,62 @@ const sum = (xs) => xs.reduce((s, x) => s + (Number(x) || 0), 0);
   check("alle drei Wesen kamen vor", seen.size === 3);
   await ctx.close();
 }
-// 9. Layout: Desktop, Tablet, Handy ohne Überlauf und Überlappung
+// 9. Talente: Attribute nur beim Darüberfahren, Fokus oder Tippen; Kacheln oben werden hervorgehoben
+{
+  const { ctx, page, errors } = await fresh();
+  await page.getByRole("button", { name: "Fertig" }).click();
+  const row = (slug) => page.locator(`[data-talent="talent_${slug}"]`);
+  const attrName = (code) => page.locator(`[data-attr="${code}"] p`).first().innerText();
+  const lit = () => page.locator("[data-attr][data-highlight]").evaluateAll((els) => els.map((e) => e.getAttribute("data-attr")).sort().join());
+  check("Ohne Darüberfahren steht keine Attribut-Zeile bei den Talenten", (await page.getByRole("tooltip").count()) === 0 && (await page.locator('section[aria-label="Talente"]').innerText()).includes(await attrName("KK")) === false);
+  check("keine Kachel hervorgehoben", (await lit()) === "");
+  await row("klettern").hover();
+  const tip = page.getByRole("tooltip");
+  await tip.waitFor();
+  const text = await tip.innerText();
+  check("Hover zeigt beide Attribute mit Wert und die Basis", text.includes(await attrName("GE")) && text.includes(await attrName("KK")) && /Ø \d+/.test(text), text.replace(/\n/g, " "));
+  check("Die zwei Attribut-Kacheln oben sind hervorgehoben (GE, KK)", (await lit()) === "GE,KK", await lit());
+  await row("singen").hover();
+  await page.waitForTimeout(80);
+  check("Wechsel zu „Singen“ zeigt dessen Attribute (CH, KO)", (await page.getByRole("tooltip").count()) === 1 && (await lit()) === "CH,KO", await lit());
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(80);
+  check("Maus weg: Karte und Hervorhebung verschwinden", (await page.getByRole("tooltip").count()) === 0 && (await lit()) === "");
+  // Tastatur
+  await row("tanzen").focus();
+  check("Fokus (Tastatur) zeigt die Attribute", (await page.getByRole("tooltip").count()) === 1 && (await lit()) === "GE,KO", await lit());
+  await page.keyboard.press("Escape");
+  check("Escape schließt", (await page.getByRole("tooltip").count()) === 0);
+  check("keine Seitenfehler", errors.length === 0, errors.join("|"));
+  await ctx.close();
+}
+{
+  // Handy: Tippen zeigt, erneutes Tippen verbirgt, anderes Talent wechselt
+  const { ctx, page } = await fresh("?gefuellt=1", { hasTouch: true, isMobile: true, viewport: { width: 375, height: 800 } });
+  await page.getByRole("button", { name: "Fertig" }).click();
+  const row = (slug) => page.locator(`[data-talent="talent_${slug}"]`);
+  await row("klettern").scrollIntoViewIfNeeded();
+  await row("klettern").tap({ position: { x: 20, y: 12 } });
+  check("Tippen zeigt die Attribute", (await page.getByRole("tooltip").count()) === 1);
+  const box = await page.getByRole("tooltip").boundingBox();
+  check("Karte liegt am Handy im Bild", box && box.x >= 0 && box.x + box.width <= 376, JSON.stringify(box));
+  await row("klettern").tap({ position: { x: 20, y: 12 } });
+  check("Erneutes Tippen verbirgt sie", (await page.getByRole("tooltip").count()) === 0);
+  await row("klettern").tap({ position: { x: 20, y: 12 } });
+  await row("schwimmen").tap({ position: { x: 20, y: 12 } });
+  check("Anderes Talent wechselt die Karte", (await page.getByRole("tooltip").count()) === 1 && (await page.locator("[data-attr][data-highlight]").evaluateAll((e) => e.map((x) => x.getAttribute("data-attr")).sort().join())) === "KK,KO");
+  await ctx.close();
+}
+{
+  // Im Bearbeiten: Fokus im Bonusfeld zeigt die Attribute, Tippen ins Feld schaltet nichts um
+  const { ctx, page } = await fresh();
+  await page.locator('input[aria-label="Bonus Klettern"]').click();
+  check("Im Bearbeiten: Fokus im Bonusfeld zeigt die Attribute", (await page.getByRole("tooltip").count()) === 1);
+  await page.locator('input[aria-label="Bonus Klettern"]').fill("6");
+  check("Eingabe funktioniert weiter", (await page.locator('input[aria-label="Bonus Klettern"]').inputValue()) === "6");
+  await ctx.close();
+}
+// 10. Layout: Desktop, Tablet, Handy ohne Überlauf und Überlappung
 for (const [w, h] of [[1280, 800], [768, 900], [375, 800]]) {
   const { ctx, page } = await fresh("?gefuellt=1", { viewport: { width: w, height: h } });
   await page.getByRole("button", { name: "Alles zufällig würfeln" }).click();
