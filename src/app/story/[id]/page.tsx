@@ -27,6 +27,7 @@ import { SceneDateToggle } from "@/components/scene-date-toggle";
 import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
+import { SceneChain } from "./scene-chain";
 import { OnlineMembers } from "@/components/online-members";
 import { getWorldMembers } from "@/lib/world-members";
 
@@ -99,6 +100,18 @@ export default async function StoryPostDetailPage({
     supabase.from("story_posts").select("id, title").eq("previous_story_id", storyPost.id).maybeSingle(),
     supabase.from("story_posts").select("location").eq("world_id", storyPost.world_id).not("location", "is", null),
   ]);
+  // Auswahl für „Vorherige Szene“: andere Szenen der Welt, die noch keine Folgeszene haben (außer der jetzigen vorherigen)
+  const { data: chainRows } = await supabase
+    .from("story_posts")
+    .select("id, title, previous_story_id")
+    .eq("world_id", storyPost.world_id)
+    .neq("id", storyPost.id)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const taken = new Set((chainRows ?? []).map((r) => r.previous_story_id).filter(Boolean));
+  const chainOptions = (chainRows ?? [])
+    .filter((r) => r.id === storyPost.previous_story_id || !taken.has(r.id))
+    .map((r) => ({ id: r.id as string, title: r.title as string }));
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
   const [{ data: world }, { data: bookmark }] = await Promise.all([
@@ -190,20 +203,13 @@ export default async function StoryPostDetailPage({
             <p className="text-xs text-muted">{formatDateTime(storyPost.created_at)}</p>
           </div>
         </div>
-        {(prevScene || nextScene) && (
-          <nav aria-label="Szenen" className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-            {prevScene && (
-              <Link href={`/story/${prevScene.id}`} className="max-w-full truncate transition hover:text-accent">
-                ← {prevScene.title}
-              </Link>
-            )}
-            {nextScene && (
-              <Link href={`/story/${nextScene.id}`} className="max-w-full truncate transition hover:text-accent">
-                {nextScene.title} →
-              </Link>
-            )}
-          </nav>
-        )}
+        <SceneChain
+          storyPostId={storyPost.id}
+          previous={prevScene ? { id: prevScene.id, title: prevScene.title } : null}
+          next={nextScene ? { id: nextScene.id, title: nextScene.title } : null}
+          options={chainOptions}
+          canEdit={isAuthor || isWorldOwner}
+        />
         {storyPost.story_arcs?.name && storyPost.arc_id && (
           <Link
             href={`/story?arc=${storyPost.arc_id}`}

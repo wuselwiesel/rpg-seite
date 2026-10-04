@@ -232,6 +232,20 @@ async function assignNextTurn(
   return nextId;
 }
 
+// Name, unter dem die Szene in Benachrichtigungen steht: Hat sie Kapitel-Marken (ältere Kapitel innerhalb einer Szene), zählt der Titel des
+// neuesten Kapitels, sonst der Titel der Szene (bei „Neues Kapitel = neue Szene“ ist das schon der neue Titel).
+async function sceneNotificationTitle(supabase: SupabaseClient, storyPostId: string, sceneTitle: string): Promise<string> {
+  const { data } = await supabase
+    .from("story_entries")
+    .select("chapter_title")
+    .eq("story_post_id", storyPostId)
+    .eq("kind", "chapter")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.chapter_title?.trim() || sceneTitle;
+}
+
 // Benachrichtigt die Person, die als Nächstes dran ist ("<Schreibende> wartet auf dich").
 async function notifyTurn(
   supabase: SupabaseClient,
@@ -323,7 +337,7 @@ async function afterWriting(
     .maybeSingle();
   const next = await assignNextTurn(supabase, storyPostId, characterId, nextChoice);
   if (notify && next && next !== before?.turn_character_id && before) {
-    await notifyTurn(supabase, storyPostId, before.title, userId, characterId, next, neutralActor);
+    await notifyTurn(supabase, storyPostId, await sceneNotificationTitle(supabase, storyPostId, before.title), userId, characterId, next, neutralActor);
   }
 }
 
@@ -411,6 +425,27 @@ export async function startNextScene(previousId: string, formData: FormData): Pr
   return { id: created.id };
 }
 
+// Die vorherige Szene (Kapitel-Verknüpfung) nachträglich ändern oder lösen (null). Das dürfen die Autor:in und die Welt-Besitzer:in.
+export async function setPreviousScene(storyPostId: string, previousId: string | null): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase
+    .from("story_posts")
+    .update({ previous_story_id: previousId }, { count: "exact" })
+    .eq("id", storyPostId);
+  if (error) return error.code === "23505" ? "Diese Szene hat schon eine Folgeszene." : error.message;
+  if (!count) return "Keine Berechtigung dafür.";
+
+  revalidatePath("/story");
+  revalidatePath(`/story/${storyPostId}`);
+  if (previousId) revalidatePath(`/story/${previousId}`);
+  return null;
+}
+
 // Zusammenfassung einer Szene schreiben, ändern oder (leer) entfernen.
 export async function setSceneRecap(storyPostId: string, text: string): Promise<string | null> {
   const supabase = await createClient();
@@ -478,7 +513,7 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
     actorName: writer?.name ?? "Jemand",
     actorAvatarUrl: writer?.avatar_url ?? null,
     link: `/story/${storyPostId}?as=${post.turn_character_id}&ziel=ende`,
-    message: `wartet in „${post.title}“ auf dich`,
+    message: `wartet in „${await sceneNotificationTitle(supabase, storyPostId, post.title)}“ auf dich`,
     recipientName: target.name,
   });
   return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
