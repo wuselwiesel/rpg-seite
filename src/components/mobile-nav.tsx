@@ -1,6 +1,5 @@
 "use client";
 
-import { OnlineToggle } from "@/components/online-status";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -215,11 +214,6 @@ export function MobileNav({
             </div>
           </div>
         )}
-
-        <div className="mb-4">
-          <p className="mb-1 px-1 text-xs text-muted">Mein Status</p>
-          <OnlineToggle />
-        </div>
 
         <div className="mb-4">
           <p className="mb-1 px-1 text-xs text-muted">Welt</p>
