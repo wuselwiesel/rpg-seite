@@ -15,7 +15,7 @@ import {
 } from "@/lib/badges-server";
 import { BadgeSections } from "@/components/badge-sections";
 import { BadgeCard } from "@/components/badge-card";
-import { AwardControls, CreateBadgeForm, DeleteDefButton, RevokeButton } from "./badge-controls";
+import { AccountAwardControls, AwardControls, CreateBadgeForm, DeleteDefButton, RevokeButton } from "./badge-controls";
 
 const TABS = [
   { id: "charakter", label: "Charakter-Erfolge" },
@@ -34,6 +34,13 @@ type DefRow = {
   creator: { username: string; nickname: string | null } | null;
 };
 type AwardLine = { id: string; def_id: string; characters: { id: string; name: string } | null };
+type AccountAwardLine = { id: string; def_id: string; recipient: { id: string; username: string; nickname: string | null } | null };
+type FriendshipRow = {
+  requester_id: string;
+  addressee_id: string;
+  requester: { id: string; username: string; nickname: string | null } | null;
+  addressee: { id: string; username: string; nickname: string | null } | null;
+};
 
 // Katalog: alle Badges mit Beschreibung (so erreichst du es / was es bedeutet). Fortschritt gilt für den aktiven Charakter.
 export default async function BadgesPage({ searchParams }: PageProps<"/badges">) {
@@ -77,7 +84,77 @@ export default async function BadgesPage({ searchParams }: PageProps<"/badges">)
     await syncAccountBadges();
     const [badges, metrics] = await Promise.all([getAccountBadges(user.id), accountMetrics(supabase, user.id)]);
     const earned = badges.filter((b) => b.kind === "account");
-    body = <BadgeSections defs={accDefs} categories={ACCOUNT_CATEGORIES} earned={earned} metrics={metrics} />;
+    // Eigene Abzeichen von Account zu Account: gestalten und an Freund:innen verleihen
+    const [defRes, friendRes] = await Promise.all([
+      supabase
+        .from("badge_defs")
+        .select("id, name, description, icon, color, created_by, creator:created_by(username, nickname)")
+        .is("world_id", null)
+        .eq("created_by", user.id)
+        .order("created_at", { ascending: true })
+        .returns<DefRow[]>(),
+      supabase
+        .from("friendships")
+        .select("requester_id, addressee_id, requester:requester_id(id, username, nickname), addressee:addressee_id(id, username, nickname)")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+        .returns<FriendshipRow[]>(),
+    ]);
+    const ownDefs = defRes.data ?? [];
+    const friends = (friendRes.data ?? [])
+      .map((f) => (f.requester_id === user.id ? f.addressee : f.requester))
+      .filter((p): p is { id: string; username: string; nickname: string | null } => Boolean(p))
+      .map((p) => ({ id: p.id, name: p.nickname || p.username }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+    let given: AccountAwardLine[] = [];
+    if (ownDefs.length) {
+      const { data: a } = await supabase
+        .from("badge_awards")
+        .select("id, def_id, recipient:user_id(id, username, nickname)")
+        .in("def_id", ownDefs.map((d) => d.id))
+        .not("user_id", "is", null)
+        .returns<AccountAwardLine[]>();
+      given = a ?? [];
+    }
+    body = (
+      <div className="flex flex-col gap-8">
+        <BadgeSections defs={accDefs} categories={ACCOUNT_CATEGORIES} earned={earned} metrics={metrics} />
+        <section aria-label="Eigene Abzeichen">
+          <h2 className="mb-3 font-serif text-xl text-fg">Eigene Abzeichen</h2>
+          {ownDefs.length > 0 && (
+            <ul className="mb-4 grid gap-3 sm:grid-cols-2">
+              {ownDefs.map((d) => {
+                const recipients = given.filter((a) => a.def_id === d.id && a.recipient);
+                const have = new Set(recipients.map((a) => a.recipient!.id));
+                return (
+                  <BadgeCard key={d.id} icon={d.icon} name={d.name} description={d.description || "Ein besonderes Abzeichen."} color={d.color} hideStatus footnote={recipients.length ? undefined : "Noch an niemanden verliehen"}>
+                    {recipients.length > 0 && (
+                      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-soft">
+                        Verliehen an
+                        {recipients.map((a) => {
+                          const name = a.recipient!.nickname || a.recipient!.username;
+                          return (
+                            <span key={a.id} className="inline-flex items-center gap-1">
+                              {name}
+                              <RevokeButton awardId={a.id} label={`${d.name} bei ${name}`} />
+                            </span>
+                          );
+                        })}
+                      </p>
+                    )}
+                    <AccountAwardControls defId={d.id} friends={friends.filter((f) => !have.has(f.id))} />
+                    <div className="mt-2">
+                      <DeleteDefButton defId={d.id} name={d.name} />
+                    </div>
+                  </BadgeCard>
+                );
+              })}
+            </ul>
+          )}
+          <CreateBadgeForm scope="account" />
+        </section>
+      </div>
+    );
     collectionHref = `/badges/konto/${user.id}`;
     collectionLabel = "Meine Sammlung";
     summary = `Du hast ${earned.length} von ${accDefs.length} Abzeichen. Sie gehören zu deinem Account.`;

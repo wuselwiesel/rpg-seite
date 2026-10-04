@@ -4,11 +4,11 @@ import { useActionState, useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { EmojiText } from "@/components/custom-emoji-provider";
-import { awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setBadgeHidden, setFeaturedBadge } from "./actions";
+import { awardAccountBadge, awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setBadgeHidden, setFeaturedBadge } from "./actions";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
-export function CreateBadgeForm() {
+export function CreateBadgeForm({ scope = "world" }: { scope?: "world" | "account" }) {
   const [error, formAction, pending] = useActionState(createBadgeDef, null);
   const [color, setColor] = useState("#96565d");
   const [icon, setIcon] = useState("🏅");
@@ -16,6 +16,7 @@ export function CreateBadgeForm() {
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded-2xl border border-line p-4">
       <div className="flex gap-2">
+        <input type="hidden" name="scope" value={scope} />
         <input type="hidden" name="icon" value={icon} />
         <div className="flex shrink-0 items-stretch gap-1">
           <span
@@ -41,9 +42,6 @@ export function CreateBadgeForm() {
         />
       </div>
       <input name="description" maxLength={200} placeholder="Wofür gibt es das Badge? (optional)" className={field} />
-      <p className="text-xs text-muted">
-        Als Symbol wählst du ein Emoji aus dem Katalog – auch die eigenen Emojis der Welt.
-      </p>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <button
         type="submit"
@@ -107,6 +105,42 @@ export function AwardControls({
         Verleihen
       </button>
       {error && <p className="w-full text-xs text-red-600 dark:text-red-400">{error}</p>}
+    </div>
+  );
+}
+
+// Redaktions-Badge an eine befreundete Person verleihen
+export function AccountAwardControls({ defId, friends }: { defId: string; friends: { id: string; name: string }[] }) {
+  const [recipientId, setRecipientId] = useState(friends[0]?.id ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  if (friends.length === 0) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <select value={recipientId} onChange={(e) => setRecipientId(e.target.value)} className={`min-w-0 flex-1 ${field}`} aria-label="Person, die das Badge bekommt">
+        {friends.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        disabled={pending || !recipientId}
+        onClick={() =>
+          startTransition(async () => {
+            const err = await awardAccountBadge(defId, recipientId);
+            setError(err);
+            setDone(err ? null : "Verliehen.");
+          })
+        }
+        className="rounded-md bg-surface-2 px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-3 disabled:opacity-50"
+      >
+        Verleihen
+      </button>
+      {error && <p className="w-full text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {done && <p role="status" className="w-full text-xs text-emerald-700 dark:text-emerald-400">{done}</p>}
     </div>
   );
 }
