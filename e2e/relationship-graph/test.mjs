@@ -69,6 +69,8 @@ check("Ganze Welt zeigt mehr Figuren als der Fokus", allNodes > focusNodes, `Fok
 
 // Zeitleiste
 const slider = page.locator('input[type="range"]');
+check("Zeitleiste ist anfangs verborgen", (await slider.count()) === 0);
+await page.getByRole("button", { name: "Zeitleiste anzeigen" }).click();
 const hasSlider = (await slider.count()) > 0;
 check("Zeitregler vorhanden", hasSlider);
 if (hasSlider) {
@@ -81,6 +83,9 @@ if (hasSlider) {
   check("Zwischenstand liegt dazwischen", edgesMid >= edgesThen && edgesMid <= edgesNow, `mitte=${edgesMid}`);
   await page.getByRole("button", { name: "Heute" }).click();
   check("„Heute“ stellt den vollen Stand wieder her", (await edgeCount()) === edgesNow);
+  await slider.fill("0");
+  await page.getByRole("button", { name: "Schließen" }).click();
+  check("Schließen blendet die Zeitleiste aus und zeigt wieder den heutigen Stand", (await slider.count()) === 0 && (await edgeCount()) === edgesNow);
 }
 
 // Hausfilter

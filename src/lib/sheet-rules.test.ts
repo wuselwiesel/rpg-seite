@@ -226,3 +226,12 @@ describe("Geheimes", () => {
     expect(parseSecrets({ family: [{ label: "x", value: "y", pos: -4 }] }).family[0].pos).toBe(0);
   });
 });
+
+describe("Titel der Familien-Sektion", () => {
+  it("bleibt erhalten, ist gekürzt und fällt bei leer auf „Familie“ zurück", () => {
+    expect(normalizeSheet({ familyTitle: "Freunde" }).familyTitle).toBe("Freunde");
+    expect(normalizeSheet({ familyTitle: "x".repeat(80) }).familyTitle.length).toBe(40);
+    expect(normalizeSheet({ familyTitle: "  " }).familyTitle).toBe("Familie");
+    expect(normalizeSheet({}).familyTitle).toBe("Familie");
+  });
+});
