@@ -321,7 +321,10 @@ function BubbleInner({
               dragRef.current = null;
               setDrag(null);
             }}
-            style={{ width: SIZE, height: SIZE, touchAction: "none" }}
+            // Kein natives Ziehen (Bild in der Blase) und kein Textmarkieren/Kontextmenü beim langen Drücken: sonst bricht das Verschieben ab
+            onDragStart={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ width: SIZE, height: SIZE, touchAction: "none", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}
             className={`relative flex items-center justify-center rounded-full bg-accent-strong text-on-accent-strong shadow-lg ring-2 ring-surface transition active:scale-95 ${
               drag ? "cursor-grabbing" : "cursor-grab"
             }`}
