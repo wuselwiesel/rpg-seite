@@ -5,7 +5,7 @@ import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
-import { Check, ChevronLeft, Globe2, ImagePlus, Pencil, SendHorizontal, Trash2, UsersRound, X } from "lucide-react";
+import { BellOff, Bell, Check, ChevronLeft, Globe2, ImagePlus, Pencil, SendHorizontal, Trash2, UsersRound, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { setAccountChatMuted } from "../actions";
@@ -173,6 +173,16 @@ export function AccountChatRoom({
             </button>
           )}
         </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? "Stummschaltung aufheben" : "Chat stumm schalten"}
+          title={muted ? "Stummschaltung aufheben" : "Stumm schalten"}
+          className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+        >
+          {muted ? <BellOff className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+        </button>
         <ChatThemePicker
           kind="account"
           chatId={chatId}
@@ -181,6 +191,7 @@ export function AccountChatRoom({
           muted={muted}
           onToggleMute={toggleMute}
         />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
