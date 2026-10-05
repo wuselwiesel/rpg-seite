@@ -3,7 +3,7 @@
 import { EmojiText } from "./custom-emoji-provider";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { useEffect, useRef, useState } from "react";
-import { SendHorizontal } from "lucide-react";
+import { ImagePlus, SendHorizontal, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { sendMessage } from "@/app/chats/actions";
 import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
@@ -13,6 +13,8 @@ import { useIsDark } from "@/lib/use-dark";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
+import { ZoomableImage } from "@/components/zoomable-image";
+import { useImageDraft, uploadChatImage } from "@/lib/chat-image";
 
 // Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
 function useChatThemeStyle(kind: "account" | "rp", chatId: string, userId: string) {
@@ -43,8 +45,11 @@ type ThreadItem = {
   name: string;
   avatarUrl: string | null;
   text: string;
+  imageUrl?: string | null;
   pending?: boolean;
 };
+
+type PickedImage = { file: File; previewUrl: string };
 
 function MiniThread({
   items,
@@ -59,7 +64,7 @@ function MiniThread({
   items: ThreadItem[];
   error: string | null;
   showNames: boolean;
-  onSend: (text: string) => void;
+  onSend: (text: string, image: PickedImage | null) => Promise<boolean>;
   typingNames?: string[];
   onTyping?: () => void;
   onEdit?: (id: string, text: string) => void;
@@ -70,6 +75,7 @@ function MiniThread({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const image = useImageDraft();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,9 +83,15 @@ function MiniThread({
   }, [items.length, typingNames.length]);
 
   function submit() {
-    if (!draft.trim()) return;
-    onSend(draft);
+    const text = draft;
+    if (!text.trim() && !image.pending) return;
+    const attached = image.take();
     setDraft("");
+    void onSend(text, attached).then((ok) => {
+      if (ok) return;
+      setDraft((d) => d || text);
+      if (attached) image.restore(attached);
+    });
   }
 
   return (
@@ -143,13 +155,25 @@ function MiniThread({
                         ? () => setActiveId(activeId === m.id ? null : m.id)
                         : undefined
                     }
-                    className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3 py-1.5 text-sm ${
+                    className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl text-sm ${
+                      m.imageUrl ? "p-1" : "px-3 py-1.5"
+                    } ${
                       m.mine
                         ? "rounded-br-md bg-accent-strong text-on-accent-strong"
                         : "rounded-bl-md bg-surface-2 text-fg"
                     } ${m.mine && onEdit ? "cursor-pointer" : ""} ${m.pending ? "opacity-60" : ""}`}
                   >
-                    <EmojiText text={m.text} />
+                    {m.imageUrl && (
+                      <ZoomableImage src={m.imageUrl} alt="Gesendetes Bild" className="rounded-xl">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={m.imageUrl} alt="Gesendetes Bild" className="max-h-48 max-w-[14rem] rounded-xl object-contain" />
+                      </ZoomableImage>
+                    )}
+                    {m.text && (
+                      <div className={m.imageUrl ? "px-2 pb-0.5 pt-1" : ""}>
+                        <EmojiText text={m.text} />
+                      </div>
+                    )}
                   </div>
                 )}
                 {m.mine &&
@@ -186,10 +210,25 @@ function MiniThread({
         </div>
         <div ref={bottomRef} />
       </div>
-      {error && (
+      {(error || image.error) && (
         <p className="px-3 pb-1 text-xs text-red-600 dark:text-red-400">
-          {error}
+          {error ?? image.error}
         </p>
+      )}
+      {image.pending && (
+        <div className="relative mx-3 mb-2 w-fit">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image.pending.previewUrl} alt="Vorschau" className="max-h-28 max-w-full rounded-xl object-contain" />
+          <button
+            type="button"
+            onClick={image.clear}
+            title="Bild entfernen"
+            aria-label="Bild entfernen"
+            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-fg text-app shadow"
+          >
+            <X className="h-3 w-3" strokeWidth={2.5} />
+          </button>
+        </div>
       )}
       <form
         onSubmit={(e) => {
@@ -202,6 +241,13 @@ function MiniThread({
           className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
           onPick={(t) => setDraft((d) => d + t)}
         />
+        <label
+          title="Bild senden"
+          className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+        >
+          <ImagePlus className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          <input type="file" accept="image/*" onChange={image.pick} className="hidden" />
+        </label>
         <textarea
           value={draft}
           rows={1}
@@ -221,7 +267,7 @@ function MiniThread({
         />
         <button
           type="submit"
-          disabled={!draft.trim()}
+          disabled={!draft.trim() && !image.pending}
           aria-label="Senden"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-strong text-on-accent-strong transition hover:opacity-90 disabled:opacity-40"
         >
@@ -261,6 +307,7 @@ function AccountThread({
     name: "",
     avatarUrl: null,
     text: m.content,
+    imageUrl: m.image_url,
     pending: m.pending,
   }));
   return (
@@ -270,7 +317,7 @@ function AccountThread({
       showNames={false}
       typingNames={typing.names.length ? [""] : []}
       onTyping={typing.announce}
-      onSend={(t) => void send(t)}
+      onSend={send}
       onEdit={(id, t) => void edit(id, t)}
       onDelete={(id) => void remove(id)}
     />
@@ -291,7 +338,7 @@ export function AccountMiniRoom({
     let cancelled = false;
     createClient()
       .from("account_messages")
-      .select("id, sender_id, content, created_at, updated_at")
+      .select("id, sender_id, content, image_url, created_at, updated_at")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: false })
       .limit(60)
@@ -389,9 +436,9 @@ function RpThread({
     };
   }, [chatId, userId]);
 
-  async function send(text: string) {
+  async function send(text: string, image: PickedImage | null): Promise<boolean> {
     const content = text.trim();
-    if (!content) return;
+    if (!content && !image) return false;
     const id = crypto.randomUUID();
     setError(null);
     setRows((prev) => [
@@ -400,24 +447,33 @@ function RpThread({
         id,
         character_id: activeCharacterId,
         content,
-        image_url: null,
+        image_url: image?.previewUrl ?? null,
         shared_post_id: null,
         story_id: null,
         created_at: new Date().toISOString(),
         pending: true,
       },
     ]);
-    const err = await sendMessage(chatId, activeCharacterId, content, null, {
+    const fail = (message: string) => {
+      setRows((prev) => prev.filter((m) => m.id !== id));
+      setError(message);
+      return false;
+    };
+    let imageUrl: string | null = null;
+    if (image) {
+      const uploaded = await uploadChatImage(chatId, image.file);
+      if ("error" in uploaded) return fail(uploaded.error);
+      imageUrl = uploaded.url;
+    }
+    const err = await sendMessage(chatId, activeCharacterId, content, imageUrl, {
       id,
     });
-    if (err) {
-      setRows((prev) => prev.filter((m) => m.id !== id));
-      setError(err);
-    } else {
-      setRows((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, pending: false } : m)),
-      );
-    }
+    if (err) return fail(err);
+    setRows((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, pending: false, image_url: imageUrl ?? m.image_url } : m)),
+    );
+    if (image) URL.revokeObjectURL(image.previewUrl);
+    return true;
   }
 
   const items: ThreadItem[] = rows.map((m) => ({
@@ -425,7 +481,8 @@ function RpThread({
     mine: m.character_id === activeCharacterId,
     name: people[m.character_id]?.name ?? "?",
     avatarUrl: people[m.character_id]?.avatar_url ?? null,
-    text: messagePreview(m),
+    text: m.image_url && !m.content.trim() ? "" : messagePreview(m),
+    imageUrl: m.image_url,
     pending: m.pending,
   }));
   return (
@@ -435,7 +492,7 @@ function RpThread({
       showNames={Object.keys(people).length > 2}
       typingNames={typing.names}
       onTyping={typing.announce}
-      onSend={(t) => void send(t)}
+      onSend={send}
     />
   );
 }

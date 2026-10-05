@@ -39,7 +39,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
     id: c.id,
     title: c.partner?.nickname || c.partner?.username || "Unbekannt",
     avatarUrl: c.partner?.avatar_url ?? null,
-    lastText: c.lastMessage?.content ?? null,
+    lastText: c.lastMessage ? messagePreview(c.lastMessage) : null,
     lastAt: c.lastMessage?.created_at ?? null,
     lastMine: c.lastMessage?.sender_id === user.id,
     unread: c.unread,

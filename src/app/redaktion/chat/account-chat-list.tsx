@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAccountChats } from "@/lib/account-chat";
 import { getAcceptedFriends } from "@/lib/friends";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { messagePreview } from "@/lib/chat-preview";
 import { AccountChatListItem } from "./account-chat-list-item";
 
 export async function AccountChatList() {
@@ -37,7 +38,7 @@ export async function AccountChatList() {
             unread={c.unread}
             lastMessage={
               c.lastMessage
-                ? { text: c.lastMessage.content, at: c.lastMessage.created_at, mine: c.lastMessage.sender_id === user.id }
+                ? { text: messagePreview(c.lastMessage), at: c.lastMessage.created_at, mine: c.lastMessage.sender_id === user.id }
                 : null
             }
           />

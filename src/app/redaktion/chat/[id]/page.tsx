@@ -20,7 +20,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       .returns<{ user_id: string; last_read_at: string; muted: boolean; profiles: Profile | null }[]>(),
     supabase
       .from("account_messages")
-      .select("id, sender_id, content, created_at, updated_at")
+      .select("id, sender_id, content, image_url, created_at, updated_at")
       .eq("chat_id", id)
       .order("created_at", { ascending: true })
       .returns<AccountMessage[]>(),

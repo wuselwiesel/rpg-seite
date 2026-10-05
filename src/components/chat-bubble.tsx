@@ -7,7 +7,7 @@ import { ChevronLeft, ExternalLink, MessageCircle, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { OnlineAnyDot } from "@/components/online-status";
 import { getBubbleChats, getBubbleUnread, type BubbleChat, type BubbleData } from "@/app/bubble-actions";
-import { chatTime } from "@/lib/chat-preview";
+import { chatTime, messagePreview } from "@/lib/chat-preview";
 import { CharacterAvatar } from "./character-avatar";
 import { AccountMiniRoom, RpMiniRoom } from "./bubble-rooms";
 
@@ -173,20 +173,20 @@ function BubbleInner({
     const channel = supabase
       .channel(`bubble-watch-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-        const row = payload.new as { chat_id: string; character_id: string; content: string };
+        const row = payload.new as { chat_id: string; character_id: string; content: string; image_url: string | null };
         if (myIdsRef.current.includes(row.character_id)) return;
         const here = openViewRef.current;
         if ((here?.kind === "rp" && here.id === row.chat_id) || pathRef.current === `/chats/${row.chat_id}`) return;
         scheduleCounts();
-        void showPreview("rp", row.chat_id, row.content.replace(/\s+/g, " ").trim() || "Neue Nachricht");
+        void showPreview("rp", row.chat_id, messagePreview(row));
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "account_messages" }, (payload) => {
-        const row = payload.new as { chat_id: string; sender_id: string; content: string };
+        const row = payload.new as { chat_id: string; sender_id: string; content: string; image_url: string | null };
         if (row.sender_id === userId) return;
         const here = openViewRef.current;
         if ((here?.kind === "account" && here.id === row.chat_id) || pathRef.current === `/redaktion/chat/${row.chat_id}`) return;
         scheduleCounts();
-        void showPreview("account", row.chat_id, row.content.replace(/\s+/g, " ").trim());
+        void showPreview("account", row.chat_id, messagePreview(row));
       })
       .on(
         "postgres_changes",

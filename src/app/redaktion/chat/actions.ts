@@ -6,9 +6,17 @@ import { createClient } from "@/lib/supabase/server";
 import { isRateLimited } from "@/lib/rate-limit";
 import { sendPushToUser } from "@/lib/push";
 
-export async function sendAccountMessage(chatId: string, content: string, id?: string): Promise<string | null> {
+export async function sendAccountMessage(
+  chatId: string,
+  content: string,
+  id?: string,
+  imageUrl?: string | null,
+): Promise<string | null> {
   const text = content.trim().slice(0, 4000);
-  if (!text) return "Nachricht darf nicht leer sein.";
+  if (!text && !imageUrl) return "Nachricht darf nicht leer sein.";
+  if (imageUrl && !imageUrl.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`)) {
+    return "Dieses Bild kann nicht gesendet werden.";
+  }
 
   const supabase = await createClient();
   const {
@@ -22,10 +30,16 @@ export async function sendAccountMessage(chatId: string, content: string, id?: s
 
   const { error } = await supabase
     .from("account_messages")
-    .insert({ ...(id ? { id } : {}), chat_id: chatId, sender_id: user.id, content: text });
+    .insert({
+      ...(id ? { id } : {}),
+      chat_id: chatId,
+      sender_id: user.id,
+      content: text,
+      ...(imageUrl ? { image_url: imageUrl } : {}),
+    });
   if (error) return error.message;
 
-  after(() => pushToChatPartners(chatId, user.id, text));
+  after(() => pushToChatPartners(chatId, user.id, text || "Foto"));
   return null;
 }
 
@@ -51,7 +65,6 @@ async function pushToChatPartners(chatId: string, senderId: string, text: string
 
 export async function updateAccountMessage(messageId: string, content: string): Promise<string | null> {
   const text = content.trim().slice(0, 4000);
-  if (!text) return "Nachricht darf nicht leer sein.";
   const supabase = await createClient();
   const {
     data: { user },
@@ -62,7 +75,7 @@ export async function updateAccountMessage(messageId: string, content: string): 
     .update({ content: text, updated_at: new Date().toISOString() }, { count: "exact" })
     .eq("id", messageId)
     .eq("sender_id", user.id);
-  if (error) return error.message;
+  if (error) return error.message.includes("account_messages_content_or_image") ? "Nachricht darf nicht leer sein." : error.message;
   if (!count) return "Konnte nicht geändert werden.";
   return null;
 }

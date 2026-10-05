@@ -5,7 +5,7 @@ import type { Profile } from "@/lib/types";
 export type AccountChatSummary = {
   id: string;
   partner: Pick<Profile, "id" | "username" | "nickname" | "avatar_url"> | null;
-  lastMessage: { content: string; sender_id: string; created_at: string } | null;
+  lastMessage: { content: string; image_url: string | null; sender_id: string; created_at: string } | null;
   unread: number;
   muted: boolean;
   sortAt: string;
@@ -35,12 +35,12 @@ export async function getAccountChats(userId: string): Promise<AccountChatSummar
   const chatIds = rows.map((r) => r.chat_id);
   const { data: recent } = await supabase
     .from("account_messages")
-    .select("chat_id, content, sender_id, created_at")
+    .select("chat_id, content, image_url, sender_id, created_at")
     .in("chat_id", chatIds)
     .order("created_at", { ascending: false })
     .limit(Math.max(80, chatIds.length * 6));
 
-  const last = new Map<string, { content: string; sender_id: string; created_at: string }>();
+  const last = new Map<string, { content: string; image_url: string | null; sender_id: string; created_at: string }>();
   const unread = new Map<string, number>();
   const readAt = new Map(rows.map((r) => [r.chat_id, r.last_read_at]));
   for (const m of recent ?? []) {

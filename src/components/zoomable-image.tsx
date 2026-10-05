@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 // Macht ein Bild (z. B. das Profilbild) anklickbar: Ein Klick zeigt es groß über der Seite, Klick daneben, ✕ oder Escape schließen.
-export function ZoomableImage({ src, alt, children }: { src: string; alt: string; children: React.ReactNode }) {
+export function ZoomableImage({ src, alt, children, className = "rounded-full" }: { src: string; alt: string; children: React.ReactNode; className?: string }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -22,12 +22,12 @@ export function ZoomableImage({ src, alt, children }: { src: string; alt: string
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={`${alt} vergrößern`} className="block cursor-zoom-in rounded-full">
+      <button type="button" onClick={() => setOpen(true)} aria-label={`${alt} vergrößern`} className={`block cursor-zoom-in ${className}`}>
         {children}
       </button>
       {open &&
         createPortal(
-          <div role="dialog" aria-modal="true" aria-label={alt} onClick={() => setOpen(false)} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-8">
+          <div role="dialog" aria-modal="true" aria-label={alt} onClick={(e) => { e.stopPropagation(); setOpen(false); }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-8">
             <button
               type="button"
               aria-label="Schließen"

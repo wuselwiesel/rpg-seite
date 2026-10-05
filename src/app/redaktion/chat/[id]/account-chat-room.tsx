@@ -5,7 +5,7 @@ import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
-import { Check, ChevronLeft, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
+import { Check, ChevronLeft, ImagePlus, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { setAccountChatMuted } from "../actions";
@@ -15,6 +15,8 @@ import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
+import { ZoomableImage } from "@/components/zoomable-image";
+import { useImageDraft } from "@/lib/chat-image";
 
 export type { AccountMessage };
 
@@ -45,6 +47,7 @@ export function AccountChatRoom({
 }) {
   const { messages, partnerRead, error, send, edit, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
   const [draft, setDraft] = useState("");
+  const image = useImageDraft();
   const typing = useTyping(`account-typing-${chatId}`, userId, "");
   const enterSends = useEnterSends();
   const [muted, setMuted] = useState(initialMuted);
@@ -69,9 +72,14 @@ export function AccountChatRoom({
 
   function submit() {
     const text = draft;
-    if (!text.trim()) return;
+    if (!text.trim() && !image.pending) return;
+    const attached = image.take();
     setDraft("");
-    void send(text);
+    void send(text, attached).then((ok) => {
+      if (ok) return;
+      setDraft((d) => d || text);
+      if (attached) image.restore(attached);
+    });
     inputRef.current?.focus();
   }
 
@@ -158,7 +166,7 @@ export function AccountChatRoom({
                       </button>
                       <button
                         type="button"
-                        disabled={!editDraft.trim()}
+                        disabled={!editDraft.trim() && !m.image_url}
                         onClick={() => {
                           void edit(m.id, editDraft);
                           setEditingId(null);
@@ -175,13 +183,25 @@ export function AccountChatRoom({
                   <div className={`group flex items-end gap-1.5 ${mine ? "flex-row-reverse" : ""}`}>
                     <div
                       onClick={mine ? () => setActiveId(activeId === m.id ? null : m.id) : undefined}
-                      className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px] ${
+                      className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl text-[15px] ${
+                        m.image_url ? "p-1" : "px-3.5 py-2"
+                      } ${
                         mine
                           ? "cursor-pointer rounded-br-md bg-accent-strong text-on-accent-strong"
                           : "rounded-bl-md bg-surface-2 text-fg"
                       } ${m.pending ? "opacity-60" : ""}`}
                     >
-                      <EmojiText text={m.content} />
+                      {m.image_url && (
+                        <ZoomableImage src={m.image_url} alt="Gesendetes Bild" className="rounded-xl">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={m.image_url} alt="Gesendetes Bild" className="max-h-72 max-w-[20rem] rounded-xl object-contain" />
+                        </ZoomableImage>
+                      )}
+                      {m.content && (
+                        <div className={m.image_url ? "px-2.5 pb-1 pt-1.5" : ""}>
+                          <EmojiText text={m.content} />
+                        </div>
+                      )}
                     </div>
                     <span className="shrink-0 pb-1 text-[10px] text-muted opacity-0 transition group-hover:opacity-100">
                       {time(m.created_at)}
@@ -227,7 +247,22 @@ export function AccountChatRoom({
         <div ref={bottomRef} />
       </div>
 
-      {error && <p className="pb-1 text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {(error || image.error) && <p className="pb-1 text-xs text-red-600 dark:text-red-400">{error ?? image.error}</p>}
+      {image.pending && (
+        <div className="relative mb-2 w-fit">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image.pending.previewUrl} alt="Vorschau" className="max-h-40 max-w-full rounded-xl object-contain" />
+          <button
+            type="button"
+            onClick={image.clear}
+            title="Bild entfernen"
+            aria-label="Bild entfernen"
+            className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-fg text-app shadow"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -240,6 +275,13 @@ export function AccountChatRoom({
           className="flex h-10 w-10 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
           onPick={(t) => setDraft((d) => d + t)}
         />
+        <label
+          title="Bild senden"
+          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+        >
+          <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
+          <input type="file" accept="image/*" onChange={image.pick} className="hidden" />
+        </label>
         <textarea
           ref={inputRef}
           value={draft}
@@ -260,7 +302,7 @@ export function AccountChatRoom({
         />
         <button
           type="submit"
-          disabled={!draft.trim()}
+          disabled={!draft.trim() && !image.pending}
           aria-label="Senden"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-strong text-on-accent-strong transition hover:opacity-90 disabled:opacity-40"
         >
