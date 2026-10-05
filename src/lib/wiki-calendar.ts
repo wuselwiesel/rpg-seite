@@ -24,6 +24,17 @@ export const DEFAULT_CALENDAR: WikiCalendar = {
   era: "",
 };
 
+// Gilt in dieser Welt der gewöhnliche Kalender (zwölf Monate, keine eigene Zeitrechnung)? Dann ist „heute“ das echte Datum.
+export function isStandardCalendar(cal: WikiCalendar): boolean {
+  return cal.era.trim() === "" && cal.months.length === DEFAULT_CALENDAR.months.length && cal.months.every((m, i) => m.name === DEFAULT_CALENDAR.months[i].name && m.days === DEFAULT_CALENDAR.months[i].days);
+}
+
+// Das heutige Datum (deutsche Zeit) als Jahr, Monat, Tag.
+export function todayDate(now: Date = new Date()): { year: number; month: number; day: number } {
+  const [year, month, day] = now.toLocaleDateString("en-CA", { timeZone: "Europe/Berlin" }).split("-").map(Number);
+  return { year, month, day };
+}
+
 export const MAX_MONTHS = 40;
 export const MAX_YEAR = 1_000_000;
 

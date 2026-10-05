@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
-import { datesFromRow, formatLabeled, monthName, placeInMonth, type Dated } from "@/lib/wiki-calendar";
+import { datesFromRow, formatLabeled, isStandardCalendar, monthName, placeInMonth, sortKey, todayDate, type Dated } from "@/lib/wiki-calendar";
 import { getDatedChapters } from "@/lib/chapter-dates";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { CalendarEventAdd } from "./event-add";
@@ -61,13 +61,16 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
     ...rows.map((r): Dated<Entry> => ({ kind: "wiki", id: r.id, title: r.title, labels: { start: r.event_label, end: r.event_end_label }, href: r.source_story_id ? (r.source_entry_id ? `/story/${r.source_story_id}#beitrag-${r.source_entry_id}` : `/story/${r.source_story_id}`) : undefined, dates: datesFromRow(r) })).filter((r) => r.dates.start),
   ];
 
-  // Startmonat: aus der Adresse, sonst der Monat der frühesten datierten Seite, sonst Jahr 1.
-  const earliest = [...dated].sort((a, b) => a.dates.start!.year - b.dates.start!.year)[0]?.dates.start;
+  // Startmonat: aus der Adresse, sonst „jetzt“: bei gewöhnlichem Kalender das heutige Datum, sonst der Monat des neuesten datierten Eintrags, sonst Jahr 1.
+  const standard = isStandardCalendar(calendar);
+  const today = standard ? todayDate() : null;
+  const latest = [...dated].sort((a, b) => sortKey(b.dates.start!) - sortKey(a.dates.start!))[0]?.dates.start;
+  const startAt = today ?? latest;
   const n = calendar.months.length;
   const yearRaw = Number.parseInt(first(sp.jahr), 10);
   const monthRaw = Number.parseInt(first(sp.monat), 10);
-  const year = Number.isInteger(yearRaw) && Math.abs(yearRaw) <= 1_000_000 ? yearRaw : (earliest?.year ?? 1);
-  const month = Number.isInteger(monthRaw) && monthRaw >= 1 && monthRaw <= n ? monthRaw : (earliest?.month ?? 1) <= n ? (earliest?.month ?? 1) : 1;
+  const year = Number.isInteger(yearRaw) && Math.abs(yearRaw) <= 1_000_000 ? yearRaw : (startAt?.year ?? 1);
+  const month = Number.isInteger(monthRaw) && monthRaw >= 1 && monthRaw <= n ? monthRaw : (startAt?.month ?? 1) <= n ? (startAt?.month ?? 1) : 1;
 
   const prev = month === 1 ? { jahr: year - 1, monat: n } : { jahr: year, monat: month - 1 };
   const next = month === n ? { jahr: year + 1, monat: 1 } : { jahr: year, monat: month + 1 };
@@ -166,6 +169,11 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
             </Link>
           </div>
           <form method="get" action="/wiki/kalender" className="flex flex-wrap items-end gap-2 print:hidden">
+            {today && (
+              <Link href={href({ jahr: today.year, monat: today.month })} className="rounded-lg border border-line px-3 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent">
+                Heute
+              </Link>
+            )}
             <label className="flex flex-col gap-1 text-xs text-muted">
               Monat
               <select name="monat" defaultValue={month} className={field}>
@@ -208,7 +216,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
           {Array.from({ length: days }, (_, i) => i + 1).map((d) => {
             const list = byDay.get(d) ?? [];
             return (
-              <CalendarDay key={d} day={d} addHref={source === "welt" ? addHref(d) : null} className={`flex min-h-20 flex-col gap-1 rounded-xl border p-2 ${list.length ? "border-accent/50 bg-accent/5" : "border-line bg-surface"}`}>
+              <CalendarDay key={d} day={d} addHref={source === "welt" ? addHref(d) : null} className={`flex min-h-20 flex-col gap-1 rounded-xl border p-2 ${list.length ? "border-accent/50 bg-accent/5" : "border-line bg-surface"} ${today && today.year === year && today.month === month && today.day === d ? "ring-2 ring-accent" : ""}`}>
                 <span className={`text-xs font-medium ${list.length ? "text-accent" : "text-muted"}`}>{d}</span>
                 {list.map((p) => (
                   <Link key={`${p.kind}-${p.id}`} href={hrefOf(p)} className="line-clamp-2 text-sm leading-snug text-fg hover:text-accent">

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_CALENDAR,
+  isStandardCalendar,
+  todayDate,
   columnsFromDates,
   datesFromRow,
   eventsInMonth,
@@ -166,4 +168,19 @@ describe("dateLabelSuggestions", () => {
   });
   it("Organisation: Gegründet", () => expect(dateLabelSuggestions("organisation").start[0]).toBe("Gegründet"));
   it("unbekannte Art: allgemeine Vorschläge", () => expect(dateLabelSuggestions("eigene-art").start).toContain("Beginn"));
+});
+
+describe("Standard-Kalender und heutiges Datum", () => {
+  it("erkennt den gewöhnlichen Kalender", () => {
+    expect(isStandardCalendar(DEFAULT_CALENDAR)).toBe(true);
+    expect(isStandardCalendar({ ...DEFAULT_CALENDAR, era: "n. d. Sturm" })).toBe(false);
+    expect(isStandardCalendar({ months: [{ name: "Frost", days: 30 }], era: "" })).toBe(false);
+    expect(isStandardCalendar({ ...DEFAULT_CALENDAR, months: DEFAULT_CALENDAR.months.map((m, i) => (i === 1 ? { ...m, days: 30 } : m)) })).toBe(false);
+  });
+
+  it("rechnet das heutige Datum in deutscher Zeit", () => {
+    expect(todayDate(new Date("2026-10-05T10:00:00Z"))).toEqual({ year: 2026, month: 10, day: 5 });
+    // 23:30 UTC ist in Deutschland schon der nächste Tag
+    expect(todayDate(new Date("2026-12-31T23:30:00Z"))).toEqual({ year: 2027, month: 1, day: 1 });
+  });
 });
