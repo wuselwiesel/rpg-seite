@@ -203,6 +203,7 @@ export default async function StoryPostDetailPage({
         <StoryPostControls
           storyPostId={storyPost.id}
           isPrivate={storyPost.is_private}
+          spoiler={!!storyPost.is_spoiler}
           pinned={storyPost.pinned}
           locked={storyPost.locked}
           archived={storyPost.archived}
@@ -255,6 +256,7 @@ export default async function StoryPostDetailPage({
           rawContent={storyPost.content}
           displayHtml={link(sanitizePostHtml(storyPost.content))}
           narrator={!!storyPost.narrator}
+          spoiler={!!storyPost.is_spoiler}
           canEdit={myCharacterIds.has(storyPost.character_id) || isWorldOwner}
           metaSlot={
             <>

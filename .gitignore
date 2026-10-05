@@ -41,3 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 e2e/**/.build/
+
+# iCloud-Ausnahme (Ordner mit .nosync werden nicht synchronisiert)
+node_modules.nosync
+.next.nosync
+node_modules.old

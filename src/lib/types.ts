@@ -142,6 +142,8 @@ export type StoryPost = {
   recap?: string | null;
   // Kurzbeschreibung für die Zeitleiste (höchstens 300 Zeichen)
   short_summary?: string | null;
+  // Als Spoiler markiert: Inhalt verborgen, bis man ihn anklickt
+  is_spoiler?: boolean;
   // Atmosphäre: Hintergrundbild und Musik-Link der Szene
   ambience_image_url?: string | null;
   ambience_music_url?: string | null;
@@ -156,6 +158,8 @@ export type StoryPost = {
 
 export type StoryEntry = {
   id: string;
+  // Als Spoiler markiert: Inhalt verborgen, bis man ihn anklickt
+  is_spoiler?: boolean;
   story_post_id: string;
   character_id: string;
   content: string;

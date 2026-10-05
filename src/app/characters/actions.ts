@@ -259,6 +259,31 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
   redirect("/characters");
 }
 
+// Einen bereits gelöschten (ausgeblendeten) Charakter endgültig entfernen – mit allem, was an ihm hängt.
+export async function purgeCharacter(characterId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: target } = await supabase
+    .from("characters")
+    .select("owner_id, is_npc, world_id, deleted_at")
+    .eq("id", characterId)
+    .maybeSingle<{ owner_id: string; is_npc: boolean; world_id: string; deleted_at: string | null }>();
+  if (!target) return "Charakter nicht gefunden.";
+  if (!target.deleted_at) return "Der Charakter muss zuerst gelöscht werden.";
+  if (!(await getCharacterAccess(target, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter endgültig löschen.";
+
+  const { error, count } = await supabase.from("characters").delete({ count: "exact" }).eq("id", characterId).not("deleted_at", "is", null);
+  if (error) return error.message;
+  if (!count) return "Charakter konnte nicht gelöscht werden.";
+
+  revalidatePath("/", "layout");
+  return null;
+}
+
 export async function restoreCharacter(characterId: string): Promise<string | null> {
   const supabase = await createClient();
   const {

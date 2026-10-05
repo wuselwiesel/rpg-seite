@@ -26,6 +26,12 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
   if (!activeWorld) redirect("/worlds");
 
   const [characters, npcs, worldOwnerId] = await Promise.all([getOwnCharacters(user.id, activeWorld.id), getWorldNpcs(activeWorld.id), getWorldOwnerId(activeWorld.id)]);
+  // Gelöschte, aber noch wiederherstellbare Charaktere (nur eigene)
+  const { count: deletedCount = 0 } = await supabase
+    .from("characters")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", user.id)
+    .not("deleted_at", "is", null);
   const cookieStore = await cookies();
   const activeId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value ?? characters[0]?.id;
 
@@ -37,6 +43,14 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
           <p className="truncate text-sm text-muted">in {activeWorld.name}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {(deletedCount ?? 0) > 0 && (
+            <Link
+              href="/characters/geloescht"
+              className="rounded-md border border-line px-4 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              Gelöscht ({deletedCount})
+            </Link>
+          )}
           <Link
             href="/characters/relationships"
             className="rounded-md border border-line px-4 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"

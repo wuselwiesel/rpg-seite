@@ -722,6 +722,20 @@ export async function updateStoryEntry(
   return null;
 }
 
+// Einzelne Nachricht als Spoiler markieren oder die Marke entfernen (wer die Nachricht bearbeiten darf, per RLS).
+export async function setEntrySpoiler(entryId: string, storyPostId: string, value: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error, count } = await supabase.from("story_entries").update({ is_spoiler: value }, { count: "exact" }).eq("id", entryId);
+  if (error) return error.message;
+  if (!count) return "Keine Berechtigung dafür.";
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
 export async function deleteStoryEntry(entryId: string, storyPostId: string) {
   const supabase = await createClient();
   const {
@@ -966,7 +980,7 @@ export async function rerollWithLuck(
 // drei Flags, siehe story_posts_update_author) - die Sichtbarkeit der Buttons steuert die UI.
 export async function toggleStoryPostFlag(
   storyPostId: string,
-  flag: "pinned" | "locked" | "archived",
+  flag: "pinned" | "locked" | "archived" | "is_spoiler",
   value: boolean,
 ): Promise<string | null> {
   const supabase = await createClient();

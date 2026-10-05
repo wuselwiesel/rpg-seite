@@ -1,6 +1,6 @@
 "use client";
 
-import { EmojiText } from "./custom-emoji-provider";
+import { SpoilerText } from "./spoiler-text";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, SendHorizontal, X } from "lucide-react";
@@ -168,7 +168,7 @@ function MiniThread({
                     )}
                     {m.text && (
                       <div className={m.imageUrl ? "px-2 pb-0.5 pt-1" : ""}>
-                        <EmojiText text={m.text} />
+                        <SpoilerText text={m.text} />
                       </div>
                     )}
                   </div>

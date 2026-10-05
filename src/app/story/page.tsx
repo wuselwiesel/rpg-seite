@@ -304,7 +304,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
             <StoryCompactRow
               href={`/story/${post.id}`}
               title={post.title}
-              content={post.content}
+              content={post.is_spoiler ? "<p>Spoiler</p>" : post.content}
               createdAt={post.created_at}
               character={post.characters}
               replyCount={post.story_entries?.[0]?.count ?? 0}
@@ -320,7 +320,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               key={post.id}
               id={post.id}
               title={post.title}
-              content={post.content}
+              content={post.is_spoiler ? "<p>Spoiler</p>" : post.content}
               createdAt={post.created_at}
               character={post.characters}
               characterHref={`/characters/${post.character_id}`}

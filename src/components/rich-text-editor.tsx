@@ -5,6 +5,7 @@ import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { useEffect, useRef, useState } from "react";
 import { useEditor, useEditorState, EditorContent, type Editor, type Extensions } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
+import { EyeOff } from "lucide-react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
@@ -20,6 +21,7 @@ import { wikiMentionExtension } from "@/lib/wiki-mention-suggestion";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
 import { Callout } from "@/lib/tiptap-callout";
+import { Spoiler } from "@/lib/tiptap-spoiler";
 import { BlockTools } from "@/components/editor-blocks";
 import { SymbolPicker } from "./symbol-picker";
 import { PROFILE_FONTS } from "@/lib/profile-theme";
@@ -71,6 +73,7 @@ function SelectionMenu({ editor }: { editor: Editor }) {
       italic: ed.isActive("italic"),
       underline: ed.isActive("underline"),
       strike: ed.isActive("strike"),
+      spoiler: ed.isActive("spoiler"),
       h2: ed.isActive("heading", { level: 2 }),
       h3: ed.isActive("heading", { level: 3 }),
       list: ed.isActive("bulletList"),
@@ -118,6 +121,9 @@ function SelectionMenu({ editor }: { editor: Editor }) {
         </ToolbarButton>
         <ToolbarButton label="Durchgestrichen" active={on.strike} onClick={() => editor.chain().focus().toggleStrike().run()}>
           <span className="line-through">S</span>
+        </ToolbarButton>
+        <ToolbarButton label="Als Spoiler verbergen" active={on.spoiler} onClick={() => editor.chain().focus().toggleSpoiler().run()}>
+          <EyeOff className="h-3.5 w-3.5" strokeWidth={2} />
         </ToolbarButton>
         <span className="mx-0.5 h-5 w-px bg-line" />
         <ToolbarButton label="Überschrift groß" active={on.h2} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
@@ -271,6 +277,13 @@ function Toolbar({
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <span className="line-through">S</span>
+        </ToolbarButton>
+        <ToolbarButton
+          label="Als Spoiler verbergen"
+          active={editor.isActive("spoiler")}
+          onClick={() => editor.chain().focus().toggleSpoiler().run()}
+        >
+          <EyeOff className="h-3.5 w-3.5" strokeWidth={2} />
         </ToolbarButton>
 
         <span className="mx-1 h-5 w-px bg-line" />
@@ -546,6 +559,7 @@ export function RichTextEditor({
     extensions: [
       StarterKit,
       Underline,
+      Spoiler,
       Link.configure({ openOnClick: false, autolink: true }),
       Image,
       Placeholder.configure({ placeholder: placeholder ?? "Schreib deine Geschichte..." }),

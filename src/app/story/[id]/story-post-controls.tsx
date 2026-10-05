@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Bookmark, BookOpen, Lock, Pin, Archive, EyeOff } from "lucide-react";
+import { Bookmark, BookOpen, Lock, Pin, Archive, EyeOff, ShieldAlert } from "lucide-react";
 import { toggleStoryPostFlag, toggleStoryBookmark } from "../actions";
 
 export function StoryPostControls({
   storyPostId,
   isPrivate,
+  spoiler,
   pinned,
   locked,
   archived,
@@ -17,6 +18,7 @@ export function StoryPostControls({
 }: {
   storyPostId: string;
   isPrivate: boolean;
+  spoiler: boolean;
   pinned: boolean;
   locked: boolean;
   archived: boolean;
@@ -28,6 +30,7 @@ export function StoryPostControls({
   const [isPinned, setIsPinned] = useState(pinned);
   const [isLocked, setIsLocked] = useState(locked);
   const [isArchived, setIsArchived] = useState(archived);
+  const [isSpoiler, setIsSpoiler] = useState(spoiler);
   const [, startTransition] = useTransition();
 
   function handleBookmark() {
@@ -42,8 +45,8 @@ export function StoryPostControls({
     });
   }
 
-  function handleFlag(flag: "pinned" | "locked" | "archived", value: boolean) {
-    const setters = { pinned: setIsPinned, locked: setIsLocked, archived: setIsArchived };
+  function handleFlag(flag: "pinned" | "locked" | "archived" | "is_spoiler", value: boolean) {
+    const setters = { pinned: setIsPinned, locked: setIsLocked, archived: setIsArchived, is_spoiler: setIsSpoiler };
     setters[flag](value);
     startTransition(async () => {
       const error = await toggleStoryPostFlag(storyPostId, flag, value);
@@ -60,6 +63,12 @@ export function StoryPostControls({
         <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-medium text-fg-soft">
           <EyeOff className="h-3 w-3" strokeWidth={2} />
           Geheim
+        </span>
+      )}
+      {isSpoiler && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-medium text-fg-soft">
+          <ShieldAlert className="h-3 w-3" strokeWidth={2} />
+          Spoiler
         </span>
       )}
       {isPinned && (
@@ -110,6 +119,18 @@ export function StoryPostControls({
             }`}
           >
             <Pin className="h-4 w-4" strokeWidth={2} />
+          </button>
+        )}
+        {(isWorldOwner || isAuthor) && (
+          <button
+            type="button"
+            onClick={() => handleFlag("is_spoiler", !isSpoiler)}
+            title={isSpoiler ? "Spoiler-Marke entfernen" : "Als Spoiler markieren"}
+            className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-surface-2 ${
+              isSpoiler ? "text-accent" : "text-muted hover:text-fg"
+            }`}
+          >
+            <ShieldAlert className="h-4 w-4" strokeWidth={2} />
           </button>
         )}
         {(isWorldOwner || isAuthor) && (

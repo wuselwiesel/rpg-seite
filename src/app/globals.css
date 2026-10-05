@@ -1209,3 +1209,25 @@ a.wiki-missing,
 @keyframes pop-in {
   from { opacity: 0; transform: translateY(-3px); }
 }
+
+
+/* Spoiler: Text verwischt bis zum Anklicken (Beiträge, Szenen, Chats); im Editor bleibt er lesbar */
+span[data-type="spoiler"] {
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: filter 0.15s;
+}
+span[data-type="spoiler"]:not(.spoiler-open) {
+  filter: blur(6px);
+  user-select: none;
+}
+span[data-type="spoiler"].spoiler-open {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.ProseMirror span[data-type="spoiler"] {
+  cursor: text;
+  filter: none;
+  user-select: auto;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  outline: 1px dashed color-mix(in srgb, currentColor 40%, transparent);
+}

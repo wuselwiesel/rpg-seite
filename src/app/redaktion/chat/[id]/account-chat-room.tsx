@@ -5,11 +5,12 @@ import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
-import { BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, ImagePlus, Pencil, Pin, PinOff, Search, SendHorizontal, SmilePlus, Trash2, UsersRound, X } from "lucide-react";
+import { BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, ImagePlus, Pencil, Pin, PinOff, Search, EyeOff, SendHorizontal, SmilePlus, Trash2, UsersRound, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { setAccountChatMuted } from "../actions";
 import { useAccountChat, type AccountMessage, type AccountReaction } from "@/lib/use-account-chat";
+import { SpoilerText } from "@/components/spoiler-text";
 import { EmojiPickerDialog } from "@/components/emoji-picker-dialog";
 import { splitMentions } from "@/lib/account-mentions";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
@@ -178,6 +179,17 @@ export function AccountChatRoom({
     document.getElementById(`msg-${id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
     setFlashId(id);
     setTimeout(() => setFlashId((cur) => (cur === id ? null : cur)), 1600);
+  }
+
+  // Markierten Text (ohne Auswahl den ganzen Entwurf) in ||…|| setzen: wird im Chat verborgen, bis man ihn anklickt
+  function wrapSpoiler() {
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? 0;
+    const [from, to] = start === end ? [0, draft.length] : [start, end];
+    if (from === to) return;
+    setDraft(`${draft.slice(0, from)}||${draft.slice(from, to)}||${draft.slice(to)}`);
+    el?.focus();
   }
 
   function pickMention(username: string) {
@@ -406,11 +418,11 @@ export function AccountChatRoom({
                               part.mention ? (
                                 <span key={idx} className="font-semibold underline decoration-dotted underline-offset-2">{part.text}</span>
                               ) : (
-                                <EmojiText key={idx} text={part.text} />
+                                <SpoilerText key={idx} text={part.text} />
                               ),
                             )
                           ) : (
-                            <EmojiText text={m.content} />
+                            <SpoilerText text={m.content} />
                           )}
                         </div>
                       )}
@@ -579,6 +591,16 @@ export function AccountChatRoom({
             ))}
           </div>
         )}
+        <button
+          type="button"
+          onClick={wrapSpoiler}
+          disabled={!draft}
+          aria-label="Als Spoiler verbergen"
+          title="Als Spoiler verbergen"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-40"
+        >
+          <EyeOff className="h-5 w-5" strokeWidth={1.75} />
+        </button>
         <textarea
           ref={inputRef}
           value={draft}

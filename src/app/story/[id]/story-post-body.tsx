@@ -1,6 +1,7 @@
 "use client";
 
 import { EmojiHtml } from "@/components/custom-emoji-provider";
+import { SpoilerGate } from "@/components/spoiler-gate";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteStoryPost, updateStoryPost } from "../actions";
@@ -16,6 +17,7 @@ export function StoryPostBody({
   narrator,
   canEdit,
   metaSlot,
+  spoiler = false,
 }: {
   storyPostId: string;
   title: string;
@@ -24,6 +26,7 @@ export function StoryPostBody({
   narrator: boolean;
   canEdit: boolean;
   metaSlot: React.ReactNode;
+  spoiler?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [narratorOn, setNarratorOn] = useState(narrator);
@@ -121,7 +124,9 @@ export function StoryPostBody({
       </div>
       {deleteError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{deleteError}</p>}
       {metaSlot}
-      <EmojiHtml className="post-content text-fg-soft" html={displayHtml} />
+      <SpoilerGate spoiler={spoiler}>
+        <EmojiHtml className="post-content text-fg-soft" html={displayHtml} />
+      </SpoilerGate>
     </>
   );
 }

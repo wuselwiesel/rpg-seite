@@ -3,11 +3,12 @@
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
-import { Clover, Dices, Flag, Pencil, Trash2, Type } from "lucide-react";
+import { Clover, Dices, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
 import { MarkEventForm } from "./mark-event-form";
 import { unmarkEvent } from "@/app/wiki/actions";
 import { useRouter } from "next/navigation";
-import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene } from "../actions";
+import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene, setEntrySpoiler } from "../actions";
+import { SpoilerGate } from "@/components/spoiler-gate";
 import { EventDateFields } from "@/components/event-date-fields";
 import { formatDate, type EventDate, type WikiCalendar } from "@/lib/wiki-calendar";
 import { stripHtml } from "@/lib/strip-html";
@@ -66,6 +67,7 @@ export function StoryEntryItem({
 
   const router = useRouter();
   const [markOpen, setMarkOpen] = useState(false);
+  const [spoiler, setSpoiler] = useState(!!entry.is_spoiler);
   // Am Handy: einmal antippen zeigt die Knöpfe, ein Tippen daneben blendet sie wieder aus
   const [tapped, setTapped] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -269,6 +271,27 @@ export function StoryEntryItem({
               {canManage && !isRoll && (
                 <button
                   type="button"
+                  onClick={() => {
+                    const next = !spoiler;
+                    setSpoiler(next);
+                    void setEntrySpoiler(entry.id, storyPostId, next).then((err) => {
+                      if (err) {
+                        setSpoiler(!next);
+                        alert(err);
+                      }
+                    });
+                  }}
+                  title={spoiler ? "Spoiler-Marke entfernen" : "Als Spoiler markieren"}
+                  aria-label={spoiler ? "Spoiler-Marke entfernen" : "Als Spoiler markieren"}
+                  aria-pressed={spoiler}
+                  className={`rounded p-1 transition hover:bg-surface-2 ${spoiler ? "text-accent" : `text-muted hover:text-fg ${REVEAL}`}`}
+                >
+                  <ShieldAlert className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              )}
+              {canManage && !isRoll && (
+                <button
+                  type="button"
                   onClick={() => setEditing(true)}
                   title="Bearbeiten"
                   className={`rounded p-1 text-muted transition hover:bg-surface-2 hover:text-fg ${REVEAL}`}
@@ -396,7 +419,9 @@ export function StoryEntryItem({
         ) : (
           // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -
           // Einträge kommen nie ungeprüft vom Client in die Datenbank.
-          <EmojiHtml className="post-content text-sm text-fg-soft" html={displayHtml ?? entry.content} />
+          <SpoilerGate spoiler={spoiler}>
+            <EmojiHtml className="post-content text-sm text-fg-soft" html={displayHtml ?? entry.content} />
+          </SpoilerGate>
         )}
       </div>
     </div>

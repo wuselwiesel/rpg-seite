@@ -36,4 +36,8 @@ describe("Gefährliches bleibt draußen", () => {
     expect(clean(html)).toBe(html);
     expect(clean('<span style="font-family: var(--font-lora), serif; color: red">a</span>')).toBe('<span style="font-family:var(--font-lora), serif">a</span>');
   });
+
+  it("behält Spoiler-Markierungen", () => {
+    expect(clean('<p>Das ist <span data-type="spoiler">geheim</span>.</p>')).toBe('<p>Das ist <span data-type="spoiler">geheim</span>.</p>');
+  });
 });

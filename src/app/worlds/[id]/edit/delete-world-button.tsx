@@ -23,6 +23,13 @@ export function DeleteWorldButton({ worldId, worldName }: { worldId: string; wor
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line p-4">
+      <a
+        href={`/worlds/${worldId}/export`}
+        download
+        className="w-fit rounded-md border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+      >
+        Welt vorher als Datei sichern
+      </a>
       <p className="text-sm text-fg">
         Gib <span className="font-medium">{worldName}</span> ein, um das endgültige Löschen für alle
         Mitglieder zu bestätigen.
