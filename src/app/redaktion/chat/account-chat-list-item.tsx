@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellOff } from "lucide-react";
+import { BellOff, Globe2 } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineDot } from "@/components/online-status";
 import { chatTime } from "@/lib/chat-preview";
@@ -10,6 +10,7 @@ import { chatTime } from "@/lib/chat-preview";
 export function AccountChatListItem({
   id,
   title,
+  kind = "direct",
   avatarUrl,
   partnerId,
   lastMessage,
@@ -18,6 +19,7 @@ export function AccountChatListItem({
 }: {
   id: string;
   title: string;
+  kind?: "direct" | "group" | "world";
   avatarUrl: string | null | undefined;
   partnerId?: string | null;
   lastMessage: { text: string; at: string; mine: boolean } | null;
@@ -41,7 +43,7 @@ export function AccountChatListItem({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <p className={`min-w-0 flex-1 truncate text-[15px] text-fg ${hasUnread ? "font-semibold" : "font-medium"}`}>{title}</p>
+          <p className={`min-w-0 flex-1 truncate text-[15px] text-fg ${hasUnread ? "font-semibold" : "font-medium"}`}>{kind === "world" && <Globe2 className="mr-1 inline h-3.5 w-3.5 -translate-y-px text-muted" strokeWidth={2} aria-label="Welt-Chat" />}{title}</p>
           {lastMessage && (
             <time
               dateTime={lastMessage.at}

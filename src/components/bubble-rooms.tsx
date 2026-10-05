@@ -13,7 +13,7 @@ import { useIsDark } from "@/lib/use-dark";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
-import { ZoomableImage } from "@/components/zoomable-image";
+import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
 import { useImageDraft, uploadChatImage } from "@/lib/chat-image";
 
 // Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
@@ -164,10 +164,7 @@ function MiniThread({
                     } ${m.mine && onEdit ? "cursor-pointer" : ""} ${m.pending ? "opacity-60" : ""}`}
                   >
                     {m.imageUrl && (
-                      <ZoomableImage src={m.imageUrl} alt="Gesendetes Bild" className="rounded-xl">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={m.imageUrl} alt="Gesendetes Bild" className="max-h-48 max-w-[14rem] rounded-xl object-contain" />
-                      </ZoomableImage>
+                      <ChatMedia url={m.imageUrl} size="sm" />
                     )}
                     {m.text && (
                       <div className={m.imageUrl ? "px-2 pb-0.5 pt-1" : ""}>
@@ -217,13 +214,12 @@ function MiniThread({
       )}
       {image.pending && (
         <div className="relative mx-3 mb-2 w-fit">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image.pending.previewUrl} alt="Vorschau" className="max-h-28 max-w-full rounded-xl object-contain" />
+          <AttachmentPreview url={image.pending.previewUrl} className="max-h-28" />
           <button
             type="button"
             onClick={image.clear}
-            title="Bild entfernen"
-            aria-label="Bild entfernen"
+            title="Anhang entfernen"
+            aria-label="Anhang entfernen"
             className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-fg text-app shadow"
           >
             <X className="h-3 w-3" strokeWidth={2.5} />
@@ -242,11 +238,11 @@ function MiniThread({
           onPick={(t) => setDraft((d) => d + t)}
         />
         <label
-          title="Bild senden"
+          title="Bild oder Video senden"
           className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
         >
           <ImagePlus className="h-[18px] w-[18px]" strokeWidth={1.75} />
-          <input type="file" accept="image/*" onChange={image.pick} className="hidden" />
+          <input type="file" accept="image/*,video/*" onChange={image.pick} className="hidden" />
         </label>
         <textarea
           value={draft}
@@ -280,22 +276,28 @@ function MiniThread({
 
 // ---------------------------------------------------------------------------
 
+type AccountMember = { id: string; name: string; avatarUrl: string | null };
+
 function AccountThread({
   chatId,
   userId,
   initial,
+  members,
 }: {
   chatId: string;
   userId: string;
   initial: AccountMessage[];
+  members: AccountMember[];
 }) {
+  const names = new Map(members.map((m) => [m.id, m]));
+  const grouped = members.length > 2;
   const { messages, error, send, edit, remove } = useAccountChat(
     chatId,
     userId,
     initial,
     null,
   );
-  const typing = useTyping(`account-typing-${chatId}`, userId, "");
+  const typing = useTyping(`account-typing-${chatId}`, userId, names.get(userId)?.name ?? "");
   const clearTyping = typing.clear;
   const lastIncomingId = [...messages].reverse().find((m) => m.sender_id !== userId)?.id;
   useEffect(() => {
@@ -304,7 +306,7 @@ function AccountThread({
   const items: ThreadItem[] = messages.map((m) => ({
     id: m.id,
     mine: m.sender_id === userId,
-    name: "",
+    name: grouped ? (names.get(m.sender_id)?.name ?? "Ehemaliges Mitglied") : "",
     avatarUrl: null,
     text: m.content,
     imageUrl: m.image_url,
@@ -314,8 +316,8 @@ function AccountThread({
     <MiniThread
       items={items}
       error={error}
-      showNames={false}
-      typingNames={typing.names.length ? [""] : []}
+      showNames={grouped}
+      typingNames={typing.names.length ? (grouped ? [typing.names.filter(Boolean).join(", ")] : [""]) : []}
       onTyping={typing.announce}
       onSend={send}
       onEdit={(id, t) => void edit(id, t)}
@@ -332,6 +334,7 @@ export function AccountMiniRoom({
   userId: string;
 }) {
   const [initial, setInitial] = useState<AccountMessage[] | null>(null);
+  const [members, setMembers] = useState<AccountMember[]>([]);
   const themeStyle = useChatThemeStyle("account", chatId, userId);
 
   useEffect(() => {
@@ -345,6 +348,15 @@ export function AccountMiniRoom({
       .then(({ data }) => {
         if (!cancelled) setInitial([...(data ?? [])].reverse());
       });
+    createClient()
+      .from("account_chat_participants")
+      .select("user_id, profiles(username, nickname, avatar_url)")
+      .eq("chat_id", chatId)
+      .returns<{ user_id: string; profiles: { username: string; nickname: string | null; avatar_url: string | null } | null }[]>()
+      .then(({ data }) => {
+        if (!cancelled)
+          setMembers((data ?? []).map((p) => ({ id: p.user_id, name: p.profiles?.nickname || p.profiles?.username || "Unbekannt", avatarUrl: p.profiles?.avatar_url ?? null })));
+      });
     return () => {
       cancelled = true;
     };
@@ -354,7 +366,7 @@ export function AccountMiniRoom({
     return <p className="p-6 text-center text-xs text-muted">Lädt…</p>;
   return (
     <div style={themeStyle} className="flex min-h-0 flex-1 flex-col text-fg">
-      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} />
+      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} members={members} />
     </div>
   );
 }

@@ -9,6 +9,9 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineBadge, OnlineCount } from "@/components/online-status";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { resizeImage } from "@/lib/image-resize";
+import { chatImageError, previewUrlFor } from "@/lib/chat-image";
+import { AttachmentPreview } from "@/components/chat-media";
+import { isVideoUrl } from "@/lib/chat-media-url";
 import { aggregateReactions } from "@/lib/reactions";
 import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, setChatMuted, updateMessage } from "../actions";
 import { GifPicker } from "@/components/gif-picker";
@@ -265,17 +268,14 @@ export function ChatRoom({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setImageError("Nur Bilder können gesendet werden.");
-      return;
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      setImageError("Bild ist zu groß (max. 25 MB).");
+    const problem = chatImageError(file);
+    if (problem) {
+      setImageError(problem);
       return;
     }
     setImageError(null);
     if (pendingImage) URL.revokeObjectURL(pendingImage.previewUrl);
-    setPendingImage({ file, previewUrl: URL.createObjectURL(file) });
+    setPendingImage({ file, previewUrl: previewUrlFor(file) });
   }
 
   function clearImage() {
@@ -327,9 +327,11 @@ export function ChatRoom({
     if (previousImage) {
       setSending(true);
       const file = await resizeImage(previousImage.file);
-      const ext = file.name.split(".").pop() || "jpg";
+      const ext = file.type.startsWith("video/")
+        ? ({ "video/quicktime": "mov", "video/webm": "webm", "video/ogg": "ogv", "video/x-m4v": "m4v" }[file.type] ?? "mp4")
+        : file.name.split(".").pop() || "jpg";
       const path = `${chatId}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("chat-media").upload(path, file);
+      const { error: uploadError } = await supabase.storage.from("chat-media").upload(path, file, { contentType: file.type || undefined });
       setSending(false);
       if (uploadError) return fail(uploadError.message);
       imageUrl = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
@@ -642,7 +644,7 @@ export function ChatRoom({
           <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
             <CornerUpLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             <span className="min-w-0 flex-1 truncate">
-              Antwort an <b className="font-semibold">{replyTo.characters?.name}</b>: {plainMentions(replyTo.content) || "Foto"}
+              Antwort an <b className="font-semibold">{replyTo.characters?.name}</b>: {plainMentions(replyTo.content) || (isVideoUrl(replyTo.image_url) ? "Video" : "Foto")}
             </span>
             <button type="button" onClick={() => setReplyTo(null)} aria-label="Antwort abbrechen" className="shrink-0 text-muted hover:text-fg">
               <X className="h-4 w-4" strokeWidth={2} />
@@ -651,12 +653,11 @@ export function ChatRoom({
         )}
         {pendingImage && (
           <div className="relative w-fit">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={pendingImage.previewUrl} alt="Vorschau" className="max-h-40 max-w-full rounded-md object-contain" />
+            <AttachmentPreview url={pendingImage.previewUrl} />
             <button
               type="button"
               onClick={clearImage}
-              title="Bild entfernen"
+              title="Anhang entfernen"
               className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-fg text-app shadow"
             >
               <X className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -716,10 +717,10 @@ export function ChatRoom({
                 <p className="px-3 pb-0.5 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted">Medien</p>
                 <label role="menuitem" className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-sm text-fg hover:bg-surface-2">
                   <ImagePlus className="h-4 w-4 text-fg-soft" strokeWidth={1.75} />
-                  Bild
+                  Bild / Video
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     onChange={(e) => {
                       pickImage(e);
                       setPlusOpen(false);
@@ -747,11 +748,11 @@ export function ChatRoom({
           </div>
           <div className="hidden gap-2 sm:flex">
           <label
-              title="Bild senden"
+              title="Bild oder Video senden"
               className="flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-line px-2.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg"
             >
               <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
-              <input type="file" accept="image/*" onChange={pickImage} className="hidden" />
+              <input type="file" accept="image/*,video/*" onChange={pickImage} className="hidden" />
             </label>
             <button
               type="button"

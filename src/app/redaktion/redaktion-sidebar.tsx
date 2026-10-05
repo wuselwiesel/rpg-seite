@@ -38,15 +38,14 @@ export async function RedaktionSidebar({ userId }: { userId: string }) {
         <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-2">
           {chats.length ? (
             chats.slice(0, 6).map((c) => {
-              const title = c.partner?.nickname || c.partner?.username || "Unbekannt";
               return (
                 <Link
                   key={c.id}
                   href={`/redaktion/chat/${c.id}`}
                   className="flex items-center gap-2 rounded-xl px-1.5 py-1.5 transition hover:bg-surface-2"
                 >
-                  <CharacterAvatar name={title} avatarUrl={c.partner?.avatar_url} size={32} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg-soft">{title}</span>
+                  <CharacterAvatar name={c.title} avatarUrl={c.avatarUrl} size={32} />
+                  <span className="min-w-0 flex-1 truncate text-sm text-fg-soft">{c.title}</span>
                   {c.unread > 0 && (
                     <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-strong px-1.5 text-[11px] font-semibold text-on-accent-strong">
                       {c.unread}

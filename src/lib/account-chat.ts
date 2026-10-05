@@ -2,8 +2,15 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
+export type AccountChatKind = "direct" | "group" | "world";
+
 export type AccountChatSummary = {
   id: string;
+  kind: AccountChatKind;
+  // Anzeigename und Bild: bei 1:1 das Gegenüber, bei Gruppen der Gruppenname, beim Welt-Chat die Welt
+  title: string;
+  avatarUrl: string | null;
+  // nur bei 1:1-Chats gesetzt
   partner: Pick<Profile, "id" | "username" | "nickname" | "avatar_url"> | null;
   lastMessage: { content: string; image_url: string | null; sender_id: string; created_at: string } | null;
   unread: number;
@@ -18,6 +25,10 @@ type Row = {
   account_chats: {
     id: string;
     created_at: string;
+    kind: AccountChatKind;
+    name: string | null;
+    avatar_url: string | null;
+    worlds: { name: string; cover_image_url: string | null } | null;
     account_chat_participants: { user_id: string; profiles: Profile | null }[];
   } | null;
 };
@@ -27,7 +38,7 @@ export async function getAccountChats(userId: string): Promise<AccountChatSummar
   const supabase = await createClient();
   const { data: rows } = await supabase
     .from("account_chat_participants")
-    .select("chat_id, last_read_at, muted, account_chats(id, created_at, account_chat_participants(user_id, profiles(*)))")
+    .select("chat_id, last_read_at, muted, account_chats(id, created_at, kind, name, avatar_url, worlds(name, cover_image_url), account_chat_participants(user_id, profiles(*)))")
     .eq("user_id", userId)
     .returns<Row[]>();
   if (!rows?.length) return [];
@@ -52,10 +63,22 @@ export async function getAccountChats(userId: string): Promise<AccountChatSummar
 
   return rows
     .map((r): AccountChatSummary => {
-      const partner = r.account_chats?.account_chat_participants.find((p) => p.user_id !== userId)?.profiles ?? null;
+      const chat = r.account_chats;
+      const kind = chat?.kind ?? "direct";
+      const partner = kind === "direct" ? (chat?.account_chat_participants.find((p) => p.user_id !== userId)?.profiles ?? null) : null;
       const lastMessage = last.get(r.chat_id) ?? null;
+      const title =
+        kind === "world"
+          ? (chat?.worlds?.name ?? "Welt")
+          : kind === "group"
+            ? (chat?.name ?? "Gruppe")
+            : partner?.nickname || partner?.username || "Unbekannt";
+      const avatarUrl = kind === "world" ? (chat?.worlds?.cover_image_url ?? null) : kind === "group" ? (chat?.avatar_url ?? null) : (partner?.avatar_url ?? null);
       return {
         id: r.chat_id,
+        kind,
+        title,
+        avatarUrl,
         partner: partner
           ? { id: partner.id, username: partner.username, nickname: partner.nickname, avatar_url: partner.avatar_url }
           : null,

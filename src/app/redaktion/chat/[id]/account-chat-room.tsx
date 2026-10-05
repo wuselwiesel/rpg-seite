@@ -3,9 +3,9 @@
 import { EmojiText } from "@/components/custom-emoji-provider";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
-import { Check, ChevronLeft, ImagePlus, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
+import { Check, ChevronLeft, Globe2, ImagePlus, Pencil, SendHorizontal, Trash2, UsersRound, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { setAccountChatMuted } from "../actions";
@@ -15,8 +15,10 @@ import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
-import { ZoomableImage } from "@/components/zoomable-image";
+import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
 import { useImageDraft } from "@/lib/chat-image";
+import { createClient } from "@/lib/supabase/client";
+import { GroupMembers, type ChatMember } from "./group-members";
 
 export type { AccountMessage };
 
@@ -27,8 +29,14 @@ const day = (iso: string) =>
 export function AccountChatRoom({
   chatId,
   userId,
-  partnerName,
-  partnerAvatarUrl,
+  kind,
+  title,
+  avatarUrl,
+  members,
+  isCreator,
+  addableFriends,
+  selfName,
+  worldId,
   partnerProfileId,
   partnerLastRead,
   initialMessages,
@@ -37,8 +45,14 @@ export function AccountChatRoom({
 }: {
   chatId: string;
   userId: string;
-  partnerName: string;
-  partnerAvatarUrl: string | null;
+  kind: "direct" | "group" | "world";
+  title: string;
+  avatarUrl: string | null;
+  members: ChatMember[];
+  isCreator: boolean;
+  addableFriends: ChatMember[];
+  selfName: string;
+  worldId: string | null;
   partnerProfileId: string | null;
   partnerLastRead: string | null;
   initialMessages: AccountMessage[];
@@ -48,7 +62,12 @@ export function AccountChatRoom({
   const { messages, partnerRead, error, send, edit, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
   const [draft, setDraft] = useState("");
   const image = useImageDraft();
-  const typing = useTyping(`account-typing-${chatId}`, userId, "");
+  const typing = useTyping(`account-typing-${chatId}`, userId, selfName);
+  const isDirect = kind === "direct";
+  const [membersOpen, setMembersOpen] = useState(false);
+  // Absender, die nicht (mehr) in der Mitgliederliste stehen (z. B. neu in der Welt), werden bei Bedarf nachgeladen.
+  const [extraSenders, setExtraSenders] = useState<Record<string, ChatMember>>({});
+  const senderMap = useMemo(() => new Map<string, ChatMember>([...members, ...Object.values(extraSenders)].map((m) => [m.id, m])), [members, extraSenders]);
   const enterSends = useEnterSends();
   const [muted, setMuted] = useState(initialMuted);
   const [theme, setTheme] = useState(initialTheme);
@@ -69,6 +88,24 @@ export function AccountChatRoom({
   useEffect(() => {
     clearTyping();
   }, [lastIncomingId, clearTyping]);
+
+  useEffect(() => {
+    if (isDirect) return;
+    const unknown = [...new Set(messages.map((m) => m.sender_id))].filter((id) => id !== userId && !senderMap.has(id));
+    if (!unknown.length) return;
+    createClient()
+      .from("profiles")
+      .select("id, username, nickname, avatar_url")
+      .in("id", unknown)
+      .then(({ data }) => {
+        const found = Object.fromEntries(
+          (data ?? []).map((p) => [p.id, { id: p.id, name: p.nickname || p.username, avatarUrl: p.avatar_url } as ChatMember]),
+        );
+        // Wer nicht gefunden wird (Konto weg), bekommt einen Platzhalter, damit nicht ständig neu geladen wird.
+        for (const id of unknown) if (!found[id]) found[id] = { id, name: "Ehemaliges Mitglied", avatarUrl: null };
+        setExtraSenders((prev) => ({ ...prev, ...found }));
+      });
+  }, [messages, isDirect, userId, senderMap]);
 
   function submit() {
     const text = draft;
@@ -106,19 +143,34 @@ export function AccountChatRoom({
           >
             <ChevronLeft className="h-7 w-7" strokeWidth={2} />
           </Link>
-          {partnerProfileId ? (
+          {isDirect && partnerProfileId ? (
             <Link href={`/redaktion/profil/${partnerProfileId}`} className="flex min-w-0 items-center gap-2.5">
               <span className="relative shrink-0">
-                <CharacterAvatar name={partnerName} avatarUrl={partnerAvatarUrl} size={36} />
+                <CharacterAvatar name={title} avatarUrl={avatarUrl} size={36} />
                 <OnlineDot userId={partnerProfileId} overlay />
               </span>
               <span className="flex min-w-0 flex-col">
-                <h1 className="truncate font-serif text-xl leading-tight text-fg">{partnerName}</h1>
+                <h1 className="truncate font-serif text-xl leading-tight text-fg">{title}</h1>
                 <OnlineBadge userId={partnerProfileId} />
               </span>
             </Link>
+          ) : isDirect ? (
+            <h1 className="truncate font-serif text-xl text-fg">{title}</h1>
           ) : (
-            <h1 className="truncate font-serif text-xl text-fg">{partnerName}</h1>
+            <button type="button" onClick={() => setMembersOpen(true)} className="flex min-w-0 items-center gap-2.5 text-left">
+              <span className="relative shrink-0">
+                <CharacterAvatar name={title} avatarUrl={avatarUrl} size={36} />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <h1 className="truncate font-serif text-xl leading-tight text-fg">{title}</h1>
+                <span className="flex min-w-0 items-center gap-1 text-xs text-muted">
+                  {kind === "world" ? <Globe2 className="h-3 w-3 shrink-0" strokeWidth={2} /> : <UsersRound className="h-3 w-3 shrink-0" strokeWidth={2} />}
+                  <span className="truncate">
+                    {[...members].sort((x, y) => (x.id === userId ? -1 : y.id === userId ? 1 : x.name.localeCompare(y.name, "de"))).map((m) => (m.id === userId ? "Du" : m.name)).join(", ")}
+                  </span>
+                </span>
+              </span>
+            </button>
           )}
         </div>
         <ChatThemePicker
@@ -137,7 +189,9 @@ export function AccountChatRoom({
           {messages.map((m, i) => {
             const mine = m.sender_id === userId;
             const newDay = i === 0 || day(messages[i - 1].created_at) !== day(m.created_at);
-            const seen = mine && m.id === lastOwnId && partnerRead && partnerRead >= m.created_at;
+            const seen = isDirect && mine && m.id === lastOwnId && partnerRead && partnerRead >= m.created_at;
+            const runStart = !isDirect && !mine && (i === 0 || messages[i - 1].sender_id !== m.sender_id || newDay);
+            const sender = senderMap.get(m.sender_id);
             const showActions = mine && !m.pending && activeId === m.id && editingId !== m.id;
             return (
               <div key={m.id}>
@@ -180,7 +234,14 @@ export function AccountChatRoom({
                     </div>
                   </div>
                 ) : (
+                  <>
+                  {runStart && <p className="mb-0.5 ml-9 mt-1 text-xs font-medium text-muted">{sender?.name ?? "…"}</p>}
                   <div className={`group flex items-end gap-1.5 ${mine ? "flex-row-reverse" : ""}`}>
+                    {!isDirect && !mine && (
+                      <span className="w-7 shrink-0 self-end">
+                        {runStart && <CharacterAvatar name={sender?.name ?? "?"} avatarUrl={sender?.avatarUrl ?? null} size={28} />}
+                      </span>
+                    )}
                     <div
                       onClick={mine ? () => setActiveId(activeId === m.id ? null : m.id) : undefined}
                       className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl text-[15px] ${
@@ -192,10 +253,7 @@ export function AccountChatRoom({
                       } ${m.pending ? "opacity-60" : ""}`}
                     >
                       {m.image_url && (
-                        <ZoomableImage src={m.image_url} alt="Gesendetes Bild" className="rounded-xl">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={m.image_url} alt="Gesendetes Bild" className="max-h-72 max-w-[20rem] rounded-xl object-contain" />
-                        </ZoomableImage>
+                        <ChatMedia url={m.image_url} />
                       )}
                       {m.content && (
                         <div className={m.image_url ? "px-2.5 pb-1 pt-1.5" : ""}>
@@ -237,12 +295,13 @@ export function AccountChatRoom({
                       </span>
                     )}
                   </div>
+                  </>
                 )}
                 {seen && <p className="mt-0.5 text-right text-[10px] text-muted">Gelesen</p>}
               </div>
             );
           })}
-          <TypingLine names={typing.names.length ? [partnerName] : []} className="px-1 pt-1" />
+          <TypingLine names={typing.names.length ? (isDirect ? [title] : [typing.names.filter(Boolean).join(", ")]) : []} className="px-1 pt-1" />
         </div>
         <div ref={bottomRef} />
       </div>
@@ -250,13 +309,12 @@ export function AccountChatRoom({
       {(error || image.error) && <p className="pb-1 text-xs text-red-600 dark:text-red-400">{error ?? image.error}</p>}
       {image.pending && (
         <div className="relative mb-2 w-fit">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image.pending.previewUrl} alt="Vorschau" className="max-h-40 max-w-full rounded-xl object-contain" />
+          <AttachmentPreview url={image.pending.previewUrl} />
           <button
             type="button"
             onClick={image.clear}
-            title="Bild entfernen"
-            aria-label="Bild entfernen"
+            title="Anhang entfernen"
+            aria-label="Anhang entfernen"
             className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-fg text-app shadow"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -276,11 +334,11 @@ export function AccountChatRoom({
           onPick={(t) => setDraft((d) => d + t)}
         />
         <label
-          title="Bild senden"
+          title="Bild oder Video senden"
           className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
         >
           <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
-          <input type="file" accept="image/*" onChange={image.pick} className="hidden" />
+          <input type="file" accept="image/*,video/*" onChange={image.pick} className="hidden" />
         </label>
         <textarea
           ref={inputRef}
@@ -309,6 +367,20 @@ export function AccountChatRoom({
           <SendHorizontal className="h-[18px] w-[18px]" strokeWidth={2} />
         </button>
       </form>
+      {membersOpen && !isDirect && (
+        <GroupMembers
+          chatId={chatId}
+          kind={kind}
+          title={title}
+          avatarUrl={avatarUrl}
+          members={members}
+          userId={userId}
+          isCreator={isCreator}
+          addableFriends={addableFriends}
+          worldId={worldId}
+          onClose={() => setMembersOpen(false)}
+        />
+      )}
     </div>
   );
 }

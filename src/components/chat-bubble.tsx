@@ -487,7 +487,7 @@ function BubbleInner({
                             {c.lastText ? `${c.lastMine ? "Du: " : ""}${c.lastText}` : "Noch keine Nachrichten"}
                           </span>
                           <span className="shrink-0 rounded-full bg-surface-3 px-1.5 py-0.5 text-[9px] text-muted">
-                            {c.kind === "account" ? "Redaktion" : "RPG"}
+                            {c.kind === "rp" ? "RPG" : c.accountKind === "group" ? "Gruppe" : c.accountKind === "world" ? "Welt" : "Redaktion"}
                           </span>
                           {unread > 0 && (
                             <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-accent-strong px-1 text-[10px] font-semibold text-on-accent-strong">

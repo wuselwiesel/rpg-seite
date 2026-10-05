@@ -1,4 +1,5 @@
 import { MENTION_REGEX } from "@/lib/mentions";
+import { isVideoUrl } from "@/lib/chat-media-url";
 
 type PreviewMessage = {
   content: string;
@@ -11,6 +12,7 @@ type PreviewMessage = {
 export function messagePreview(m: PreviewMessage): string {
   const text = m.content.replace(MENTION_REGEX, "@$1").replace(/\s+/g, " ").trim();
   if (text) return text;
+  if (isVideoUrl(m.image_url)) return "Video";
   if (m.image_url) return /\.gif(\?|$)|giphy|tenor/i.test(m.image_url) ? "GIF" : "Foto";
   if (m.shared_post_id) return "Beitrag geteilt";
   if (m.story_id) return "Story geteilt";

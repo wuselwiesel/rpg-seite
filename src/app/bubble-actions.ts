@@ -19,6 +19,8 @@ export type BubbleChat = {
   unread: number;
   // Accounts der anderen Seite (für die Online-Anzeige)
   otherUserIds: string[];
+  // nur bei Redaktions-Chats: 1:1, Gruppe oder Welt-Chat
+  accountKind?: "direct" | "group" | "world";
 };
 
 export type BubbleCharacter = { id: string; name: string; avatarUrl: string | null };
@@ -37,13 +39,14 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
   const chats: BubbleChat[] = (await getAccountChats(user.id)).map((c) => ({
     kind: "account",
     id: c.id,
-    title: c.partner?.nickname || c.partner?.username || "Unbekannt",
-    avatarUrl: c.partner?.avatar_url ?? null,
+    title: c.title,
+    avatarUrl: c.avatarUrl,
     lastText: c.lastMessage ? messagePreview(c.lastMessage) : null,
     lastAt: c.lastMessage?.created_at ?? null,
     lastMine: c.lastMessage?.sender_id === user.id,
     unread: c.unread,
     otherUserIds: c.partner ? [c.partner.id] : [],
+    accountKind: c.kind,
   }));
 
   let activeCharacterId: string | null = null;

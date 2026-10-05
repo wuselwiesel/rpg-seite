@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAccountChats } from "@/lib/account-chat";
 import { getAcceptedFriends } from "@/lib/friends";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { UsersRound } from "lucide-react";
 import { messagePreview } from "@/lib/chat-preview";
 import { AccountChatListItem } from "./account-chat-list-item";
 
@@ -26,13 +27,13 @@ export async function AccountChatList() {
         </p>
       )}
       {chats.map((c) => {
-        const title = c.partner?.nickname || c.partner?.username || "Unbekannt";
         return (
           <AccountChatListItem
             key={c.id}
             id={c.id}
-            title={title}
-            avatarUrl={c.partner?.avatar_url}
+            title={c.title}
+            kind={c.kind}
+            avatarUrl={c.avatarUrl}
             partnerId={c.partner?.id}
             muted={c.muted}
             unread={c.unread}
@@ -44,6 +45,15 @@ export async function AccountChatList() {
           />
         );
       })}
+      <Link
+        href="/redaktion/chat/gruppe/neu"
+        className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-2/60"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-fg-soft">
+          <UsersRound className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </span>
+        Neue Gruppe
+      </Link>
       {newFriends.length > 0 && (
         <div className="mt-4 border-t border-line pt-3">
           <p className="mb-1 px-3 text-xs font-medium text-muted">Neuer Chat mit</p>

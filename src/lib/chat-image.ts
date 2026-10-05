@@ -5,20 +5,42 @@ import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 
 export const MAX_CHAT_IMAGE_BYTES = 25 * 1024 * 1024;
+export const MAX_CHAT_VIDEO_BYTES = 50 * 1024 * 1024;
 
+const VIDEO_EXT_BY_MIME: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/webm": "webm",
+  "video/ogg": "ogv",
+  "video/x-m4v": "m4v",
+};
+
+// Fehlermeldung, wenn die Datei nicht als Chat-Anhang taugt (Bild oder Video), sonst null.
 export function chatImageError(file: File): string | null {
-  if (!file.type.startsWith("image/")) return "Nur Bilder können gesendet werden.";
+  if (file.type.startsWith("video/")) {
+    if (!VIDEO_EXT_BY_MIME[file.type]) return "Dieses Videoformat wird nicht unterstützt (mp4, mov oder webm).";
+    if (file.size > MAX_CHAT_VIDEO_BYTES) return "Video ist zu groß (max. 50 MB).";
+    return null;
+  }
+  if (!file.type.startsWith("image/")) return "Nur Bilder und Videos können gesendet werden.";
   if (file.size > MAX_CHAT_IMAGE_BYTES) return "Bild ist zu groß (max. 25 MB).";
   return null;
+}
+
+// Vorschau-Adresse einer gewählten Datei; bei Videos hängt die Endung als Fragment dran, damit `isVideoUrl` sie erkennt.
+export function previewUrlFor(file: File): string {
+  const url = URL.createObjectURL(file);
+  const ext = file.type.startsWith("video/") ? VIDEO_EXT_BY_MIME[file.type] : null;
+  return ext ? `${url}#.${ext}` : url;
 }
 
 // Verkleinert das Bild und legt es im Bucket „chat-media“ ab; liefert die öffentliche Adresse oder eine Fehlermeldung.
 export async function uploadChatImage(folder: string, source: File): Promise<{ url: string } | { error: string }> {
   const supabase = createClient();
   const file = await resizeImage(source);
-  const ext = file.name.split(".").pop() || "jpg";
+  const ext = VIDEO_EXT_BY_MIME[file.type] ?? (file.name.split(".").pop() || "jpg");
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from("chat-media").upload(path, file);
+  const { error } = await supabase.storage.from("chat-media").upload(path, file, { contentType: file.type || undefined });
   if (error) return { error: error.message };
   return { url: supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl };
 }
@@ -47,7 +69,7 @@ export function useImageDraft() {
     }
     setError(null);
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    const previewUrl = URL.createObjectURL(file);
+    const previewUrl = previewUrlFor(file);
     urlRef.current = previewUrl;
     setPending({ file, previewUrl });
   }

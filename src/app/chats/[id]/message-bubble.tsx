@@ -13,6 +13,7 @@ import { parseMentions, plainMentions } from "@/lib/mentions";
 import { storyBackground } from "@/lib/stories";
 import type { ReactionSummary } from "@/lib/reactions";
 import type { Character, Message } from "@/lib/types";
+import { isVideoUrl } from "@/lib/chat-media-url";
 
 const SWIPE_TRIGGER = 56;
 
@@ -178,7 +179,7 @@ export function MessageBubble({
           {replyTarget && (
             <div className={`mb-1 rounded-md border-l-2 px-2 py-1 text-xs ${isOwn ? "border-white/60 bg-black/10" : "border-accent bg-black/5"}`}>
               <p className="font-semibold">{replyTarget.characters?.name}</p>
-              <p className="line-clamp-2 opacity-90">{plainMentions(replyTarget.content) || (replyTarget.image_url ? "Foto" : "Beitrag")}</p>
+              <p className="line-clamp-2 opacity-90">{plainMentions(replyTarget.content) || (replyTarget.image_url ? (isVideoUrl(replyTarget.image_url) ? "Video" : "Foto") : "Beitrag")}</p>
             </div>
           )}
           {message.story && <StoryReplyPreview story={message.story} onDark={isOwn} />}
@@ -209,10 +210,20 @@ export function MessageBubble({
           ) : (
             <>
               {message.image_url && (
-                <a href={message.image_url} target="_blank" rel="noreferrer" className="mb-1 block">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={message.image_url} alt="Gesendetes Bild oder GIF" className="max-h-72 max-w-full rounded-md object-contain" />
-                </a>
+                isVideoUrl(message.image_url) ? (
+                  <video
+                    src={message.image_url.includes("#") ? message.image_url : `${message.image_url}#t=0.1`}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="mb-1 max-h-72 max-w-full rounded-md bg-black object-contain"
+                  />
+                ) : (
+                  <a href={message.image_url} target="_blank" rel="noreferrer" className="mb-1 block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={message.image_url} alt="Gesendetes Bild oder GIF" className="max-h-72 max-w-full rounded-md object-contain" />
+                  </a>
+                )
               )}
               {message.content && (
                 <p className="whitespace-pre-line text-[15px] leading-relaxed">
