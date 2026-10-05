@@ -46,3 +46,5 @@ e2e/**/.build/
 node_modules.nosync
 .next.nosync
 node_modules.old
+.next
+node_modules
