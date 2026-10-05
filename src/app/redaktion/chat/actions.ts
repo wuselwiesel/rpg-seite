@@ -7,12 +7,15 @@ import { createClient } from "@/lib/supabase/server";
 import { isRateLimited } from "@/lib/rate-limit";
 import { sendPushToUser } from "@/lib/push";
 import { isVideoUrl } from "@/lib/chat-media-url";
+import { createNotification } from "@/lib/notifications";
+import { findMentionedMembers } from "@/lib/account-mentions";
 
 export async function sendAccountMessage(
   chatId: string,
   content: string,
   id?: string,
   imageUrl?: string | null,
+  replyToId?: string | null,
 ): Promise<string | null> {
   const text = content.trim().slice(0, 4000);
   if (!text && !imageUrl) return "Nachricht darf nicht leer sein.";
@@ -30,6 +33,27 @@ export async function sendAccountMessage(
     return "Zu viele Nachrichten in kurzer Zeit. Kurz warten und nochmal versuchen.";
   }
 
+  // @-Erwähnungen gibt es nur in Gruppen und im Welt-Chat
+  const { data: chat } = await supabase
+    .from("account_chats")
+    .select("kind, name, worlds(name), account_chat_participants(user_id, profiles(username, nickname))")
+    .eq("id", chatId)
+    .maybeSingle<{
+      kind: string;
+      name: string | null;
+      worlds: { name: string } | null;
+      account_chat_participants: { user_id: string; profiles: { username: string; nickname: string | null } | null }[];
+    }>();
+  const mentioned =
+    chat && chat.kind !== "direct"
+      ? findMentionedMembers(
+          text,
+          chat.account_chat_participants
+            .filter((p) => p.user_id !== user.id && p.profiles)
+            .map((p) => ({ id: p.user_id, username: p.profiles!.username })),
+        )
+      : [];
+
   const { error } = await supabase
     .from("account_messages")
     .insert({
@@ -38,14 +62,36 @@ export async function sendAccountMessage(
       sender_id: user.id,
       content: text,
       ...(imageUrl ? { image_url: imageUrl } : {}),
+      ...(replyToId ? { reply_to_id: replyToId } : {}),
+      ...(mentioned.length ? { mentioned_user_ids: mentioned } : {}),
     });
   if (error) return error.message;
 
-  after(() => pushToChatPartners(chatId, user.id, text || (isVideoUrl(imageUrl) ? "Video" : "Foto")));
+  const chatTitle = chat?.kind === "world" ? chat.worlds?.name : chat?.name;
+  after(async () => {
+    // Erwähnte bekommen eine eigene Benachrichtigung, auch wenn der Chat stumm ist; alle anderen den normalen Push.
+    if (mentioned.length) {
+      const sb = await createClient();
+      const { data: me } = await sb.from("profiles").select("username, nickname, avatar_url").eq("id", user.id).maybeSingle();
+      await Promise.all(
+        mentioned.map((userId) =>
+          createNotification(sb, {
+            userId,
+            type: "mention",
+            actorName: me?.nickname || me?.username || "Jemand",
+            actorAvatarUrl: me?.avatar_url ?? null,
+            link: `/redaktion/chat/${chatId}`,
+            message: chatTitle ? `hat dich in „${chatTitle}“ erwähnt` : "hat dich in einem Chat erwähnt",
+          }),
+        ),
+      );
+    }
+    await pushToChatPartners(chatId, user.id, text || (isVideoUrl(imageUrl) ? "Video" : "Foto"), mentioned);
+  });
   return null;
 }
 
-async function pushToChatPartners(chatId: string, senderId: string, text: string) {
+async function pushToChatPartners(chatId: string, senderId: string, text: string, skipUserIds: string[] = []) {
   const supabase = await createClient();
   const [{ data: participants }, { data: sender }, { data: chat }] = await Promise.all([
     supabase.from("account_chat_participants").select("user_id, muted").eq("chat_id", chatId),
@@ -57,7 +103,7 @@ async function pushToChatPartners(chatId: string, senderId: string, text: string
   const title = groupName ? `${senderName} · ${groupName}` : senderName;
   await Promise.all(
     (participants ?? [])
-      .filter((p) => p.user_id !== senderId && !p.muted)
+      .filter((p) => p.user_id !== senderId && !p.muted && !skipUserIds.includes(p.user_id))
       .map((p) =>
         sendPushToUser(
           p.user_id,
@@ -158,4 +204,11 @@ export async function removeAccountGroupMember(chatId: string, userId: string): 
   if (error) return error.message;
   revalidatePath("/redaktion/chat", "layout");
   return null;
+}
+
+// Nachricht anheften oder lösen (jedes Mitglied des Chats).
+export async function setAccountMessagePin(messageId: string, pin: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_account_message_pin", { p_message: messageId, p_pin: pin });
+  return error ? error.message : null;
 }

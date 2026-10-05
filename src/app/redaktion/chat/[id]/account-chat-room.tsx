@@ -5,11 +5,13 @@ import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
-import { BellOff, Bell, Check, ChevronLeft, Globe2, ImagePlus, Pencil, SendHorizontal, Trash2, UsersRound, X } from "lucide-react";
+import { BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, ImagePlus, Pencil, Pin, PinOff, Search, SendHorizontal, SmilePlus, Trash2, UsersRound, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { setAccountChatMuted } from "../actions";
-import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
+import { useAccountChat, type AccountMessage, type AccountReaction } from "@/lib/use-account-chat";
+import { EmojiPickerDialog } from "@/components/emoji-picker-dialog";
+import { splitMentions } from "@/lib/account-mentions";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
@@ -38,7 +40,8 @@ export function AccountChatRoom({
   selfName,
   worldId,
   partnerProfileId,
-  partnerLastRead,
+  initialReads,
+  initialReactions,
   initialMessages,
   initialMuted,
   initialTheme,
@@ -54,16 +57,31 @@ export function AccountChatRoom({
   selfName: string;
   worldId: string | null;
   partnerProfileId: string | null;
-  partnerLastRead: string | null;
+  initialReads: Record<string, string>;
+  initialReactions: AccountReaction[];
   initialMessages: AccountMessage[];
   initialMuted: boolean;
   initialTheme: ChatTheme;
 }) {
-  const { messages, partnerRead, error, send, edit, remove } = useAccountChat(chatId, userId, initialMessages, partnerLastRead);
+  const { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction } = useAccountChat(
+    chatId,
+    userId,
+    initialMessages,
+    initialReads,
+    undefined,
+    initialReactions,
+  );
   const [draft, setDraft] = useState("");
   const image = useImageDraft();
   const typing = useTyping(`account-typing-${chatId}`, userId, selfName);
   const isDirect = kind === "direct";
+  const partnerRead = isDirect ? (Object.values(reads)[0] ?? null) : null;
+  const [replyTo, setReplyTo] = useState<AccountMessage | null>(null);
+  const [reactFor, setReactFor] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [pinsOpen, setPinsOpen] = useState(false);
+  const [flashId, setFlashId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   // Absender, die nicht (mehr) in der Mitgliederliste stehen (z. B. neu in der Welt), werden bei Bedarf nachgeladen.
   const [extraSenders, setExtraSenders] = useState<Record<string, ChatMember>>({});
@@ -112,9 +130,12 @@ export function AccountChatRoom({
     if (!text.trim() && !image.pending) return;
     const attached = image.take();
     setDraft("");
-    void send(text, attached).then((ok) => {
+    const reply = replyTo;
+    setReplyTo(null);
+    void send(text, attached, reply?.id).then((ok) => {
       if (ok) return;
       setDraft((d) => d || text);
+      setReplyTo((r) => r ?? reply);
       if (attached) image.restore(attached);
     });
     inputRef.current?.focus();
@@ -128,6 +149,41 @@ export function AccountChatRoom({
   }
 
   const lastOwnId = [...messages].reverse().find((m) => m.sender_id === userId)?.id;
+  const usernames = useMemo(() => new Set(members.map((m) => m.username?.toLowerCase()).filter((u): u is string => !!u)), [members]);
+  const nameOf = (id: string) => (id === userId ? "Du" : (senderMap.get(id)?.name ?? "…"));
+  const snippet = (m: AccountMessage) => (m.content.replace(/\s+/g, " ").trim() || (m.image_url ? "Anhang" : "Nachricht")).slice(0, 90);
+  const pinned = messages.filter((m) => m.pinned_at).sort((a, b) => (b.pinned_at ?? "").localeCompare(a.pinned_at ?? ""));
+  const results = query.trim()
+    ? messages.filter((m) => m.content.toLowerCase().includes(query.trim().toLowerCase())).slice(-40).reverse()
+    : [];
+  const reactionsByMessage = useMemo(() => {
+    const map = new Map<string, Map<string, string[]>>();
+    for (const r of reactions) {
+      const byEmoji = map.get(r.message_id) ?? new Map<string, string[]>();
+      byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.user_id]);
+      map.set(r.message_id, byEmoji);
+    }
+    return map;
+  }, [reactions]);
+  // @-Vorschläge: nur in Gruppen/Welt-Chat, wenn das letzte Wort mit @ beginnt
+  const mentionQuery = !isDirect ? (draft.match(/(?:^|\s)@([\p{L}\p{N}_.-]*)$/u)?.[1] ?? null) : null;
+  const mentionMatches =
+    mentionQuery === null
+      ? []
+      : members
+          .filter((m) => m.id !== userId && m.username && (m.username.toLowerCase().startsWith(mentionQuery.toLowerCase()) || m.name.toLowerCase().startsWith(mentionQuery.toLowerCase())))
+          .slice(0, 6);
+
+  function jumpTo(id: string) {
+    document.getElementById(`msg-${id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    setFlashId(id);
+    setTimeout(() => setFlashId((cur) => (cur === id ? null : cur)), 1600);
+  }
+
+  function pickMention(username: string) {
+    setDraft((d) => d.replace(/@([\p{L}\p{N}_.-]*)$/u, `@${username} `));
+    inputRef.current?.focus();
+  }
 
   return (
     <div
@@ -176,6 +232,18 @@ export function AccountChatRoom({
         <div className="flex shrink-0 items-center gap-0.5">
         <button
           type="button"
+          onClick={() => {
+            setSearchOpen((v) => !v);
+            setQuery("");
+          }}
+          aria-label="Im Chat suchen"
+          title="Suchen"
+          className={`rounded-full p-1.5 transition hover:bg-surface-2 hover:text-fg ${searchOpen ? "bg-surface-2 text-fg" : "text-muted"}`}
+        >
+          <Search className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
           onClick={toggleMute}
           aria-label={muted ? "Stummschaltung aufheben" : "Chat stumm schalten"}
           title={muted ? "Stummschaltung aufheben" : "Stumm schalten"}
@@ -194,18 +262,70 @@ export function AccountChatRoom({
         </div>
       </div>
 
+      {searchOpen && (
+        <div className="border-b border-line py-2">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Im Chat suchen"
+            aria-label="Im Chat suchen"
+            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2 text-sm text-fg outline-none focus:border-accent"
+          />
+          {query.trim() && (
+            <ul className="mt-2 max-h-56 overflow-y-auto">
+              {results.length === 0 && <li className="px-2 py-2 text-sm text-muted">Nichts gefunden.</li>}
+              {results.map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      jumpTo(m.id);
+                      setSearchOpen(false);
+                    }}
+                    className="flex w-full flex-col rounded-lg px-2 py-1.5 text-left transition hover:bg-surface-2"
+                  >
+                    <span className="text-xs text-muted">
+                      {nameOf(m.sender_id)} · {day(m.created_at)}, {time(m.created_at)}
+                    </span>
+                    <span className="truncate text-sm text-fg">{snippet(m)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {pinned.length > 0 && (
+        <div className="flex items-center gap-2 border-b border-line py-1.5 text-sm">
+          <Pin className="h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={2} />
+          <button type="button" onClick={() => jumpTo(pinned[0].id)} className="min-w-0 flex-1 truncate text-left text-fg-soft hover:text-fg">
+            {snippet(pinned[0])}
+          </button>
+          {pinned.length > 1 && (
+            <button type="button" onClick={() => setPinsOpen(true)} className="shrink-0 text-xs text-accent hover:underline">
+              Alle ({pinned.length})
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto py-4">
         {messages.length === 0 && <p className="py-10 text-center text-sm text-muted">Schreib die erste Nachricht.</p>}
         <div className="flex flex-col gap-1">
           {messages.map((m, i) => {
             const mine = m.sender_id === userId;
             const newDay = i === 0 || day(messages[i - 1].created_at) !== day(m.created_at);
+            const readers = !isDirect && mine && m.id === lastOwnId ? Object.entries(reads).filter(([uid, at]) => uid !== userId && at >= m.created_at).length : 0;
             const seen = isDirect && mine && m.id === lastOwnId && partnerRead && partnerRead >= m.created_at;
+            const replyTarget = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
+            const reactionChips = reactionsByMessage.get(m.id);
+            const mentionsMe = m.mentioned_user_ids?.includes(userId);
             const runStart = !isDirect && !mine && (i === 0 || messages[i - 1].sender_id !== m.sender_id || newDay);
             const sender = senderMap.get(m.sender_id);
-            const showActions = mine && !m.pending && activeId === m.id && editingId !== m.id;
+            const showActions = !m.pending && activeId === m.id && editingId !== m.id;
             return (
-              <div key={m.id}>
+              <div key={m.id} id={`msg-${m.id}`} className={flashId === m.id ? "rounded-xl bg-accent/10 transition" : "transition"}>
                 {newDay && <p className="my-3 text-center text-xs text-muted">{day(m.created_at)}</p>}
                 {editingId === m.id ? (
                   <div className="ml-auto flex max-w-[85%] flex-col gap-1.5">
@@ -254,21 +374,44 @@ export function AccountChatRoom({
                       </span>
                     )}
                     <div
-                      onClick={mine ? () => setActiveId(activeId === m.id ? null : m.id) : undefined}
+                      onClick={() => setActiveId(activeId === m.id ? null : m.id)}
                       className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl text-[15px] ${
                         m.image_url ? "p-1" : "px-3.5 py-2"
                       } ${
                         mine
-                          ? "cursor-pointer rounded-br-md bg-accent-strong text-on-accent-strong"
+                          ? "rounded-br-md bg-accent-strong text-on-accent-strong"
                           : "rounded-bl-md bg-surface-2 text-fg"
-                      } ${m.pending ? "opacity-60" : ""}`}
+                      } cursor-pointer ${m.pending ? "opacity-60" : ""} ${mentionsMe ? "ring-2 ring-accent/60" : ""}`}
                     >
+                      {m.reply_to_id && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (replyTarget) jumpTo(replyTarget.id);
+                          }}
+                          className={`mb-1 block w-full rounded-lg border-l-2 border-current/50 bg-black/10 px-2 py-1 text-left text-xs ${m.image_url ? "mx-1 mt-1 w-[calc(100%-0.5rem)]" : ""}`}
+                        >
+                          <span className="block font-semibold">{replyTarget ? nameOf(replyTarget.sender_id) : "Nachricht"}</span>
+                          <span className="line-clamp-2 opacity-90">{replyTarget ? snippet(replyTarget) : "Nicht mehr vorhanden"}</span>
+                        </button>
+                      )}
                       {m.image_url && (
                         <ChatMedia url={m.image_url} />
                       )}
                       {m.content && (
                         <div className={m.image_url ? "px-2.5 pb-1 pt-1.5" : ""}>
-                          <EmojiText text={m.content} />
+                          {usernames.size > 0 && m.content.includes("@") ? (
+                            splitMentions(m.content, usernames).map((part, idx) =>
+                              part.mention ? (
+                                <span key={idx} className="font-semibold underline decoration-dotted underline-offset-2">{part.text}</span>
+                              ) : (
+                                <EmojiText key={idx} text={part.text} />
+                              ),
+                            )
+                          ) : (
+                            <EmojiText text={m.content} />
+                          )}
                         </div>
                       )}
                     </div>
@@ -276,12 +419,44 @@ export function AccountChatRoom({
                       {time(m.created_at)}
                       {m.updated_at ? " · bearbeitet" : ""}
                     </span>
-                    {mine && !m.pending && (
+                    {!m.pending && (
                       <span
                         className={`flex shrink-0 items-center pb-0.5 transition ${
                           showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                         }`}
                       >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplyTo(m);
+                            setActiveId(null);
+                            inputRef.current?.focus();
+                          }}
+                          aria-label="Antworten"
+                          title="Antworten"
+                          className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+                        >
+                          <CornerUpLeft className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReactFor(m.id)}
+                          aria-label="Reagieren"
+                          title="Reagieren"
+                          className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+                        >
+                          <SmilePlus className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void pin(m.id, !m.pinned_at)}
+                          aria-label={m.pinned_at ? "Nicht mehr anheften" : "Anheften"}
+                          title={m.pinned_at ? "Lösen" : "Anheften"}
+                          className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+                        >
+                          {m.pinned_at ? <PinOff className="h-3.5 w-3.5" strokeWidth={2} /> : <Pin className="h-3.5 w-3.5" strokeWidth={2} />}
+                        </button>
+                        {mine && (<>
                         <button
                           type="button"
                           onClick={() => {
@@ -303,12 +478,35 @@ export function AccountChatRoom({
                         >
                           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                         </button>
+                        </>)}
                       </span>
                     )}
                   </div>
+                  {reactionChips && reactionChips.size > 0 && (
+                    <div className={`mt-0.5 flex flex-wrap gap-1 ${mine ? "justify-end" : isDirect ? "" : "ml-9"}`}>
+                      {[...reactionChips.entries()].map(([emoji, userIds]) => {
+                        const reactedByMe = userIds.includes(userId);
+                        return (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => void toggleReaction(m.id, emoji)}
+                            title={userIds.map(nameOf).join(", ")}
+                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition ${
+                              reactedByMe ? "bg-accent-strong/20 text-accent ring-1 ring-accent/40" : "bg-surface-2 text-fg-soft hover:bg-surface-3"
+                            }`}
+                          >
+                            <EmojiText text={emoji} />
+                            <span>{userIds.length}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   </>
                 )}
                 {seen && <p className="mt-0.5 text-right text-[10px] text-muted">Gelesen</p>}
+                {readers > 0 && <p className="mt-0.5 text-right text-[10px] text-muted">Gelesen von {readers}</p>}
               </div>
             );
           })}
@@ -332,12 +530,23 @@ export function AccountChatRoom({
           </button>
         </div>
       )}
+      {replyTo && (
+        <div className="mb-2 flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
+          <CornerUpLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+          <span className="min-w-0 flex-1 truncate">
+            Antwort an <b className="font-semibold">{nameOf(replyTo.sender_id)}</b>: {snippet(replyTo)}
+          </span>
+          <button type="button" onClick={() => setReplyTo(null)} aria-label="Antwort abbrechen" className="shrink-0 text-muted hover:text-fg">
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </div>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
-        className="flex items-end gap-2 border-t border-line py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="relative flex items-end gap-2 border-t border-line py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
         <CustomEmojiPicker
           direction="up"
@@ -351,6 +560,25 @@ export function AccountChatRoom({
           <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
           <input type="file" accept="image/*,video/*" onChange={image.pick} className="hidden" />
         </label>
+        {mentionMatches.length > 0 && (
+          <div className="absolute bottom-full left-12 z-10 mb-1 w-64 max-w-[calc(100%-3rem)] overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
+            {mentionMatches.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  pickMention(m.username!);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface-2"
+              >
+                <CharacterAvatar name={m.name} avatarUrl={m.avatarUrl} size={24} />
+                <span className="truncate">{m.name}</span>
+                <span className="truncate text-xs text-muted">@{m.username}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
           ref={inputRef}
           value={draft}
@@ -378,6 +606,48 @@ export function AccountChatRoom({
           <SendHorizontal className="h-[18px] w-[18px]" strokeWidth={2} />
         </button>
       </form>
+      {reactFor && (
+        <EmojiPickerDialog
+          onClose={() => setReactFor(null)}
+          onPick={(emoji) => {
+            void toggleReaction(reactFor, emoji);
+            setReactFor(null);
+            setActiveId(null);
+          }}
+        />
+      )}
+      {pinsOpen && (
+        <div role="dialog" aria-modal="true" aria-label="Angeheftete Nachrichten" onClick={() => setPinsOpen(false)} className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
+          <div onClick={(e) => e.stopPropagation()} className="flex max-h-[80dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-line bg-surface shadow-xl sm:rounded-2xl">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <h2 className="font-serif text-lg text-fg">Angeheftet</h2>
+              <button type="button" onClick={() => setPinsOpen(false)} aria-label="Schließen" className="rounded-full p-1.5 text-muted hover:bg-surface-2 hover:text-fg">
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+            </div>
+            <ul className="overflow-y-auto p-2">
+              {pinned.map((m) => (
+                <li key={m.id} className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-surface-2/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      jumpTo(m.id);
+                      setPinsOpen(false);
+                    }}
+                    className="flex min-w-0 flex-1 flex-col text-left"
+                  >
+                    <span className="text-xs text-muted">{nameOf(m.sender_id)} · {day(m.created_at)}</span>
+                    <span className="truncate text-sm text-fg">{snippet(m)}</span>
+                  </button>
+                  <button type="button" onClick={() => void pin(m.id, false)} aria-label="Lösen" title="Lösen" className="rounded-full p-1.5 text-muted hover:bg-surface-2 hover:text-fg">
+                    <PinOff className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
       {membersOpen && !isDirect && (
         <GroupMembers
           chatId={chatId}

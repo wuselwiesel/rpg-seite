@@ -9,7 +9,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { OnlineDot } from "@/components/online-status";
 import { addAccountGroupMembers, removeAccountGroupMember, updateAccountGroup } from "../actions";
 
-export type ChatMember = { id: string; name: string; avatarUrl: string | null };
+export type ChatMember = { id: string; name: string; avatarUrl: string | null; username?: string };
 
 // Mitgliederliste eines Gruppen- oder Welt-Chats. In Gruppen kann die Verwalter:in umbenennen, hinzufügen und entfernen; jede:r kann gehen.
 export function GroupMembers({

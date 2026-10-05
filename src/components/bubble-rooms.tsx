@@ -295,7 +295,7 @@ function AccountThread({
     chatId,
     userId,
     initial,
-    null,
+    {},
   );
   const typing = useTyping(`account-typing-${chatId}`, userId, names.get(userId)?.name ?? "");
   const clearTyping = typing.clear;

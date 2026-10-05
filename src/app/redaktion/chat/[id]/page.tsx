@@ -4,6 +4,7 @@ import type { Profile } from "@/lib/types";
 import { EMPTY_CHAT_THEME, type ChatTheme } from "@/lib/chat-theme";
 import { getAcceptedFriends } from "@/lib/friends";
 import { AccountChatRoom, type AccountMessage } from "./account-chat-room";
+import type { AccountReaction } from "@/lib/use-account-chat";
 
 export default async function AccountChatPage({ params }: PageProps<"/redaktion/chat/[id]">) {
   const { id } = await params;
@@ -13,7 +14,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: participants }, { data: messages }, { data: themeRow }, { data: chat }] = await Promise.all([
+  const [{ data: participants }, { data: messages }, { data: themeRow }, { data: chat }, { data: reactionRows }] = await Promise.all([
     supabase
       .from("account_chat_participants")
       .select("user_id, last_read_at, muted, profiles(*)")
@@ -21,7 +22,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       .returns<{ user_id: string; last_read_at: string; muted: boolean; profiles: Profile | null }[]>(),
     supabase
       .from("account_messages")
-      .select("id, sender_id, content, image_url, created_at, updated_at")
+      .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, created_at, updated_at")
       .eq("chat_id", id)
       .order("created_at", { ascending: true })
       .returns<AccountMessage[]>(),
@@ -44,6 +45,11 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
         world_id: string | null;
         worlds: { name: string; cover_image_url: string | null } | null;
       }>(),
+    supabase
+      .from("account_message_reactions")
+      .select("message_id, user_id, emoji, account_messages!inner(chat_id)")
+      .eq("account_messages.chat_id", id)
+      .returns<AccountReaction[]>(),
   ]);
   const me = participants?.find((p) => p.user_id === user.id);
   if (!me) notFound();
@@ -53,6 +59,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
     id: p.user_id,
     name: p.profiles?.nickname || p.profiles?.username || "Unbekannt",
     avatarUrl: p.profiles?.avatar_url ?? null,
+    username: p.profiles?.username,
   }));
   const isCreator = kind === "group" && chat?.created_by === user.id;
   const memberIds = new Set(members.map((m) => m.id));
@@ -83,7 +90,8 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       selfName={members.find((m) => m.id === user.id)?.name ?? ""}
       worldId={chat?.world_id ?? null}
       partnerProfileId={partner?.user_id ?? null}
-      partnerLastRead={partner?.last_read_at ?? null}
+      initialReads={Object.fromEntries((participants ?? []).filter((p) => p.user_id !== user.id).map((p) => [p.user_id, p.last_read_at]))}
+      initialReactions={(reactionRows ?? []).map((r) => ({ message_id: r.message_id, user_id: r.user_id, emoji: r.emoji }))}
       initialMessages={messages ?? []}
       initialMuted={me.muted}
       initialTheme={themeRow ?? EMPTY_CHAT_THEME}
