@@ -948,8 +948,25 @@ html.kb-open .mobile-bottom-nav {
   display: none;
 }
 
-/* Druckansicht (Buch als PDF): Navigation ausblenden, weißes Blatt. */
+/* Druckansicht (Buch, Zeitleiste, Kalender als PDF): Navigation ausblenden, weißes Blatt, immer helle Farben (auch im Dunkelmodus). */
 @media print {
+  :root,
+  html.dark,
+  html[data-mode] {
+    --app: #ffffff !important;
+    --surface: #ffffff !important;
+    --surface-2: #f2f2f2 !important;
+    --surface-3: #e9e9e9 !important;
+    --line: #cfcfcf !important;
+    --fg: #111111 !important;
+    --fg-soft: #333333 !important;
+    --muted: #666666 !important;
+    color-scheme: light;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   aside,
   .mobile-bottom-nav,
   .no-print {

@@ -166,8 +166,8 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
   const canDelete = (f: TreeFolder) => f.created_by === userId || isWorldOwner;
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-20">
-      <header className="mb-6 hidden items-center justify-between gap-4 border-b border-line pb-4 lg:flex">
+    <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-20 print:max-w-none print:p-0">
+      <header className="mb-6 hidden items-center justify-between gap-4 border-b border-line pb-4 lg:flex print:hidden">
         <div className="flex items-center gap-3">
           <Link href="/" aria-label="Wortwinkel" className="block">
             <Wordmark height={36} />
@@ -186,7 +186,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
         </nav>
       </header>
 
-      <nav aria-label="Wiki-Werkzeuge" className="-mt-2 mb-6 hidden flex-wrap items-center gap-1 lg:flex">
+      <nav aria-label="Wiki-Werkzeuge" className="-mt-2 mb-6 hidden flex-wrap items-center gap-1 lg:flex print:hidden">
         {WIKI_TOOLS.map((t) => {
           const active = pathname.startsWith(t.href);
           return (
@@ -204,8 +204,8 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
         })}
       </nav>
 
-      <div className={`grid gap-6 ${navHidden ? "lg:grid-cols-1" : "lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10"}`}>
-        <div className={navHidden ? "lg:hidden" : ""}>
+      <div className={`grid gap-6 print:block ${navHidden ? "lg:grid-cols-1" : "lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10"}`}>
+        <div className={`print:hidden ${navHidden ? "lg:hidden" : ""}`}>
           <button
             type="button"
             onClick={() => setNavOpen((v) => !v)}

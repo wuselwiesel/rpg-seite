@@ -15,6 +15,7 @@ import { WikiTile } from "@/components/wiki-tile";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { getDatedChapters } from "@/lib/chapter-dates";
 import { WikiCrumbs } from "../wiki-crumbs";
+import { PdfButton } from "@/components/pdf-button";
 import { TimelineEventForm } from "./event-form";
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
@@ -250,23 +251,29 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
-        <WikiCrumbs crumbs={[]} />
+        <div className="print:hidden">
+          <WikiCrumbs crumbs={[]} />
+        </div>
         <h1 className="flex items-center gap-3 font-serif text-4xl text-fg @xl:text-5xl">
           <Clock className="h-8 w-8 text-accent" strokeWidth={1.5} />
           Zeitleiste
+          <span className="hidden text-lg text-muted print:inline">{world.name} · {source === "szenen" ? "Szenen" : "Weltereignisse"}</span>
         </h1>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm print:hidden">
           <Link href={source === "szenen" ? "/wiki/kalender?quelle=szenen" : "/wiki/kalender"} className="flex items-center gap-1.5 text-accent hover:underline">
             <CalendarDays className="h-4 w-4" strokeWidth={2} />
             Zum Kalender
           </Link>
           {counts.length > 0 && <span className="text-muted">{counts.join(", ")}</span>}
         </div>
+        <PdfButton />
       </header>
 
-      <TimelineEventForm calendar={calendar} eventType={types.some((t) => t.id === "ereignis") ? "ereignis" : null} />
+      <div className="print:hidden">
+        <TimelineEventForm calendar={calendar} eventType={types.some((t) => t.id === "ereignis") ? "ereignis" : null} />
+      </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 print:hidden">
         <nav aria-label="Was die Zeitleiste zeigt" className="flex flex-wrap gap-2">
           <Link href={sourceHref("welt", type, tag)} className={chip(source === "welt")} aria-current={source === "welt" ? "true" : undefined}>
             Weltereignisse
@@ -324,7 +331,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
       ) : (
         <>
           {(sections.length > 1 || sections[0].years.length > 1) && (
-            <nav aria-label="Zu einem Abschnitt springen" className="flex flex-wrap gap-1.5">
+            <nav aria-label="Zu einem Abschnitt springen" className="flex flex-wrap gap-1.5 print:hidden">
               {(sections.length > 1 ? sections.map((s) => ({ id: `abschnitt-${s.key}`, label: s.label ?? "" })) : sections[0].years.map((y) => ({ id: `jahr-${y.year}`, label: String(y.year) }))).map((a) => (
                 <a key={a.id} href={`#${a.id}`} className="rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft transition hover:text-accent">
                   {a.label}
@@ -360,7 +367,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
                       </div>
                       <ul className="flex min-w-0 flex-1 flex-col gap-3 pb-8">
                         {y.items.map((p) => (
-                          <li key={`${p.kind}-${p.id}`}>
+                          <li key={`${p.kind}-${p.id}`} className="break-inside-avoid">
                             {p.kind === "wiki" ? (
                               <WikiEntryCard e={p} label={labelOf(calendar, p.dates, p.labels)} />
                             ) : p.kind === "chapter" ? (

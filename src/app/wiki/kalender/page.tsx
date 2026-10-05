@@ -10,6 +10,7 @@ import { getDatedChapters } from "@/lib/chapter-dates";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { CalendarEventAdd } from "./event-add";
 import { CalendarDay } from "./calendar-day";
+import { PdfButton } from "@/components/pdf-button";
 
 type SceneRow = {
   id: string;
@@ -97,10 +98,17 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
 
   return (
     <div className="flex flex-col gap-8">
+      {/* PDF: der Kalender wird im Querformat gedruckt */}
+      <style>{`@media print { @page { size: A4 landscape; margin: 10mm; } }`}</style>
       <header className="flex flex-col gap-3">
-        <WikiCrumbs crumbs={[]} />
-        <h1 className="font-serif text-4xl text-fg @xl:text-5xl">Kalender</h1>
-        <nav aria-label="Was der Kalender zeigt" className="flex flex-wrap gap-2">
+        <div className="print:hidden">
+          <WikiCrumbs crumbs={[]} />
+        </div>
+        <h1 className="font-serif text-4xl text-fg @xl:text-5xl">
+          Kalender
+          <span className="hidden text-lg text-muted print:inline"> {world.name} · {source === "szenen" ? "Szenen" : "Weltereignisse"}</span>
+        </h1>
+        <nav aria-label="Was der Kalender zeigt" className="flex flex-wrap gap-2 print:hidden">
           {(["welt", "szenen"] as const).map((s) => (
             <Link
               key={s}
@@ -112,7 +120,8 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
             </Link>
           ))}
         </nav>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 print:hidden">
+          <PdfButton />
           {source === "welt" && (
             <Link
               href={addHref(0)}
@@ -131,6 +140,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
       </header>
 
       {adding && (
+        <div className="print:hidden">
         <CalendarEventAdd
           key={`${year}-${month}-${neu}`}
           calendar={calendar}
@@ -138,23 +148,24 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
           initial={{ year, month, day: neuDay }}
           closeHref={monthHref}
         />
+        </div>
       )}
 
       <section aria-label="Monatsblatt" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1">
-            <Link href={href(prev)} aria-label="Voriger Monat" className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+            <Link href={href(prev)} aria-label="Voriger Monat" className="flex h-9 print:hidden w-9 items-center justify-center rounded-lg border border-line text-fg-soft transition hover:bg-surface-2 hover:text-fg">
               <ChevronLeft className="h-4 w-4" strokeWidth={2} />
             </Link>
-            <h2 className="min-w-48 px-3 text-center font-serif text-2xl text-fg" aria-live="polite">
+            <h2 className="min-w-48 px-3 text-center font-serif text-2xl text-fg print:px-0 print:text-left" aria-live="polite">
               {monthName(calendar, month)} {year}
               <span className="text-base text-muted">{era}</span>
             </h2>
-            <Link href={href(next)} aria-label="Nächster Monat" className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+            <Link href={href(next)} aria-label="Nächster Monat" className="flex h-9 print:hidden w-9 items-center justify-center rounded-lg border border-line text-fg-soft transition hover:bg-surface-2 hover:text-fg">
               <ChevronRight className="h-4 w-4" strokeWidth={2} />
             </Link>
           </div>
-          <form method="get" action="/wiki/kalender" className="flex flex-wrap items-end gap-2">
+          <form method="get" action="/wiki/kalender" className="flex flex-wrap items-end gap-2 print:hidden">
             <label className="flex flex-col gap-1 text-xs text-muted">
               Monat
               <select name="monat" defaultValue={month} className={field}>
@@ -193,7 +204,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
           </div>
         )}
 
-        <ol className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2" aria-label={`Tage im ${monthName(calendar, month)}`}>
+        <ol className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2 print:grid-cols-7" aria-label={`Tage im ${monthName(calendar, month)}`}>
           {Array.from({ length: days }, (_, i) => i + 1).map((d) => {
             const list = byDay.get(d) ?? [];
             return (

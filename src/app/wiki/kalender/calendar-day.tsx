@@ -7,7 +7,7 @@ export function CalendarDay({ day, addHref, className, children }: { day: number
   const router = useRouter();
   if (!addHref) {
     return (
-      <li data-day={day} className={className}>
+      <li data-day={day} className={`${className} break-inside-avoid`}>
         {children}
       </li>
     );
@@ -27,7 +27,7 @@ export function CalendarDay({ day, addHref, className, children }: { day: number
       onKeyDown={(e) => {
         if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) add(e);
       }}
-      className={`${className} cursor-pointer transition hover:border-accent/60 hover:bg-surface-2 focus-visible:border-accent focus-visible:outline-none`}
+      className={`${className} break-inside-avoid cursor-pointer transition hover:border-accent/60 hover:bg-surface-2 focus-visible:border-accent focus-visible:outline-none`}
     >
       {children}
     </li>
