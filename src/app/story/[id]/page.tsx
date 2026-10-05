@@ -189,6 +189,14 @@ export default async function StoryPostDetailPage({
     .sort((a, b) => Number(b.own) - Number(a.own));
 
   return (
+    <div className="relative isolate">
+    {storyPost.ambience_image_url && (
+      <div
+        aria-hidden
+        className="pointer-events-none sticky top-0 -z-10 -mb-[100dvh] h-dvh bg-cover bg-center opacity-25"
+        style={{ backgroundImage: `url("${storyPost.ambience_image_url}")` }}
+      />
+    )}
     <div className="mx-auto max-w-2xl xl:max-w-3xl px-4 py-10">
       <OnlineMembers members={worldMembers} selfId={user.id} className="-mt-6 mb-2 flex justify-end" />
       <article className="mb-8 rounded-lg border border-line bg-surface p-6">
@@ -257,6 +265,8 @@ export default async function StoryPostDetailPage({
                 dates={datesFromRow(storyPost)}
                 calendar={calendar}
                 shortSummary={storyPost.short_summary ?? null}
+                ambienceImage={storyPost.ambience_image_url ?? null}
+                ambienceMusic={storyPost.ambience_music_url ?? null}
                 canEdit={myCharacterIds.size > 0 || isWorldOwner}
               />
             </>
@@ -409,6 +419,7 @@ export default async function StoryPostDetailPage({
           />
         </div>
       )}
+    </div>
     </div>
   );
 }

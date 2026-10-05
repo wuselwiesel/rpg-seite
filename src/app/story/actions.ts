@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseMusicLink } from "@/lib/scene-music";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -578,6 +579,23 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
     recipientName: target.name,
   });
   return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
+}
+
+// Hintergrundbild und Musik-Link einer Szene (wie Ort/Zeit: alle Mitspielenden der Welt, RPC set_scene_ambience).
+export async function updateSceneAmbience(storyPostId: string, imageUrl: string, musicUrl: string): Promise<string | null> {
+  const image = imageUrl.trim();
+  const music = musicUrl.trim();
+  if (image && !image.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`)) return "Dieses Bild kann nicht verwendet werden.";
+  if (music && !parseMusicLink(music)) return "Bitte einen Link zu YouTube, Spotify, SoundCloud oder einer Audiodatei (mp3, ogg, wav, m4a) angeben.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("set_scene_ambience", { p_story_post_id: storyPostId, p_image: image, p_music: music });
+  if (error) return error.message === "Keine Berechtigung" ? "Das dürfen nur Mitspielende dieser Welt (bei geheimen Szenen nur, wer sie sehen darf)." : error.message;
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
 }
 
 export async function updateStoryMeta(
