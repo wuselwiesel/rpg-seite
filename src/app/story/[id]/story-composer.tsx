@@ -215,7 +215,7 @@ export function StoryComposer({
       </div>
 
       {(mode === "roll" || !narrator) && (
-        <WriterSelect characters={ownCharacters} value={writerId} onChange={changeWriter} />
+        <WriterSelect shortcuts characters={ownCharacters} value={writerId} onChange={changeWriter} />
       )}
       {mode === "write" && narrator && (
         <p className="text-xs text-muted">

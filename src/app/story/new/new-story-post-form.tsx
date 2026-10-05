@@ -41,7 +41,7 @@ export function NewStoryPostForm({
     // cleared optimistically on submit rather than after confirmation.
     <form action={formAction} onSubmit={() => clear()} className="flex flex-col gap-4">
       <input type="hidden" name="character_id" value={writerId} />
-      {!narrator && <WriterSelect characters={ownCharacters} value={writerId} onChange={setWriterId} />}
+      {!narrator && <WriterSelect shortcuts characters={ownCharacters} value={writerId} onChange={setWriterId} />}
       {narrator && (
         <p className="text-xs text-muted">
           Du schreibst als <span className="text-sm font-medium text-fg-soft">Erzähler:in</span> – ohne Charakter.
