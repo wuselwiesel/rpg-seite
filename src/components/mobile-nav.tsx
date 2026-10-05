@@ -55,8 +55,11 @@ export function MobileNav({
   myCharacterIds: string[];
   unreadCounts: Record<string, number>;
 }) {
-  const [moreOpen, setMoreOpen] = useState(false);
   const pathname = usePathname();
+  // Das Menü gehört zu der Seite, auf der man es geöffnet hat: wechselt die Seite (auch über Links im Menü, z. B. „Welten verwalten“), geht es zu
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const moreOpen = openAt !== null && openAt === pathname;
+  const setMoreOpen = (open: boolean) => setOpenAt(open ? pathname : null);
   const mode = useAppMode();
 
   if (isImmersiveChatPath(pathname)) return null;

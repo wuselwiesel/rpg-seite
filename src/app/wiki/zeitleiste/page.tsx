@@ -214,7 +214,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
         draft: Boolean(r.is_draft),
         icon: r.icon_url ?? null,
         cover: r.cover_image_url ?? null,
-        source: r.source_entry_id && r.source_story_id ? `/story/${r.source_story_id}#beitrag-${r.source_entry_id}` : null,
+        source: r.source_story_id ? (r.source_entry_id ? `/story/${r.source_story_id}#beitrag-${r.source_entry_id}` : `/story/${r.source_story_id}`) : null,
         dates: r.dates,
       }),
     ),

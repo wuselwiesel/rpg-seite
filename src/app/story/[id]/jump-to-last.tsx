@@ -42,7 +42,7 @@ export function JumpToLast({ variant }: { variant: "inline" | "floating" }) {
       type="button"
       onClick={scrollToLast}
       aria-label="Zur letzten Nachricht springen"
-      className="menu-pop fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 flex h-11 items-center gap-1.5 rounded-full bg-accent-strong px-4 text-sm font-medium text-on-accent-strong shadow-lg transition active:scale-95 lg:bottom-6"
+      className="menu-pop pointer-events-auto flex h-11 items-center gap-1.5 rounded-full bg-accent-strong px-4 text-sm font-medium text-on-accent-strong shadow-lg transition active:scale-95"
     >
       <ArrowDown className="h-4 w-4" strokeWidth={2.25} />
       Zur letzten Nachricht

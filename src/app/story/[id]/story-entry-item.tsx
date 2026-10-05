@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
 import { Clover, Dices, Flag, Pencil, Trash2, Type } from "lucide-react";
 import { MarkEventForm } from "./mark-event-form";
+import { unmarkEvent } from "@/app/wiki/actions";
 import { useRouter } from "next/navigation";
 import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene } from "../actions";
 import { EventDateFields } from "@/components/event-date-fields";
@@ -15,6 +16,10 @@ import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
 import type { Character, StoryEntry } from "@/lib/types";
+
+// Flagge, Stift und Papierkorb: mit Maus erst beim Darüberfahren, am Handy erst nach einmal Antippen der Nachricht
+const REVEAL =
+  "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:opacity-0 [@media(hover:none)]:group-data-[tapped]:pointer-events-auto [@media(hover:none)]:group-data-[tapped]:opacity-100";
 
 export function StoryEntryItem({
   entry,
@@ -61,6 +66,17 @@ export function StoryEntryItem({
 
   const router = useRouter();
   const [markOpen, setMarkOpen] = useState(false);
+  // Am Handy: einmal antippen zeigt die Knöpfe, ein Tippen daneben blendet sie wieder aus
+  const [tapped, setTapped] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!tapped) return;
+    const outside = (e: PointerEvent) => {
+      if (!cardRef.current?.contains(e.target as Node)) setTapped(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [tapped]);
   const [chapterEditing, setChapterEditing] = useState(false);
   const [splitting, setSplitting] = useState(false);
 
@@ -187,7 +203,17 @@ export function StoryEntryItem({
           size={32}
         />
       )}
-      <div id={`beitrag-${entry.id}`} className={`flex-1 scroll-mt-24 rounded-lg border bg-surface px-4 py-2 ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}>
+      <div
+        id={`beitrag-${entry.id}`}
+        ref={cardRef}
+        data-tapped={tapped ? "" : undefined}
+        onClick={(e) => {
+          if (!window.matchMedia("(hover: none)").matches) return;
+          if ((e.target as HTMLElement).closest("a, button, input, textarea, select, form, [contenteditable]")) return;
+          setTapped((v) => !v);
+        }}
+        className={`group flex-1 scroll-mt-24 rounded-lg border bg-surface px-4 py-2 ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}
+      >
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
             <p className="text-sm font-medium text-fg">{isNarrator ? "Erzähler:in" : entry.characters?.name}</p>
@@ -200,6 +226,7 @@ export function StoryEntryItem({
             <div className="flex shrink-0 items-center gap-1">
               {canMark && calendar &&
                 (markedEvent ? (
+                  <>
                   <Link
                     href={`/wiki/${markedEvent.id}`}
                     title={`Ereignis: ${markedEvent.title}`}
@@ -208,6 +235,16 @@ export function StoryEntryItem({
                   >
                     <Flag className="h-3.5 w-3.5 fill-current" strokeWidth={2} />
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => void unmarkEvent(markedEvent.id, storyPostId)}
+                    title="Markierung entfernen"
+                    aria-label="Markierung entfernen"
+                    className={`rounded px-1 py-0.5 text-[11px] text-muted transition hover:bg-surface-2 hover:text-red-500 ${REVEAL}`}
+                  >
+                    ✕
+                  </button>
+                  </>
                 ) : (
                   <button
                     type="button"
@@ -215,7 +252,7 @@ export function StoryEntryItem({
                     title="Als Ereignis markieren"
                     aria-label="Als Ereignis markieren"
                     aria-pressed={markOpen}
-                    className="rounded p-1 text-muted transition hover:bg-surface-2 hover:text-accent"
+                    className={`rounded p-1 text-muted transition hover:bg-surface-2 hover:text-accent ${markOpen ? "" : REVEAL}`}
                   >
                     <Flag className="h-3.5 w-3.5" strokeWidth={2} />
                   </button>
@@ -225,7 +262,7 @@ export function StoryEntryItem({
                   type="button"
                   onClick={() => setEditing(true)}
                   title="Bearbeiten"
-                  className="rounded p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                  className={`rounded p-1 text-muted transition hover:bg-surface-2 hover:text-fg ${REVEAL}`}
                 >
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                 </button>
@@ -235,7 +272,7 @@ export function StoryEntryItem({
                   type="button"
                   onClick={handleDelete}
                   title="Löschen"
-                  className="rounded p-1 text-muted transition hover:bg-surface-2 hover:text-red-500"
+                  className={`rounded p-1 text-muted transition hover:bg-surface-2 hover:text-red-500 ${REVEAL}`}
                 >
                   <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                 </button>

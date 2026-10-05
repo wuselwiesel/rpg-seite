@@ -30,6 +30,7 @@ import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
+import { SceneMarkFlag } from "./scene-mark-flag";
 import { OnlineMembers } from "@/components/online-members";
 import { getWorldMembers } from "@/lib/world-members";
 
@@ -104,10 +105,11 @@ export default async function StoryPostDetailPage({
   ]);
   // Nachrichten dieser Szene, aus denen schon ein Ereignis gemacht wurde (Flagge an der Nachricht)
   const [{ data: markedRows }, wikiTypes] = await Promise.all([
-    supabase.from("wiki_pages").select("id, title, source_entry_id").eq("source_story_id", storyPost.id).not("source_entry_id", "is", null),
+    supabase.from("wiki_pages").select("id, title, source_entry_id").eq("source_story_id", storyPost.id),
     getWikiTypes(storyPost.world_id),
   ]);
-  const markedByEntry = new Map((markedRows ?? []).map((r) => [r.source_entry_id as string, { id: r.id as string, title: r.title as string }]));
+  const markedByEntry = new Map((markedRows ?? []).filter((r) => r.source_entry_id).map((r) => [r.source_entry_id as string, { id: r.id as string, title: r.title as string }]));
+  const sceneMark = (markedRows ?? []).find((r) => !r.source_entry_id);
   const eventType = wikiTypes.some((t) => t.id === "ereignis") ? "ereignis" : null;
 
   // Auswahl für „Vorherige Szene“: andere Szenen der Welt, die noch keine Folgeszene haben (außer der jetzigen vorherigen)
@@ -133,7 +135,9 @@ export default async function StoryPostDetailPage({
       .eq("story_post_id", storyPost.id)
       .maybeSingle(),
   ]);
-  const isWorldOwner = world?.created_by === user.id;
+  const { data: myWorldRole } = await supabase.from("world_members").select("role").eq("world_id", storyPost.world_id).eq("user_id", user.id).maybeSingle();
+  // Besitzer:in oder Admin der Welt (Moderation: anpinnen, abschließen, archivieren)
+  const isWorldOwner = world?.created_by === user.id || myWorldRole?.role === "admin";
   const isAuthor = myCharacterIds.has(storyPost.character_id);
 
   const chapters = (entries ?? []).filter((e) => e.kind === "chapter");
@@ -212,6 +216,16 @@ export default async function StoryPostDetailPage({
             <p className="font-medium text-fg">{storyPost.narrator ? "Erzähler:in" : storyPost.characters?.name}</p>
             <p className="text-xs text-muted">{formatDateTime(storyPost.created_at)}</p>
           </div>
+          {(myCharacterIds.size > 0 || isWorldOwner) && (
+            <SceneMarkFlag
+              storyId={storyPost.id}
+              excerpt={stripHtml(storyPost.content).slice(0, 280)}
+              calendar={calendar}
+              eventType={eventType}
+              defaultDate={datesFromRow(storyPost).start}
+              marked={sceneMark ? { id: sceneMark.id as string, title: sceneMark.title as string } : null}
+            />
+          )}
         </div>
         <SceneChain
           storyPostId={storyPost.id}
@@ -309,8 +323,11 @@ export default async function StoryPostDetailPage({
         </h2>
         {(entries?.length ?? 0) > 1 && <JumpToLast variant="inline" />}
       </div>
-      {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
-      {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content }))} />}
+      {/* Schwebende Sprungknöpfe in einer Reihe: Kapitel (nur Symbol) links von „Zur letzten Nachricht“ */}
+      <div className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 flex items-center gap-2 lg:bottom-6">
+        {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content }))} />}
+        {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
+      </div>
 
       <EntryList
         items={(() => {

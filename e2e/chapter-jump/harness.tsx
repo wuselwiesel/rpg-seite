@@ -28,6 +28,8 @@ createRoot(document.getElementById("root")!).render(
     </EarlierEntries>
     {filler("neu", 24)}
     <div id="letzter-beitrag">Ende</div>
-    <ChapterJump chapters={chapters} />
+    <div className="pointer-events-none fixed bottom-6 right-4 z-20 flex items-center gap-2">
+      <ChapterJump chapters={chapters} />
+    </div>
   </div>,
 );

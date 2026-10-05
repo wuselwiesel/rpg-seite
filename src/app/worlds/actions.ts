@@ -115,17 +115,21 @@ export async function updateWorld(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const { error } = await supabase
+  // Besitzer:in und Admins dürfen die Welt bearbeiten (Policy worlds_update_own prüft das; 0 Zeilen = keine Berechtigung)
+  const { error, count } = await supabase
     .from("worlds")
-    .update({
-      name,
-      description: description || null,
-      cover_image_url: coverImageUrl || null,
-    })
-    .eq("id", worldId)
-    .eq("created_by", user.id);
+    .update(
+      {
+        name,
+        description: description || null,
+        cover_image_url: coverImageUrl || null,
+      },
+      { count: "exact" },
+    )
+    .eq("id", worldId);
 
   if (error) return error.message;
+  if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
 
   revalidatePath(`/worlds/${worldId}`);
   revalidatePath("/worlds");
@@ -181,6 +185,42 @@ export async function deleteWorld(worldId: string): Promise<string | null> {
 
   revalidatePath("/", "layout");
   redirect("/worlds");
+}
+
+// Mitglied aus der Welt entfernen: die Besitzer:in jede:n, Admins nur normale Mitglieder (Policy world_members_delete_own). Charaktere bleiben bestehen.
+export async function removeWorldMember(worldId: string, userId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  if (userId === user.id) return "Zum Verlassen der Welt gibt es „Welt verlassen“.";
+
+  const { error, count } = await supabase.from("world_members").delete({ count: "exact" }).eq("world_id", worldId).eq("user_id", userId);
+  if (error) return error.message;
+  if (!count) return "Dieses Mitglied kannst du nicht entfernen.";
+
+  revalidatePath(`/worlds/${worldId}`);
+  revalidatePath("/", "layout");
+  return null;
+}
+
+// Mitglied zum Admin ernennen oder zurückstufen – nur die Besitzer:in.
+export async function setWorldMemberRole(worldId: string, userId: string, role: "member" | "admin"): Promise<string | null> {
+  if (role !== "member" && role !== "admin") return "Unbekannte Rolle.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error, count } = await supabase.from("world_members").update({ role }, { count: "exact" }).eq("world_id", worldId).eq("user_id", userId);
+  if (error) return error.message;
+  if (!count) return "Das darf nur die Besitzer:in der Welt.";
+
+  revalidatePath(`/worlds/${worldId}`);
+  revalidatePath("/", "layout");
+  return null;
 }
 
 export async function leaveWorld(worldId: string) {

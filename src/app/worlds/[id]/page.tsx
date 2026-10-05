@@ -8,9 +8,10 @@ import { JoinWorldButton } from "../join-world-button";
 import { LeaveWorldButton } from "./leave-world-button";
 import { InviteFriendForm } from "./invite-friend-form";
 import { InviteLink } from "@/components/invite-link";
+import { MemberActions } from "./member-actions";
 import type { Profile, World } from "@/lib/types";
 
-type WorldMemberRow = { user_id: string; profiles: Profile };
+type WorldMemberRow = { user_id: string; role: "member" | "admin"; profiles: Profile };
 
 export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id]">) {
   const { id } = await params;
@@ -31,15 +32,16 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
 
   const { data: members } = await supabase
     .from("world_members")
-    .select("user_id, profiles(*)")
+    .select("user_id, role, profiles(*)")
     .eq("world_id", id)
     .returns<WorldMemberRow[]>();
 
   const isOwner = world.created_by === user.id;
   const memberIds = new Set((members ?? []).map((m) => m.user_id));
   const isMember = memberIds.has(user.id);
+  const isAdmin = isOwner || (members ?? []).some((m) => m.user_id === user.id && m.role === "admin");
 
-  const friends = isOwner ? await getAcceptedFriends(user.id) : [];
+  const friends = isAdmin ? await getAcceptedFriends(user.id) : [];
   const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
 
   return (
@@ -58,7 +60,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
           {world.description && <p className="mt-1 text-sm text-muted">{world.description}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {isOwner && (
+          {isAdmin && (
             <Link
               href={`/worlds/${world.id}/edit`}
               className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
@@ -79,17 +81,30 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         {(members ?? []).map((member) => (
           <li
             key={member.user_id}
-            className="rounded-lg border border-line bg-surface px-4 py-2 text-sm text-fg"
+            className="flex flex-wrap items-center rounded-lg border border-line bg-surface px-4 py-2 text-sm text-fg"
           >
             @{member.profiles.username}
             {member.user_id === world.created_by && (
               <span className="ml-2 text-xs text-muted">Erstellt von</span>
             )}
+            {member.user_id !== world.created_by && member.role === "admin" && (
+              <span className="ml-2 rounded-full bg-accent-strong/15 px-2 py-0.5 text-xs font-medium text-accent">Admin</span>
+            )}
+            {isAdmin && member.user_id !== world.created_by && member.user_id !== user.id && (
+              <MemberActions
+                worldId={world.id}
+                userId={member.user_id}
+                name={`@${member.profiles.username}`}
+                role={member.role}
+                canRemove={isOwner || member.role === "member"}
+                canPromote={isOwner}
+              />
+            )}
           </li>
         ))}
       </ul>
 
-      {isOwner && (
+      {isAdmin && (
         <>
           <h2 className="mb-3 font-serif text-xl text-fg">Freund:innen einladen</h2>
           <div className="mb-4 flex flex-wrap items-center gap-3">

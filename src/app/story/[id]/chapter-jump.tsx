@@ -34,9 +34,9 @@ export function ChapterJump({ chapters }: { chapters: { n: number; title: string
 
   if (!away && !open) return null;
   return (
-    <div ref={ref} className="fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] right-4 z-20 flex flex-col items-end gap-2 lg:bottom-20">
+    <div ref={ref} className="pointer-events-auto relative">
       {open && (
-        <ul className="menu-pop max-h-72 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-lg">
+        <ul className="menu-pop absolute bottom-full right-0 mb-2 max-h-72 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-lg">
           {chapters.map((c) => (
             <li key={c.n}>
               <a
@@ -56,10 +56,10 @@ export function ChapterJump({ chapters }: { chapters: { n: number; title: string
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label="Zu einem Kapitel springen"
-        className="menu-pop flex h-11 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-medium text-fg shadow-lg ring-1 ring-line transition active:scale-95"
+        title="Zu einem Kapitel springen"
+        className="menu-pop flex h-11 w-11 items-center justify-center rounded-full bg-surface text-accent shadow-lg ring-1 ring-line transition active:scale-95"
       >
-        <BookMarked className="h-4 w-4 text-accent" strokeWidth={2} />
-        Kapitel
+        <BookMarked className="h-[18px] w-[18px]" strokeWidth={2} />
       </button>
     </div>
   );

@@ -165,7 +165,14 @@ export async function createTimelineEvent(_prev: string | null, formData: FormDa
 
   // Ereignis aus einer Story-Nachricht: Nachricht und Szene müssen existieren (und für dich sichtbar sein) und zur aktiven Welt gehören
   const sourceEntryId = String(formData.get("source_entry_id") ?? "").trim();
-  let source: { source_entry_id: string; source_story_id: string } | null = null;
+  const sourceStoryId = String(formData.get("source_story_id") ?? "").trim();
+  let source: { source_entry_id: string | null; source_story_id: string } | null = null;
+  if (!sourceEntryId && sourceStoryId) {
+    // Eröffnungstext einer Szene (ohne eigene Nachricht)
+    const { data: scene } = await supabase.from("story_posts").select("id, world_id").eq("id", sourceStoryId).maybeSingle();
+    if (!scene || scene.world_id !== world.id) return "Die Szene wurde nicht gefunden.";
+    source = { source_entry_id: null, source_story_id: scene.id };
+  }
   if (sourceEntryId) {
     const { data: entry } = await supabase.from("story_entries").select("id, story_post_id, story_posts!inner(world_id)").eq("id", sourceEntryId).maybeSingle<{ id: string; story_post_id: string; story_posts: { world_id: string } }>();
     if (!entry || entry.story_posts.world_id !== world.id) return "Die Nachricht wurde nicht gefunden.";
@@ -179,6 +186,25 @@ export async function createTimelineEvent(_prev: string | null, formData: FormDa
 
   revalidatePath("/wiki", "layout");
   if (source) revalidatePath(`/story/${source.source_story_id}`);
+  return null;
+}
+
+// Markierung einer Nachricht lösen: Das Ereignis bleibt bestehen, verweist aber nicht mehr auf die Nachricht.
+export async function unmarkEvent(wikiPageId: string, storyPostId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data, error } = await supabase
+    .from("wiki_pages")
+    .update({ source_entry_id: null, source_story_id: null })
+    .eq("id", wikiPageId)
+    .select("id");
+  if (error) return error.message;
+  if (!data?.length) return "Das darfst du nicht ändern.";
+  revalidatePath("/wiki", "layout");
+  revalidatePath(`/story/${storyPostId}`);
   return null;
 }
 

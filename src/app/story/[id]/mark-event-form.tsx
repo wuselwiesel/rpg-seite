@@ -10,13 +10,16 @@ const field = "rounded-md border border-line bg-surface px-3 py-2 text-base text
 // Aus einer Nachricht ein Ereignis für die Zeitleiste machen (Wiki-Seite der Art „Ereignis“, mit Verweis auf die Nachricht).
 export function MarkEventForm({
   entryId,
+  storyId,
   excerpt,
   calendar,
   eventType,
   defaultDate,
   onDone,
 }: {
-  entryId: string;
+  // Nachricht (entryId) oder – für den Eröffnungstext – die Szene (storyId)
+  entryId?: string;
+  storyId?: string;
   excerpt: string;
   calendar: WikiCalendar;
   eventType: string | null;
@@ -39,7 +42,8 @@ export function MarkEventForm({
 
   return (
     <form onSubmit={submit} className="mt-2 flex flex-col gap-3 rounded-lg bg-surface-2 p-3">
-      <input type="hidden" name="source_entry_id" value={entryId} />
+      {entryId && <input type="hidden" name="source_entry_id" value={entryId} />}
+      {!entryId && storyId && <input type="hidden" name="source_story_id" value={storyId} />}
       {eventType && <input type="hidden" name="page_type" value={eventType} />}
       <input name="title" required maxLength={120} placeholder="Titel des Ereignisses" aria-label="Titel des Ereignisses" autoFocus className={field} />
       <textarea name="lead" rows={2} maxLength={300} defaultValue={excerpt} aria-label="Kurz beschrieben" className={field} />

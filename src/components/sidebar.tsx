@@ -84,15 +84,17 @@ export async function Sidebar() {
     );
   }
 
-  const [characters, activeCharacter] = await Promise.all([
+  const [characters, activeCharacter, { data: myMembership }] = await Promise.all([
     getOwnCharacters(user.id, activeWorld.id),
     getActiveCharacter(user.id, activeWorld.id),
+    supabase.from("world_members").select("role").eq("world_id", activeWorld.id).eq("user_id", user.id).maybeSingle(),
   ]);
 
   const myCharacterIds = characters.map((c) => c.id);
   // Wie in der Chatliste aus der Sicht des aktiven Charakters zählen.
   const unreadCounts = await getUnreadCounts(user.id, myCharacterIds, activeCharacter?.id);
-  const isOwner = activeWorld.created_by === user.id;
+  // Besitzer:in oder Admin: darf die Welt bearbeiten
+  const isOwner = activeWorld.created_by === user.id || myMembership?.role === "admin";
 
   return (
     <>

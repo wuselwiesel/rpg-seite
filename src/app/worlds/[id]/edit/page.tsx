@@ -20,7 +20,11 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
     .maybeSingle<World>();
 
   if (!world) notFound();
-  if (world.created_by !== user.id) redirect(`/worlds/${id}`);
+  const isOwner = world.created_by === user.id;
+  if (!isOwner) {
+    const { data: me } = await supabase.from("world_members").select("role").eq("world_id", id).eq("user_id", user.id).maybeSingle();
+    if (me?.role !== "admin") redirect(`/worlds/${id}`);
+  }
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
@@ -31,13 +35,15 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
 
       <EditWorldForm world={world} />
 
-      <div className="mt-8 border-t border-line pt-6">
-        <p className="mb-3 text-sm text-muted">
-          Das Löschen entfernt auch alle Charaktere, Beiträge und die Story dieser Welt – für alle
-          Mitglieder, unwiderruflich.
-        </p>
-        <DeleteWorldButton worldId={world.id} worldName={world.name} />
-      </div>
+      {isOwner && (
+        <div className="mt-8 border-t border-line pt-6">
+          <p className="mb-3 text-sm text-muted">
+            Das Löschen entfernt auch alle Charaktere, Beiträge und die Story dieser Welt – für alle
+            Mitglieder, unwiderruflich.
+          </p>
+          <DeleteWorldButton worldId={world.id} worldName={world.name} />
+        </div>
+      )}
     </div>
   );
 }

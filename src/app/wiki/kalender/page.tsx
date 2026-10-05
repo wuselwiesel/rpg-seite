@@ -9,6 +9,7 @@ import { datesFromRow, formatLabeled, monthName, placeInMonth, type Dated } from
 import { getDatedChapters } from "@/lib/chapter-dates";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { CalendarEventAdd } from "./event-add";
+import { CalendarDay } from "./calendar-day";
 
 type SceneRow = {
   id: string;
@@ -56,7 +57,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
     ...(sceneRows ?? []).map((r): Dated<Entry> => ({ kind: "scene", id: r.id, title: r.title, labels: {}, dates: datesFromRow(r) })),
     ...chapters.map((c): Dated<Entry> => ({ kind: "chapter", id: c.id, title: c.title, labels: {}, href: `/story/${c.sceneId}#kapitel-${c.number}`, dates: datesFromRow(c) })),
   ] : [
-    ...rows.map((r): Dated<Entry> => ({ kind: "wiki", id: r.id, title: r.title, labels: { start: r.event_label, end: r.event_end_label }, href: r.source_entry_id && r.source_story_id ? `/story/${r.source_story_id}#beitrag-${r.source_entry_id}` : undefined, dates: datesFromRow(r) })).filter((r) => r.dates.start),
+    ...rows.map((r): Dated<Entry> => ({ kind: "wiki", id: r.id, title: r.title, labels: { start: r.event_label, end: r.event_end_label }, href: r.source_story_id ? (r.source_entry_id ? `/story/${r.source_story_id}#beitrag-${r.source_entry_id}` : `/story/${r.source_story_id}`) : undefined, dates: datesFromRow(r) })).filter((r) => r.dates.start),
   ];
 
   // Startmonat: aus der Adresse, sonst der Monat der frühesten datierten Seite, sonst Jahr 1.
@@ -196,15 +197,8 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
           {Array.from({ length: days }, (_, i) => i + 1).map((d) => {
             const list = byDay.get(d) ?? [];
             return (
-              <li key={d} data-day={d} className={`flex min-h-20 flex-col gap-1 rounded-xl border p-2 ${list.length ? "border-accent/50 bg-accent/5" : "border-line bg-surface"}`}>
-                <span className="flex items-center justify-between">
-                  <span className={`text-xs font-medium ${list.length ? "text-accent" : "text-muted"}`}>{d}</span>
-                  {source === "welt" && (
-                    <Link href={addHref(d)} scroll={false} aria-label={`Ereignis am ${d}. eintragen`} className="flex h-5 w-5 items-center justify-center rounded text-muted/60 transition hover:bg-surface-2 hover:text-accent">
-                      <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-                    </Link>
-                  )}
-                </span>
+              <CalendarDay key={d} day={d} addHref={source === "welt" ? addHref(d) : null} className={`flex min-h-20 flex-col gap-1 rounded-xl border p-2 ${list.length ? "border-accent/50 bg-accent/5" : "border-line bg-surface"}`}>
+                <span className={`text-xs font-medium ${list.length ? "text-accent" : "text-muted"}`}>{d}</span>
                 {list.map((p) => (
                   <Link key={`${p.kind}-${p.id}`} href={hrefOf(p)} className="line-clamp-2 text-sm leading-snug text-fg hover:text-accent">
                     {p.kind === "scene" && <Feather className="mr-1 inline h-3 w-3 -translate-y-px text-accent" strokeWidth={2} aria-label="Szene" />}
@@ -212,7 +206,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
                     {p.title}
                   </Link>
                 ))}
-              </li>
+              </CalendarDay>
             );
           })}
         </ol>
