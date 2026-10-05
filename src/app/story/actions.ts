@@ -430,6 +430,7 @@ export async function startNextScene(previousId: string, formData: FormData): Pr
 export async function updateChapter(entryId: string, storyPostId: string, formData: FormData): Promise<string | null> {
   const title = String(formData.get("title") ?? "").trim().slice(0, 100);
   const summary = String(formData.get("summary") ?? "").trim().slice(0, 1500);
+  const label = String(formData.get("label") ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
   if (!title) return "Gib dem Kapitel einen Namen.";
 
   const supabase = await createClient();
@@ -446,7 +447,7 @@ export async function updateChapter(entryId: string, storyPostId: string, formDa
   const { error, count } = await supabase
     .from("story_entries")
     .update(
-      { content: title, chapter_title: title, chapter_summary: summary || null, event_year: c.event_year, event_month: c.event_month, event_day: c.event_day },
+      { content: title, chapter_title: title, chapter_summary: summary || null, chapter_label: label || null, event_year: c.event_year, event_month: c.event_month, event_day: c.event_day },
       { count: "exact" },
     )
     .eq("id", entryId)

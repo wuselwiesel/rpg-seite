@@ -309,7 +309,7 @@ export default async function StoryPostDetailPage({
               href={`#kapitel-${i + 1}`}
               className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-accent"
             >
-              {i + 1} · {c.chapter_title}
+              {c.chapter_label?.trim() || i + 1} · {c.chapter_title}
             </a>
           ))}
         </nav>
@@ -325,7 +325,7 @@ export default async function StoryPostDetailPage({
       </div>
       {/* Schwebende Sprungknöpfe in einer Reihe: Kapitel (nur Symbol) links von „Zur letzten Nachricht“ */}
       <div className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 flex items-center gap-2 lg:bottom-6">
-        {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content }))} />}
+        {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content, label: c.chapter_label?.trim() || null }))} />}
         {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
       </div>
 

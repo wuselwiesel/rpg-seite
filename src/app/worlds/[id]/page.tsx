@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAcceptedFriends } from "@/lib/friends";
-import { WorldCover } from "@/components/world-cover";
+import { WorldCover, isIconCover } from "@/components/world-cover";
 import { EnterWorldButton } from "../enter-world-button";
 import { JoinWorldButton } from "../join-world-button";
 import { LeaveWorldButton } from "./leave-world-button";
@@ -49,7 +49,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
       {world.cover_image_url ? (
         // Das Bild bleibt in seinem Format (quadratisch, 4:3, breit), nur in der Höhe begrenzt
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={world.cover_image_url} alt={world.name} className="mb-6 h-auto max-h-80 w-auto max-w-full rounded-xl bg-surface-2" />
+        <img src={world.cover_image_url} alt={world.name} className={`mb-6 h-auto w-auto max-w-full rounded-xl ${isIconCover(world.cover_image_url) ? "max-h-40" : "max-h-80 bg-surface-2"}`} />
       ) : (
         <WorldCover name={world.name} coverUrl={null} className="mb-6 h-40 w-full" />
       )}

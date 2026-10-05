@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { CharacterAvatar } from "./character-avatar";
 import { ASPECTS, ImageCropper, canCrop } from "./image-cropper";
-import { WorldCover } from "./world-cover";
+import { WorldCover, isIconCover } from "./world-cover";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 
@@ -68,16 +68,18 @@ export function AvatarUpload({
     }
   }
 
-  async function upload(original: File) {
-    const file = variant === "icon" ? original : await resizeImage(original, 1200);
-    const maxSize = variant === "icon" ? 2 * 1024 * 1024 : MAX_SIZE;
+  // asIcon: Welt-Bild ohne Hintergrund (PNG/SVG/WebP/GIF unverändert, Dateiname „icon-…“); sonst wie bisher
+  async function upload(original: File, asIcon = false) {
+    const keepAsIs = variant === "icon" || asIcon;
+    const file = keepAsIs ? original : await resizeImage(original, 1200);
+    const maxSize = keepAsIs ? 2 * 1024 * 1024 : MAX_SIZE;
 
-    if (variant === "icon" && !/^image\/(png|svg\+xml|webp|gif)$/.test(file.type)) {
+    if (keepAsIs && !/^image\/(png|svg\+xml|webp|gif)$/.test(file.type)) {
       setError("Für Icons bitte PNG, SVG, WebP oder GIF nehmen (nur diese Formate können durchsichtig sein).");
       return;
     }
     if (file.size > maxSize) {
-      setError(variant === "icon" ? "Icon ist zu groß (max. 2 MB)." : "Bild ist zu groß (max. 5 MB).");
+      setError(keepAsIs ? "Icon ist zu groß (max. 2 MB)." : "Bild ist zu groß (max. 5 MB).");
       return;
     }
 
@@ -86,7 +88,7 @@ export function AvatarUpload({
 
     const supabase = createClient();
     const ext = file.name.split(".").pop();
-    const path = `${crypto.randomUUID()}.${ext}`;
+    const path = `${asIcon ? "icon-" : ""}${crypto.randomUUID()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -125,7 +127,7 @@ export function AvatarUpload({
       ) : variant === "world" ? (
         url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-auto max-h-40 w-auto max-w-full self-start rounded-xl bg-surface-2" />
+          <img src={url} alt="" className={`h-auto max-h-40 w-auto max-w-full self-start rounded-xl ${isIconCover(url) ? "" : "bg-surface-2"}`} />
         ) : (
           <WorldCover name={displayName} coverUrl={null} className="h-32 w-32" />
         )
@@ -185,6 +187,22 @@ export function AvatarUpload({
             className="hidden"
           />
         </label>
+        {variant === "world" && (
+          <label className="cursor-pointer text-sm text-accent hover:underline">
+            Als Icon hochladen (ohne Hintergrund)
+            <input
+              type="file"
+              accept="image/png,image/svg+xml,image/webp,image/gif"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void upload(f, true);
+              }}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
+        )}
         {variant === "icon" && (
           <button type="button" onClick={pasteFromClipboard} disabled={uploading} className="w-fit text-left text-sm text-accent hover:underline">
             Aus Zwischenablage einfügen

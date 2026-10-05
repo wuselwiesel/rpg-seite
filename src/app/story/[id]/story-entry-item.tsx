@@ -116,6 +116,15 @@ export function StoryEntryItem({
         <form id={`kapitel-${chapterNumber}`} onSubmit={saveChapter} className="my-4 flex scroll-mt-20 flex-col gap-3 rounded-lg bg-surface-2 p-3">
           <input
             type="text"
+            name="label"
+            maxLength={40}
+            defaultValue={entry.chapter_label ?? ""}
+            placeholder={`Kapitel ${chapterNumber}`}
+            aria-label="Bezeichnung (statt Kapitel)"
+            className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+          />
+          <input
+            type="text"
             name="title"
             required
             maxLength={100}
@@ -148,7 +157,7 @@ export function StoryEntryItem({
       <div id={`kapitel-${chapterNumber}`} className="group my-4 scroll-mt-20 text-center">
         <div className="flex items-center gap-3 text-muted">
           <span className="h-px flex-1 bg-line" />
-          <span className="text-xs">Kapitel {chapterNumber}</span>
+          <span className="text-xs">{entry.chapter_label?.trim() || `Kapitel ${chapterNumber}`}</span>
           <span className="h-px flex-1 bg-line" />
         </div>
         <h3 className="mt-2 font-serif text-2xl text-fg">{entry.chapter_title ?? entry.content}</h3>
