@@ -57,6 +57,7 @@ export function NextSceneForm({
       <div className="flex flex-col gap-3 rounded-md border border-line bg-surface p-3">
         <EventDateRange calendar={calendar} dates={{ start: null, end: null }} />
       </div>
+      <textarea name="short_summary" maxLength={300} rows={2} placeholder="Kurzbeschreibung für die Zeitleiste (optional)" className={field} />
       <textarea name="recap" maxLength={1500} rows={2} placeholder="Zusammenfassung der abgeschlossenen Szene (optional)" className={field} />
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex gap-2">

@@ -4055,4 +4055,10 @@ alter table public.story_entries add column if not exists chapter_label text;
 alter table public.story_entries drop constraint if exists story_entries_chapter_label_len;
 alter table public.story_entries add constraint story_entries_chapter_label_len check (chapter_label is null or char_length(chapter_label) <= 40);
 
+-- ===== Kurzbeschreibung von Szenen (migration_scene_short_summary.sql) =====
+-- Kurzbeschreibung einer Szene (höchstens 300 Zeichen): erscheint kompakt auf der Zeitleiste, damit man sofort sieht, worum es geht.
+alter table public.story_posts add column if not exists short_summary text;
+alter table public.story_posts drop constraint if exists story_posts_short_summary_len;
+alter table public.story_posts add constraint story_posts_short_summary_len check (short_summary is null or char_length(short_summary) <= 300);
+
 notify pgrst, 'reload schema';

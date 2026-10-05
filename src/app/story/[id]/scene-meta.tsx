@@ -15,6 +15,7 @@ export function SceneMeta({
   dates,
   calendar,
   canEdit,
+  shortSummary = null,
 }: {
   storyPostId: string;
   location: string | null;
@@ -22,6 +23,8 @@ export function SceneMeta({
   dates: PageDates;
   calendar: WikiCalendar;
   canEdit: boolean;
+  // Kurzbeschreibung für die Zeitleiste
+  shortSummary?: string | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [loc, setLoc] = useState(location ?? "");
@@ -62,6 +65,15 @@ export function SceneMeta({
         <div className="flex flex-col gap-3">
           <EventDateRange calendar={calendar} dates={dates} />
         </div>
+        <textarea
+          name="short_summary"
+          rows={2}
+          maxLength={300}
+          defaultValue={shortSummary ?? ""}
+          placeholder="Kurzbeschreibung für die Zeitleiste"
+          aria-label="Kurzbeschreibung für die Zeitleiste"
+          className="rounded-md border border-line bg-app px-2.5 py-1.5 text-base text-fg outline-none focus:border-accent sm:text-sm"
+        />
         <div className="flex items-center gap-2">
           <button
             type="submit"
@@ -80,7 +92,7 @@ export function SceneMeta({
   }
 
   const dateLabel = formatRange(calendar, dates);
-  if (!location && !inWorldTime && !dateLabel && !canEdit) return null;
+  if (!location && !inWorldTime && !dateLabel && !shortSummary && !canEdit) return null;
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-fg-soft">
@@ -109,7 +121,7 @@ export function SceneMeta({
           className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-muted transition hover:bg-surface-2 hover:text-fg"
         >
           <Pencil className="h-3 w-3" strokeWidth={2} />
-          {location || inWorldTime || dateLabel ? "Ändern" : "Ort und Zeit ergänzen"}
+          {location || inWorldTime || dateLabel || shortSummary ? "Ändern" : "Ort und Zeit ergänzen"}
         </button>
       )}
     </div>

@@ -138,6 +138,8 @@ export type StoryPost = {
   ai_summary_count?: number | null;
   // Selbst geschriebene Zusammenfassung der Szene zum Nachlesen
   recap?: string | null;
+  // Kurzbeschreibung für die Zeitleiste (höchstens 300 Zeichen)
+  short_summary?: string | null;
   recap_at?: string | null;
   // Kapitel = neue Szene: die Szene, auf die diese folgt
   previous_story_id?: string | null;

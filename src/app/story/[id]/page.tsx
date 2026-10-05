@@ -257,6 +257,7 @@ export default async function StoryPostDetailPage({
                 inWorldTime={storyPost.in_world_time}
                 dates={datesFromRow(storyPost)}
                 calendar={calendar}
+                shortSummary={storyPost.short_summary ?? null}
                 canEdit={myCharacterIds.has(storyPost.character_id)}
               />
               {!myCharacterIds.has(storyPost.character_id) && (myCharacterIds.size > 0 || isWorldOwner) && (

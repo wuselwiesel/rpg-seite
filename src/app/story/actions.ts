@@ -155,6 +155,7 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
 
   const sceneDates = await readSceneDates(formData, activeWorld.id);
   if (sceneDates.error !== null) return sceneDates.error;
+  const shortSummary = String(formData.get("short_summary") ?? "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
 
   const isPrivate = formData.get("is_private") === "on";
   const viewerCharacterIds = formData.getAll("viewer_character_id").map(String).filter(Boolean);
@@ -171,6 +172,7 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
       is_private: isPrivate,
       location,
       in_world_time: inWorldTime,
+      short_summary: shortSummary,
       ...sceneDates.columns,
       narrator: formData.get("narrator") === "on",
     })
@@ -387,6 +389,7 @@ export async function startNextScene(previousId: string, formData: FormData): Pr
       is_private: prev.is_private,
       location,
       in_world_time: inWorldTime,
+      short_summary: String(formData.get("short_summary") ?? "").replace(/\s+/g, " ").trim().slice(0, 300) || null,
       previous_story_id: previousId,
       ...sceneDates.columns,
     })
@@ -625,7 +628,12 @@ export async function updateStoryMeta(
   const trimmedLocation = location.trim().slice(0, 80) || null;
   const { data, error } = await supabase
     .from("story_posts")
-    .update({ location: trimmedLocation, in_world_time: inWorldTime.trim().slice(0, 80) || null, ...sceneDates.columns })
+    .update({
+      location: trimmedLocation,
+      in_world_time: inWorldTime.trim().slice(0, 80) || null,
+      short_summary: String(dateForm.get("short_summary") ?? "").replace(/\s+/g, " ").trim().slice(0, 300) || null,
+      ...sceneDates.columns,
+    })
     .eq("id", storyPostId)
     .select("world_id")
     .maybeSingle();

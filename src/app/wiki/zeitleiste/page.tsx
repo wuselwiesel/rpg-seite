@@ -29,6 +29,7 @@ type SceneRow = {
   title: string;
   content: string;
   recap: string | null;
+  short_summary: string | null;
   location: string | null;
   in_world_time: string | null;
   tags: string[] | null;
@@ -173,7 +174,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
     supabase
       .from("story_posts")
       .select(
-        "id, title, content, recap, location, in_world_time, tags, narrator, event_year, event_month, event_day, event_end_year, event_end_month, event_end_day, characters!story_posts_character_id_fkey(name, avatar_url), story_arcs(name)",
+        "id, title, content, recap, short_summary, location, in_world_time, tags, narrator, event_year, event_month, event_day, event_end_year, event_end_month, event_end_day, characters!story_posts_character_id_fkey(name, avatar_url), story_arcs(name)",
       )
       .eq("world_id", world.id)
       .eq("archived", false)
@@ -224,7 +225,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
         kind: "scene",
         id: s.id,
         title: s.title,
-        excerpt: excerpt(stripHtml(recapToHtml(s.recap)) || stripHtml(s.content), 220),
+        excerpt: excerpt(s.short_summary?.trim() || stripHtml(recapToHtml(s.recap)) || stripHtml(s.content), 300),
         location: s.location,
         extra: s.in_world_time,
         author: s.narrator ? "Erzähler:in" : (s.characters?.name ?? "Unbekannt"),
