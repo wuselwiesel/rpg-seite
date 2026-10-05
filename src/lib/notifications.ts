@@ -37,7 +37,8 @@ export async function createNotification(
 
   await sendPushToUser(params.userId, {
     title: params.actorName,
-    body: params.recipientName ? `${params.recipientName}: ${params.message}` : params.message,
+    // „für <Charakter>“ steht hinten: ein Namenspräfix würde wie der Absender aussehen
+    body: params.recipientName ? `${params.message} (für ${params.recipientName})` : params.message,
     url: params.link,
     // Gleiche Art + Ziel ersetzt die vorige Push-Meldung, statt sich zu stapeln.
     tag: BUNDLED_TYPES.has(params.type) ? `${params.type}:${params.link}` : undefined,
