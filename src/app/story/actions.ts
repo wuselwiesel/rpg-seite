@@ -78,6 +78,7 @@ async function getActiveCharacterInWorld(userId: string, worldId: string) {
       .eq("id", cookieId)
       .eq("owner_id", userId)
       .eq("world_id", worldId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (data) return data.id;
   }
@@ -87,6 +88,7 @@ async function getActiveCharacterInWorld(userId: string, worldId: string) {
     .select("id")
     .eq("owner_id", userId)
     .eq("world_id", worldId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -104,6 +106,7 @@ async function resolveWriter(userId: string, worldId: string, chosenId: string) 
       .eq("id", chosenId)
       .eq("owner_id", userId)
       .eq("world_id", worldId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (data) return data.id;
   }

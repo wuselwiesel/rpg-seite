@@ -30,6 +30,7 @@ async function getActiveCharacterId(userId: string) {
       .select("id")
       .eq("id", cookieId)
       .eq("owner_id", userId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (data) return data.id;
   }
@@ -42,6 +43,7 @@ async function getActiveCharacterId(userId: string) {
     .select("id")
     .eq("owner_id", userId)
     .eq("world_id", activeWorld.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();

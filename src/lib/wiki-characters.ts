@@ -10,6 +10,7 @@ export const getWorldCharacterTerms = cache(async (worldId: string): Promise<Cha
     .from("characters")
     .select("id, name, avatar_url, bio, house")
     .eq("world_id", worldId)
+    .is("deleted_at", null)
     .order("name")
     .returns<{ id: string; name: string; avatar_url: string | null; bio: string | null; house: string | null }[]>();
   return (data ?? []).map((c) => ({ id: c.id, name: c.name, avatarUrl: c.avatar_url, excerpt: characterExcerpt(c.bio, c.house ?? "") }));

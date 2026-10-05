@@ -14,6 +14,7 @@ export const getAllMentionableCharacters = cache(async (userId: string): Promise
     .from("characters")
     .select("*")
     .in("owner_id", ownerIds)
+    .is("deleted_at", null)
     .order("name")
     .returns<Character[]>();
   return data ?? [];

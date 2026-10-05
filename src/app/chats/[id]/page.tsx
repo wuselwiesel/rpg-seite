@@ -86,7 +86,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
     .returns<Character[]>();
 
   const participantIds = new Set(participants.map((p) => p.id));
-  const availableCharacters = (worldCharacters ?? []).filter((c) => !participantIds.has(c.id));
+  const availableCharacters = (worldCharacters ?? []).filter((c) => !c.deleted_at && !participantIds.has(c.id));
 
   return (
     <ChatRoom

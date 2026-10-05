@@ -21,7 +21,7 @@ export function DeleteCharacterButton({
         onClick={() => {
           if (
             confirm(
-              `"${characterName}" wirklich löschen? Alle Beiträge, Kommentare und Story-Einträge dieses Charakters werden unwiderruflich gelöscht.`,
+              `"${characterName}" löschen? Alles, was der Charakter geschrieben hat, bleibt erhalten.`,
             )
           ) {
             setError(null);

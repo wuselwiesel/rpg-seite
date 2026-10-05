@@ -18,6 +18,7 @@ export async function searchCharacters(sb: SupabaseClient, q: string, limit: num
     .from("characters")
     .select("id, name, username, avatar_url, worlds(name)")
     .eq("is_npc", false)
+    .is("deleted_at", null)
     .or(`username.ilike.%${term}%,name.ilike.%${term}%`)
     .order("name")
     .limit(limit);

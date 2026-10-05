@@ -30,6 +30,8 @@ export type CharacterSpecies = "mensch" | "vampir" | "werwolf";
 
 export type Character = {
   id: string;
+  // gesetzt = gelöscht: nirgends mehr auswählbar, Inhalte bleiben erhalten
+  deleted_at?: string | null;
   owner_id: string;
   world_id: string;
   name: string;

@@ -240,7 +240,12 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
   if (!target) return "Charakter konnte nicht gelöscht werden. Bitte später erneut versuchen.";
   if (!(await getCharacterAccess(target, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter löschen.";
 
-  const { error, count } = await supabase.from("characters").delete({ count: "exact" }).eq("id", characterId);
+  // Nur ausblenden, nicht löschen: Beiträge, Nachrichten und Story-Einträge bleiben erhalten.
+  const { error, count } = await supabase
+    .from("characters")
+    .update({ deleted_at: new Date().toISOString() }, { count: "exact" })
+    .eq("id", characterId)
+    .is("deleted_at", null);
 
   if (error) return error.message;
   if (!count) return "Charakter konnte nicht gelöscht werden. Bitte später erneut versuchen.";
@@ -252,6 +257,25 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
 
   revalidatePath("/", "layout");
   redirect("/characters");
+}
+
+export async function restoreCharacter(characterId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: target } = await supabase.from("characters").select("owner_id, is_npc, world_id").eq("id", characterId).maybeSingle<{ owner_id: string; is_npc: boolean; world_id: string }>();
+  if (!target) return "Charakter nicht gefunden.";
+  if (!(await getCharacterAccess(target, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter wiederherstellen.";
+
+  const { error, count } = await supabase.from("characters").update({ deleted_at: null }, { count: "exact" }).eq("id", characterId);
+  if (error) return error.message;
+  if (!count) return "Charakter konnte nicht wiederhergestellt werden.";
+
+  revalidatePath("/", "layout");
+  return null;
 }
 
 // Charakter in einen NPC umwandeln und zurück: nur die Person, die ihn angelegt hat (die Datenbank sichert das zusätzlich per Trigger).

@@ -16,6 +16,7 @@ export const getOwnCharacters = cache(async (userId: string, worldId: string): P
     .eq("owner_id", userId)
     .eq("world_id", worldId)
     .eq("is_npc", false)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
   return data ?? [];
@@ -30,6 +31,7 @@ export const getOwnNpcs = cache(async (userId: string, worldId: string): Promise
     .eq("owner_id", userId)
     .eq("world_id", worldId)
     .eq("is_npc", true)
+    .is("deleted_at", null)
     .order("name")
     .returns<Character[]>();
   return data ?? [];
@@ -38,7 +40,7 @@ export const getOwnNpcs = cache(async (userId: string, worldId: string): Promise
 // Alle NPCs der Welt (für Mitglieder lesbar).
 export const getWorldNpcs = cache(async (worldId: string): Promise<Character[]> => {
   const supabase = await createClient();
-  const { data } = await supabase.from("characters").select("*").eq("world_id", worldId).eq("is_npc", true).order("name").returns<Character[]>();
+  const { data } = await supabase.from("characters").select("*").eq("world_id", worldId).eq("is_npc", true).is("deleted_at", null).order("name").returns<Character[]>();
   return data ?? [];
 });
 
@@ -64,6 +66,7 @@ export const getMentionableCharacters = cache(async (userId: string, worldId: st
     .from("characters")
     .select("*")
     .eq("world_id", worldId)
+    .is("deleted_at", null)
     .or(`owner_id.in.(${ownerIds.join(",")}),is_npc.eq.true`)
     .order("name")
     .returns<Character[]>();

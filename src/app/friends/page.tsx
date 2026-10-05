@@ -75,7 +75,7 @@ export default async function FriendsPage() {
                     @{friend?.username}
                     <OnlineBadge userId={friend?.id} />
                   </span>
-                  <FriendRequestActions friendshipId={f.id} mode="accepted" />
+                  <FriendRequestActions friendshipId={f.id} mode="accepted" name={friend?.username} />
                 </li>
               );
             })}

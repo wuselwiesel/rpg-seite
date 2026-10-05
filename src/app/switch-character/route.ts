@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     .eq("id", characterId)
     .eq("owner_id", user.id)
     .eq("is_npc", false)
+    .is("deleted_at", null)
     .maybeSingle();
 
   const response = NextResponse.redirect(new URL(target, request.url));

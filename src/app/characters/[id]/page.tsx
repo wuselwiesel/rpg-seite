@@ -11,6 +11,7 @@ import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { POST_SELECT, toFeedPost } from "@/lib/feed";
 import { SocialPostCard } from "@/components/social-post-card";
 import { FollowButton } from "@/components/follow-button";
+import { RestoreCharacterButton } from "./restore-character-button";
 import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { firstImageSrc, stripHtml } from "@/lib/strip-html";
@@ -56,6 +57,7 @@ export default async function CharacterProfilePage({
   // Bearbeiten (Profil, ChaBo, Geheimes): Besitzer:in, bei NPCs auch die Welt-Besitzerin
   const canEdit = (await getCharacterAccess(character, user.id)).canEdit;
   const isNpcProfile = character.is_npc === true;
+  const gone = Boolean(character.deleted_at);
   const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
   const [sheet, mentionCharacters, randomLists] = await Promise.all([
     getCharacterSheet(id, canEdit),
@@ -232,7 +234,7 @@ export default async function CharacterProfilePage({
             </div>
 
             <div className="ml-auto hidden gap-2 pb-1 sm:flex">
-              {isActiveProfile ? (
+              {gone ? (canEdit ? <RestoreCharacterButton characterId={character.id} /> : null) : isActiveProfile ? (
                 <Link href={`/characters/${character.id}/edit`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                   Profil bearbeiten
@@ -260,6 +262,7 @@ export default async function CharacterProfilePage({
 
           <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}
             {isNpcProfile && <NpcBadge className="ml-2" />}
+            {gone && <span className="ml-2 text-sm font-normal text-muted">Gelöscht</span>}
             {character.name_symbol && (
               <span className="ml-1.5 inline-block align-middle" >
                 <EmojiText text={character.name_symbol} />
@@ -332,7 +335,7 @@ export default async function CharacterProfilePage({
         </header>
 
         <div className="mt-4 flex gap-2 sm:hidden">
-          {isActiveProfile ? (
+          {gone ? (canEdit ? <RestoreCharacterButton characterId={character.id} /> : null) : isActiveProfile ? (
             <Link href={`/characters/${character.id}/edit`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
               Profil bearbeiten
             </Link>
