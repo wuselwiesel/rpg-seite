@@ -25,7 +25,6 @@ import { JumpToLast } from "./jump-to-last";
 import { ChapterJump } from "./chapter-jump";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
-import { SceneDateToggle } from "@/components/scene-date-toggle";
 import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
@@ -258,13 +257,8 @@ export default async function StoryPostDetailPage({
                 dates={datesFromRow(storyPost)}
                 calendar={calendar}
                 shortSummary={storyPost.short_summary ?? null}
-                canEdit={myCharacterIds.has(storyPost.character_id)}
+                canEdit={myCharacterIds.size > 0 || isWorldOwner}
               />
-              {!myCharacterIds.has(storyPost.character_id) && (myCharacterIds.size > 0 || isWorldOwner) && (
-                <div className="mb-3">
-                  <SceneDateToggle storyPostId={storyPost.id} dates={datesFromRow(storyPost)} calendar={calendar} />
-                </div>
-              )}
             </>
           }
         />
