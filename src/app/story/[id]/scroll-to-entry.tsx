@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
+import { HIGHLIGHT_EVENT, visibleEntryElement } from "@/lib/scene-quote";
 
 const FLASH = "0 0 0 3px var(--accent)";
 
@@ -18,12 +18,12 @@ export function ScrollToEntry() {
       window.clearInterval(timer);
       let tries = 0;
       timer = window.setInterval(() => {
-        const first = document.getElementById(`beitrag-${ids[0]}`);
-        if (first && first.offsetParent !== null) {
+        const first = visibleEntryElement(ids[0]);
+        if (first) {
           window.clearInterval(timer);
           first.scrollIntoView({ block: "center", behavior: "auto" });
           for (const id of ids) {
-            const el = document.getElementById(`beitrag-${id}`);
+            const el = visibleEntryElement(id);
             if (!el) continue;
             el.style.transition = "box-shadow 0.4s";
             el.style.boxShadow = FLASH;

@@ -8,6 +8,7 @@ import { mergeSecrets, normalizeSheet, parseSecrets, stripSecrets, type SheetDat
 import { fetchRandomLists } from "@/lib/random-lists";
 import type { CustomPools } from "@/lib/random-pools";
 import { Chabo } from "./chabo";
+import { highlightEntries } from "@/lib/scene-quote";
 import type { Character } from "@/lib/types";
 
 // Knopf mit seitlichem Fenster: der ChaBo des Charakters, ohne die Szene zu verlassen.
@@ -63,7 +64,17 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
         createPortal(
         <div className="fixed inset-0 z-[60] flex justify-end" role="dialog" aria-modal="true" aria-label={`Charakterbogen ${characterName}`}>
           <button type="button" aria-label="Schließen" onClick={() => setOpen(false)} className="absolute inset-0 bg-black/30" />
-          <aside className="relative flex h-dvh max-h-dvh w-full max-w-md flex-col overflow-y-auto overscroll-contain bg-app p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl sm:p-4 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <aside
+            // Ein Link im Fenster (z. B. „Zur Szene“) schließt es; liegt das Ziel in dieser Szene, wird es gleich hervorgehoben
+            onClick={(e) => {
+              const link = (e.target as HTMLElement).closest("a");
+              if (!link) return;
+              setOpen(false);
+              const url = new URL(link.href, location.href);
+              const ids = (url.searchParams.get("hervor") ?? "").split(",").filter(Boolean);
+              if (url.pathname === location.pathname && ids.length) window.setTimeout(() => highlightEntries(ids), 150);
+            }}
+            className="relative flex h-dvh max-h-dvh w-full max-w-md flex-col overflow-y-auto overscroll-contain bg-app p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl sm:p-4 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <button type="button" onClick={() => setOpen(false)} aria-label="Schließen" className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-muted transition hover:text-fg">
               <X className="h-4 w-4" strokeWidth={2} />
             </button>

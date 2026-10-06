@@ -8,6 +8,7 @@ describe("getAppMode", () => {
     expect(getAppMode("/chats/abc")).toBe("ingame");
     expect(getAppMode("/story")).toBe("story");
     expect(getAppMode("/story/wuerfe")).toBe("story");
+    expect(getAppMode("/ausschnitte/druck")).toBe("story");
     expect(getAppMode("/wiki/graph")).toBe("story");
     expect(getAppMode("/redaktion/verlauf")).toBe("redaktion");
     expect(getAppMode("/characters/relationships")).toBe("story");

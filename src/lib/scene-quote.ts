@@ -19,3 +19,24 @@ export function requestQuote(draft: QuoteDraft) {
 export function highlightEntries(ids: string[]) {
   window.dispatchEvent(new CustomEvent<string[]>(HIGHLIGHT_EVENT, { detail: ids }));
 }
+
+// Next behält beim Seitenwechsel die vorige Ansicht versteckt im Hintergrund (gleiche IDs zweimal): nur sichtbare Nachrichten zählen
+export function visibleEntryElement(entryId: string): HTMLElement | null {
+  const all = document.querySelectorAll<HTMLElement>(`[id="beitrag-${CSS.escape(entryId)}"]`);
+  return Array.from(all).find((el) => el.offsetParent !== null) ?? null;
+}
+
+// IDs aller sichtbaren Nachrichten in Lesereihenfolge
+export function visibleEntryIds(): string[] {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const el of document.querySelectorAll<HTMLElement>('[id^="beitrag-"]')) {
+    if (el.offsetParent === null) continue;
+    const id = el.id.slice("beitrag-".length);
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}

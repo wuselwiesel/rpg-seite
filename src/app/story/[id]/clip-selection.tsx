@@ -6,7 +6,7 @@ import { Bookmark, Check, Quote, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { defaultClipTitle } from "@/lib/clips";
 import { MAX_CLIP_ENTRIES_CLIENT } from "@/lib/clip-limits";
-import { requestQuote } from "@/lib/scene-quote";
+import { requestQuote, visibleEntryElement, visibleEntryIds } from "@/lib/scene-quote";
 import { previewSceneQuote, saveSceneClip } from "@/app/story/clip-actions";
 
 type Ctx = {
@@ -25,10 +25,6 @@ export function useClipSelection() {
 
 const DEFAULT_COLLECTIONS = ["Wichtige Momente", "Erinnerungen", "Geschehnisse"];
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm";
-
-function domOrder(): string[] {
-  return Array.from(document.querySelectorAll<HTMLElement>('[id^="beitrag-"]')).map((el) => el.id.slice("beitrag-".length));
-}
 
 export function ClipSelectionProvider({
   storyPostId,
@@ -69,7 +65,7 @@ export function ClipSelectionProvider({
         return;
       }
       if (id === anchor && selected.length === 1) return cancel();
-      const order = domOrder();
+      const order = visibleEntryIds();
       const a = order.indexOf(anchor);
       const b = order.indexOf(id);
       if (a < 0 || b < 0) {
@@ -92,7 +88,7 @@ export function ClipSelectionProvider({
 
   useEffect(() => {
     if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 2500);
+    const t = window.setTimeout(() => setToast(null), 4500);
     return () => window.clearTimeout(t);
   }, [toast]);
 
@@ -106,6 +102,7 @@ export function ClipSelectionProvider({
     if ("error" in draft) return setQuoteError(draft.error);
     requestQuote(draft);
     cancel();
+    setToast("Zitat liegt im Chat bereit. Dort abschicken.");
   }
 
   return (
@@ -119,33 +116,36 @@ export function ClipSelectionProvider({
         <div
           role="toolbar"
           aria-label="Auswahl"
-          className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-sm items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-2 shadow-lg lg:bottom-6"
+          className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-sm flex-col gap-2 rounded-2xl border border-line bg-surface px-3 py-2.5 shadow-lg lg:bottom-6"
         >
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{selected.length === 1 ? "1 Nachricht" : `${selected.length} Nachrichten`}</span>
-          {quoteError && <span className="truncate text-xs text-red-600 dark:text-red-400">{quoteError}</span>}
-          {canQuote && (
+          <div className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{selected.length === 1 ? "1 Nachricht gewählt" : `${selected.length} Nachrichten gewählt`}</span>
+            {quoteError && <span className="truncate text-xs text-red-600 dark:text-red-400">{quoteError}</span>}
+            <button type="button" onClick={cancel} title="Abbrechen" aria-label="Abbrechen" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
+          <div className="flex gap-2">
+            {canQuote && (
+              <button
+                type="button"
+                onClick={() => void quote()}
+                disabled={saving}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+              >
+                <Quote className="h-3.5 w-3.5" strokeWidth={2} />
+                Im Chat zitieren
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => void quote()}
-              disabled={saving}
-              title="Im Chat zitieren"
-              aria-label="Im Chat zitieren"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+              onClick={() => setDialog(true)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
             >
-              <Quote className="h-4 w-4" strokeWidth={2} />
+              <Bookmark className="h-3.5 w-3.5" strokeWidth={2} />
+              Speichern
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setDialog(true)}
-            className="flex items-center gap-1.5 rounded-full bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
-          >
-            <Bookmark className="h-3.5 w-3.5" strokeWidth={2} />
-            Speichern
-          </button>
-          <button type="button" onClick={cancel} title="Abbrechen" aria-label="Abbrechen" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
-            <X className="h-4 w-4" strokeWidth={2} />
-          </button>
+          </div>
         </div>
       )}
       {dialog && (
@@ -193,7 +193,7 @@ function SaveClipDialog({
   onSaved: (characterCount: number) => void;
 }) {
   const [title, setTitle] = useState(() => {
-    const first = document.querySelector(`#beitrag-${CSS.escape(entryIds[0])} .post-content`)?.textContent ?? "";
+    const first = visibleEntryElement(entryIds[0])?.querySelector(".post-content")?.textContent ?? "";
     return defaultClipTitle([{ html: first }], sceneTitle);
   });
   const [note, setNote] = useState("");

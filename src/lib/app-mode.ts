@@ -27,7 +27,7 @@ export function getAppMode(pathname: string | null, remembered: Exclude<AppMode,
   if (/^\/(story|wiki)(\/|$)/.test(pathname)) return "story";
   if (/^\/characters\/relationships(\/|$)/.test(pathname)) return "story";
   // ChaBo (Charakterbogen) und Hilfe gehören zum Spielen und Schreiben
-  if (/^\/characters\/[^/]+\/chabo(\/|$)/.test(pathname) || /^\/hilfe(\/|$)/.test(pathname)) return "story";
+  if (/^\/characters\/[^/]+\/chabo(\/|$)/.test(pathname) || /^\/(hilfe|ausschnitte)(\/|$)/.test(pathname)) return "story";
   if (isNeutralPath(pathname)) return remembered;
   return "ingame";
 }

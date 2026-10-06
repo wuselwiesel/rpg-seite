@@ -19,6 +19,11 @@ type Row = {
 };
 
 const card = "flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 @xl:p-8 @4xl:gap-4 @4xl:p-6";
+// Symbole oben rechts: mit Maus erst beim Darüberfahren, am Handy erst, wenn der Eintrag angetippt (aufgeklappt) ist
+const REVEAL_C =
+  "absolute right-2 top-2 flex items-center gap-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/c:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:opacity-0 [@media(hover:none)]:group-data-[open]/c:pointer-events-auto [@media(hover:none)]:group-data-[open]/c:opacity-100";
+const REVEAL_K =
+  "absolute right-1.5 top-1.5 flex items-center gap-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/k:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:opacity-0 [@media(hover:none)]:group-data-[open]/k:pointer-events-auto [@media(hover:none)]:group-data-[open]/k:opacity-100";
 const iconBtn = "flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg";
 
 // „Wichtige Momente“ im ChaBo: eigene Sammlungen mit gespeicherten Ausschnitten aus Szenen (privat, nur für die Besitzer:in).
@@ -114,11 +119,18 @@ export function ChaboClips({ characterId }: { characterId: string }) {
       ) : (
         <div className="flex flex-col gap-3">
           {collections.map((c) => (
-            <details key={c.id} className="rounded-xl border border-line px-4 py-3" open={collections.length === 1}>
-              <summary className="cursor-pointer list-none text-sm font-medium text-fg [&::-webkit-details-marker]:hidden">
-                {c.name} <span className="text-xs font-normal text-muted">{c.clips.length}</span>
-              </summary>
-              <div className="mt-2 flex flex-wrap items-center gap-1">
+            <Disclosure
+              key={c.id}
+              group="c"
+              defaultOpen={collections.length === 1}
+              className="rounded-xl border border-line px-4 py-3"
+              head={
+                <span className="text-sm font-medium text-fg">
+                  {c.name} <span className="text-xs font-normal text-muted">{c.clips.length}</span>
+                </span>
+              }
+              actions={
+              <>
                 <a href={`/ausschnitte/export?sammlung=${c.id}`} download title="Als Text speichern" aria-label="Als Text speichern" className={iconBtn}>
                   <Download className="h-4 w-4" strokeWidth={2} />
                 </a>
@@ -148,7 +160,9 @@ export function ChaboClips({ characterId }: { characterId: string }) {
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={2} />
                 </button>
-              </div>
+              </>
+              }
+            >
               {c.clips.length === 0 ? (
                 <p className="mt-2 text-sm text-muted">Noch keine Ausschnitte.</p>
               ) : (
@@ -174,7 +188,7 @@ export function ChaboClips({ characterId }: { characterId: string }) {
                   ))}
                 </ul>
               )}
-            </details>
+            </Disclosure>
           ))}
         </div>
       )}
@@ -184,11 +198,34 @@ export function ChaboClips({ characterId }: { characterId: string }) {
 
 function ClipView({ clip, onRemove, onDelete, onEdit, onShare }: { clip: Clip; onRemove: () => void; onDelete: () => void; onEdit: () => void; onShare: () => void }) {
   return (
-    <details className="rounded-lg bg-surface-2 px-3 py-2">
-      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-        <span className="text-sm font-medium text-fg">{clip.title}</span>
-        {clip.scene_title && <span className="ml-2 text-xs text-muted">{clip.scene_title}</span>}
-      </summary>
+    <Disclosure
+      group="k"
+      className="rounded-lg bg-surface-2 px-3 py-2"
+      head={
+        <>
+          <span className="text-sm font-medium text-fg">{clip.title}</span>
+          {clip.scene_title && <span className="ml-2 text-xs text-muted">{clip.scene_title}</span>}
+        </>
+      }
+      actions={
+        <>
+          {clip.story_post_id && (
+            <button type="button" onClick={onShare} title="Im Chat der Szene teilen" aria-label="Im Chat der Szene teilen" className={iconBtn}>
+              <MessageSquareQuote className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
+          <button type="button" onClick={onEdit} title="Titel und Notiz ändern" aria-label="Titel und Notiz ändern" className={iconBtn}>
+            <Pencil className="h-4 w-4" strokeWidth={2} />
+          </button>
+          <button type="button" onClick={onRemove} title="Aus dieser Sammlung entfernen" aria-label="Aus dieser Sammlung entfernen" className={iconBtn}>
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+          <button type="button" onClick={onDelete} title="Ausschnitt löschen" aria-label="Ausschnitt löschen" className={`${iconBtn} hover:text-red-500`}>
+            <Trash2 className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </>
+      }
+    >
       {clip.note && <p className="mt-2 whitespace-pre-wrap text-sm italic text-fg-soft">{clip.note}</p>}
       <div className="mt-2 flex flex-col gap-2">
         {clip.items.map((item) => (
@@ -200,27 +237,39 @@ function ClipView({ clip, onRemove, onDelete, onEdit, onShare }: { clip: Clip; o
           </div>
         ))}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1">
-        {clip.story_post_id && (
-          <Link href={clipJumpHref(clip.story_post_id, clip.items.map((i) => i.id))} className="rounded-full px-3 py-1 text-sm text-accent transition hover:bg-surface">
-            Zur Szene
-          </Link>
-        )}
-        {clip.story_post_id && (
-          <button type="button" onClick={onShare} title="Im Chat der Szene teilen" aria-label="Im Chat der Szene teilen" className={iconBtn}>
-            <MessageSquareQuote className="h-4 w-4" strokeWidth={2} />
-          </button>
-        )}
-        <button type="button" onClick={onEdit} title="Titel und Notiz ändern" aria-label="Titel und Notiz ändern" className={iconBtn}>
-          <Pencil className="h-4 w-4" strokeWidth={2} />
-        </button>
-        <button type="button" onClick={onRemove} title="Aus dieser Sammlung entfernen" aria-label="Aus dieser Sammlung entfernen" className={iconBtn}>
-          <X className="h-4 w-4" strokeWidth={2} />
-        </button>
-        <button type="button" onClick={onDelete} title="Ausschnitt löschen" aria-label="Ausschnitt löschen" className={`${iconBtn} hover:text-red-500`}>
-          <Trash2 className="h-4 w-4" strokeWidth={2} />
-        </button>
-      </div>
-    </details>
+      {clip.story_post_id && (
+        <Link href={clipJumpHref(clip.story_post_id, clip.items.map((i) => i.id))} className="mt-2 inline-block rounded-full px-3 py-1 text-sm text-accent transition hover:bg-surface">
+          Zur Szene
+        </Link>
+      )}
+    </Disclosure>
+  );
+}
+
+// Auf- und zuklappbarer Eintrag; die Symbole sitzen oben rechts (siehe REVEAL_C/REVEAL_K)
+function Disclosure({
+  group,
+  head,
+  actions,
+  className,
+  defaultOpen = false,
+  children,
+}: {
+  group: "c" | "k";
+  head: React.ReactNode;
+  actions: React.ReactNode;
+  className: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div data-open={open ? "" : undefined} className={`${group === "c" ? "group/c" : "group/k"} relative ${className}`}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className={`block w-full cursor-pointer text-left ${group === "c" ? "pr-32" : "pr-28"}`}>
+        {head}
+      </button>
+      <div className={group === "c" ? REVEAL_C : REVEAL_K}>{actions}</div>
+      {open && children}
+    </div>
   );
 }

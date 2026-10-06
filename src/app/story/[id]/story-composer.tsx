@@ -82,6 +82,8 @@ export function StoryComposer({
     const onQuote = (e: Event) => {
       setQuoteDraft((e as CustomEvent<QuoteDraft>).detail);
       setMode("chat");
+      // Das Eingabefeld des Chats ins Bild holen, damit man das Zitat sieht
+      window.setTimeout(() => document.querySelector('[data-tour="story-composer"]')?.scrollIntoView({ behavior: "smooth", block: "end" }), 120);
     };
     window.addEventListener(QUOTE_EVENT, onQuote);
     return () => window.removeEventListener(QUOTE_EVENT, onQuote);
