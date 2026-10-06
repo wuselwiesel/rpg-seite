@@ -12,6 +12,8 @@ export type Clip = {
   story_post_id: string | null;
   items: ClipItem[];
   created_at: string;
+  // Wiki-Seite („Wichtiger Moment“), die aus diesem Ausschnitt entstanden ist
+  wiki_page_id?: string | null;
 };
 
 // Zitat in einer Chat-Nachricht des Szenen-Chats (Kopie, damit es auch nach Änderungen lesbar bleibt)

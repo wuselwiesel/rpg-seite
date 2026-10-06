@@ -357,7 +357,10 @@ export default function HelpPage() {
             <strong>Speichern:</strong> Gib einen Titel und eine Notiz an, wähle einen oder mehrere deiner Charaktere und eine Sammlung (eine vorhandene oder ein neuer Name wie Erinnerungen, Geschehnisse oder Unfälle). Der Wortlaut wird als Kopie mitgespeichert und bleibt lesbar, auch wenn die Nachrichten später geändert oder gelöscht werden. Nur du siehst deine Ausschnitte.
           </li>
           <li>
-            <strong>Im ChaBo:</strong> Unter „Wichtige Momente“ liegen deine Sammlungen. Du kannst sie anlegen, umbenennen und löschen, Ausschnitte lesen, Titel und Notiz ändern, aus einer Sammlung entfernen oder ganz löschen. „Zur Szene“ springt zurück und hebt die Nachrichten hervor.
+            <strong>Im ChaBo:</strong> Unter „Wichtige Momente“ liegen deine Sammlungen. Du kannst sie anlegen, umbenennen und löschen, Ausschnitte lesen, Titel und Notiz ändern, aus einer Sammlung entfernen oder ganz löschen. Die Symbole erscheinen oben rechts, wenn du mit der Maus darüberfährst oder den Eintrag antippst. Ein Ausschnitt, der in keiner Sammlung mehr liegt, wird gelöscht. „Zur Szene“ springt zurück und hebt die Nachrichten hervor.
+          </li>
+          <li>
+            <strong>Im Wiki für alle:</strong> Beim Speichern „Im Wiki für alle zeigen“ wählen oder später im ChaBo das Wiki-Symbol am Ausschnitt antippen. Es entsteht eine Wiki-Seite der Art „Wichtiger Moment“ mit dem Wortlaut, die alle in der Welt sehen. Das ist eine feste Kopie: Dein privater Ausschnitt bleibt unverändert, spätere Änderungen daran erscheinen nicht im Wiki. Aus geheimen Szenen geht das nicht.
           </li>
           <li>
             <strong>Als Text oder PDF:</strong> Jede Sammlung lässt sich als Textdatei laden oder über die Druckansicht als PDF speichern.

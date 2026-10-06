@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Bookmark, Check, Quote, X } from "lucide-react";
+import { BookOpen, Bookmark, Check, Quote, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { defaultClipTitle } from "@/lib/clips";
 import { MAX_CLIP_ENTRIES_CLIENT } from "@/lib/clip-limits";
@@ -156,9 +156,9 @@ export function ClipSelectionProvider({
           characters={ownCharacters}
           activeCharacterId={activeCharacterId}
           onClose={() => setDialog(false)}
-          onSaved={(count) => {
+          onSaved={(count, wikiNote) => {
             cancel();
-            setToast(count > 1 ? `Gespeichert bei ${count} Charakteren` : "Gespeichert");
+            setToast(wikiNote ?? (count > 1 ? `Gespeichert bei ${count} Charakteren` : "Gespeichert"));
           }}
         />
       )}
@@ -190,7 +190,7 @@ function SaveClipDialog({
   characters: { id: string; name: string }[];
   activeCharacterId: string | null;
   onClose: () => void;
-  onSaved: (characterCount: number) => void;
+  onSaved: (characterCount: number, message?: string) => void;
 }) {
   const [title, setTitle] = useState(() => {
     const first = visibleEntryElement(entryIds[0])?.querySelector(".post-content")?.textContent ?? "";
@@ -203,6 +203,7 @@ function SaveClipDialog({
   });
   const [collection, setCollection] = useState(DEFAULT_COLLECTIONS[0]);
   const [existing, setExisting] = useState<string[]>([]);
+  const [wiki, setWiki] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -232,10 +233,10 @@ function SaveClipDialog({
   async function save() {
     setPending(true);
     setError(null);
-    const result = await saveSceneClip({ storyPostId, entryIds, title, note, characterIds: chosen, collectionName: collection });
+    const result = await saveSceneClip({ storyPostId, entryIds, title, note, characterIds: chosen, collectionName: collection, publishToWiki: wiki });
     setPending(false);
     if ("error" in result) return setError(result.error);
-    onSaved(chosen.length);
+    onSaved(chosen.length, result.wikiError ? `Gespeichert, aber nicht im Wiki: ${result.wikiError}` : wiki ? "Gespeichert und im Wiki für alle" : undefined);
   }
 
   return (
@@ -288,6 +289,15 @@ function SaveClipDialog({
             ))}
           </div>
         </div>
+        <button
+          type="button"
+          aria-pressed={wiki}
+          onClick={() => setWiki((v) => !v)}
+          className={`flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${wiki ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}
+        >
+          <BookOpen className="h-3.5 w-3.5" strokeWidth={2} />
+          Im Wiki für alle zeigen
+        </button>
         {error && (
           <p role="alert" className="text-sm text-red-600 dark:text-red-400">
             {error}

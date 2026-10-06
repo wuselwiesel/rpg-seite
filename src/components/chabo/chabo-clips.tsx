@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Bookmark, Download, FolderPlus, MessageSquareQuote, Pencil, Printer, Trash2, X } from "lucide-react";
+import { BookOpen, Bookmark, Download, FolderPlus, MessageSquareQuote, Pencil, Printer, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { clipJumpHref, type Clip } from "@/lib/clips";
 import { formatDateTime } from "@/lib/format";
-import { createClipCollection, deleteClip, deleteClipCollection, removeClipFromCollection, renameClipCollection, shareClipToSceneChat, updateClip } from "@/app/story/clip-actions";
+import { createClipCollection, deleteClip, publishClipToWiki, deleteClipCollection, removeClipFromCollection, renameClipCollection, shareClipToSceneChat, updateClip } from "@/app/story/clip-actions";
 
 type Collection = { id: string; name: string; clips: Clip[] };
 
@@ -40,7 +40,7 @@ export function ChaboClips({ characterId }: { characterId: string }) {
     let cancelled = false;
     createClient()
       .from("clip_collections")
-      .select("id, name, position, clip_collection_items(position, scene_clips(id, title, note, scene_title, story_post_id, items, created_at))")
+      .select("id, name, position, clip_collection_items(position, scene_clips(id, title, note, scene_title, story_post_id, items, created_at, wiki_page_id))")
       .eq("character_id", characterId)
       .order("position", { ascending: true })
       .returns<Row[]>()
@@ -155,7 +155,7 @@ export function ChaboClips({ characterId }: { characterId: string }) {
                   aria-label="Sammlung löschen"
                   className={`${iconBtn} hover:text-red-500`}
                   onClick={() => {
-                    if (window.confirm(`Sammlung „${c.name}“ löschen? Die Ausschnitte bleiben in anderen Sammlungen erhalten.`)) void run(deleteClipCollection(c.id));
+                    if (window.confirm(`Sammlung „${c.name}“ löschen? Ausschnitte, die in keiner anderen Sammlung liegen, werden mitgelöscht.`)) void run(deleteClipCollection(c.id));
                   }}
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={2} />
@@ -183,6 +183,10 @@ export function ChaboClips({ characterId }: { characterId: string }) {
                           void run(updateClip(clip.id, title, note));
                         }}
                         onShare={() => void run(shareClipToSceneChat(clip.id), "Im Chat der Szene geteilt.")}
+                        onWiki={() => {
+                          if (!window.confirm(`„${clip.title}“ im Wiki für alle in der Welt zeigen?`)) return;
+                          void run(publishClipToWiki(clip.id).then((r) => ("error" in r ? r.error : null)), "Im Wiki für alle gezeigt.");
+                        }}
                       />
                     </li>
                   ))}
@@ -196,7 +200,7 @@ export function ChaboClips({ characterId }: { characterId: string }) {
   );
 }
 
-function ClipView({ clip, onRemove, onDelete, onEdit, onShare }: { clip: Clip; onRemove: () => void; onDelete: () => void; onEdit: () => void; onShare: () => void }) {
+function ClipView({ clip, onRemove, onDelete, onEdit, onShare, onWiki }: { clip: Clip; onRemove: () => void; onDelete: () => void; onEdit: () => void; onShare: () => void; onWiki: () => void }) {
   return (
     <Disclosure
       group="k"
@@ -212,6 +216,11 @@ function ClipView({ clip, onRemove, onDelete, onEdit, onShare }: { clip: Clip; o
           {clip.story_post_id && (
             <button type="button" onClick={onShare} title="Im Chat der Szene teilen" aria-label="Im Chat der Szene teilen" className={iconBtn}>
               <MessageSquareQuote className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
+          {clip.story_post_id && !clip.wiki_page_id && (
+            <button type="button" onClick={onWiki} title="Im Wiki für alle zeigen" aria-label="Im Wiki für alle zeigen" className={iconBtn}>
+              <BookOpen className="h-4 w-4" strokeWidth={2} />
             </button>
           )}
           <button type="button" onClick={onEdit} title="Titel und Notiz ändern" aria-label="Titel und Notiz ändern" className={iconBtn}>
@@ -237,6 +246,11 @@ function ClipView({ clip, onRemove, onDelete, onEdit, onShare }: { clip: Clip; o
           </div>
         ))}
       </div>
+      {clip.wiki_page_id && (
+        <Link href={`/wiki/${clip.wiki_page_id}`} className="mr-1 mt-2 inline-block rounded-full px-3 py-1 text-sm text-accent transition hover:bg-surface">
+          Im Wiki
+        </Link>
+      )}
       {clip.story_post_id && (
         <Link href={clipJumpHref(clip.story_post_id, clip.items.map((i) => i.id))} className="mt-2 inline-block rounded-full px-3 py-1 text-sm text-accent transition hover:bg-surface">
           Zur Szene
