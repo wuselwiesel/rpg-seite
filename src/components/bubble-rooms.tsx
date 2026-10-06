@@ -1,12 +1,14 @@
 "use client";
 
+import { EmojiText } from "./custom-emoji-provider";
 import { SpoilerText } from "./spoiler-text";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, SendHorizontal, X } from "lucide-react";
+import { CornerUpLeft, ImagePlus, SendHorizontal, SmilePlus, X } from "lucide-react";
+import { EmojiPickerDialog } from "./emoji-picker-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { sendMessage } from "@/app/chats/actions";
-import { useAccountChat, type AccountMessage } from "@/lib/use-account-chat";
+import { useAccountChat, type AccountMessage, type AccountReaction } from "@/lib/use-account-chat";
 import { messagePreview } from "@/lib/chat-preview";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
@@ -47,7 +49,12 @@ type ThreadItem = {
   text: string;
   imageUrl?: string | null;
   pending?: boolean;
+  // Antwort auf eine andere Nachricht (Name und Textanfang des Zitats) und Reaktionen (nur Redaktions-Chats)
+  replyTo?: { name: string; text: string } | null;
+  reactions?: { emoji: string; count: number; mine: boolean; names: string }[];
 };
+
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
 type PickedImage = { file: File; previewUrl: string };
 
@@ -58,13 +65,16 @@ function MiniThread({
   onSend,
   onEdit,
   onDelete,
+  onReact,
   typingNames = [],
   onTyping,
 }: {
   items: ThreadItem[];
   error: string | null;
   showNames: boolean;
-  onSend: (text: string, image: PickedImage | null) => Promise<boolean>;
+  // Mit onReact können Nachrichten beantwortet und mit Emojis bedacht werden
+  onReact?: (id: string, emoji: string) => void;
+  onSend: (text: string, image: PickedImage | null, replyToId?: string | null) => Promise<boolean>;
   typingNames?: string[];
   onTyping?: () => void;
   onEdit?: (id: string, text: string) => void;
@@ -76,6 +86,8 @@ function MiniThread({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const image = useImageDraft();
+  const [replyTo, setReplyTo] = useState<ThreadItem | null>(null);
+  const [emojiFor, setEmojiFor] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,10 +98,13 @@ function MiniThread({
     const text = draft;
     if (!text.trim() && !image.pending) return;
     const attached = image.take();
+    const reply = replyTo;
     setDraft("");
-    void onSend(text, attached).then((ok) => {
+    setReplyTo(null);
+    void onSend(text, attached, reply?.id).then((ok) => {
       if (ok) return;
       setDraft((d) => d || text);
+      setReplyTo((r) => r ?? reply);
       if (attached) image.restore(attached);
     });
   }
@@ -151,7 +166,7 @@ function MiniThread({
                 ) : (
                   <div
                     onClick={
-                      m.mine && onEdit && !m.pending
+                      !m.pending && ((m.mine && onEdit) || onReact)
                         ? () => setActiveId(activeId === m.id ? null : m.id)
                         : undefined
                     }
@@ -161,8 +176,14 @@ function MiniThread({
                       m.mine
                         ? "rounded-br-md bg-accent-strong text-on-accent-strong"
                         : "rounded-bl-md bg-surface-2 text-fg"
-                    } ${m.mine && onEdit ? "cursor-pointer" : ""} ${m.pending ? "opacity-60" : ""}`}
+                    } ${(m.mine && onEdit) || onReact ? "cursor-pointer" : ""} ${m.pending ? "opacity-60" : ""}`}
                   >
+                    {m.replyTo && (
+                      <div className={`mb-1 rounded-lg border-l-2 border-current/50 bg-black/10 px-2 py-1 text-xs ${m.imageUrl ? "mx-1 mt-1" : ""}`}>
+                        <span className="block font-semibold">{m.replyTo.name}</span>
+                        <span className="line-clamp-2 opacity-90">{m.replyTo.text}</span>
+                      </div>
+                    )}
                     {m.imageUrl && (
                       <ChatMedia url={m.imageUrl} size="sm" />
                     )}
@@ -173,33 +194,91 @@ function MiniThread({
                     )}
                   </div>
                 )}
-                {m.mine &&
-                  onEdit &&
-                  activeId === m.id &&
-                  editingId !== m.id && (
-                    <div className="mt-0.5 flex gap-3 px-1 text-[11px]">
+                {m.reactions && m.reactions.length > 0 && (
+                  <div className={`mt-0.5 flex flex-wrap gap-1 ${m.mine ? "justify-end" : ""}`}>
+                    {m.reactions.map((r) => (
                       <button
+                        key={r.emoji}
                         type="button"
-                        onClick={() => {
-                          setEditingId(m.id);
-                          setEditDraft(m.text);
-                        }}
-                        className="text-muted hover:text-fg"
+                        title={r.names}
+                        onClick={() => onReact?.(m.id, r.emoji)}
+                        className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] transition ${
+                          r.mine ? "bg-accent-strong/20 text-accent ring-1 ring-accent/40" : "bg-surface-2 text-fg-soft"
+                        }`}
                       >
-                        Bearbeiten
+                        <EmojiText text={r.emoji} />
+                        <span>{r.count}</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          confirm("Diese Nachricht wirklich löschen?") &&
-                          onDelete?.(m.id)
-                        }
-                        className="text-muted hover:text-red-500"
-                      >
-                        Löschen
-                      </button>
-                    </div>
-                  )}
+                    ))}
+                  </div>
+                )}
+                {activeId === m.id && editingId !== m.id && !m.pending && (
+                  <div className="mt-1 flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[11px]">
+                    {onReact && (
+                      <>
+                        <span className="flex items-center gap-0.5">
+                          {QUICK_REACTIONS.map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => {
+                                onReact(m.id, emoji);
+                                setActiveId(null);
+                              }}
+                              className="flex h-6 w-6 items-center justify-center rounded-full text-sm transition hover:bg-surface-2"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setEmojiFor(m.id)}
+                            aria-label="Weitere Reaktionen"
+                            title="Weitere Reaktionen"
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
+                          >
+                            <SmilePlus className="h-3.5 w-3.5" strokeWidth={2} />
+                          </button>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplyTo(m);
+                            setActiveId(null);
+                          }}
+                          className="flex items-center gap-1 text-muted hover:text-fg"
+                        >
+                          <CornerUpLeft className="h-3 w-3" strokeWidth={2} />
+                          Antworten
+                        </button>
+                      </>
+                    )}
+                    {m.mine && onEdit && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingId(m.id);
+                            setEditDraft(m.text);
+                          }}
+                          className="text-muted hover:text-fg"
+                        >
+                          Bearbeiten
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            confirm("Diese Nachricht wirklich löschen?") &&
+                            onDelete?.(m.id)
+                          }
+                          className="text-muted hover:text-red-500"
+                        >
+                          Löschen
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -211,6 +290,17 @@ function MiniThread({
         <p className="px-3 pb-1 text-xs text-red-600 dark:text-red-400">
           {error ?? image.error}
         </p>
+      )}
+      {replyTo && (
+        <div className="mx-2 mb-1 flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-1 text-xs text-fg-soft">
+          <CornerUpLeft className="h-3 w-3 shrink-0" strokeWidth={2} />
+          <span className="min-w-0 flex-1 truncate">
+            Antwort an <b className="font-semibold">{replyTo.mine ? "dich" : replyTo.name || "…"}</b>: {replyTo.text || (replyTo.imageUrl ? "Anhang" : "")}
+          </span>
+          <button type="button" onClick={() => setReplyTo(null)} aria-label="Antwort abbrechen" className="shrink-0 text-muted hover:text-fg">
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        </div>
       )}
       {image.pending && (
         <div className="relative mx-3 mb-2 w-fit">
@@ -270,6 +360,16 @@ function MiniThread({
           <SendHorizontal className="h-4 w-4" strokeWidth={2} />
         </button>
       </form>
+      {emojiFor && onReact && (
+        <EmojiPickerDialog
+          onClose={() => setEmojiFor(null)}
+          onPick={(emoji) => {
+            onReact(emojiFor, emoji);
+            setEmojiFor(null);
+            setActiveId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -278,25 +378,37 @@ function MiniThread({
 
 type AccountMember = { id: string; name: string; avatarUrl: string | null };
 
+// Reaktionen einer Nachricht nach Emoji zusammenfassen (Anzahl, ob man selbst dabei ist, wer reagiert hat)
+function groupReactions(rows: AccountReaction[], userId: string, nameOf: (id: string) => string) {
+  const by = new Map<string, string[]>();
+  for (const r of rows) by.set(r.emoji, [...(by.get(r.emoji) ?? []), r.user_id]);
+  return [...by.entries()].map(([emoji, ids]) => ({ emoji, count: ids.length, mine: ids.includes(userId), names: ids.map(nameOf).join(", ") }));
+}
+
 function AccountThread({
   chatId,
   userId,
   initial,
+  initialReactions,
   members,
 }: {
   chatId: string;
   userId: string;
   initial: AccountMessage[];
+  initialReactions: AccountReaction[];
   members: AccountMember[];
 }) {
   const names = new Map(members.map((m) => [m.id, m]));
   const grouped = members.length > 2;
-  const { messages, error, send, edit, remove } = useAccountChat(
+  const { messages, reactions, error, send, edit, remove, toggleReaction } = useAccountChat(
     chatId,
     userId,
     initial,
     {},
+    undefined,
+    initialReactions,
   );
+  const nameOf = (id: string) => (id === userId ? "Du" : (names.get(id)?.name ?? "Ehemaliges Mitglied"));
   const typing = useTyping(`account-typing-${chatId}`, userId, names.get(userId)?.name ?? "");
   const clearTyping = typing.clear;
   const lastIncomingId = [...messages].reverse().find((m) => m.sender_id !== userId)?.id;
@@ -311,12 +423,22 @@ function AccountThread({
     text: m.content,
     imageUrl: m.image_url,
     pending: m.pending,
+    replyTo: m.reply_to_id
+      ? (() => {
+          const target = messages.find((x) => x.id === m.reply_to_id);
+          return target
+            ? { name: nameOf(target.sender_id), text: target.content.replace(/\s+/g, " ").trim().slice(0, 90) || (target.image_url ? "Anhang" : "") }
+            : { name: "Nachricht", text: "Nicht mehr vorhanden" };
+        })()
+      : null,
+    reactions: groupReactions(reactions.filter((r) => r.message_id === m.id), userId, nameOf),
   }));
   return (
     <MiniThread
       items={items}
       error={error}
       showNames={grouped}
+      onReact={(id, emoji) => void toggleReaction(id, emoji)}
       typingNames={typing.names.length ? (grouped ? [typing.names.filter(Boolean).join(", ")] : [""]) : []}
       onTyping={typing.announce}
       onSend={send}
@@ -334,6 +456,7 @@ export function AccountMiniRoom({
   userId: string;
 }) {
   const [initial, setInitial] = useState<AccountMessage[] | null>(null);
+  const [initialReactions, setInitialReactions] = useState<AccountReaction[] | null>(null);
   const [members, setMembers] = useState<AccountMember[]>([]);
   const themeStyle = useChatThemeStyle("account", chatId, userId);
 
@@ -341,12 +464,20 @@ export function AccountMiniRoom({
     let cancelled = false;
     createClient()
       .from("account_messages")
-      .select("id, sender_id, content, image_url, created_at, updated_at")
+      .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, created_at, updated_at")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: false })
       .limit(60)
       .then(({ data }) => {
         if (!cancelled) setInitial([...(data ?? [])].reverse());
+      });
+    createClient()
+      .from("account_message_reactions")
+      .select("message_id, user_id, emoji, account_messages!inner(chat_id)")
+      .eq("account_messages.chat_id", chatId)
+      .returns<AccountReaction[]>()
+      .then(({ data }) => {
+        if (!cancelled) setInitialReactions((data ?? []).map((r) => ({ message_id: r.message_id, user_id: r.user_id, emoji: r.emoji })));
       });
     createClient()
       .from("account_chat_participants")
@@ -362,11 +493,11 @@ export function AccountMiniRoom({
     };
   }, [chatId]);
 
-  if (!initial)
+  if (!initial || !initialReactions)
     return <p className="p-6 text-center text-xs text-muted">Lädt…</p>;
   return (
     <div style={themeStyle} className="flex min-h-0 flex-1 flex-col text-fg">
-      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} members={members} />
+      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} initialReactions={initialReactions} members={members} />
     </div>
   );
 }
