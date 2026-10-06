@@ -36,11 +36,13 @@ export async function sendAccountMessage(
   // @-Erwähnungen gibt es nur in Gruppen und im Welt-Chat
   const { data: chat } = await supabase
     .from("account_chats")
-    .select("kind, name, worlds(name), account_chat_participants(user_id, profiles(username, nickname))")
+    .select("kind, name, story_post_id, story_posts(title), worlds(name), account_chat_participants(user_id, profiles(username, nickname))")
     .eq("id", chatId)
     .maybeSingle<{
       kind: string;
       name: string | null;
+      story_post_id: string | null;
+      story_posts: { title: string } | null;
       worlds: { name: string } | null;
       account_chat_participants: { user_id: string; profiles: { username: string; nickname: string | null } | null }[];
     }>();
@@ -67,7 +69,9 @@ export async function sendAccountMessage(
     });
   if (error) return error.message;
 
-  const chatTitle = chat?.kind === "world" ? chat.worlds?.name : chat?.name;
+  const chatTitle = chat?.kind === "world" ? chat.worlds?.name : chat?.kind === "scene" ? chat.story_posts?.title : chat?.name;
+  // Der Chat einer Szene öffnet sich in der Szene
+  const chatUrl = chat?.story_post_id ? `/story/${chat.story_post_id}?chat=1` : `/redaktion/chat/${chatId}`;
   after(async () => {
     // Erwähnte bekommen eine eigene Benachrichtigung, auch wenn der Chat stumm ist; alle anderen den normalen Push.
     if (mentioned.length) {
@@ -80,34 +84,33 @@ export async function sendAccountMessage(
             type: "mention",
             actorName: me?.nickname || me?.username || "Jemand",
             actorAvatarUrl: me?.avatar_url ?? null,
-            link: `/redaktion/chat/${chatId}`,
+            link: chatUrl,
             message: chatTitle ? `hat dich in „${chatTitle}“ erwähnt` : "hat dich in einem Chat erwähnt",
           }),
         ),
       );
     }
-    await pushToChatPartners(chatId, user.id, text || (isVideoUrl(imageUrl) ? "Video" : "Foto"), mentioned);
+    await pushToChatPartners(chatId, user.id, text || (isVideoUrl(imageUrl) ? "Video" : "Foto"), mentioned, chatUrl, chatTitle ?? null);
   });
   return null;
 }
 
-async function pushToChatPartners(chatId: string, senderId: string, text: string, skipUserIds: string[] = []) {
+// `chatName`: Gruppen-, Welt- oder Szenenname für den Titel der Meldung; `url`: wohin ein Klick führt
+async function pushToChatPartners(chatId: string, senderId: string, text: string, skipUserIds: string[], url: string, chatName: string | null) {
   const supabase = await createClient();
-  const [{ data: participants }, { data: sender }, { data: chat }] = await Promise.all([
+  const [{ data: participants }, { data: sender }] = await Promise.all([
     supabase.from("account_chat_participants").select("user_id, muted").eq("chat_id", chatId),
     supabase.from("profiles").select("username, nickname").eq("id", senderId).maybeSingle(),
-    supabase.from("account_chats").select("kind, name, worlds(name)").eq("id", chatId).maybeSingle<{ kind: string; name: string | null; worlds: { name: string } | null }>(),
   ]);
   const senderName = sender?.nickname || sender?.username || "Neue Nachricht";
-  const groupName = chat?.kind === "world" ? chat.worlds?.name : chat?.kind === "group" ? chat.name : null;
-  const title = groupName ? `${senderName} · ${groupName}` : senderName;
+  const title = chatName ? `${senderName} · ${chatName}` : senderName;
   await Promise.all(
     (participants ?? [])
       .filter((p) => p.user_id !== senderId && !p.muted && !skipUserIds.includes(p.user_id))
       .map((p) =>
         sendPushToUser(
           p.user_id,
-          { title, body: text.length > 80 ? `${text.slice(0, 80)}…` : text, url: `/redaktion/chat/${chatId}` },
+          { title, body: text.length > 80 ? `${text.slice(0, 80)}…` : text, url },
           { type: "message" },
         ),
       ),

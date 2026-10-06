@@ -35,7 +35,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       .maybeSingle<ChatTheme>(),
     supabase
       .from("account_chats")
-      .select("kind, name, avatar_url, created_by, world_id, worlds(name, cover_image_url)")
+      .select("kind, name, avatar_url, created_by, world_id, story_post_id, worlds(name, cover_image_url)")
       .eq("id", id)
       .maybeSingle<{
         kind: "direct" | "group" | "world";
@@ -43,6 +43,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
         avatar_url: string | null;
         created_by: string;
         world_id: string | null;
+        story_post_id: string | null;
         worlds: { name: string; cover_image_url: string | null } | null;
       }>(),
     supabase
@@ -53,6 +54,8 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
   ]);
   const me = participants?.find((p) => p.user_id === user.id);
   if (!me) notFound();
+  // Der Chat einer Szene gehört in die Szene
+  if (chat?.story_post_id) redirect(`/story/${chat.story_post_id}?chat=1`);
   const kind = chat?.kind ?? "direct";
   const partner = kind === "direct" ? participants?.find((p) => p.user_id !== user.id) : undefined;
   const members = (participants ?? []).map((p) => ({

@@ -16,6 +16,17 @@ export const BUBBLE_CHANGE_EVENT = "wortwinkel:chat-bubble-change";
 const POS_KEY = "wortwinkel:chat-bubble-pos";
 const CHARACTER_KEY = "wortwinkel:chat-bubble-character";
 const SIZE = 56;
+const SCENE_PATH = /^\/story\/[0-9a-f-]{36}\/?$/i;
+
+function subscribeSmallScreen(onChange: () => void) {
+  const query = window.matchMedia("(max-width: 767px)");
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+function isSmallScreen() {
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
 const HIDDEN_PATHS = /^\/(?:chats|redaktion\/chat|login|signup)(?:\/|$)/;
 
 type Pos = { side: "left" | "right"; y: number };
@@ -51,7 +62,10 @@ export function ChatBubble(props: {
     () => false,
   );
   const pathname = usePathname();
+  // Am Handy verdeckt die Blase die Eingabe in einer Szene; dort gibt es den Reiter „Chat“ direkt in der Szene
+  const smallScreen = useSyncExternalStore(subscribeSmallScreen, isSmallScreen, () => false);
   if (!mounted || !enabled || HIDDEN_PATHS.test(pathname ?? "")) return null;
+  if (smallScreen && SCENE_PATH.test(pathname ?? "")) return null;
   return <BubbleInner {...props} pathname={pathname ?? ""} />;
 }
 

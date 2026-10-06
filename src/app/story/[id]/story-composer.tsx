@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BookMarked, CircleHelp, Feather, Type } from "lucide-react";
+import { SceneChatPanel } from "./scene-chat";
 import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
@@ -24,6 +25,8 @@ export function StoryComposer({
   calendar,
   locations,
   sceneLocation,
+  userId,
+  startInChat = false,
 }: {
   storyPostId: string;
   worldId: string;
@@ -36,6 +39,9 @@ export function StoryComposer({
   calendar: WikiCalendar;
   locations: string[];
   sceneLocation: string | null;
+  // Eigenes Konto (für den Chat dieser Szene) und ob der Reiter „Chat“ gleich offen sein soll (Link aus einer Benachrichtigung)
+  userId: string;
+  startInChat?: boolean;
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
 
@@ -65,7 +71,52 @@ export function StoryComposer({
   }
   const writer = ownCharacters.find((c) => c.id === writerId) ?? ownCharacters[0] ?? null;
   const others = characters.filter((c) => c.id !== writerId);
-  const [mode, setMode] = useState<"write" | "roll">("write");
+  const [mode, setMode] = useState<"write" | "roll" | "chat">(startInChat ? "chat" : "write");
+  // Chat dieser Szene: erst bekannt, wenn man dabei ist; ungelesene Nachrichten als Punkt am Reiter
+  const [sceneChatId, setSceneChatId] = useState<string | null>(null);
+  const [chatUnread, setChatUnread] = useState(0);
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- beim Öffnen des Reiters gilt alles als gelesen
+    if (mode === "chat") setChatUnread(0);
+  }, [mode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    (async () => {
+      const { data: chat } = await supabase.from("account_chats").select("id").eq("kind", "scene").eq("story_post_id", storyPostId).maybeSingle();
+      if (cancelled || !chat) return;
+      setSceneChatId(chat.id);
+      const { data: mine } = await supabase.from("account_chat_participants").select("last_read_at").eq("chat_id", chat.id).eq("user_id", userId).maybeSingle();
+      const { count } = await supabase
+        .from("account_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("chat_id", chat.id)
+        .neq("sender_id", userId)
+        .gt("created_at", mine?.last_read_at ?? "1970-01-01T00:00:00Z");
+      if (!cancelled && modeRef.current !== "chat") setChatUnread(count ?? 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [storyPostId, userId]);
+
+  useEffect(() => {
+    if (!sceneChatId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`scene-chat-unread-${sceneChatId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "account_messages", filter: `chat_id=eq.${sceneChatId}` }, (payload) => {
+        const row = payload.new as { sender_id: string };
+        if (row.sender_id !== userId && modeRef.current !== "chat") setChatUnread((n) => n + 1);
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [sceneChatId, userId]);
   const [showToolbar, setShowToolbar] = useState(false);
   const [narrator, setNarrator] = useState(false);
   const [showChapter, setShowChapter] = useState(false);
@@ -167,6 +218,18 @@ export function StoryComposer({
           >
             Würfeln
           </button>
+          <button
+            type="button"
+            onClick={() => setMode("chat")}
+            className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              mode === "chat" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
+            }`}
+          >
+            Chat
+            {chatUnread > 0 && mode !== "chat" && (
+              <span aria-label={`${chatUnread} neue Nachrichten`} className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-accent-strong" />
+            )}
+          </button>
         </div>
         <div className="flex items-center gap-0.5">
           {mode === "roll" && (
@@ -174,7 +237,7 @@ export function StoryComposer({
               <CircleHelp className="h-4 w-4" strokeWidth={2} />
             </Link>
           )}
-          {writer && <ChaboDrawer characterId={writer.id} characterName={writer.name} mentionCharacters={[...ownCharacters, ...characters.filter((c) => !ownCharacters.some((o) => o.id === c.id))]} />}
+          {mode !== "chat" && writer && <ChaboDrawer characterId={writer.id} characterName={writer.name} mentionCharacters={[...ownCharacters, ...characters.filter((c) => !ownCharacters.some((o) => o.id === c.id))]} />}
           {mode === "write" && (
             <>
               <button
@@ -214,7 +277,9 @@ export function StoryComposer({
         </div>
       </div>
 
-      {(mode === "roll" || !narrator) && (
+      {mode === "chat" && <SceneChatPanel storyPostId={storyPostId} userId={userId} onOpened={setSceneChatId} />}
+
+      {mode !== "chat" && (mode === "roll" || !narrator) && (
         <WriterSelect shortcuts characters={ownCharacters} value={writerId} onChange={changeWriter} />
       )}
       {mode === "write" && narrator && (
@@ -227,7 +292,7 @@ export function StoryComposer({
         <NextSceneForm storyPostId={storyPostId} writerId={writerId} calendar={calendar} locations={locations} location={sceneLocation} onDone={() => setShowChapter(false)} />
       )}
 
-      {Object.keys(typing).length > 0 && (
+      {mode !== "chat" && Object.keys(typing).length > 0 && (
         <div className="-mt-1 flex items-center gap-2 text-xs text-muted" role="status">
           <span className="flex gap-0.5">
             <span className="typing-dot" />
@@ -241,10 +306,10 @@ export function StoryComposer({
         </div>
       )}
 
-      <StatusList others={presence.others} hideIds={Object.keys(typing)} />
-      <StatusPicker presence={presence} />
+      {mode !== "chat" && <StatusList others={presence.others} hideIds={Object.keys(typing)} />}
+      {mode !== "chat" && <StatusPicker presence={presence} />}
 
-      {mode === "write" ? (
+      {mode === "chat" ? null : mode === "write" ? (
         <StoryEntryForm
           storyPostId={storyPostId}
           worldId={worldId}

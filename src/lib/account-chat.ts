@@ -25,7 +25,7 @@ type Row = {
   account_chats: {
     id: string;
     created_at: string;
-    kind: AccountChatKind;
+    kind: AccountChatKind | "scene";
     name: string | null;
     avatar_url: string | null;
     worlds: { name: string; cover_image_url: string | null } | null;
@@ -61,10 +61,12 @@ export async function getAccountChats(userId: string): Promise<AccountChatSummar
     }
   }
 
+  // Szenen-Chats leben nur in ihrer Szene (Reiter „Chat“), nicht in der Chatliste oder der Blase
   return rows
+    .filter((r) => r.account_chats?.kind !== "scene")
     .map((r): AccountChatSummary => {
       const chat = r.account_chats;
-      const kind = chat?.kind ?? "direct";
+      const kind = (chat?.kind ?? "direct") as AccountChatKind;
       const partner = kind === "direct" ? (chat?.account_chat_participants.find((p) => p.user_id !== userId)?.profiles ?? null) : null;
       const lastMessage = last.get(r.chat_id) ?? null;
       const title =

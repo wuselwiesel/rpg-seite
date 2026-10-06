@@ -38,7 +38,7 @@ export default async function StoryPostDetailPage({
   searchParams,
 }: PageProps<"/story/[id]">) {
   const { id } = await params;
-  const { as: asCharacterId, ziel, zusammenfassung } = await searchParams;
+  const { as: asCharacterId, ziel, zusammenfassung, chat: chatParam } = await searchParams;
   // Aus einer Benachrichtigung ("… wartet auf dich"): direkt zum letzten Beitrag springen.
   const jumpToLast = ziel === "ende" || typeof asCharacterId === "string";
   const supabase = await createClient();
@@ -418,6 +418,8 @@ export default async function StoryPostDetailPage({
             calendar={calendar}
             locations={locations}
             sceneLocation={storyPost.location}
+            userId={user.id}
+            startInChat={chatParam === "1"}
           />
         </div>
       )}
