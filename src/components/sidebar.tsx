@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { CircleHelp, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
@@ -58,6 +58,13 @@ export async function Sidebar() {
             <Link href="/profile" className="text-sm text-muted hover:text-fg">
               Profil
             </Link>
+            <Link
+          href="/hilfe"
+          className="inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg"
+        >
+          <CircleHelp className="h-3.5 w-3.5" strokeWidth={2} />
+          Hilfe
+        </Link>
           </div>
         </aside>
         <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-app px-4 py-2.5 print:hidden lg:hidden">
@@ -133,6 +140,15 @@ export async function Sidebar() {
         unreadCounts={unreadCounts}
         activeCharacter={activeCharacter}
       />
+      </div>
+      <div className="mt-2 shrink-0">
+        <Link
+          href="/hilfe"
+          className="inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg"
+        >
+          <CircleHelp className="h-3.5 w-3.5" strokeWidth={2} />
+          Hilfe
+        </Link>
       </div>
     </aside>
     <MobileNav

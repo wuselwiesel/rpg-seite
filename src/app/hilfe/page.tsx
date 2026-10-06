@@ -32,7 +32,17 @@ const TOC = [
   ["bogen", "Den ChaBo bearbeiten und speichern"],
   ["zufall", "Zufall und NPCs"],
   ["uebersicht", "Welches Talent braucht welche Attribute?"],
+  ["kuerzel", "Tastenkürzel und Schreibhilfen"],
 ] as const;
+
+// Tastenkürzel: links Windows/Linux, rechts Mac
+const SHORTCUTS: { keys: [string, string]; what: string }[] = [
+  { keys: ["Strg + K", "⌘ K"], what: "Charakter suchen und wechseln (beim Schreiben in der Story)" },
+  { keys: ["Alt + 0", "⌥ 0"], what: "Zurück zum Charakter, mit dem du davor geschrieben hast" },
+  { keys: ["Alt + ,", "⌥ ,"], what: "Vorheriger Charakter" },
+  { keys: ["Alt + .", "⌥ ."], what: "Nächster Charakter" },
+  { keys: ["Strg + Alt + ↑ / ↓", "⌃ ⌥ ↑ / ↓  oder  ⌘ ⌥ ↑ / ↓"], what: "Vorheriger / nächster Charakter (zusätzliche Variante)" },
+];
 
 const h2 = "font-serif text-2xl text-fg";
 const p = "text-fg-soft";
@@ -292,6 +302,50 @@ export default function HelpPage() {
             ))}
           </ul>
         </div>
+      </Section>
+
+      <Section id="kuerzel" title="12. Tastenkürzel und Schreibhilfen">
+        <div className="overflow-hidden rounded-xl border border-line">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-surface-2 text-xs text-muted">
+              <tr>
+                <th className="px-3 py-2 font-medium">Windows / Linux</th>
+                <th className="px-3 py-2 font-medium">Mac</th>
+                <th className="px-3 py-2 font-medium">Wirkung</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SHORTCUTS.map((s) => (
+                <tr key={s.what} className="border-t border-line align-top">
+                  <td className="px-3 py-2">
+                    <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-sans text-xs text-fg">{s.keys[0]}</kbd>
+                  </td>
+                  <td className="px-3 py-2">
+                    <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-sans text-xs text-fg">{s.keys[1]}</kbd>
+                  </td>
+                  <td className="px-3 py-2 text-fg-soft">{s.what}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className={p}>Im Menü „Du schreibst als“ stehen die zuletzt benutzten Charaktere oben, und es gibt dort eine Suche.</p>
+
+        <h3 className="mt-2 font-medium text-fg">Schreibhilfen</h3>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
+          <li>
+            <strong>@Name</strong> erwähnt einen Charakter. Der Name im Text ist anklickbar und führt zum Profil (Strg bzw. ⌘ halten öffnet einen neuen Tab). In Gruppen und im Welt-Chat der Redaktion erwähnst du mit <strong>@Benutzername</strong> ein Konto, das auch bei stummem Chat eine Meldung bekommt.
+          </li>
+          <li>
+            <strong>Spoiler im Text:</strong> Text markieren und auf das durchgestrichene Auge klicken. Er bleibt verwischt, bis jemand ihn anklickt. Im Chat setzt du zwei senkrechte Striche um den Text: <code className="rounded bg-surface-2 px-1">||Text||</code>.
+          </li>
+          <li>
+            <strong>Ganze Szene oder Nachricht als Spoiler:</strong> Schild-Symbol in den Werkzeugen der Szene bzw. an der Nachricht.
+          </li>
+          <li>
+            <strong>Chat nur für eine Szene:</strong> Reiter „Chat“ neben Schreiben und Würfeln. Dort sprecht ihr als Spielende miteinander, nicht als Charaktere.
+          </li>
+        </ul>
       </Section>
     </div>
   );
