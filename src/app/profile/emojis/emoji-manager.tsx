@@ -8,15 +8,11 @@ import { deleteCustomEmoji } from "./actions";
 type EmojiRow = { id: string; name: string; image_url: string; created_by: string };
 
 export function EmojiManager({
-  worldName,
   emojis,
   currentUserId,
-  isWorldOwner,
 }: {
-  worldName: string;
   emojis: EmojiRow[];
   currentUserId: string;
-  isWorldOwner: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -29,11 +25,11 @@ export function EmojiManager({
 
   return (
     <div className="flex flex-col gap-6">
-      <EmojiUploadForm title={`Neues Emoji für „${worldName}“`} onDone={() => window.location.reload()} />
+      <EmojiUploadForm title="Neues Emoji" onDone={() => window.location.reload()} />
 
       <div>
         {error && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
-        <p className="mb-2 text-sm font-medium text-fg">Emojis dieser Welt ({emojis.length})</p>
+        <p className="mb-2 text-sm font-medium text-fg">Alle Emojis ({emojis.length})</p>
         {emojis.length === 0 ? (
           <p className="text-sm text-muted">Noch keine eigenen Emojis. Schreib später :name: in Beiträge, Kommentare und Chats.</p>
         ) : (
@@ -43,7 +39,7 @@ export function EmojiManager({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={e.image_url} alt={`:${e.name}:`} className="h-8 w-8 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1 truncate text-sm text-fg">:{e.name}:</span>
-                {(e.created_by === currentUserId || isWorldOwner) && (
+                {e.created_by === currentUserId && (
                   <button
                     type="button"
                     onClick={() => remove(e.id)}

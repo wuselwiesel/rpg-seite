@@ -2,10 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveWorld } from "@/lib/worlds";
 import { EMOJI_NAME } from "@/lib/custom-emoji";
 
-const MAX_EMOJIS_PER_WORLD = 100;
+const MAX_EMOJIS_PER_ACCOUNT = 300;
 
 export async function createCustomEmoji(name: string, imageUrl: string): Promise<string | null> {
   const clean = name.trim().toLowerCase();
@@ -18,19 +17,15 @@ export async function createCustomEmoji(name: string, imageUrl: string): Promise
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const world = await getActiveWorld(user.id);
-  if (!world) return "Wähle zuerst eine Welt.";
-
   const { count } = await supabase
     .from("custom_emojis")
     .select("id", { count: "exact", head: true })
-    .eq("world_id", world.id);
-  if ((count ?? 0) >= MAX_EMOJIS_PER_WORLD) return `Pro Welt sind höchstens ${MAX_EMOJIS_PER_WORLD} Emojis möglich.`;
+    .eq("created_by", user.id);
+  if ((count ?? 0) >= MAX_EMOJIS_PER_ACCOUNT) return `Du kannst höchstens ${MAX_EMOJIS_PER_ACCOUNT} Emojis hochladen.`;
 
-  const { error } = await supabase
-    .from("custom_emojis")
-    .insert({ world_id: world.id, name: clean, image_url: imageUrl, created_by: user.id });
-  if (error) return error.code === "23505" ? `:${clean}: gibt es in dieser Welt schon.` : error.message;
+  // Emojis gelten in allen Welten, deshalb ohne Welt (world_id bleibt leer)
+  const { error } = await supabase.from("custom_emojis").insert({ name: clean, image_url: imageUrl, created_by: user.id });
+  if (error) return error.code === "23505" ? `:${clean}: gibt es schon. Wähle einen anderen Namen.` : error.message;
 
   revalidatePath("/", "layout");
   return null;

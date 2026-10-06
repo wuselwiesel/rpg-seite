@@ -231,7 +231,7 @@ export function EmojiUploadForm({
               </button>
             )}
           </div>
-          <p className="text-xs text-muted">PNG, GIF oder WebP, auch animiert. Standbilder bis 256 KB, animierte bis 1 MB.</p>
+          <p className="text-xs text-muted">PNG, GIF oder WebP, auch animiert. Standbilder bis 256 KB, animierte bis 5 MB.</p>
           <input
             ref={fileRef}
             type="file"
