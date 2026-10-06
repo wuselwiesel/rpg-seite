@@ -33,7 +33,7 @@ export function WriterSelect({
   onChange: (id: string) => void;
   label?: string;
   // Tastenkürzel (Mac: ⌥ statt Alt, ⌘ statt Strg):
-  // Alt+0 = der davor Benutzte, Strg+K = Schnellsuche, Strg+Alt+↑/↓ (Mac auch ⌘⌥↑/↓) = vorheriger/nächster Charakter
+  // Alt+0 = der davor Benutzte, Strg+K = Schnellsuche, Alt+, / Alt+. = vorheriger/nächster Charakter (zusätzlich Strg+Alt+↑/↓)
   shortcuts?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -83,9 +83,12 @@ export function WriterSelect({
         setQuickOpen(true);
         return;
       }
-      // Strg+Alt+↑/↓ (Mac: ⌃⌥↑/↓ oder ⌘⌥↑/↓): durch die Charaktere schalten
-      if ((e.ctrlKey || e.metaKey) && e.altKey && !(e.ctrlKey && e.metaKey) && !e.shiftKey && (e.code === "ArrowUp" || e.code === "ArrowDown")) {
-        const target = cycleId(fixedOrder.map((c) => c.id), selected?.id, e.code === "ArrowDown" ? 1 : -1);
+      // Alt+, (zurück) und Alt+. (weiter): durch die Charaktere schalten; zusätzlich Strg+Alt+↑/↓ (Mac: ⌃⌥ oder ⌘⌥)
+      const arrow = (e.ctrlKey || e.metaKey) && e.altKey && !(e.ctrlKey && e.metaKey) && !e.shiftKey && (e.code === "ArrowUp" || e.code === "ArrowDown");
+      const comma = e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.code === "Comma" || e.code === "Period");
+      if (arrow || comma) {
+        const forward = e.code === "ArrowDown" || e.code === "Period";
+        const target = cycleId(fixedOrder.map((c) => c.id), selected?.id, forward ? 1 : -1);
         if (target && target !== selected?.id) {
           e.preventDefault();
           pick(target);
