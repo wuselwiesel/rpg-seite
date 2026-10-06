@@ -265,7 +265,7 @@ function Disclosure({
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div data-open={open ? "" : undefined} className={`${group === "c" ? "group/c" : "group/k"} relative ${className}`}>
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className={`block w-full cursor-pointer text-left ${group === "c" ? "pr-32" : "pr-28"}`}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className={`block w-full cursor-pointer text-left pr-36`}>
         {head}
       </button>
       <div className={group === "c" ? REVEAL_C : REVEAL_K}>{actions}</div>
