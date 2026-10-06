@@ -874,6 +874,18 @@ body {
   font-weight: 500;
 }
 
+/* Erwähnte Charaktere sind anklickbar (siehe mention-links.tsx); im Editor bleibt der Cursor ein Textcursor */
+span[data-type="mention"][data-id] {
+  cursor: pointer;
+}
+span[data-type="mention"][data-id]:hover {
+  text-decoration: underline;
+}
+.ProseMirror span[data-type="mention"][data-id] {
+  cursor: text;
+  text-decoration: none;
+}
+
 /* Doppeltipp-Like: großes Herz poppt auf und verschwindet */
 @keyframes heart-pop {
   0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }

@@ -36,6 +36,7 @@ import { MODE_COOKIE, parseRememberedMode } from "@/lib/app-mode";
 import { cookies } from "next/headers";
 import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
 import { SpoilerReveal } from "@/components/spoiler-reveal";
+import { MentionLinks } from "@/components/mention-links";
 import { AppLogoSync } from "@/components/app-logo-sync";
 import { SelectionCookieKeeper } from "@/components/selection-cookie-keeper";
 import { ThemeColorSync } from "@/components/theme-color-sync";
@@ -188,6 +189,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </AppFrame>
             <ChatBubbleLoader />
             <SpoilerReveal />
+            <MentionLinks />
           </CustomEmojiProvider>
         </OnlineProvider>
         </ModeProvider>

@@ -229,9 +229,9 @@ export function MessageBubble({
                 <p className="whitespace-pre-line text-[15px] leading-relaxed">
                   {parseMentions(message.content).map((seg, i) =>
                     seg.type === "mention" ? (
-                      <span key={i} className="rounded bg-black/10 px-1 font-semibold">
+                      <Link key={i} href={`/characters/${seg.characterId}`} className="rounded bg-black/10 px-1 font-semibold hover:underline">
                         @{seg.name}
-                      </span>
+                      </Link>
                     ) : (
                       <SpoilerText key={i} text={seg.value} />
                     ),
