@@ -19,6 +19,7 @@ import type { StoryEntry, StoryPost } from "@/lib/types";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { EntryList } from "./entry-list";
+import { ClipSelectionProvider } from "./clip-selection";
 import { ScrollToLast } from "./scroll-to-last";
 import { ScrollToEntry } from "./scroll-to-entry";
 import { JumpToLast } from "./jump-to-last";
@@ -322,6 +323,13 @@ export default async function StoryPostDetailPage({
         </nav>
       )}
 
+      <ClipSelectionProvider
+        storyPostId={storyPost.id}
+        sceneTitle={storyPost.title}
+        ownCharacters={ownCharacters.map((c) => ({ id: c.id, name: c.name }))}
+        activeCharacterId={activeCharacter?.id ?? null}
+        canQuote={!storyPost.locked}
+      >
       <ScrollToLast enabled={jumpToLast} />
       <ScrollToEntry />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -423,6 +431,7 @@ export default async function StoryPostDetailPage({
           />
         </div>
       )}
+      </ClipSelectionProvider>
     </div>
     </div>
   );

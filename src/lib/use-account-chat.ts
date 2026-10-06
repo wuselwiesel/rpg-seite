@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatImage } from "@/lib/chat-image";
+import type { ChatQuote } from "@/lib/clips";
+import type { QuoteDraft } from "@/lib/scene-quote";
 import { deleteAccountMessage, sendAccountMessage, setAccountMessagePin, updateAccountMessage } from "@/app/redaktion/chat/actions";
 
 export type AccountMessage = {
@@ -13,6 +15,7 @@ export type AccountMessage = {
   reply_to_id?: string | null;
   pinned_at?: string | null;
   mentioned_user_ids?: string[];
+  quote?: ChatQuote | null;
   created_at: string;
   updated_at?: string | null;
   pending?: boolean;
@@ -114,14 +117,14 @@ export function useAccountChat(
   }, [chatId, userId, markRead]);
 
   // Mit `image` wird das Bild zuerst hochgeladen; bis dahin zeigt die Nachricht die lokale Vorschau.
-  async function send(content: string, image?: { file: File; previewUrl: string } | null, replyToId?: string | null): Promise<boolean> {
+  async function send(content: string, image?: { file: File; previewUrl: string } | null, replyToId?: string | null, quoteDraft?: QuoteDraft | null): Promise<boolean> {
     const text = content.trim();
-    if (!text && !image) return false;
+    if (!text && !image && !quoteDraft) return false;
     const id = crypto.randomUUID();
     setError(null);
     setMessages((prev) => [
       ...prev,
-      { id, sender_id: userId, content: text, image_url: image?.previewUrl ?? null, reply_to_id: replyToId ?? null, created_at: new Date().toISOString(), pending: true },
+      { id, sender_id: userId, content: text, image_url: image?.previewUrl ?? null, reply_to_id: replyToId ?? null, quote: quoteDraft?.quote ?? null, created_at: new Date().toISOString(), pending: true },
     ]);
     const fail = (message: string) => {
       setMessages((prev) => prev.filter((m) => m.id !== id));
@@ -134,7 +137,7 @@ export function useAccountChat(
       if ("error" in uploaded) return fail(uploaded.error);
       imageUrl = uploaded.url;
     }
-    const err = await sendAccountMessage(chatId, text, id, imageUrl, replyToId);
+    const err = await sendAccountMessage(chatId, text, id, imageUrl, replyToId, quoteDraft?.source ?? null);
     if (err) return fail(err);
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pending: false, image_url: imageUrl ?? m.image_url } : m)));
     if (image) URL.revokeObjectURL(image.previewUrl);

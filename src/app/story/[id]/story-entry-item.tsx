@@ -3,7 +3,8 @@
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
-import { Clover, Dices, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
+import { Bookmark, Clover, Dices, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
+import { useClipSelection } from "./clip-selection";
 import { MarkEventForm } from "./mark-event-form";
 import { unmarkEvent } from "@/app/wiki/actions";
 import { useRouter } from "next/navigation";
@@ -79,6 +80,8 @@ export function StoryEntryItem({
     document.addEventListener("pointerdown", outside);
     return () => document.removeEventListener("pointerdown", outside);
   }, [tapped]);
+  const clipSelection = useClipSelection();
+  const selectedForClip = !!clipSelection?.isSelected(entry.id);
   const [chapterEditing, setChapterEditing] = useState(false);
   const [splitting, setSplitting] = useState(false);
 
@@ -219,11 +222,16 @@ export function StoryEntryItem({
         ref={cardRef}
         data-tapped={tapped ? "" : undefined}
         onClick={(e) => {
+          // Läuft gerade eine Auswahl, wählt ein Klick auf die Nachricht (Links und Knöpfe darin bleiben unberührt)
+          if (clipSelection?.picking && !(e.target as HTMLElement).closest("a, button, input, textarea, select, form, [contenteditable]")) {
+            clipSelection.pick(entry.id);
+            return;
+          }
           if (!window.matchMedia("(hover: none)").matches) return;
           if ((e.target as HTMLElement).closest("a, button, input, textarea, select, form, [contenteditable]")) return;
           setTapped((v) => !v);
         }}
-        className={`group flex-1 scroll-mt-24 rounded-lg border bg-surface px-4 py-2 ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}
+        className={`group flex-1 scroll-mt-24 rounded-lg border bg-surface px-4 py-2 ${selectedForClip ? "ring-2 ring-accent" : ""} ${clipSelection?.picking ? "cursor-pointer select-none" : ""} ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}
       >
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
@@ -233,8 +241,20 @@ export function StoryEntryItem({
               {entry.updated_at && " · bearbeitet"}
             </p>
           </div>
-          {(canManage || canMark) && !editing && (
+          {!editing && (
             <div className="flex shrink-0 items-center gap-1">
+              {clipSelection && (
+                <button
+                  type="button"
+                  onClick={() => clipSelection.pick(entry.id)}
+                  title="Als Ausschnitt wählen"
+                  aria-label="Als Ausschnitt wählen"
+                  aria-pressed={selectedForClip}
+                  className={`rounded p-1 transition hover:bg-surface-2 ${selectedForClip ? "text-accent" : `text-muted hover:text-fg ${clipSelection.picking ? "" : REVEAL}`}`}
+                >
+                  <Bookmark className={`h-3.5 w-3.5 ${selectedForClip ? "fill-current" : ""}`} strokeWidth={2} />
+                </button>
+              )}
               {canMark && calendar &&
                 (markedEvent ? (
                   <>

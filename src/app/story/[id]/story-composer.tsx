@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BookMarked, CircleHelp, Feather, Type } from "lucide-react";
 import { SceneChatPanel } from "./scene-chat";
+import { QUOTE_EVENT, type QuoteDraft } from "@/lib/scene-quote";
 import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
@@ -75,6 +76,16 @@ export function StoryComposer({
   // Chat dieser Szene: erst bekannt, wenn man dabei ist; ungelesene Nachrichten als Punkt am Reiter
   const [sceneChatId, setSceneChatId] = useState<string | null>(null);
   const [chatUnread, setChatUnread] = useState(0);
+  // Zitat aus der Szene (markierte Nachrichten oder ein Ausschnitt) für die nächste Chat-Nachricht
+  const [quoteDraft, setQuoteDraft] = useState<QuoteDraft | null>(null);
+  useEffect(() => {
+    const onQuote = (e: Event) => {
+      setQuoteDraft((e as CustomEvent<QuoteDraft>).detail);
+      setMode("chat");
+    };
+    window.addEventListener(QUOTE_EVENT, onQuote);
+    return () => window.removeEventListener(QUOTE_EVENT, onQuote);
+  }, []);
   const modeRef = useRef(mode);
   useEffect(() => {
     modeRef.current = mode;
@@ -277,7 +288,7 @@ export function StoryComposer({
         </div>
       </div>
 
-      {mode === "chat" && <SceneChatPanel storyPostId={storyPostId} userId={userId} onOpened={setSceneChatId} />}
+      {mode === "chat" && <SceneChatPanel storyPostId={storyPostId} userId={userId} onOpened={setSceneChatId} quoteDraft={quoteDraft} onQuoteChange={setQuoteDraft} />}
 
       {mode !== "chat" && (mode === "roll" || !narrator) && (
         <WriterSelect shortcuts characters={ownCharacters} value={writerId} onChange={changeWriter} />

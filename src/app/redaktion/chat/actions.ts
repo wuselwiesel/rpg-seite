@@ -9,6 +9,8 @@ import { sendPushToUser } from "@/lib/push";
 import { isVideoUrl } from "@/lib/chat-media-url";
 import { createNotification } from "@/lib/notifications";
 import { findMentionedMembers } from "@/lib/account-mentions";
+import { buildQuote } from "@/lib/clip-server";
+import type { QuoteSource } from "@/lib/scene-quote";
 
 export async function sendAccountMessage(
   chatId: string,
@@ -16,9 +18,11 @@ export async function sendAccountMessage(
   id?: string,
   imageUrl?: string | null,
   replyToId?: string | null,
+  // Zitat aus der Szene (nur im Chat einer Szene): der Server baut die Kopie des Wortlauts selbst
+  quoteSource?: QuoteSource | null,
 ): Promise<string | null> {
   const text = content.trim().slice(0, 4000);
-  if (!text && !imageUrl) return "Nachricht darf nicht leer sein.";
+  if (!text && !imageUrl && !quoteSource) return "Nachricht darf nicht leer sein.";
   if (imageUrl && !imageUrl.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`)) {
     return "Dieses Bild kann nicht gesendet werden.";
   }
@@ -56,6 +60,14 @@ export async function sendAccountMessage(
         )
       : [];
 
+  let quote: Awaited<ReturnType<typeof buildQuote>> | null = null;
+  if (quoteSource) {
+    if (chat?.kind !== "scene") return "Zitate gibt es nur im Chat einer Szene.";
+    quote = await buildQuote(supabase, quoteSource);
+    if ("error" in quote) return quote.error;
+    if (quote.storyPostId !== chat.story_post_id) return "Dieses Zitat gehört nicht zu dieser Szene.";
+  }
+
   const { error } = await supabase
     .from("account_messages")
     .insert({
@@ -66,6 +78,7 @@ export async function sendAccountMessage(
       ...(imageUrl ? { image_url: imageUrl } : {}),
       ...(replyToId ? { reply_to_id: replyToId } : {}),
       ...(mentioned.length ? { mentioned_user_ids: mentioned } : {}),
+      ...(quote ? { quote } : {}),
     });
   if (error) return error.message;
 
@@ -90,7 +103,7 @@ export async function sendAccountMessage(
         ),
       );
     }
-    await pushToChatPartners(chatId, user.id, text || (isVideoUrl(imageUrl) ? "Video" : "Foto"), mentioned, chatUrl, chatTitle ?? null);
+    await pushToChatPartners(chatId, user.id, text || (quote ? "Zitat aus der Szene" : isVideoUrl(imageUrl) ? "Video" : "Foto"), mentioned, chatUrl, chatTitle ?? null);
   });
   return null;
 }

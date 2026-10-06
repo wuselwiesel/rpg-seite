@@ -347,6 +347,26 @@ export default function HelpPage() {
           </li>
         </ul>
       </Section>
+
+      <Section id="momente" title="13. Wichtige Momente">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Auswählen:</strong> In einer Szene am Handy die Nachricht einmal antippen, dann das Lesezeichen. Am Computer erscheint das Lesezeichen beim Darüberfahren. Danach tippst du die letzte Nachricht an, alles dazwischen wird mit ausgewählt. Das Lesezeichen der ersten Nachricht oder „Abbrechen“ beendet die Auswahl.
+          </li>
+          <li>
+            <strong>Speichern:</strong> Gib einen Titel und eine Notiz an, wähle einen oder mehrere deiner Charaktere und eine Sammlung (eine vorhandene oder ein neuer Name wie Erinnerungen, Geschehnisse oder Unfälle). Der Wortlaut wird als Kopie mitgespeichert und bleibt lesbar, auch wenn die Nachrichten später geändert oder gelöscht werden. Nur du siehst deine Ausschnitte.
+          </li>
+          <li>
+            <strong>Im ChaBo:</strong> Unter „Wichtige Momente“ liegen deine Sammlungen. Du kannst sie anlegen, umbenennen und löschen, Ausschnitte lesen, Titel und Notiz ändern, aus einer Sammlung entfernen oder ganz löschen. „Zur Szene“ springt zurück und hebt die Nachrichten hervor.
+          </li>
+          <li>
+            <strong>Als Text oder PDF:</strong> Jede Sammlung lässt sich als Textdatei laden oder über die Druckansicht als PDF speichern.
+          </li>
+          <li>
+            <strong>Im Szenen-Chat zitieren:</strong> Nach der Auswahl das Zitat-Symbol antippen. Das Zitat landet im Chat-Eingabefeld, du kannst Text dazuschreiben oder es allein senden. Ein Klick auf das Zitat im Chat springt zu den Nachrichten in der Szene. Gespeicherte Ausschnitte kannst du im ChaBo mit „Im Chat der Szene teilen“ senden.
+          </li>
+        </ul>
+      </Section>
     </div>
   );
 }

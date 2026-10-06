@@ -16,6 +16,7 @@ import { folderColorHex } from "@/lib/wiki-folder-style";
 import { createClient } from "@/lib/supabase/client";
 import { fetchPublicSheet, parseSheetUrl } from "@/lib/charakterbogen";
 import { saveCharacterSheet } from "@/app/characters/sheet-actions";
+import { ChaboClips } from "./chabo-clips";
 import {
   BASIS_BUDGET,
   BASIS_MAX,
@@ -718,6 +719,8 @@ export function Chabo({
           <p className="text-sm text-muted">Noch keine Notizen.</p>
         )}
       </section>
+
+      {editable && <ChaboClips characterId={characterId} />}
     </div>
   );
 }

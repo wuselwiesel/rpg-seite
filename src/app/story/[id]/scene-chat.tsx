@@ -3,9 +3,22 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AccountMiniRoom } from "@/components/bubble-rooms";
+import type { QuoteDraft } from "@/lib/scene-quote";
 
 // Chat nur für diese Szene (außerhalb des Spiels, zwischen den Accounts). Beim Öffnen wird man als Mitglied eingetragen.
-export function SceneChatPanel({ storyPostId, userId, onOpened }: { storyPostId: string; userId: string; onOpened: (chatId: string) => void }) {
+export function SceneChatPanel({
+  storyPostId,
+  userId,
+  onOpened,
+  quoteDraft,
+  onQuoteChange,
+}: {
+  storyPostId: string;
+  userId: string;
+  onOpened: (chatId: string) => void;
+  quoteDraft: QuoteDraft | null;
+  onQuoteChange: (draft: QuoteDraft | null) => void;
+}) {
   const [state, setState] = useState<{ chatId: string | null; error: string | null }>({ chatId: null, error: null });
 
   useEffect(() => {
@@ -32,7 +45,7 @@ export function SceneChatPanel({ storyPostId, userId, onOpened }: { storyPostId:
   if (!state.chatId) return <p className="rounded-xl border border-line bg-surface px-4 py-6 text-center text-sm text-muted">Lädt…</p>;
   return (
     <div className="flex h-[min(26rem,55dvh)] flex-col overflow-hidden rounded-xl border border-line bg-surface">
-      <AccountMiniRoom chatId={state.chatId} userId={userId} />
+      <AccountMiniRoom chatId={state.chatId} userId={userId} quoteDraft={quoteDraft} onQuoteChange={onQuoteChange} />
     </div>
   );
 }

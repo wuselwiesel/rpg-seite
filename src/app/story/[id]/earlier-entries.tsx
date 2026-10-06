@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
 
 // Frühere Beiträge einer Szene: standardmäßig eingeklappt, damit man direkt bei den neuesten ist.
 export function EarlierEntries({ count, children }: { count: number; children: React.ReactNode }) {
@@ -24,8 +25,17 @@ export function EarlierEntries({ count, children }: { count: number; children: R
       if (a) reveal(a.getAttribute("href")!.slice(1));
     }
     if (location.hash) reveal(location.hash.slice(1));
+    // Zitat im Szenen-Chat angeklickt: auch dann aufklappen, wenn die Nachricht weiter oben eingeklappt liegt
+    function onHighlight(e: Event) {
+      const first = (e as CustomEvent<string[]>).detail?.[0];
+      if (first) reveal(`beitrag-${first}`);
+    }
     document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    window.addEventListener(HIGHLIGHT_EVENT, onHighlight);
+    return () => {
+      document.removeEventListener("click", onClick);
+      window.removeEventListener(HIGHLIGHT_EVENT, onHighlight);
+    };
   }, []);
 
   const toggle = (

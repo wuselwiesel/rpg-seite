@@ -4,7 +4,10 @@ import { EmojiText } from "./custom-emoji-provider";
 import { SpoilerText } from "./spoiler-text";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { useEffect, useRef, useState } from "react";
-import { CornerUpLeft, ImagePlus, SendHorizontal, SmilePlus, X } from "lucide-react";
+import { CornerUpLeft, ImagePlus, Quote, SendHorizontal, SmilePlus, X } from "lucide-react";
+import { QuoteCard } from "./quote-card";
+import type { ChatQuote } from "@/lib/clips";
+import type { QuoteDraft } from "@/lib/scene-quote";
 import { EmojiPickerDialog } from "./emoji-picker-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { sendMessage } from "@/app/chats/actions";
@@ -51,6 +54,8 @@ type ThreadItem = {
   pending?: boolean;
   // Antwort auf eine andere Nachricht (Name und Textanfang des Zitats) und Reaktionen (nur Redaktions-Chats)
   replyTo?: { name: string; text: string } | null;
+  // Zitat aus der Szene (nur im Szenen-Chat)
+  quote?: ChatQuote | null;
   reactions?: { emoji: string; count: number; mine: boolean; names: string }[];
 };
 
@@ -68,13 +73,20 @@ function MiniThread({
   onReact,
   typingNames = [],
   onTyping,
+  quoteDraft = null,
+  onClearQuote,
+  onRestoreQuote,
 }: {
   items: ThreadItem[];
   error: string | null;
   showNames: boolean;
+  // Zitat aus der Szene, das mit der nächsten Nachricht mitgeschickt wird
+  quoteDraft?: QuoteDraft | null;
+  onClearQuote?: () => void;
+  onRestoreQuote?: (draft: QuoteDraft) => void;
   // Mit onReact können Nachrichten beantwortet und mit Emojis bedacht werden
   onReact?: (id: string, emoji: string) => void;
-  onSend: (text: string, image: PickedImage | null, replyToId?: string | null) => Promise<boolean>;
+  onSend: (text: string, image: PickedImage | null, replyToId?: string | null, quoteDraft?: QuoteDraft | null) => Promise<boolean>;
   typingNames?: string[];
   onTyping?: () => void;
   onEdit?: (id: string, text: string) => void;
@@ -96,13 +108,16 @@ function MiniThread({
 
   function submit() {
     const text = draft;
-    if (!text.trim() && !image.pending) return;
+    if (!text.trim() && !image.pending && !quoteDraft) return;
     const attached = image.take();
     const reply = replyTo;
+    const quoted = quoteDraft;
     setDraft("");
     setReplyTo(null);
-    void onSend(text, attached, reply?.id).then((ok) => {
+    onClearQuote?.();
+    void onSend(text, attached, reply?.id, quoted).then((ok) => {
       if (ok) return;
+      if (quoted) onRestoreQuote?.(quoted);
       setDraft((d) => d || text);
       setReplyTo((r) => r ?? reply);
       if (attached) image.restore(attached);
@@ -184,6 +199,7 @@ function MiniThread({
                         <span className="line-clamp-2 opacity-90">{m.replyTo.text}</span>
                       </div>
                     )}
+                    {m.quote && <QuoteCard quote={m.quote} className={m.imageUrl ? "mx-1 mt-1" : ""} />}
                     {m.imageUrl && (
                       <ChatMedia url={m.imageUrl} size="sm" />
                     )}
@@ -291,6 +307,15 @@ function MiniThread({
           {error ?? image.error}
         </p>
       )}
+      {quoteDraft && (
+        <div className="mx-2 mb-1 flex items-start gap-2 rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs text-fg-soft">
+          <Quote className="mt-0.5 h-3 w-3 shrink-0" strokeWidth={2} />
+          <QuoteCard quote={quoteDraft.quote} compact className="min-w-0 flex-1" />
+          <button type="button" onClick={onClearQuote} aria-label="Zitat entfernen" className="shrink-0 text-muted hover:text-fg">
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      )}
       {replyTo && (
         <div className="mx-2 mb-1 flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-1 text-xs text-fg-soft">
           <CornerUpLeft className="h-3 w-3 shrink-0" strokeWidth={2} />
@@ -353,7 +378,7 @@ function MiniThread({
         />
         <button
           type="submit"
-          disabled={!draft.trim() && !image.pending}
+          disabled={!draft.trim() && !image.pending && !quoteDraft}
           aria-label="Senden"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-strong text-on-accent-strong transition hover:opacity-90 disabled:opacity-40"
         >
@@ -391,12 +416,16 @@ function AccountThread({
   initial,
   initialReactions,
   members,
+  quoteDraft,
+  onQuoteChange,
 }: {
   chatId: string;
   userId: string;
   initial: AccountMessage[];
   initialReactions: AccountReaction[];
   members: AccountMember[];
+  quoteDraft?: QuoteDraft | null;
+  onQuoteChange?: (draft: QuoteDraft | null) => void;
 }) {
   const names = new Map(members.map((m) => [m.id, m]));
   const grouped = members.length > 2;
@@ -423,6 +452,7 @@ function AccountThread({
     text: m.content,
     imageUrl: m.image_url,
     pending: m.pending,
+    quote: m.quote ?? null,
     replyTo: m.reply_to_id
       ? (() => {
           const target = messages.find((x) => x.id === m.reply_to_id);
@@ -442,6 +472,9 @@ function AccountThread({
       typingNames={typing.names.length ? (grouped ? [typing.names.filter(Boolean).join(", ")] : [""]) : []}
       onTyping={typing.announce}
       onSend={send}
+      quoteDraft={quoteDraft}
+      onClearQuote={() => onQuoteChange?.(null)}
+      onRestoreQuote={(d) => onQuoteChange?.(d)}
       onEdit={(id, t) => void edit(id, t)}
       onDelete={(id) => void remove(id)}
     />
@@ -451,9 +484,14 @@ function AccountThread({
 export function AccountMiniRoom({
   chatId,
   userId,
+  quoteDraft,
+  onQuoteChange,
 }: {
   chatId: string;
   userId: string;
+  // Zitat aus der Szene für die nächste Nachricht (nur im Chat einer Szene)
+  quoteDraft?: QuoteDraft | null;
+  onQuoteChange?: (draft: QuoteDraft | null) => void;
 }) {
   const [initial, setInitial] = useState<AccountMessage[] | null>(null);
   const [initialReactions, setInitialReactions] = useState<AccountReaction[] | null>(null);
@@ -464,7 +502,7 @@ export function AccountMiniRoom({
     let cancelled = false;
     createClient()
       .from("account_messages")
-      .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, created_at, updated_at")
+      .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, quote, created_at, updated_at")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: false })
       .limit(60)
@@ -497,7 +535,7 @@ export function AccountMiniRoom({
     return <p className="p-6 text-center text-xs text-muted">Lädt…</p>;
   return (
     <div style={themeStyle} className="flex min-h-0 flex-1 flex-col text-fg">
-      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} initialReactions={initialReactions} members={members} />
+      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} initialReactions={initialReactions} members={members} quoteDraft={quoteDraft} onQuoteChange={onQuoteChange} />
     </div>
   );
 }

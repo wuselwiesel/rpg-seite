@@ -1,30 +1,53 @@
 "use client";
 
 import { useEffect } from "react";
+import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
 
-// Link auf einen einzelnen Beitrag (#beitrag-…, z. B. aus dem Würfelverlauf): hinscrollen und kurz hervorheben.
+const FLASH = "0 0 0 3px var(--accent)";
+
+// Springt zu Nachrichten der Szene und hebt sie kurz hervor. Auslöser:
+// - Link auf einen einzelnen Beitrag (#beitrag-…, z. B. aus dem Würfelverlauf), optional mit ?hervor=id1,id2,… für mehrere (Ausschnitte)
+// - ein Klick auf ein Zitat im Szenen-Chat (Ereignis HIGHLIGHT_EVENT)
 // Frühere Beiträge sind eingeklappt und werden von EarlierEntries aufgeklappt, daher mehrfach versuchen, bis der Beitrag sichtbar ist.
 export function ScrollToEntry() {
   useEffect(() => {
-    const id = location.hash.startsWith("#beitrag-") ? location.hash.slice(1) : null;
-    if (!id) return;
-    let tries = 0;
-    let flashTimer: number | undefined;
-    const timer = window.setInterval(() => {
-      const el = document.getElementById(id);
-      if (el && el.offsetParent !== null) {
-        window.clearInterval(timer);
-        el.scrollIntoView({ block: "center", behavior: "auto" });
-        el.style.transition = "box-shadow 0.4s";
-        el.style.boxShadow = "0 0 0 3px var(--accent)";
-        flashTimer = window.setTimeout(() => {
-          el.style.boxShadow = "";
-        }, 2500);
-      } else if (++tries > 25) window.clearInterval(timer);
-    }, 120);
-    return () => {
+    let timer: number | undefined;
+    const flashTimers: number[] = [];
+
+    function focusEntries(ids: string[]) {
       window.clearInterval(timer);
-      if (flashTimer) window.clearTimeout(flashTimer);
+      let tries = 0;
+      timer = window.setInterval(() => {
+        const first = document.getElementById(`beitrag-${ids[0]}`);
+        if (first && first.offsetParent !== null) {
+          window.clearInterval(timer);
+          first.scrollIntoView({ block: "center", behavior: "auto" });
+          for (const id of ids) {
+            const el = document.getElementById(`beitrag-${id}`);
+            if (!el) continue;
+            el.style.transition = "box-shadow 0.4s";
+            el.style.boxShadow = FLASH;
+            flashTimers.push(window.setTimeout(() => (el.style.boxShadow = ""), 3000));
+          }
+        } else if (++tries > 25) window.clearInterval(timer);
+      }, 120);
+    }
+
+    const hash = location.hash.startsWith("#beitrag-") ? location.hash.slice("#beitrag-".length) : null;
+    if (hash) {
+      const extra = (new URLSearchParams(location.search).get("hervor") ?? "").split(",").filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+      focusEntries(extra.length ? extra : [hash]);
+    }
+
+    const onHighlight = (e: Event) => {
+      const ids = (e as CustomEvent<string[]>).detail;
+      if (ids?.length) focusEntries(ids);
+    };
+    window.addEventListener(HIGHLIGHT_EVENT, onHighlight);
+    return () => {
+      window.removeEventListener(HIGHLIGHT_EVENT, onHighlight);
+      window.clearInterval(timer);
+      flashTimers.forEach((t) => window.clearTimeout(t));
     };
   }, []);
   return null;
