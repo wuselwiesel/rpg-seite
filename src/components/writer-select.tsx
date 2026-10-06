@@ -33,7 +33,7 @@ export function WriterSelect({
   onChange: (id: string) => void;
   label?: string;
   // Tastenkürzel (Mac: ⌥ statt Alt, ⌘ statt Strg):
-  // Alt+0 = der davor Benutzte, Strg+K = Schnellsuche, Strg+Alt+↑/↓ = vorheriger/nächster Charakter
+  // Alt+0 = der davor Benutzte, Strg+K = Schnellsuche, Strg+Alt+↑/↓ (Mac auch ⌘⌥↑/↓) = vorheriger/nächster Charakter
   shortcuts?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -83,8 +83,8 @@ export function WriterSelect({
         setQuickOpen(true);
         return;
       }
-      // Strg+Alt+↑/↓: durch die Charaktere schalten
-      if (e.ctrlKey && e.altKey && !e.metaKey && !e.shiftKey && (e.code === "ArrowUp" || e.code === "ArrowDown")) {
+      // Strg+Alt+↑/↓ (Mac: ⌃⌥↑/↓ oder ⌘⌥↑/↓): durch die Charaktere schalten
+      if ((e.ctrlKey || e.metaKey) && e.altKey && !(e.ctrlKey && e.metaKey) && !e.shiftKey && (e.code === "ArrowUp" || e.code === "ArrowDown")) {
         const target = cycleId(fixedOrder.map((c) => c.id), selected?.id, e.code === "ArrowDown" ? 1 : -1);
         if (target && target !== selected?.id) {
           e.preventDefault();
