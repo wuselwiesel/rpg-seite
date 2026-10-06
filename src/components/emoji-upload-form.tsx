@@ -7,7 +7,8 @@ import { EMOJI_NAME } from "@/lib/custom-emoji";
 import { isAnimatedImage } from "@/lib/image-animation";
 import { createCustomEmoji } from "@/app/profile/emojis/actions";
 const MAX_BYTES = 256 * 1024;
-const MAX_BYTES_ANIMATED = 1024 * 1024;
+// Animierte Emojis (GIF, WebP, APNG) bleiben unverändert und dürfen bis zur Grenze des Speichers (5 MB) groß sein
+const MAX_BYTES_ANIMATED = 5 * 1024 * 1024;
 const ALLOWED = ["image/png", "image/gif", "image/webp"];
 const TARGET_SIZE = 128;
 
@@ -124,7 +125,7 @@ export function EmojiUploadForm({
       const { file: prepared, animated } = await prepareImage(file);
       const limit = animated ? MAX_BYTES_ANIMATED : MAX_BYTES;
       if (prepared.size > limit) {
-        setError(`Das Bild ist zu groß (max. ${limit / 1024} KB${animated ? " für animierte Emojis" : ""}).`);
+        setError(`Das Bild ist zu groß (max. ${limit >= 1024 * 1024 ? `${limit / 1024 / 1024} MB` : `${limit / 1024} KB`}${animated ? " für animierte Emojis" : ""}).`);
         return;
       }
       const supabase = createClient();
