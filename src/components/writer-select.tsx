@@ -2,20 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, Keyboard, Search } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
-import {
-  DIGITS,
-  assignKey,
-  cycleId,
-  filterByName,
-  keyOf,
-  loadCustomKeys,
-  resolveKeyMap,
-  saveCustomKeys,
-  type CustomKeys,
-} from "@/lib/writer-shortcuts";
+import { cycleId, filterByName } from "@/lib/writer-shortcuts";
 
 const RECENT_KEY = "wortwinkel:writer-recent";
 const MAX_RECENT = 12;
@@ -43,24 +33,20 @@ export function WriterSelect({
   onChange: (id: string) => void;
   label?: string;
   // Tastenkürzel (Mac: ⌥ statt Alt, ⌘ statt Strg):
-  // Alt+1 … Alt+9 = Charakter mit dieser Ziffer (frei belegbar), Alt+0 = der davor Benutzte,
-  // Strg+K = Schnellsuche, Strg+Alt+↑/↓ = vorheriger/nächster Charakter
+  // Alt+0 = der davor Benutzte, Strg+K = Schnellsuche, Strg+Alt+↑/↓ = vorheriger/nächster Charakter
   shortcuts?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
-  const [editKeys, setEditKeys] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const selected = characters.find((c) => c.id === value) ?? characters[0];
   // Zuletzt benutzte Charaktere (zuerst der neueste), gemerkt im Browser und für alle Szenen gemeinsam
   const [recent, setRecent] = useState<string[]>([]);
-  const [customKeys, setCustomKeys] = useState<CustomKeys>({});
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- Browser-Speicher ist erst nach dem Hydrieren lesbar */
     setRecent(readRecent());
-    setCustomKeys(loadCustomKeys());
     setIsMac(/mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent));
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -78,17 +64,8 @@ export function WriterSelect({
     });
   }
 
-  function setKey(id: string, digit: string | null) {
-    setCustomKeys((prev) => {
-      const next = assignKey(prev, id, digit);
-      saveCustomKeys(next);
-      return next;
-    });
-  }
-
   // Feste Reihenfolge: Charaktere, dann NPCs, so wie sie angelegt wurden
   const fixedOrder = useMemo(() => [...characters.filter((c) => !c.is_npc), ...characters.filter((c) => c.is_npc)], [characters]);
-  const keyMap = useMemo(() => resolveKeyMap(fixedOrder.map((c) => c.id), customKeys), [fixedOrder, customKeys]);
   const rank = (id: string) => {
     const i = recent.indexOf(id);
     return i === -1 ? Number.MAX_SAFE_INTEGER : i;
@@ -115,28 +92,17 @@ export function WriterSelect({
         }
         return;
       }
-      // Alt+Ziffer
-      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      const m = /^Digit([0-9])$/.exec(e.code);
-      if (!m) return;
-      const target = m[1] === "0" ? previousId : keyMap[m[1]];
-      if (!target) return;
+      // Alt+0: zurück zum zuletzt davor benutzten Charakter
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.code !== "Digit0" || !previousId) return;
       e.preventDefault();
-      if (target !== selected?.id) pick(target);
+      pick(previousId);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-    // pick ändert sich bei jedem Rendern; relevant sind Auswahl, Liste und Belegung
+    // pick ändert sich bei jedem Rendern; relevant sind Auswahl und Liste
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shortcuts, characters, fixedOrder, keyMap, selected?.id, previousId]);
+  }, [shortcuts, characters, fixedOrder, selected?.id, previousId]);
 
-  const hintFor = (id: string) => {
-    const parts: string[] = [];
-    const digit = keyOf(keyMap, id);
-    if (digit) parts.push(digit);
-    if (id === previousId) parts.push("0");
-    return parts;
-  };
   const mod = isMac ? "⌥" : "Alt+";
   const ctrl = isMac ? "⌘" : "Strg+";
 
@@ -212,34 +178,13 @@ export function WriterSelect({
                       >
                         <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={28} />
                         <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                        {shortcuts && !editKeys && (
-                          <span className="hidden shrink-0 gap-1 text-[10px] text-muted [@media(hover:hover)]:flex">
-                            {hintFor(c.id).map((k) => (
-                              <kbd key={k} className="rounded border border-line px-1 font-sans">
-                                {mod}
-                                {k}
-                              </kbd>
-                            ))}
-                          </span>
+                        {shortcuts && c.id === previousId && (
+                          <kbd className="hidden shrink-0 rounded border border-line px-1 font-sans text-[10px] text-muted [@media(hover:hover)]:block">
+                            {mod}0
+                          </kbd>
                         )}
                         {c.id === selected.id && <Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.5} />}
                       </button>
-                      {shortcuts && editKeys && (
-                        <select
-                          value={customKeys[c.id] ?? ""}
-                          onChange={(e) => setKey(c.id, e.target.value || null)}
-                          aria-label={`Kürzel für ${c.name}`}
-                          className="shrink-0 rounded-md border border-line bg-app px-1 py-1 text-xs text-fg"
-                        >
-                          <option value="">{keyOf(keyMap, c.id) ? `${mod}${keyOf(keyMap, c.id)} (auto)` : "–"}</option>
-                          {DIGITS.map((d) => (
-                            <option key={d} value={d}>
-                              {mod}
-                              {d}
-                            </option>
-                          ))}
-                        </select>
-                      )}
                     </li>
                   ))}
                 </ul>
@@ -247,7 +192,7 @@ export function WriterSelect({
             ))}
           </ul>
           {shortcuts && (
-            <div className="hidden items-center justify-between gap-2 border-t border-line px-3 py-2 text-xs text-muted [@media(hover:hover)]:flex">
+            <div className="hidden items-center gap-2 border-t border-line px-3 py-2 text-xs text-muted [@media(hover:hover)]:flex">
               <button
                 type="button"
                 onClick={() => {
@@ -260,15 +205,6 @@ export function WriterSelect({
                 Suchen
                 <kbd className="rounded border border-line px-1 font-sans">{ctrl}K</kbd>
               </button>
-              <button
-                type="button"
-                onClick={() => setEditKeys((v) => !v)}
-                aria-pressed={editKeys}
-                className={`flex items-center gap-1.5 transition hover:text-fg ${editKeys ? "text-accent" : ""}`}
-              >
-                <Keyboard className="h-3.5 w-3.5" strokeWidth={2} />
-                {editKeys ? "Fertig" : "Kürzel"}
-              </button>
             </div>
           )}
         </div>
@@ -278,8 +214,6 @@ export function WriterSelect({
           label={label}
           characters={byRecent(fixedOrder)}
           selectedId={selected.id}
-          keyOfId={(id) => keyOf(keyMap, id)}
-          mod={mod}
           onPick={(id) => {
             pick(id);
             setQuickOpen(false);
@@ -296,16 +230,12 @@ function QuickSwitch({
   label,
   characters,
   selectedId,
-  keyOfId,
-  mod,
   onPick,
   onClose,
 }: {
   label: string;
   characters: Character[];
   selectedId: string;
-  keyOfId: (id: string) => string | null;
-  mod: string;
   onPick: (id: string) => void;
   onClose: () => void;
 }) {
@@ -356,12 +286,6 @@ function QuickSwitch({
               >
                 <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={28} />
                 <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                {keyOfId(c.id) && (
-                  <kbd className="shrink-0 rounded border border-line px-1 font-sans text-[10px] text-muted">
-                    {mod}
-                    {keyOfId(c.id)}
-                  </kbd>
-                )}
                 {c.id === selectedId && <Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.5} />}
               </button>
             </li>

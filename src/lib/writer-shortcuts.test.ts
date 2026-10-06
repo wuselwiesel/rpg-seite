@@ -1,34 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignKey, cycleId, filterByName, keyOf, resolveKeyMap } from "./writer-shortcuts";
-
-describe("resolveKeyMap", () => {
-  it("vergibt ohne eigene Belegung 1, 2, 3 in fester Reihenfolge", () => {
-    expect(resolveKeyMap(["a", "b", "c"], {})).toEqual({ 1: "a", 2: "b", 3: "c" });
-  });
-  it("eigene Belegung gilt zuerst, die übrigen füllen freie Ziffern", () => {
-    expect(resolveKeyMap(["a", "b", "c"], { c: "1" })).toEqual({ 1: "c", 2: "a", 3: "b" });
-  });
-  it("ignoriert Belegungen für unbekannte Charaktere und doppelte Ziffern", () => {
-    expect(resolveKeyMap(["a", "b"], { x: "1", a: "2", b: "2" })).toEqual({ 1: "b", 2: "a" });
-  });
-  it("hat höchstens neun Plätze", () => {
-    const ids = Array.from({ length: 12 }, (_, i) => `c${i}`);
-    expect(Object.keys(resolveKeyMap(ids, {}))).toHaveLength(9);
-  });
-});
-
-describe("assignKey / keyOf", () => {
-  it("nimmt dieselbe Ziffer bei anderen weg", () => {
-    expect(assignKey({ a: "1", b: "2" }, "b", "1")).toEqual({ b: "1" });
-  });
-  it("entfernt eine Belegung", () => {
-    expect(assignKey({ a: "1" }, "a", null)).toEqual({});
-  });
-  it("findet die Ziffer eines Charakters", () => {
-    expect(keyOf({ 2: "x" }, "x")).toBe("2");
-    expect(keyOf({ 2: "x" }, "y")).toBeNull();
-  });
-});
+import { cycleId, filterByName } from "./writer-shortcuts";
 
 describe("cycleId", () => {
   it("läuft vor und zurück im Kreis", () => {
