@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { IdCard, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { mergeSecrets, normalizeSheet, parseSecrets, stripSecrets, type SheetData } from "@/lib/sheet-rules";
@@ -36,9 +37,13 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
     })();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("keydown", onKey);
+    // Die Seite dahinter bleibt stehen, damit am Handy nur das Fenster scrollt
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
       cancelled = true;
       document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
     };
   }, [open, characterId]);
 
@@ -53,10 +58,12 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
       >
         <IdCard className="h-4 w-4" strokeWidth={2} />
       </button>
-      {open && (
-        <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={`Charakterbogen ${characterName}`}>
+      {/* Per Portal an <body>, sonst liegen Kopfzeile und untere Leiste der Seite über dem Fenster */}
+      {open &&
+        createPortal(
+        <div className="fixed inset-0 z-[60] flex justify-end" role="dialog" aria-modal="true" aria-label={`Charakterbogen ${characterName}`}>
           <button type="button" aria-label="Schließen" onClick={() => setOpen(false)} className="absolute inset-0 bg-black/30" />
-          <aside className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-app p-3 shadow-xl sm:p-4">
+          <aside className="relative flex h-dvh max-h-dvh w-full max-w-md flex-col overflow-y-auto overscroll-contain bg-app p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl sm:p-4 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <button type="button" onClick={() => setOpen(false)} aria-label="Schließen" className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-muted transition hover:text-fg">
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
@@ -73,7 +80,8 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
               <Chabo key={characterId} characterId={characterId} characterName={characterName} initial={sheet} editable mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" />
             )}
           </aside>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

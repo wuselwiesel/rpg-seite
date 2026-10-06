@@ -50,6 +50,13 @@ export function MobileTabLink({
     <Link
       href={href}
       aria-label={label}
+      // Wer den Tab der Seite antippt, auf der er schon ist (z. B. Feed), landet wieder ganz oben
+      onClick={(e) => {
+        if (pathname === href) {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }}
       className={`flex flex-1 items-center justify-center text-[11px] font-medium ${showLabel ? "py-3" : "py-3.5"}`}
     >
       <TabInner icon={icon} label={label} isActive={!!isActive} showLabel={showLabel} />

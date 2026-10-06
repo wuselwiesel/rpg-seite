@@ -281,7 +281,7 @@ export function Chabo({
     status.kind === "pending" ? "Speichert …" : status.kind === "saved" ? "Gespeichert" : status.kind === "invalid" ? "Nicht gespeichert, ungültige Werte" : status.kind === "error" ? status.message : "";
 
   return (
-    <div className="@container flex flex-col gap-5">
+    <div className="@container flex shrink-0 flex-col gap-5">
       <header className={`${card} @xl:flex-row @xl:items-start`}>
         {editing ? (
           <div key={portraitKey} className="shrink-0">

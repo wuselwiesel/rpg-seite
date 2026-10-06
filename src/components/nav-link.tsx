@@ -40,7 +40,17 @@ export function NavLink({
     (exact ? pathname === href : pathname === href || pathname?.startsWith(`${href}/`)) && !(exclude && (pathname === exclude || pathname?.startsWith(`${exclude}/`)));
 
   return (
-    <Link href={href} className="group block">
+    <Link
+      href={href}
+      className="group block"
+      // Auf der Seite, auf der man schon ist, führt der Klick wieder ganz nach oben
+      onClick={(e) => {
+        if (pathname === href) {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }}
+    >
       <NavInner icon={icon} isActive={!!isActive}>
         {children}
       </NavInner>
