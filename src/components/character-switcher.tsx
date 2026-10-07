@@ -25,6 +25,7 @@ export function CharacterSwitcher({
     <select
       value={activeId ?? ""}
       disabled={isPending}
+      data-tour="character"
       onChange={(e) => {
         const id = e.target.value;
         // Steht man gerade auf dem Profil oder dem ChaBo eines eigenen Charakters, soll nach dem Wechsel

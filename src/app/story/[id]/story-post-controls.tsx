@@ -58,7 +58,7 @@ export function StoryPostControls({
   }
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2">
+    <div className="mb-2 flex flex-wrap items-center gap-2" data-tour="scene-controls">
       {isPrivate && (
         <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-medium text-fg-soft">
           <EyeOff className="h-3 w-3" strokeWidth={2} />

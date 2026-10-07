@@ -79,9 +79,9 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
           ))}
           <div>
             <p className="mb-1 px-3 text-xs font-medium text-muted">Hilfe</p>
-            <button type="button" onClick={startTour} className={row}>
+            <button type="button" onClick={() => startTour()} className={row}>
               <Compass className="h-5 w-5 shrink-0 text-fg-soft" strokeWidth={2} />
-              <span className="flex-1 text-[15px] font-medium text-fg">Rundgang starten</span>
+              <span className="flex-1 text-[15px] font-medium text-fg">Rundgänge</span>
             </button>
           </div>
           <div className="border-t border-line pt-4">

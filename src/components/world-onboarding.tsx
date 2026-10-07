@@ -96,7 +96,7 @@ export function WorldOnboarding({ worldId, worldName, autoOpen }: { worldId: str
           type="button"
           onClick={() => {
             dismiss();
-            startTour();
+            startTour("erste-schritte");
           }}
           className="flex items-center gap-1.5 rounded-full bg-accent-strong px-3.5 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
         >

@@ -25,7 +25,7 @@ export function TurnBanner({
 
   if (isMine) {
     return (
-      <div className="mb-6 flex items-center gap-3 rounded-xl bg-accent-strong/15 px-4 py-3 text-sm">
+      <div className="mb-6 flex items-center gap-3 rounded-xl bg-accent-strong/15 px-4 py-3 text-sm" data-tour="turn-banner">
         <PenLine className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
         <p className="text-fg">
           <span className="font-medium">{turnName}, du bist dran.</span>
@@ -36,7 +36,7 @@ export function TurnBanner({
   }
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-surface-2 px-4 py-3 text-sm">
+    <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-surface-2 px-4 py-3 text-sm" data-tour="turn-banner">
       <Hourglass className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
       <p className="text-fg-soft">
         <span className="font-medium text-fg">{turnName}</span> ist dran.

@@ -37,6 +37,7 @@ export function WorldSwitcher({
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={isPending}
+        data-tour="world"
         className="flex w-full items-center gap-3 rounded-xl px-1 py-1 text-left transition hover:bg-surface-2 disabled:opacity-60"
       >
         <WorldCover

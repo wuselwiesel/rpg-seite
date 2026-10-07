@@ -257,7 +257,7 @@ export default async function StoryPostDetailPage({
             />
           )}
         </div>
-        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 [&>*]:!mb-0">
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 [&>*]:!mb-0" data-tour="scene-meta">
         <SceneChain
           storyPostId={storyPost.id}
           previous={prevScene ? { id: prevScene.id, title: prevScene.title } : null}

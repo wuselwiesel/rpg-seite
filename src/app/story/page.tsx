@@ -170,7 +170,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       </div>
 
       <details className="group mb-4" open={filterCount > 0}>
-        <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+        <summary data-tour="story-filter" className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />
           Filter
           {filterCount > 0 && (

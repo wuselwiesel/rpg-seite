@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TourButtons } from "@/components/tour-buttons";
 import { ChevronLeft, CircleHelp } from "lucide-react";
 import { ATTR_TABLE, TALENT_LIST } from "@/lib/charakterbogen-stats";
 import { DICE_CONDITIONS } from "@/lib/dice-conditions";
@@ -81,6 +82,7 @@ export default function HelpPage() {
             ))}
           </ol>
         </nav>
+        <TourButtons />
       </header>
 
       <Section id="wuerfeln" title="1. Wie funktioniert das Würfeln?">

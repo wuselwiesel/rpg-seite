@@ -288,7 +288,7 @@ export function MobileNav({
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
           >
             <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Rundgang starten
+            Rundgänge
           </button>
           <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-[15px] font-medium text-fg-soft">
             Hell / Dunkel

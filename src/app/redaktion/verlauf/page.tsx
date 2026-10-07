@@ -39,6 +39,7 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
   const sp = await searchParams;
   const raw = Array.isArray(sp.seite) ? sp.seite[0] : sp.seite;
   const page = Math.max(1, Number.parseInt(raw ?? "", 10) || 1);
+  const rawAccount = Array.isArray(sp.account) ? sp.account[0] : sp.account;
 
   const supabase = await createClient();
   const {
@@ -46,10 +47,21 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data, count } = await supabase
+  // Alle Accounts, die im Verlauf vorkommen (für die Auswahl); ein unbekannter Wert in der Adresse filtert nichts
+  const { data: actorRows } = await supabase.from("character_sheet_log").select("actor_id").order("updated_at", { ascending: false }).limit(2000);
+  const allActorIds = Array.from(new Set((actorRows ?? []).map((r) => r.actor_id as string)));
+  const { data: allProfileRows } = allActorIds.length
+    ? await supabase.from("profiles").select("id, username, nickname, avatar_url").in("id", allActorIds).returns<Profile[]>()
+    : { data: [] as Profile[] };
+  const accounts = (allProfileRows ?? []).sort((a, b) => (a.nickname || a.username).localeCompare(b.nickname || b.username, "de"));
+  const account = accounts.find((a) => a.id === rawAccount)?.id ?? null;
+
+  let query = supabase
     .from("character_sheet_log")
     .select(COLUMNS, { count: "exact" })
-    .order("updated_at", { ascending: false })
+    .order("updated_at", { ascending: false });
+  if (account) query = query.eq("actor_id", account);
+  const { data, count } = await query
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
     .returns<LogRow[]>();
   const rows = data ?? [];
@@ -58,6 +70,13 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
   const { data: profileRows } = actorIds.length ? await supabase.from("profiles").select("id, username, nickname, avatar_url").in("id", actorIds).returns<Profile[]>() : { data: [] as Profile[] };
   const profiles = new Map((profileRows ?? []).map((p) => [p.id, p]));
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
+  const hrefFor = (nextPage: number, nextAccount: string | null) => {
+    const q = new URLSearchParams();
+    if (nextAccount) q.set("account", nextAccount);
+    if (nextPage > 1) q.set("seite", String(nextPage));
+    const qs = q.toString();
+    return qs ? `/redaktion/verlauf?${qs}` : "/redaktion/verlauf";
+  };
 
   const groups: { label: string; rows: LogRow[] }[] = [];
   for (const r of rows) {
@@ -73,6 +92,27 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
         <History className="h-6 w-6 text-accent" strokeWidth={1.75} />
         Verlauf
       </h1>
+
+      {accounts.length > 1 && (
+        <nav aria-label="Nach Account filtern" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+          <Link
+            href={hrefFor(1, null)}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm transition ${!account ? "bg-accent-strong text-on-accent-strong" : "border border-line bg-surface text-fg-soft hover:bg-surface-2 hover:text-fg"}`}
+          >
+            Alle
+          </Link>
+          {accounts.map((a) => (
+            <Link
+              key={a.id}
+              href={hrefFor(1, a.id)}
+              className={`flex shrink-0 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm transition ${account === a.id ? "bg-accent-strong text-on-accent-strong" : "border border-line bg-surface text-fg-soft hover:bg-surface-2 hover:text-fg"}`}
+            >
+              <CharacterAvatar name={a.nickname || a.username} avatarUrl={a.avatar_url} size={24} />
+              {a.nickname || a.username}
+            </Link>
+          ))}
+        </nav>
+      )}
 
       {rows.length === 0 ? (
         <p className="text-muted">Noch keine Änderungen.</p>
@@ -131,7 +171,7 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
       {totalPages > 1 && (
         <div className="flex items-center justify-between gap-3">
           {page > 1 ? (
-            <Link href={page === 2 ? "/redaktion/verlauf" : `/redaktion/verlauf?seite=${page - 1}`} className="flex items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+            <Link href={hrefFor(page - 1, account)} className="flex items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg">
               <ChevronLeft className="h-4 w-4" strokeWidth={2} />
               Neuer
             </Link>
@@ -142,7 +182,7 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
             Seite {page} von {totalPages}
           </p>
           {page < totalPages ? (
-            <Link href={`/redaktion/verlauf?seite=${page + 1}`} className="flex items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+            <Link href={hrefFor(page + 1, account)} className="flex items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg">
               Älter
               <ChevronRight className="h-4 w-4" strokeWidth={2} />
             </Link>

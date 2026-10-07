@@ -43,15 +43,16 @@ export function SocialPostCard({
     <CharacterThemed character={character}>
       <article className="-mx-3 border-b border-line pb-4 sm:mx-0">
         <div className="flex items-center gap-2.5 px-3 py-2 sm:px-1">
-          <Link href={characterHref} className="flex min-w-0 flex-1 items-center gap-2.5">
-            <div className="shrink-0 rounded-full bg-gradient-to-tr from-accent to-accent-strong p-[2px]">
+          {/* Kein Link um das Ganze: das Namens-Badge ist selbst ein Link, verschachtelte <a> sind ungültig */}
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <Link href={characterHref} aria-label={handle} className="shrink-0 rounded-full bg-gradient-to-tr from-accent to-accent-strong p-[2px]">
               <div className="rounded-full bg-app p-[2px]">
                 <CharacterAvatar name={character?.name ?? "?"} avatarUrl={character?.avatar_url} size={30} />
               </div>
-            </div>
+            </Link>
             <div className="min-w-0 flex-1 leading-tight">
               <p className="flex items-baseline gap-1.5 text-[13px] text-fg">
-                <span className="truncate font-semibold">{handle}</span>
+                <Link href={characterHref} className="truncate font-semibold">{handle}</Link>
                 <NameBadge characterId={post.characterId} />
                 {post.pinned && <Pin className="h-3 w-3 shrink-0 self-center text-muted" strokeWidth={2} aria-label="Angepinnt" />}
                 <time
@@ -63,14 +64,14 @@ export function SocialPostCard({
                 </time>
               </p>
               {(post.worldName || post.tagged.length > 0) && (
-                <p className="truncate text-xs text-muted">
+                <Link href={characterHref} className="block truncate text-xs text-muted">
                   {post.tagged.length > 0
                     ? `mit ${post.tagged.map((t) => t.username ?? t.name).join(", ")}`
                     : `in ${post.worldName}`}
-                </p>
+                </Link>
               )}
             </div>
-          </Link>
+          </div>
           <PostMenu
             postId={post.id}
             characterHref={characterHref}

@@ -57,7 +57,7 @@ export function SidebarMenu() {
             className={item}
           >
             <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Rundgang starten
+            Rundgänge
           </button>
           <InstallAppButton className={item} onDone={() => setOpen(false)} />
         </div>

@@ -51,6 +51,7 @@ export function ActiveCharacterMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={isPending}
+        data-tour="character"
         className="flex max-w-full items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 text-left transition hover:bg-surface-2 active:bg-surface-3 disabled:opacity-60"
       >
         <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={36} />
