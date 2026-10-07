@@ -100,11 +100,31 @@ function MiniThread({
   const image = useImageDraft();
   const [replyTo, setReplyTo] = useState<ThreadItem | null>(null);
   const [emojiFor, setEmojiFor] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Klebt die Ansicht am Ende, solange man unten ist. Nur die Nachrichtenliste scrollt (kein scrollIntoView: das schob die ganze Seite mit
+  // und ließ sie hüpfen), und wachsen Bilder oder Zitate nach, rutscht die Liste mit nach unten.
+  const stickRef = useRef(true);
+
+  function toBottom() {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    stickRef.current = true;
+    toBottom();
   }, [items.length, typingNames.length]);
+
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (stickRef.current) toBottom();
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
 
   function submit() {
     const text = draft;
@@ -126,7 +146,15 @@ function MiniThread({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-3 py-3">
+      <div
+        ref={listRef}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }}
+        className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 [overflow-anchor:none]"
+      >
+        <div ref={contentRef}>
         {items.length === 0 && (
           <p className="py-6 text-center text-xs text-muted">
             Noch keine Nachrichten.
@@ -300,7 +328,7 @@ function MiniThread({
           })}
           <TypingLine names={typingNames} className="px-1" />
         </div>
-        <div ref={bottomRef} />
+        </div>
       </div>
       {(error || image.error) && (
         <p className="px-3 pb-1 text-xs text-red-600 dark:text-red-400">

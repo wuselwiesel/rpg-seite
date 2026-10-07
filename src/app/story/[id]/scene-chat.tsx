@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AccountMiniRoom } from "@/components/bubble-rooms";
 import type { QuoteDraft } from "@/lib/scene-quote";
@@ -20,6 +20,12 @@ export function SceneChatPanel({
   onQuoteChange: (draft: QuoteDraft | null) => void;
 }) {
   const [state, setState] = useState<{ chatId: string | null; error: string | null }>({ chatId: null, error: null });
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Öffnet sich der Chat teilweise unter dem Bildschirmrand, einmal so weit scrollen, dass er ganz (mit Eingabefeld) zu sehen ist
+  useEffect(() => {
+    if (state.chatId) panelRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [state.chatId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +50,7 @@ export function SceneChatPanel({
   if (state.error) return <p className="rounded-xl border border-line bg-surface px-4 py-6 text-center text-sm text-muted">{state.error}</p>;
   if (!state.chatId) return <p className="rounded-xl border border-line bg-surface px-4 py-6 text-center text-sm text-muted">Lädt…</p>;
   return (
-    <div className="flex h-[min(26rem,55dvh)] flex-col overflow-hidden rounded-xl border border-line bg-surface">
+    <div ref={panelRef} className="flex h-[min(26rem,55dvh)] scroll-mb-32 lg:scroll-mb-6 flex-col overflow-hidden rounded-xl border border-line bg-surface">
       <AccountMiniRoom chatId={state.chatId} userId={userId} quoteDraft={quoteDraft} onQuoteChange={onQuoteChange} />
     </div>
   );
