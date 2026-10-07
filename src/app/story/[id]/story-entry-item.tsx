@@ -248,7 +248,7 @@ export function StoryEntryItem({
           <div className="flex items-baseline gap-2">
             {isNarrator ? (
               <p className="text-sm font-medium text-fg">Erzähler:in</p>
-            ) : (
+            ) : segments ? null : (
               <Link href={`/characters/${entry.character_id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
                 {headerName}
               </Link>
@@ -467,12 +467,12 @@ export function StoryEntryItem({
           // Einträge kommen nie ungeprüft vom Client in die Datenbank.
           <SpoilerGate spoiler={spoiler}>
             {segments ? (
-              <div className="flex flex-col divide-y divide-line">
+              <div className="flex flex-col">
                 {segments.map((seg, i) => {
                   const c = mentionCharacters.find((x) => x.id === seg.id);
                   const name = c?.name ?? seg.name;
                   return (
-                    <div key={i} className="flex gap-2.5 py-2 first:pt-0 last:pb-0">
+                    <div key={i} className="flex gap-2.5 py-2 first:pt-1 last:pb-0">
                       <Link href={`/characters/${seg.id}/chabo`} aria-label={`ChaBo von ${name}`} className="h-fit shrink-0">
                         <CharacterAvatar name={name} avatarUrl={c?.avatar_url} size={28} />
                       </Link>
