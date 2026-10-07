@@ -194,9 +194,9 @@ export default async function StoryPostDetailPage({
     : { data: [] as { id: string; name: string }[] };
   const arcOptions = arcRows ?? [];
 
-  // Auswahl für „Mit dabei“ (nur die Autor:in kann sie ändern): alle Charaktere der Welt außer der Autor-Figur
+  // Auswahl für „Mit dabei“ (nur die Autor:in kann sie ändern): alle Charaktere der Welt; die Autor-Figur nur im Erzähler-Modus (sonst ist sie ohnehin dabei)
   const castOptions = isAuthor
-    ? (await getWorldCharacters(user.id, storyPost.world_id)).filter((c) => c.id !== storyPost.character_id).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
+    ? (await getWorldCharacters(user.id, storyPost.world_id)).filter((c) => c.id !== storyPost.character_id || !!storyPost.narrator).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
     : [];
 
   // Charaktere für den Filter: erst die eigenen, dann alle übrigen, die in der Szene schreiben oder erwähnt werden.

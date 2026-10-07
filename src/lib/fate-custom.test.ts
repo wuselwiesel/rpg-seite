@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeFateText, previewFateText, rowToFate } from "./fate-custom";
+import { analyzeFateText, cleanRoles, describeRole, previewFateText, rowToFate } from "./fate-custom";
 
 describe("analyzeFateText", () => {
   it("zählt die Zusatz-Charaktere am höchsten Platzhalter", () => {
@@ -34,5 +34,32 @@ describe("rowToFate", () => {
 describe("previewFateText", () => {
   it("setzt Beispielnamen ein", () => {
     expect(previewFateText("{character1} trifft {character2}")).toBe("Mira trifft Jonas");
+  });
+});
+
+describe("cleanRoles", () => {
+  it("behält nur Rollen, die der Text benutzt, und nur bekannte Werte", () => {
+    const raw = { "1": { gender: "weiblich", species: ["vampir", "unsinn"] }, "2": { relation: "partner", gender: "x" }, "3": { gender: "maennlich" } };
+    expect(cleanRoles(raw, 1)).toEqual({ "1": { gender: "weiblich", species: ["vampir"] }, "2": { relation: "partner" } });
+  });
+  it("ignoriert Beziehungen bei Charakter 1 und alle drei Wesen (= egal)", () => {
+    expect(cleanRoles({ "1": { relation: "partner", species: ["mensch", "vampir", "werwolf"] } }, 0)).toEqual({});
+  });
+  it("verträgt Unsinn", () => {
+    expect(cleanRoles(null, 2)).toEqual({});
+    expect(cleanRoles("x", 2)).toEqual({});
+  });
+});
+
+describe("Bedingungen im Schicksal", () => {
+  it("werden an Charakter 1 und die Zusatz-Charaktere weitergegeben", () => {
+    const f = rowToFate({ id: "a", category: "Beziehung", severity: "mittel", text: "{character1} und {character2}", targets: 1, created_by: "u", roles: { "1": { species: ["vampir"] }, "2": { relation: "bestFriend" } } });
+    expect(f?.char1).toEqual({ species: ["vampir"] });
+    expect(f?.roles).toEqual([{ relation: "bestFriend" }]);
+  });
+  it("beschreibt Bedingungen kurz", () => {
+    expect(describeRole({ gender: "weiblich", species: ["vampir", "werwolf"] })).toBe("weiblich, Vampir oder Werwolf");
+    expect(describeRole({ relation: "partner" })).toBe("Partner:in von Charakter 1");
+    expect(describeRole(undefined)).toBe("");
   });
 });

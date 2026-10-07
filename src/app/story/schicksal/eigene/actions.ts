@@ -3,16 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
-import { MAX_CUSTOM_FATES_PER_WORLD, analyzeFateText, isFateCategory, isFateSeverity } from "@/lib/fate-custom";
+import { MAX_CUSTOM_FATES_PER_WORLD, analyzeFateText, cleanRoles, isFateCategory, isFateSeverity, type CustomRoles } from "@/lib/fate-custom";
 
-type Input = { text: string; category: string; severity: string };
+type Input = { text: string; category: string; severity: string; roles?: CustomRoles };
 
-function check(input: Input): { error: string } | { text: string; targets: 0 | 1 | 2; category: string; severity: string } {
+function check(input: Input): { error: string } | { text: string; targets: 0 | 1 | 2; category: string; severity: string; roles: CustomRoles } {
   if (!isFateCategory(input.category)) return { error: "Bitte eine Kategorie wählen." };
   if (!isFateSeverity(input.severity)) return { error: "Bitte einen Schweregrad wählen." };
   const analyzed = analyzeFateText(input.text);
   if ("error" in analyzed) return analyzed;
-  return { ...analyzed, category: input.category, severity: input.severity };
+  return { ...analyzed, category: input.category, severity: input.severity, roles: cleanRoles(input.roles, analyzed.targets) };
 }
 
 export async function addCustomFate(input: Input): Promise<string | null> {

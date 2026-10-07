@@ -164,7 +164,8 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
   const isPrivate = formData.get("is_private") === "on";
   const viewerCharacterIds = formData.getAll("viewer_character_id").map(String).filter(Boolean);
   // „Mit dabei“: nur Charaktere dieser Welt (keine Dopplung, nicht die Schreibende selbst)
-  const castWanted = Array.from(new Set(formData.getAll("cast_character_id").map(String).filter((id) => id && id !== characterId))).slice(0, 40);
+  const castNarrator = formData.get("narrator") === "on";
+  const castWanted = Array.from(new Set(formData.getAll("cast_character_id").map(String).filter((id) => id && (castNarrator || id !== characterId)))).slice(0, 40);
   const { data: castRows } = castWanted.length
     ? await supabase.from("characters").select("id").in("id", castWanted).eq("world_id", activeWorld.id).is("deleted_at", null)
     : { data: [] as { id: string }[] };
@@ -1070,7 +1071,7 @@ export async function setSceneCast(storyPostId: string, castCharacterIds: string
   if (!post) return "Szene nicht gefunden.";
   if (post.characters?.owner_id !== user.id) return "Nur die Autor:in der Szene kann das ändern.";
 
-  const wanted = Array.from(new Set(castCharacterIds.filter((id) => id && id !== post.character_id))).slice(0, 40);
+  const wanted = Array.from(new Set(castCharacterIds.filter((id) => id && (post.narrator || id !== post.character_id)))).slice(0, 40);
   const { data: valid } = wanted.length ? await supabase.from("characters").select("id").in("id", wanted).eq("world_id", post.world_id).is("deleted_at", null) : { data: [] as { id: string }[] };
   const nextIds = (valid ?? []).map((c) => c.id);
 

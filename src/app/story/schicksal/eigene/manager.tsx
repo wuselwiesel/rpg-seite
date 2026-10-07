@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
 import { FATE_CATEGORIES, SEVERITY_ORDER } from "@/lib/fate-types";
-import { analyzeFateText, previewFateText, type CustomFateRow } from "@/lib/fate-custom";
+import { GENDER_CHOICES, RELATION_CHOICES, SPECIES_CHOICES, analyzeFateText, cleanRoles, describeRole, previewFateText, type CustomFateRow, type CustomRoles } from "@/lib/fate-custom";
 import { addCustomFate, deleteCustomFate, updateCustomFate } from "./actions";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm";
@@ -18,6 +18,7 @@ export function CustomFateManager({ fates, currentUserId, isWorldOwner }: { fate
   const [text, setText] = useState("");
   const [category, setCategory] = useState<string>(FATE_CATEGORIES[0]);
   const [severity, setSeverity] = useState<string>("mittel");
+  const [roles, setRoles] = useState<CustomRoles>({});
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const area = useRef<HTMLTextAreaElement>(null);
@@ -36,7 +37,14 @@ export function CustomFateManager({ fates, currentUserId, isWorldOwner }: { fate
     });
   }
 
+  const used = analyzed && !("error" in analyzed) ? (["1", "2", "3"] as const).slice(0, analyzed.targets + 1) : [];
+
+  function patchRole(key: "1" | "2" | "3", patch: { gender?: string | undefined; species?: string[] | undefined; relation?: string | undefined }) {
+    setRoles((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }) as CustomRoles);
+  }
+
   function reset() {
+    setRoles({});
     setEditingId(null);
     setText("");
     setCategory(FATE_CATEGORIES[0]);
@@ -46,7 +54,7 @@ export function CustomFateManager({ fates, currentUserId, isWorldOwner }: { fate
   function save() {
     setMessage(null);
     startTransition(async () => {
-      const error = editingId ? await updateCustomFate(editingId, { text, category, severity }) : await addCustomFate({ text, category, severity });
+      const error = editingId ? await updateCustomFate(editingId, { text, category, severity, roles }) : await addCustomFate({ text, category, severity, roles });
       if (error) return setMessage({ ok: false, text: error });
       setMessage({ ok: true, text: editingId ? "Gespeichert." : "Hinzugefügt." });
       reset();
@@ -114,6 +122,63 @@ export function CustomFateManager({ fates, currentUserId, isWorldOwner }: { fate
             </select>
           </label>
         </div>
+        {used.length > 0 && (
+          <details className="rounded-lg border border-line px-3 py-2">
+            <summary className="cursor-pointer text-sm text-fg-soft">Bedingungen (optional)</summary>
+            <div className="mt-3 flex flex-col gap-4">
+              {used.map((key) => {
+                const role = roles[key] ?? {};
+                return (
+                  <fieldset key={key} className="flex flex-col gap-2">
+                    <legend className="mb-1 text-sm font-medium text-fg">{key === "1" ? "Charakter 1" : `Charakter ${key}`}</legend>
+                    <div className="flex flex-wrap gap-1.5">
+                      {GENDER_CHOICES.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          aria-pressed={role.gender === g.id}
+                          onClick={() => patchRole(key, { gender: role.gender === g.id ? undefined : g.id })}
+                          className={`rounded-full px-3 py-1 text-xs transition ${role.gender === g.id ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}
+                        >
+                          {g.label}
+                        </button>
+                      ))}
+                      <span className="mx-1 w-px self-stretch bg-line" aria-hidden />
+                      {SPECIES_CHOICES.map((sp) => {
+                        const on = role.species?.includes(sp.id) ?? false;
+                        return (
+                          <button
+                            key={sp.id}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => {
+                              const cur = role.species ?? [];
+                              const next = on ? cur.filter((x) => x !== sp.id) : [...cur, sp.id];
+                              patchRole(key, { species: next.length ? next : undefined });
+                            }}
+                            className={`rounded-full px-3 py-1 text-xs transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}
+                          >
+                            {sp.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {key !== "1" && (
+                      <select value={role.relation ?? ""} onChange={(e) => patchRole(key, { relation: e.target.value || undefined })} aria-label={`Beziehung von Charakter ${key} zu Charakter 1`} className={field}>
+                        <option value="">Beziehung: egal</option>
+                        {RELATION_CHOICES.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </fieldset>
+                );
+              })}
+            </div>
+          </details>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -156,6 +221,7 @@ export function CustomFateManager({ fates, currentUserId, isWorldOwner }: { fate
                           setText(f.text);
                           setCategory(f.category);
                           setSeverity(f.severity);
+                          setRoles(cleanRoles(f.roles, f.targets));
                           setMessage(null);
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
@@ -177,6 +243,14 @@ export function CustomFateManager({ fates, currentUserId, isWorldOwner }: { fate
                     {f.category} · {SEVERITY_LABEL[f.severity] ?? f.severity}
                     {f.targets > 0 ? ` · ${f.targets} weitere${f.targets === 1 ? "r" : ""} Charakter${f.targets === 1 ? "" : "e"}` : ""}
                   </p>
+                  {(["1", "2", "3"] as const)
+                    .map((k) => [k, describeRole(cleanRoles(f.roles, f.targets)[k])] as const)
+                    .filter(([, d]) => d)
+                    .map(([k, d]) => (
+                      <p key={k} className="text-xs text-muted">
+                        Charakter {k}: {d}
+                      </p>
+                    ))}
                 </div>
               </RevealRow>
             ))}

@@ -93,7 +93,7 @@ export async function previewFateAction(
   }
 
   const targetPool = slotMentionable.flat().map(toMeta);
-  const { data: customRows } = await supabase.from("world_custom_fates").select("id, category, severity, text, targets, created_by").eq("world_id", activeWorld.id).returns<CustomFateRow[]>();
+  const { data: customRows } = await supabase.from("world_custom_fates").select("id, category, severity, text, targets, created_by, roles").eq("world_id", activeWorld.id).returns<CustomFateRow[]>();
   const result = rollFate(char1Pool, targetPool, char1Config, slots, severityRange, categories, rowsToFates(customRows ?? []));
   if ("error" in result) return result;
 
@@ -138,7 +138,7 @@ export async function postFateResultAction(
   if (!fate && typeof fateId === "string") {
     const { data: row } = await supabase
       .from("world_custom_fates")
-      .select("id, category, severity, text, targets, created_by")
+      .select("id, category, severity, text, targets, created_by, roles")
       .eq("id", fateId)
       .eq("world_id", activeWorld.id)
       .maybeSingle<CustomFateRow>();

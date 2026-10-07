@@ -169,8 +169,8 @@ export function NewStoryPostForm({
       <div className="flex flex-col gap-1.5">
         <p className="text-sm text-fg-soft">Mit dabei (optional)</p>
         <CastPicker
-          options={worldCharacters.filter((c) => c.id !== writerId)}
-          value={cast.filter((id) => id !== writerId)}
+          options={worldCharacters.filter((c) => narrator || c.id !== writerId)}
+          value={cast.filter((id) => narrator || id !== writerId)}
           onChange={setCast}
           inputName="cast_character_id"
         />

@@ -17,7 +17,7 @@ export default async function EigeneSchicksalePage() {
 
   const { data } = await supabase
     .from("world_custom_fates")
-    .select("id, category, severity, text, targets, created_by")
+    .select("id, category, severity, text, targets, created_by, roles")
     .eq("world_id", world.id)
     .order("created_at", { ascending: false })
     .returns<CustomFateRow[]>();
