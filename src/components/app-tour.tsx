@@ -88,6 +88,8 @@ export function AppTour() {
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   // Seitenwechsel pro Schritt begrenzen, damit der Rundgang nie endlos zwischen Seiten springt
   const pushes = useRef(0);
+  // Schritt, für den schon einmal zum Ziel gescrollt wurde
+  const scrolledFor = useRef<string | null>(null);
 
   const tour = tourId ? getTour(tourId) : undefined;
   const active = view === "tour" && !!tour;
@@ -99,6 +101,7 @@ export function AppTour() {
       setDone(readToursDone());
       setRefs(NO_REFS);
       setStepIndex(0);
+      scrolledFor.current = null;
       if (id && getTour(id)) {
         setTourId(id);
         setView("tour");
@@ -160,15 +163,19 @@ export function AppTour() {
       setRect(null);
       return;
     }
-    // Ein Ziel innerhalb einer Seite kann außerhalb des sichtbaren Bereichs liegen – dann erst ohne Animation dorthin scrollen.
+    // Ein Ziel innerhalb einer Seite kann außerhalb des sichtbaren Bereichs liegen – dann einmal pro Schritt dorthin scrollen.
+    // Nur einmal: Ist das Ziel höher als der Bildschirm (z. B. das Schreibfeld), bliebe die Bedingung sonst immer wahr, jedes Scrollen
+    // löste eine neue Suche mit erneutem Scrollen aus, und der Rundgang hing in einer Endlosschleife.
     const before = el.getBoundingClientRect();
-    if (before.top < 60 || before.bottom > window.innerHeight - 60) {
-      el.scrollIntoView({ block: "center", behavior: "instant" as ScrollBehavior });
+    const key = `${tourId}:${stepIndex}`;
+    if (scrolledFor.current !== key && (before.bottom < 60 || before.top > window.innerHeight - 60 || before.top < 0)) {
+      scrolledFor.current = key;
+      el.scrollIntoView({ block: before.height > window.innerHeight - 160 ? "start" : "center", behavior: "instant" as ScrollBehavior });
     }
     const r = el.getBoundingClientRect();
     setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     setSearching(false);
-  }, [step, pathname, refs]);
+  }, [step, pathname, refs, tourId, stepIndex]);
 
   useEffect(() => {
     if (!active) return;
@@ -211,6 +218,7 @@ export function AppTour() {
   }
 
   function openTour(id: string) {
+    scrolledFor.current = null;
     setRefs(NO_REFS);
     setStepIndex(0);
     setTourId(id);
@@ -291,18 +299,21 @@ export function AppTour() {
     : null;
   const last = stepIndex >= tour.steps.length - 1;
 
-  // Tooltip-Position: unter dem Ziel, sonst darüber (an der Unterkante verankert, damit die Karte
-  // nach oben wächst statt über den Bildschirmrand hinaus); sonst mittig (kein Ziel gefunden).
-  let card: { top?: number; bottom?: number; left: number; placement: "below" | "above" | "center" };
+  // Tooltip-Position: unter dem Ziel, sonst darüber; passt die Karte an keine der beiden Stellen (Ziel höher als der Bildschirm, z. B. das
+  // Schreibfeld auf einem kleinen Fenster), steht sie fest am unteren Rand über dem Ziel – sonst läge sie außerhalb und „Weiter“ wäre
+  // nicht erreichbar. Ohne Ziel mittig.
+  const CARD_H = 280;
+  let card: { top?: number; bottom?: number; left: number; placement: "below" | "above" | "pinned" | "center" };
   if (spot) {
     const width = 320;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const below = spot.top + spot.height + 260 < vh;
     const left = Math.min(Math.max(12, spot.left + spot.width / 2 - width / 2), vw - width - 12);
-    card = below
-      ? { top: spot.top + spot.height + 12, left, placement: "below" }
-      : { bottom: Math.max(12, vh - spot.top + 12), left, placement: "above" };
+    const spaceBelow = vh - (spot.top + spot.height);
+    const spaceAbove = spot.top;
+    if (spaceBelow >= CARD_H) card = { top: spot.top + spot.height + 12, left, placement: "below" };
+    else if (spaceAbove >= CARD_H) card = { bottom: vh - spot.top + 12, left, placement: "above" };
+    else card = { bottom: 12, left, placement: "pinned" };
   } else {
     card = { left: 0, placement: "center" };
   }
