@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronLeft, ExternalLink, MessageCircle, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { OnlineAnyDot } from "@/components/online-status";
+import { PresenceDot } from "@/components/character-presence";
 import { getBubbleChats, getBubbleUnread, type BubbleChat, type BubbleData } from "@/app/bubble-actions";
 import { chatTime, messagePreview } from "@/lib/chat-preview";
 import { CharacterAvatar } from "./character-avatar";
@@ -384,7 +385,7 @@ function BubbleInner({
                 <div className="flex items-center gap-2">
                   <span className="relative shrink-0">
                     <CharacterAvatar name={current.title} avatarUrl={current.avatarUrl} size={28} />
-                    <OnlineAnyDot userIds={current.otherUserIds} overlay />
+                    {current.kind === "rp" ? <PresenceDot online={current.online} overlay /> : <OnlineAnyDot userIds={current.otherUserIds} overlay />}
                   </span>
                   <span className="truncate text-sm font-semibold text-fg">{current.title}</span>
                 </div>
@@ -483,7 +484,7 @@ function BubbleInner({
                     >
                       <span className="relative shrink-0">
                         <CharacterAvatar name={c.title} avatarUrl={c.avatarUrl} size={42} />
-                        <OnlineAnyDot userIds={c.otherUserIds} overlay />
+                        {c.kind === "rp" ? <PresenceDot online={c.online} overlay /> : <OnlineAnyDot userIds={c.otherUserIds} overlay />}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline gap-2">

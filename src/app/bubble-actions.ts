@@ -19,6 +19,8 @@ export type BubbleChat = {
   unread: number;
   // Accounts der anderen Seite (für die Online-Anzeige)
   otherUserIds: string[];
+  // RPG-Chats: Online/Offline der Gegenseite im Zweier-Chat (null bei Gruppen und Redaktions-Chats)
+  online?: boolean | null;
   // nur bei Redaktions-Chats: 1:1, Gruppe oder Welt-Chat
   accountKind?: "direct" | "group" | "world";
 };
@@ -64,7 +66,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
       const [{ data: rpChats }, unread, { data: recent }] = await Promise.all([
         supabase
           .from("chats")
-          .select("id, name, is_group, avatar_url, created_at, chat_participants(characters(id, name, avatar_url, owner_id))")
+          .select("id, name, is_group, avatar_url, created_at, chat_participants(characters(id, name, avatar_url, owner_id, presence_online))")
           .in("id", ids)
           .returns<
             {
@@ -73,7 +75,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
               is_group: boolean;
               avatar_url: string | null;
               created_at: string;
-              chat_participants: { characters: Pick<Character, "id" | "name" | "avatar_url" | "owner_id"> }[];
+              chat_participants: { characters: Pick<Character, "id" | "name" | "avatar_url" | "owner_id" | "presence_online"> }[];
             }[]
           >(),
         getUnreadCounts(user.id, own.map((c) => c.id), active.id),
@@ -99,6 +101,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
           lastMine: l?.character_id === active.id,
           unread: unread[c.id] ?? 0,
           otherUserIds: [...new Set(others.map((o) => o.owner_id).filter((id) => id !== user.id))],
+          online: c.is_group ? null : (others[0]?.presence_online ?? false),
         });
       }
     }

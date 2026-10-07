@@ -9,8 +9,6 @@ import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
 import { NextSceneForm } from "./next-scene-form";
-import { usePresenceStatus } from "@/lib/presence-status";
-import { StatusList, StatusPicker } from "@/components/presence-status-ui";
 import { WriterSelect } from "@/components/writer-select";
 import { ChaboDrawer } from "@/components/chabo/chabo-drawer";
 import type { Character } from "@/lib/types";
@@ -168,17 +166,10 @@ export function StoryComposer({
     return () => clearInterval(timer);
   }, [typing]);
 
-  const presence = usePresenceStatus(
-    `story-${storyPostId}`,
-    { characterId: writerId, name: narrator ? "Erzähler:in" : (writer?.name ?? "Jemand") },
-    { persist: true },
-  );
-
   function announceTyping(kind: "write" | "roll") {
     const now = Date.now();
     if (now - lastTypingSent.current < 2500) return;
     lastTypingSent.current = now;
-    presence.pauseFor(6000); // beim Schreiben/Würfeln ausgeblendet, danach wieder da
     channelRef.current?.send({
       type: "broadcast",
       event: "typing",
@@ -191,13 +182,11 @@ export function StoryComposer({
   }
 
   // Sobald der Reiter „Würfeln“ offen ist, sehen die anderen „… würfelt“ (statt „schreibt“) – nicht erst nach einer Eingabe.
-  const pauseStatus = presence.pauseFor;
   const writerName = writer?.name ?? "Jemand";
   useEffect(() => {
     if (mode !== "roll") return;
     const send = () => {
       if (document.visibilityState !== "visible") return;
-      pauseStatus(6000);
       channelRef.current?.send({
         type: "broadcast",
         event: "typing",
@@ -207,7 +196,7 @@ export function StoryComposer({
     send();
     const timer = setInterval(send, 3000);
     return () => clearInterval(timer);
-  }, [mode, writerId, writerName, pauseStatus]);
+  }, [mode, writerId, writerName]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -319,8 +308,6 @@ export function StoryComposer({
         </div>
       )}
 
-      {mode !== "chat" && <StatusList others={presence.others} hideIds={Object.keys(typing)} />}
-      {mode !== "chat" && <StatusPicker presence={presence} />}
 
       {mode === "chat" ? null : mode === "write" ? (
         <StoryEntryForm

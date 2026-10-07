@@ -52,6 +52,8 @@ export type Character = {
   name_symbol?: string | null;
   // NPC: Charakter ohne Spieler:in dahinter (owner_id = Anleger:in)
   is_npc?: boolean;
+  // Online (grüner Punkt) oder offline (grauer Punkt), von der Besitzer:in gesetzt
+  presence_online?: boolean;
   relationship_status?: CharacterRelationshipStatus | null;
   partner_character_id?: string | null;
   best_friend_character_id?: string | null;

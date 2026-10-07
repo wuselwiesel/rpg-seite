@@ -1,3 +1,4 @@
+import { PresenceControl, PresenceDot } from "@/components/character-presence";
 import { BadgeRow } from "@/components/badge-row";
 import { CharacterTimeline } from "@/components/character-timeline";
 import { getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/badges-server";
@@ -218,6 +219,13 @@ export default async function CharacterProfilePage({
                           avatar
                         )}
                       </div>
+                    )}
+                    {character.owner_id === user.id ? (
+                      <PresenceControl characterId={character.id} online={!!character.presence_online} placement="bottom-left" className="sm:bottom-1 sm:left-1" />
+                    ) : (
+                      <span className="absolute bottom-0 right-0 sm:bottom-1 sm:right-1">
+                        <PresenceDot online={!!character.presence_online} overlay />
+                      </span>
                     )}
                     {isActiveProfile && (
                       <Link

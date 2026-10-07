@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Plus, SendHorizontal, Trash2, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { OnlineBadge, OnlineCount } from "@/components/online-status";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { resizeImage } from "@/lib/image-resize";
 import { chatImageError, previewUrlFor } from "@/lib/chat-image";
@@ -18,13 +17,23 @@ import { GifPicker } from "@/components/gif-picker";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
 import { MENTION_REGEX, plainMentions } from "@/lib/mentions";
-import { usePresenceStatus } from "@/lib/presence-status";
-import { StatusList, StatusPicker } from "@/components/presence-status-ui";
+import { PresenceBadge } from "@/components/character-presence";
 import { MessageBubble } from "./message-bubble";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
 import type { Character, Message } from "@/lib/types";
+
+// „n online“ bei einer Gruppe (nichts, wenn niemand online ist)
+function GroupOnline({ online }: { online: number }) {
+  if (online === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
+      <span aria-hidden className="h-2 w-2 rounded-full bg-emerald-500" />
+      {online} online
+    </span>
+  );
+}
 
 export function ChatRoom({
   chatId,
@@ -240,13 +249,10 @@ export function ChatRoom({
     return () => clearInterval(timer);
   }, [typing]);
 
-  const presence = usePresenceStatus(`chat-${chatId}`, { characterId: activeCharacter.id, name: activeCharacter.name });
-
   function announceTyping() {
     const now = Date.now();
     if (now - lastTypingSent.current < 2500) return;
     lastTypingSent.current = now;
-    presence.pauseFor(6000); // beim Schreiben ausgeblendet, danach wieder da
     channelRef.current?.send({
       type: "broadcast",
       event: "typing",
@@ -497,9 +503,9 @@ export function ChatRoom({
               <div className="flex min-w-0 flex-col">
                 <h1 className="truncate font-serif text-2xl leading-tight text-fg">{title}</h1>
                 {isGroup ? (
-                  <OnlineCount userIds={participants.map((p) => p.owner_id)} selfId={userId} />
+                  <GroupOnline online={participants.filter((p) => p.id !== activeCharacter.id && p.presence_online).length} />
                 ) : (
-                  <OnlineBadge userId={participants.find((p) => p.id !== activeCharacter.id && p.owner_id !== userId)?.owner_id} />
+                  <PresenceBadge online={participants.find((p) => p.id !== activeCharacter.id)?.presence_online ?? false} />
                 )}
               </div>
               {isGroup && (
@@ -629,7 +635,6 @@ export function ChatRoom({
               {Object.values(typing).map((t) => t.name).join(", ")} schreibt…
             </div>
           )}
-          <StatusList others={presence.others} hideIds={Object.keys(typing)} />
           <div ref={bottomRef} />
         </div>
       </div>
@@ -639,7 +644,6 @@ export function ChatRoom({
         className="flex flex-col gap-2 border-t border-line pt-4"
         style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
-        <StatusPicker presence={presence} />
         {replyTo && (
           <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg-soft">
             <CornerUpLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />

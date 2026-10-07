@@ -7,6 +7,8 @@ import { getUnreadCounts } from "@/lib/chat-reads";
 import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
 import type { Profile } from "@/lib/types";
 import { CharacterSwitcher } from "./character-switcher";
+import { CharacterAvatar } from "./character-avatar";
+import { PresenceControl } from "./character-presence";
 import { WorldSwitcher } from "./world-switcher";
 import { ModeSwitch } from "./mode-switch";
 import { SidebarNav } from "./sidebar-nav";
@@ -141,6 +143,19 @@ export async function Sidebar() {
         activeCharacter={activeCharacter}
       />
       </div>
+      {activeCharacter && (
+        <div className="mt-2 flex shrink-0 items-center gap-2.5 rounded-xl bg-surface-2 px-2.5 py-2">
+          <div className="relative shrink-0">
+            <Link href={`/characters/${activeCharacter.id}`} aria-label={activeCharacter.name}>
+              <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={34} />
+            </Link>
+            <PresenceControl characterId={activeCharacter.id} online={!!activeCharacter.presence_online} placement="bottom-right" />
+          </div>
+          <Link href={`/characters/${activeCharacter.id}`} className="min-w-0 flex-1 truncate text-sm font-medium text-fg hover:text-accent">
+            {activeCharacter.name}
+          </Link>
+        </div>
+      )}
       <div className="mt-2 shrink-0">
         <Link
           href="/hilfe"

@@ -10,6 +10,7 @@ import { InstallAppButton } from "./install-app-button";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { CharacterAvatar } from "./character-avatar";
+import { PresenceControl } from "./character-presence";
 import { Wordmark } from "./wordmark";
 import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
@@ -194,9 +195,12 @@ export function MobileNav({
 
         {activeCharacter && (
           <div className="mb-5 flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3">
-            <Link href={`/characters/${activeCharacter.id}`} onClick={() => setMoreOpen(false)}>
-              <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={48} />
-            </Link>
+            <div className="relative shrink-0">
+              <Link href={`/characters/${activeCharacter.id}`} onClick={() => setMoreOpen(false)}>
+                <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={48} />
+              </Link>
+              <PresenceControl characterId={activeCharacter.id} online={!!activeCharacter.presence_online} placement="bottom-right" />
+            </div>
             <div className="min-w-0 flex-1">
               <Link
                 href={`/characters/${activeCharacter.id}`}

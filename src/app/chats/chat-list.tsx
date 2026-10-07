@@ -105,7 +105,7 @@ export async function ChatList() {
                 id={chat.id}
                 title={title}
                 avatarUrl={chat.is_group ? chat.avatar_url : others[0]?.avatar_url}
-                ownerId={!chat.is_group && others[0]?.owner_id !== user.id ? others[0]?.owner_id : null}
+                online={chat.is_group ? null : (others[0]?.presence_online ?? false)}
                 participantCount={chat.chat_participants.length}
                 lastMessage={last ? { text: messagePreview(last), at: last.created_at, sender: senderName } : null}
                 unreadCount={unreadCounts[chat.id] ?? 0}
