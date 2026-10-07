@@ -504,6 +504,21 @@ function Toolbar({
   );
 }
 
+// Die Bereinigung des gespeicherten HTML entfernt data-label; ohne den Namen zeigte ein bearbeiteter Text die ID statt „@Name“.
+// Der Name steht aber noch im Text der Erwähnung („@Name“) und wird beim Einlesen daraus geholt.
+const MentionKeepingName = Mention.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      label: {
+        default: null,
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-label") || el.textContent?.replace(/^@/, "").trim() || null,
+        renderHTML: (attrs: { label?: string | null }) => (attrs.label ? { "data-label": attrs.label } : {}),
+      },
+    };
+  },
+});
+
 export function RichTextEditor({
   name,
   initialContent,
@@ -569,7 +584,7 @@ export function RichTextEditor({
         : []),
       ...(mentionCharacters
         ? [
-            Mention.configure({
+            MentionKeepingName.configure({
               HTMLAttributes: { class: "mention", "data-type": "mention" },
               suggestion: createMentionSuggestion(mentionCharacters),
             }),
@@ -577,7 +592,7 @@ export function RichTextEditor({
         : wikiPages
           ? [
               // Erwähnungs-Knoten ohne eigene @-Auswahl: die gemeinsame Liste (Seiten und Figuren) kommt aus wikiMentionExtension.
-              Mention.extend({ addProseMirrorPlugins: () => [] }).configure({ HTMLAttributes: { class: "mention", "data-type": "mention" } }),
+              MentionKeepingName.extend({ addProseMirrorPlugins: () => [] }).configure({ HTMLAttributes: { class: "mention", "data-type": "mention" } }),
               wikiMentionExtension([
                 ...wikiPages.map((p) => ({ ...p, kind: "page" as const })),
                 ...(wikiCharacters ?? []).map((c) => ({ id: c.id, title: c.name, kind: "character" as const, avatarUrl: c.avatar_url })),
