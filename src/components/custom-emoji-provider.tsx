@@ -19,10 +19,14 @@ export function useEmojiHtml(html: string): string {
 }
 
 // Klartext mit :name: -> Text und Emoji-Bilder.
-export function EmojiText({ text }: { text: string }) {
+// `chat`: größer für Chat-Nachrichten; besteht die Nachricht nur aus (höchstens 8) Emojis, werden sie groß gezeigt.
+export function EmojiText({ text, chat = false, alone = true }: { text: string; chat?: boolean; alone?: boolean }) {
   const map = useContext(EmojiContext);
   const parts = splitEmojiText(text, map);
   if (parts.length === 1 && typeof parts[0] === "string") return <>{parts[0]}</>;
+  const emojiCount = parts.filter((p) => typeof p !== "string").length;
+  const onlyEmoji = chat && alone && emojiCount <= 8 && parts.every((p) => typeof p !== "string" || !p.trim());
+  const cls = !chat ? "custom-emoji" : onlyEmoji ? "custom-emoji custom-emoji-jumbo" : "custom-emoji custom-emoji-chat";
   return (
     <>
       {parts.map((p, i) =>
@@ -30,7 +34,7 @@ export function EmojiText({ text }: { text: string }) {
           <span key={i}>{p}</span>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={i} src={p.url} alt={`:${p.name}:`} title={`:${p.name}:`} className="custom-emoji" draggable={false} />
+          <img key={i} src={p.url} alt={`:${p.name}:`} title={`:${p.name}:`} className={cls} draggable={false} />
         ),
       )}
     </>

@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Check, Pencil, Trash2, X } from "lucide-react";
 import { POOL_KINDS, POOL_LABELS, type PoolKind } from "@/lib/random-pools";
 import { parseEntries } from "@/lib/random-lists";
-import { addRandomEntries, deleteRandomEntry } from "./actions";
+import { addRandomEntries, deleteRandomEntry, updateRandomEntry } from "./actions";
 
 export type EntryRow = { id: string; kind: PoolKind; text: string; created_by: string };
 
@@ -27,6 +27,7 @@ export function RandomListManager({
   const [text, setText] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
 
   const mine = entries.filter((e) => e.kind === kind);
   const count = (k: PoolKind) => entries.filter((e) => e.kind === k).length;
@@ -39,6 +40,17 @@ export function RandomListManager({
       if ("error" in result) return setMessage({ ok: false, text: result.error });
       setText("");
       setMessage({ ok: true, text: result.skipped ? `${result.added} neu, ${result.skipped} schon vorhanden.` : `${result.added} hinzugefügt.` });
+      router.refresh();
+    });
+  }
+
+  function saveEdit() {
+    if (!editing) return;
+    setMessage(null);
+    startTransition(async () => {
+      const error = await updateRandomEntry(editing.id, editing.text);
+      if (error) return setMessage({ ok: false, text: error });
+      setEditing(null);
       router.refresh();
     });
   }
@@ -112,16 +124,56 @@ export function RandomListManager({
           <ul className="grid gap-2 sm:grid-cols-2">
             {mine.map((e) => (
               <li key={e.id} className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
-                <span className="min-w-0 flex-1 break-words text-sm text-fg">{e.text}</span>
-                {(e.created_by === currentUserId || isWorldOwner) && (
-                  <button
-                    type="button"
-                    onClick={() => remove(e.id)}
-                    aria-label={`„${e.text}“ löschen`}
-                    className="shrink-0 rounded-full p-1 text-muted transition hover:text-red-500"
-                  >
-                    <Trash2 className="h-4 w-4" strokeWidth={2} />
-                  </button>
+                {editing?.id === e.id ? (
+                  <>
+                    <input
+                      autoFocus
+                      value={editing.text}
+                      maxLength={200}
+                      aria-label="Eintrag bearbeiten"
+                      onChange={(ev) => setEditing({ id: e.id, text: ev.target.value })}
+                      onKeyDown={(ev) => {
+                        if (ev.key === "Enter") {
+                          ev.preventDefault();
+                          saveEdit();
+                        } else if (ev.key === "Escape") setEditing(null);
+                      }}
+                      className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-base text-fg outline-none focus:border-accent sm:text-sm"
+                    />
+                    <button type="button" onClick={saveEdit} disabled={pending || !editing.text.trim()} aria-label="Speichern" className="shrink-0 rounded-full p-1 text-muted transition hover:text-accent disabled:opacity-50">
+                      <Check className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                    <button type="button" onClick={() => setEditing(null)} aria-label="Abbrechen" className="shrink-0 rounded-full p-1 text-muted transition hover:text-fg">
+                      <X className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1 break-words text-sm text-fg">{e.text}</span>
+                    {(e.created_by === currentUserId || isWorldOwner) && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMessage(null);
+                            setEditing({ id: e.id, text: e.text });
+                          }}
+                          aria-label={`„${e.text}“ bearbeiten`}
+                          className="shrink-0 rounded-full p-1 text-muted transition hover:text-fg"
+                        >
+                          <Pencil className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => remove(e.id)}
+                          aria-label={`„${e.text}“ löschen`}
+                          className="shrink-0 rounded-full p-1 text-muted transition hover:text-red-500"
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                      </>
+                    )}
+                  </>
                 )}
               </li>
             ))}

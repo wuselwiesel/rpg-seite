@@ -45,3 +45,23 @@ export async function deleteRandomEntry(id: string): Promise<string | null> {
   revalidatePath("/profile/zufallslisten");
   return null;
 }
+
+// Einen eigenen Eintrag ändern (die Datenbank erlaubt es nur der Person, die ihn angelegt hat, und der Welt-Besitzerin)
+export async function updateRandomEntry(id: string, raw: string): Promise<string | null> {
+  const [text] = parseEntries(raw);
+  if (!text) return "Der Eintrag darf nicht leer sein.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: row } = await supabase.from("world_random_entries").select("world_id, kind").eq("id", id).maybeSingle<{ world_id: string; kind: string }>();
+  if (!row) return "Eintrag nicht gefunden.";
+  const { data: same } = await supabase.from("world_random_entries").select("id").eq("world_id", row.world_id).eq("kind", row.kind).ilike("text", text.replace(/[\\%_]/g, (m) => `\\${m}`)).neq("id", id).limit(1);
+  if (same?.length) return "Diesen Eintrag gibt es in der Liste schon.";
+  const { error, count } = await supabase.from("world_random_entries").update({ text }, { count: "exact" }).eq("id", id);
+  if (error) return error.code === "23505" ? "Diesen Eintrag gibt es in der Liste schon." : error.message;
+  if (!count) return "Das darfst du nicht ändern.";
+  revalidatePath("/profile/zufallslisten");
+  return null;
+}
