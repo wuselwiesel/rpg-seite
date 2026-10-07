@@ -1179,9 +1179,9 @@ export async function setSceneArc(storyPostId: string, arcId: string | null, new
     if (!arc) return "Diesen Handlungsstrang gibt es nicht.";
   }
 
-  const { error, count } = await supabase.from("story_posts").update({ arc_id: nextArc }, { count: "exact" }).eq("id", storyPostId);
-  if (error) return error.message;
-  if (!count) return "Das darf nur die Autor:in oder die Welt-Besitzerin ändern.";
+  // Alle Mitspielenden der Welt dürfen den Handlungsstrang setzen, auch bei fremden und abgeschlossenen Szenen (RPC set_scene_arc)
+  const { error } = await supabase.rpc("set_scene_arc", { p_story_post_id: storyPostId, p_arc_id: nextArc });
+  if (error) return error.message === "Keine Berechtigung" ? "Das dürfen nur Mitspielende dieser Welt (bei geheimen Szenen nur, wer sie sehen darf)." : error.message;
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
   return null;

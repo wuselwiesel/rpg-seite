@@ -294,7 +294,7 @@ export default async function StoryPostDetailPage({
           storyPostId={storyPost.id}
           arc={storyPost.arc_id && storyPost.story_arcs?.name ? { id: storyPost.arc_id, name: storyPost.story_arcs.name } : null}
           arcs={arcOptions}
-          canEdit={(isAuthor || isWorldOwner) && !storyPost.locked}
+          canEdit={myCharacterIds.size > 0 || isWorldOwner}
         />
         <SceneCast
           storyPostId={storyPost.id}
