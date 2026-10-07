@@ -7,8 +7,6 @@ import type { Character } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 import { stripHtml } from "@/lib/strip-html";
 
-const SURFACES = ["bg-surface-2", "bg-surface-3", "bg-surface"];
-
 export function EntryCard({
   id,
   title,
@@ -65,10 +63,14 @@ export function EntryCard({
   narrator?: boolean;
 }) {
   const preview = stripHtml(content);
-  const surface = SURFACES[index % SURFACES.length];
+  // Ruhige Rangordnung statt wechselnder Pastellflächen: weiß mit feiner Linie; Erzähler:in-Beiträge leicht getönt,
+  // „Du bist dran“ mit kräftigem Rand links, Angepinntes mit Akzentlinie oben.
+  void index;
+  const surface = narrator ? "border-line bg-surface-2" : "border-line bg-surface";
+  const emphasis = yourTurn ? "border-l-[4px] border-l-accent-strong" : pinned ? "border-t-[3px] border-t-accent" : "";
 
   return (
-    <article key={id} className={`rounded-2xl p-5 ${surface}`}>
+    <article key={id} className={`rounded-2xl border p-5 transition-shadow hover:shadow-[0_6px_24px_-12px_rgba(60,40,50,0.25)] ${surface} ${emphasis}`}>
       {narrator ? (
         <div className="mb-3 flex w-fit items-center gap-3">
           <NarratorAvatar size={36} />
@@ -134,12 +136,12 @@ export function EntryCard({
         </div>
       )}
       <Link href={detailHref} className="block">
-        <h2 className="mb-1 flex items-center gap-2 font-serif text-2xl text-fg">
+        <h2 className="mb-1.5 flex items-center gap-2 font-serif text-[1.7rem] leading-[1.15] text-fg">
           {pinned && <Pin className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
           {isPrivate && <EyeOff className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />}
           {title}
         </h2>
-        {preview && <p className="line-clamp-3 text-sm text-fg-soft">{preview}</p>}
+        {preview && <p className="line-clamp-3 text-[15px] leading-relaxed text-fg-soft">{preview}</p>}
       </Link>
       {tags && tags.length > 0 && tagHrefBase && (
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -154,7 +156,7 @@ export function EntryCard({
           ))}
         </div>
       )}
-      <div className="mt-4 flex items-center gap-4">
+      <div className="mt-4 flex items-center gap-4 border-t border-line pt-3">
         <Link
           href={detailHref}
           className="flex items-center gap-1.5 text-sm text-muted hover:text-fg"

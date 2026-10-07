@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { setSceneArc } from "../actions";
 
 const NEW = "__new__";
@@ -46,7 +46,7 @@ export function SceneArc({
 
   if (editing) {
     return (
-      <div className="mb-3 flex flex-col gap-2 rounded-xl bg-surface-2 p-3">
+      <div className="mb-3 flex w-full flex-col gap-2 rounded-xl bg-surface-2 p-3">
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Handlungsstrang
           <select value={choice} onChange={(e) => setChoice(e.target.value)} className={field}>
@@ -90,8 +90,9 @@ export function SceneArc({
 
   if (!arc) {
     return (
-      <button type="button" onClick={() => setEditing(true)} className="mb-2 block text-sm text-muted transition hover:text-fg">
-        Handlungsstrang hinzufügen
+      <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-line px-2.5 py-1 text-xs text-muted transition hover:border-accent hover:text-accent">
+        <Plus className="h-3 w-3" strokeWidth={2.25} />
+        Handlungsstrang
       </button>
     );
   }

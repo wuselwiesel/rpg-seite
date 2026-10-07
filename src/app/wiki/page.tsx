@@ -76,50 +76,38 @@ export default async function WikiHomePage() {
         Neuer Artikel
       </Link>
       <NewFolderButton tree={tree.folders} allFolders={folders} />
-      <Link
-        href="/wiki/zufall"
-        prefetch={false}
-        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
-      >
-        <Shuffle className="h-4 w-4" strokeWidth={2} />
-        Zufällige Seite
-      </Link>
-      <Link
-        href="/wiki/karten"
-        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
-      >
+    </div>
+  );
+
+  const viewChip =
+    "flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:border-accent hover:text-accent";
+  const views = (
+    <nav aria-label="Ansichten" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] @xl:mx-0 @xl:flex-wrap @xl:overflow-visible @xl:px-0 [&::-webkit-scrollbar]:hidden">
+      <Link href="/wiki/karten" className={viewChip}>
         <MapIcon className="h-4 w-4" strokeWidth={2} />
-        Karten{maps.length > 0 ? ` (${maps.length})` : ""}
+        Karten{maps.length > 0 ? ` ${maps.length}` : ""}
       </Link>
-      <Link
-        href="/wiki/graph"
-        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
-      >
+      <Link href="/wiki/graph" className={viewChip}>
         <Network className="h-4 w-4" strokeWidth={2} />
         Graph
       </Link>
-      <Link
-        href="/characters/relationships"
-        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
-      >
+      <Link href="/characters/relationships" className={viewChip}>
         <Users className="h-4 w-4" strokeWidth={2} />
         Beziehungen
       </Link>
-      <Link
-        href="/wiki/zeitleiste"
-        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
-      >
+      <Link href="/wiki/zeitleiste" className={viewChip}>
         <Clock className="h-4 w-4" strokeWidth={2} />
         Zeitleiste
       </Link>
-      <Link
-        href="/wiki/kalender"
-        className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
-      >
+      <Link href="/wiki/kalender" className={viewChip}>
         <CalendarDays className="h-4 w-4" strokeWidth={2} />
         Kalender
       </Link>
-    </div>
+      <Link href="/wiki/zufall" prefetch={false} className={viewChip}>
+        <Shuffle className="h-4 w-4" strokeWidth={2} />
+        Zufällig
+      </Link>
+    </nav>
   );
 
   if (pageRows.length === 0 && folders.length === 0) {
@@ -131,6 +119,7 @@ export default async function WikiHomePage() {
           Artikel untereinander mit [[Titel]].
         </p>
         {actions}
+        {views}
       </div>
     );
   }
@@ -147,13 +136,16 @@ export default async function WikiHomePage() {
         {actions}
       </header>
 
-      <form method="get" action="/wiki/suche" role="search" className="-mt-6 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 focus-within:border-accent">
+      <div className="-mt-6 flex flex-col gap-3">
+      <form method="get" action="/wiki/suche" role="search" className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 focus-within:border-accent">
         <Search className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
         <input type="search" name="q" placeholder="Im Wiki suchen" aria-label="Im Wiki suchen" className="w-full bg-transparent py-2.5 text-fg outline-none" />
         <Link href="/wiki/suche" className="shrink-0 text-xs text-muted hover:text-accent">
           Filter
         </Link>
       </form>
+      {views}
+      </div>
 
       {drafts.length > 0 && (
         <section aria-labelledby="entwuerfe" className="rounded-2xl border border-dashed border-accent/50 p-4">

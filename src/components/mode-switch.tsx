@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Camera, ChevronDown, Newspaper } from "lucide-react";
+import { BookOpen, Camera, Newspaper } from "lucide-react";
 import { type AppMode } from "@/lib/app-mode";
 import { useAppMode } from "@/components/mode-context";
 
@@ -32,63 +31,29 @@ export function ModeSwitch() {
   );
 }
 
-// Handy: ein Knopf mit dem aktuellen Modus, der ein kleines Menü zum Wechseln öffnet.
+// Handy: drei Segmente, der aktive Modus mit Beschriftung, die anderen nur als Symbol – ein Tipp zum Wechseln.
 export function MobileModeButton() {
   const mode = useAppMode();
-  const current = MODES.find((m) => m.id === mode) ?? MODES[0];
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDown(e: PointerEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
 
   return (
-    <div ref={ref} className="relative" data-tour="mode-switch">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="flex items-center gap-1.5 rounded-full bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong transition hover:opacity-90"
-      >
-        <current.Icon className="h-3.5 w-3.5" strokeWidth={2} />
-        {current.label}
-        <ChevronDown className="h-3 w-3" strokeWidth={2.5} />
-      </button>
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-50 mt-1.5 flex w-40 flex-col gap-0.5 rounded-xl border border-line bg-surface p-1 shadow-lg"
-        >
-          {MODES.map(({ id, href, label, Icon }) => (
-            <Link
-              key={id}
-              href={href}
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                mode === id ? "bg-surface-2 text-fg" : "text-fg-soft hover:bg-surface-2 hover:text-fg"
-              }`}
-            >
-              <Icon className="h-4 w-4" strokeWidth={2} />
-              {label}
-            </Link>
-          ))}
-        </div>
-      )}
+    <div className="flex items-center gap-0.5 rounded-full bg-surface-2 p-0.5" data-tour="mode-switch" role="group" aria-label="Modus">
+      {MODES.map(({ id, href, label, Icon }) => {
+        const active = mode === id;
+        return (
+          <Link
+            key={id}
+            href={href}
+            aria-label={label}
+            aria-current={active ? "page" : undefined}
+            className={`flex h-8 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-all ${
+              active ? "bg-accent-strong px-3 text-on-accent-strong shadow-sm" : "w-8 text-muted hover:text-fg"
+            }`}
+          >
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+            {active && label}
+          </Link>
+        );
+      })}
     </div>
   );
 }

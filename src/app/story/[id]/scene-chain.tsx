@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { setPreviousScene } from "../actions";
 
 type SceneRef = { id: string; title: string };
@@ -39,7 +39,7 @@ export function SceneChain({
 
   if (editing) {
     return (
-      <div className="mb-3 flex flex-col gap-2 rounded-lg bg-surface-2 p-2.5">
+      <div className="mb-3 flex w-full flex-col gap-2 rounded-lg bg-surface-2 p-2.5">
         <select
           value={choice}
           onChange={(e) => setChoice(e.target.value)}
@@ -79,8 +79,8 @@ export function SceneChain({
         </Link>
       )}
       {canEdit && (
-        <button type="button" onClick={() => setEditing(true)} aria-label="Vorherige Szene ändern" title="Vorherige Szene ändern" className="flex items-center gap-1 transition hover:text-accent">
-          <Pencil className="h-3 w-3" strokeWidth={2} />
+        <button type="button" onClick={() => setEditing(true)} aria-label="Vorherige Szene ändern" title="Vorherige Szene ändern" className={`flex items-center gap-1 transition hover:text-accent ${!previous && !next ? "rounded-full border border-dashed border-line px-2.5 py-1 hover:border-accent" : ""}`}>
+          {!previous && !next ? <Plus className="h-3 w-3" strokeWidth={2.25} /> : <Pencil className="h-3 w-3" strokeWidth={2} />}
           {!previous && !next && "Vorherige Szene"}
         </button>
       )}

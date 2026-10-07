@@ -125,7 +125,7 @@ export function StoryPostBody({
       {deleteError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{deleteError}</p>}
       {metaSlot}
       <SpoilerGate spoiler={spoiler}>
-        <EmojiHtml className="post-content text-fg-soft" html={displayHtml} />
+        <EmojiHtml className="post-content max-w-[68ch] font-serif text-[1.1rem] leading-[1.8] text-fg" html={displayHtml} />
       </SpoilerGate>
     </>
   );

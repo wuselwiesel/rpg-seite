@@ -257,6 +257,7 @@ export default async function StoryPostDetailPage({
             />
           )}
         </div>
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 [&>*]:!mb-0">
         <SceneChain
           storyPostId={storyPost.id}
           previous={prevScene ? { id: prevScene.id, title: prevScene.title } : null}
@@ -276,6 +277,7 @@ export default async function StoryPostDetailPage({
           options={castOptions}
           canEdit={isAuthor && !storyPost.locked}
         />
+        </div>
         <StoryPostBody
           storyPostId={storyPost.id}
           title={storyPost.title}

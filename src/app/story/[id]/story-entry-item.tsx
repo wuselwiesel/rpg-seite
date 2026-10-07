@@ -440,7 +440,7 @@ export function StoryEntryItem({
           // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -
           // Einträge kommen nie ungeprüft vom Client in die Datenbank.
           <SpoilerGate spoiler={spoiler}>
-            <EmojiHtml className="post-content text-sm text-fg-soft" html={displayHtml ?? entry.content} />
+            <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={displayHtml ?? entry.content} />
           </SpoilerGate>
         )}
       </div>

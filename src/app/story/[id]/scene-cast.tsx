@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { CastPicker, type CastOption } from "@/components/cast-picker";
 import { setSceneCast } from "../actions";
@@ -33,7 +33,7 @@ export function SceneCast({
 
   if (editing) {
     return (
-      <div className="mb-3 flex flex-col gap-2 rounded-xl bg-surface-2 p-3">
+      <div className="mb-3 flex w-full flex-col gap-2 rounded-xl bg-surface-2 p-3">
         <p className="text-sm text-fg-soft">Mit dabei</p>
         <CastPicker options={options} value={value} onChange={setValue} />
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
@@ -72,8 +72,9 @@ export function SceneCast({
 
   if (cast.length === 0) {
     return (
-      <button type="button" onClick={() => setEditing(true)} className="mb-3 text-sm text-muted transition hover:text-fg">
-        Mit dabei hinzufügen
+      <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-line px-2.5 py-1 text-xs text-muted transition hover:border-accent hover:text-accent">
+        <Plus className="h-3 w-3" strokeWidth={2.25} />
+        Mit dabei
       </button>
     );
   }

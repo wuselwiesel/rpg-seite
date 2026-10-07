@@ -24,8 +24,8 @@ import type { Character, Profile, World } from "@/lib/types";
 function MobileCreateTab({ href, label }: { href: string; label: string }) {
   return (
     <Link href={href} aria-label={label} data-tour="compose" className="flex flex-1 items-center justify-center py-2">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-accent text-accent transition active:scale-90">
-        <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-strong text-on-accent-strong shadow-sm transition active:scale-90">
+        <Plus className="h-5 w-5" strokeWidth={2.5} />
       </span>
     </Link>
   );
@@ -77,7 +77,7 @@ export function MobileNav({
           <ActiveCharacterMenu
             characters={characters}
             activeCharacter={activeCharacter}
-            avatarOnly={pathname === "/"}
+            avatarOnly
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">

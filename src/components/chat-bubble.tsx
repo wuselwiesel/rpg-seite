@@ -97,6 +97,21 @@ function BubbleInner({
 }) {
   const [pos, setPos] = useState<Pos>(readPos);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  // Beim Scrollen schiebt sich die Blase zur Seite weg, damit sie nichts verdeckt; sie kommt kurz nach dem Stillstand zurück
+  const [tucked, setTucked] = useState(false);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    function onScroll() {
+      setTucked(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setTucked(false), 700);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(timer);
+    };
+  }, []);
   const dragRef = useRef<{ startX: number; startY: number; moved: boolean } | null>(null);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<{ kind: "account" | "rp"; id: string } | null>(null);
@@ -311,7 +326,12 @@ function BubbleInner({
   return (
     <>
       {!open && (
-        <div className="fixed z-[60] print:hidden" style={bubbleStyle}>
+        <div
+          className={`fixed z-[60] transition-[transform,opacity] duration-300 print:hidden ${
+            tucked && !drag ? `opacity-40 ${pos.side === "left" ? "-translate-x-[70%]" : "translate-x-[70%]"}` : "opacity-90 hover:opacity-100"
+          }`}
+          style={bubbleStyle}
+        >
           {preview && !drag && (
             <button
               type="button"
