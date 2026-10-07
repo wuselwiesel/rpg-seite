@@ -254,13 +254,21 @@ export default async function StoryPostDetailPage({
           {storyPost.narrator ? (
             <NarratorAvatar size={40} />
           ) : (
-            <CharacterAvatar
-              name={storyPost.characters?.name ?? "?"}
-              avatarUrl={storyPost.characters?.avatar_url}
-            />
+            <Link href={`/characters/${storyPost.character_id}/chabo`} aria-label={`ChaBo von ${storyPost.characters?.name ?? "Charakter"}`}>
+              <CharacterAvatar
+                name={storyPost.characters?.name ?? "?"}
+                avatarUrl={storyPost.characters?.avatar_url}
+              />
+            </Link>
           )}
           <div>
-            <p className="font-medium text-fg">{storyPost.narrator ? "Erzähler:in" : storyPost.characters?.name}</p>
+            {storyPost.narrator ? (
+              <p className="font-medium text-fg">Erzähler:in</p>
+            ) : (
+              <Link href={`/characters/${storyPost.character_id}/chabo`} className="font-medium text-fg transition hover:text-accent">
+                {storyPost.characters?.name}
+              </Link>
+            )}
             <p className="text-xs text-muted">{formatDateTime(storyPost.created_at)}</p>
           </div>
           {(myCharacterIds.size > 0 || isWorldOwner) && (

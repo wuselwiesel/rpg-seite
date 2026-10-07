@@ -211,11 +211,13 @@ export function StoryEntryItem({
       {isNarrator ? (
         <NarratorAvatar size={32} />
       ) : (
-        <CharacterAvatar
-          name={entry.characters?.name ?? "?"}
-          avatarUrl={entry.characters?.avatar_url}
-          size={32}
-        />
+        <Link href={`/characters/${entry.character_id}/chabo`} aria-label={`ChaBo von ${entry.characters?.name ?? "Charakter"}`} className="h-fit shrink-0">
+          <CharacterAvatar
+            name={entry.characters?.name ?? "?"}
+            avatarUrl={entry.characters?.avatar_url}
+            size={32}
+          />
+        </Link>
       )}
       <div
         id={`beitrag-${entry.id}`}
@@ -235,7 +237,13 @@ export function StoryEntryItem({
       >
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
-            <p className="text-sm font-medium text-fg">{isNarrator ? "Erzähler:in" : entry.characters?.name}</p>
+            {isNarrator ? (
+              <p className="text-sm font-medium text-fg">Erzähler:in</p>
+            ) : (
+              <Link href={`/characters/${entry.character_id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
+                {entry.characters?.name}
+              </Link>
+            )}
             <p className="text-xs text-muted">
               {formatDateTime(entry.created_at)}
               {entry.updated_at && " · bearbeitet"}

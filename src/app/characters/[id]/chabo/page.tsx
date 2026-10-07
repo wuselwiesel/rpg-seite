@@ -37,7 +37,8 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
     getWorldNpcs(character.world_id),
     isOwn ? fetchRandomLists(supabase, character.world_id) : Promise.resolve(undefined),
   ]);
-  if (!isOwn && !sheet) notFound();
+  // Ohne ausgefüllten ChaBo gibt es für andere nichts zu sehen: dann zum Profil (Links aus Szenen führen hierher)
+  if (!isOwn && !sheet) redirect(`/characters/${character.id}`);
   // ChaBo-Wechsler: eigene Charaktere, darunter getrennt die NPCs (eigene zuerst, dann die übrigen der Welt)
   const ownNpcIds = new Set(ownNpcs.map((n) => n.id));
   const switcherNpcs = [...ownNpcs, ...worldNpcs.filter((n) => !ownNpcIds.has(n.id))];
