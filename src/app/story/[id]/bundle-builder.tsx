@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { WriterSelect } from "@/components/writer-select";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import type { Character } from "@/lib/types";
 
@@ -68,26 +69,13 @@ export function BundleBuilder({
             className="group/seg rounded-xl border border-line bg-surface p-2.5"
           >
             <div className="mb-2 flex items-center gap-2">
-              <CharacterAvatar name={character.name} avatarUrl={character.avatar_url} size={28} />
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1" role="radiogroup" aria-label="Charakter dieses Abschnitts">
-                {ownCharacters.map((c) => {
-                  const active = c.id === row.characterId;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => commit(rowsRef.current.map((r) => (r.key === row.key ? { ...r, characterId: c.id } : r)))}
-                      className={`flex items-center gap-1.5 rounded-full py-0.5 pl-0.5 pr-2.5 text-sm transition ${
-                        active ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
-                      }`}
-                    >
-                      <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={20} />
-                      <span className="max-w-[9rem] truncate">{c.name}</span>
-                    </button>
-                  );
-                })}
+              <div className="min-w-0 flex-1">
+                <WriterSelect
+                  label=""
+                  characters={ownCharacters}
+                  value={row.characterId}
+                  onChange={(id) => commit(rowsRef.current.map((r) => (r.key === row.key ? { ...r, characterId: id } : r)))}
+                />
               </div>
               {rows.length > 1 && (
                 <button
