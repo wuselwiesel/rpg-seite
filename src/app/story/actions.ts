@@ -163,6 +163,12 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
 
   const isPrivate = formData.get("is_private") === "on";
   const viewerCharacterIds = formData.getAll("viewer_character_id").map(String).filter(Boolean);
+  // „Mit dabei“: nur Charaktere dieser Welt (keine Dopplung, nicht die Schreibende selbst)
+  const castWanted = Array.from(new Set(formData.getAll("cast_character_id").map(String).filter((id) => id && id !== characterId))).slice(0, 40);
+  const { data: castRows } = castWanted.length
+    ? await supabase.from("characters").select("id").in("id", castWanted).eq("world_id", activeWorld.id).is("deleted_at", null)
+    : { data: [] as { id: string }[] };
+  const castIds = (castRows ?? []).map((c) => c.id);
 
   const { data, error } = await supabase
     .from("story_posts")
@@ -185,10 +191,17 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
 
   if (error || !data) return error?.message ?? "Szene konnte nicht erstellt werden.";
 
-  if (isPrivate && viewerCharacterIds.length > 0) {
+  // Wer mit dabei ist, darf eine geheime Szene auch sehen
+  const allowedViewers = Array.from(new Set([...viewerCharacterIds, ...castIds]));
+  if (isPrivate && allowedViewers.length > 0) {
     await supabase
       .from("story_post_viewers")
-      .insert(viewerCharacterIds.map((characterId) => ({ story_post_id: data.id, character_id: characterId })));
+      .insert(allowedViewers.map((viewerId) => ({ story_post_id: data.id, character_id: viewerId })));
+  }
+
+  if (castIds.length > 0) {
+    await supabase.from("story_post_cast").insert(castIds.map((castId) => ({ story_post_id: data.id, character_id: castId })));
+    await notifyMentionedCharacterIds(castIds, user.id, characterId, `/story/${data.id}`, "hat eine Szene mit dir begonnen", formData.get("narrator") === "on");
   }
 
   if (location) await ensureLocationWikiPage(supabase, activeWorld.id, user.id, location);

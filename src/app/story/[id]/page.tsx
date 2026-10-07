@@ -178,8 +178,16 @@ export default async function StoryPostDetailPage({
       }[]
     >();
 
+  // „Mit dabei“: beim Anlegen der Szene eingetragene Charaktere
+  const { data: castRows } = await supabase
+    .from("story_post_cast")
+    .select("characters(id, name, avatar_url)")
+    .eq("story_post_id", id)
+    .returns<{ characters: { id: string; name: string; avatar_url: string | null } | null }[]>();
+  const cast = (castRows ?? []).map((r) => r.characters).filter((c): c is { id: string; name: string; avatar_url: string | null } => !!c);
+
   // Charaktere für den Filter: erst die eigenen, dann alle übrigen, die in der Szene schreiben oder erwähnt werden.
-  const involvedIds = new Set<string>([storyPost.character_id, ...participantIds]);
+  const involvedIds = new Set<string>([storyPost.character_id, ...participantIds, ...cast.map((c) => c.id)]);
   for (const e of entries ?? []) {
     if (e.kind !== "chapter") for (const id of parseMentionedCharacterIdsFromHtml(e.content)) involvedIds.add(id);
   }
@@ -250,6 +258,17 @@ export default async function StoryPostDetailPage({
           >
             {storyPost.story_arcs.name}
           </Link>
+        )}
+        {cast.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted">Mit dabei</span>
+            {cast.map((c) => (
+              <Link key={c.id} href={`/characters/${c.id}`} className="flex items-center gap-1.5 rounded-full bg-surface-2 py-0.5 pl-0.5 pr-2.5 text-sm text-fg-soft transition hover:text-fg">
+                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={22} />
+                {c.name}
+              </Link>
+            ))}
+          </div>
         )}
         <StoryPostBody
           storyPostId={storyPost.id}

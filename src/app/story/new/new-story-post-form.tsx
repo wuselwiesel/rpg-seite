@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Feather } from "lucide-react";
+import { CharacterAvatar } from "@/components/character-avatar";
 import { createStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { WriterSelect } from "@/components/writer-select";
@@ -33,6 +34,8 @@ export function NewStoryPostForm({
   const [arcChoice, setArcChoice] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [narrator, setNarrator] = useState(false);
+  // Wer auf jeden Fall in der Szene dabei ist (wird verlinkt und benachrichtigt)
+  const [cast, setCast] = useState<string[]>([]);
   const { draft, restored, update, clear } = useDraft("draft:story-new", { title: "", content: "", location: "", in_world_time: "" });
 
   return (
@@ -158,6 +161,34 @@ export function NewStoryPostForm({
         />
       ) : (
         <input type="hidden" name="arc_id" value={arcChoice} />
+      )}
+
+      {otherCharacters.length > 0 && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm text-fg-soft">Mit dabei (optional)</legend>
+          <div className="flex flex-wrap gap-1.5">
+            {otherCharacters.map((c) => {
+              const on = cast.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setCast((prev) => (on ? prev.filter((id) => id !== c.id) : [...prev, c.id]))}
+                  className={`flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}
+                >
+                  <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={22} />
+                  {c.name}
+                </button>
+              );
+            })}
+          </div>
+          {cast
+            .filter((id) => otherCharacters.some((c) => c.id === id))
+            .map((id) => (
+              <input key={id} type="hidden" name="cast_character_id" value={id} />
+            ))}
+        </fieldset>
       )}
 
       {otherCharacters.length > 0 && (
