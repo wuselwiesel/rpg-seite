@@ -6,7 +6,7 @@ import { Clock, ImagePlus, MapPin, Pencil, X } from "lucide-react";
 import { EventDateRange } from "@/components/event-date-fields";
 import { formatRange, type PageDates, type WikiCalendar } from "@/lib/wiki-calendar";
 import { updateSceneAmbience, updateStoryMeta } from "../actions";
-import { SceneMusic } from "./scene-music";
+import { SceneTracks, type SceneTrack } from "./scene-tracks";
 import { chatImageError } from "@/lib/chat-image";
 import { uploadSceneImage } from "@/lib/scene-image";
 
@@ -20,7 +20,8 @@ export function SceneMeta({
   canEdit,
   shortSummary = null,
   ambienceImage = null,
-  ambienceMusic = null,
+  tracks = [],
+  canAddTracks = false,
 }: {
   storyPostId: string;
   location: string | null;
@@ -31,7 +32,8 @@ export function SceneMeta({
   // Kurzbeschreibung für die Zeitleiste
   shortSummary?: string | null;
   ambienceImage?: string | null;
-  ambienceMusic?: string | null;
+  tracks?: SceneTrack[];
+  canAddTracks?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [loc, setLoc] = useState(location ?? "");
@@ -39,7 +41,6 @@ export function SceneMeta({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [image, setImage] = useState(ambienceImage ?? "");
-  const [music, setMusic] = useState(ambienceMusic ?? "");
   const [uploading, setUploading] = useState(false);
 
   async function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
@@ -63,8 +64,8 @@ export function SceneMeta({
     startTransition(async () => {
       const err = await updateStoryMeta(storyPostId, loc, time, dateForm);
       if (err) return setError(err);
-      if (image !== (ambienceImage ?? "") || music.trim() !== (ambienceMusic ?? "")) {
-        const ambienceError = await updateSceneAmbience(storyPostId, image, music);
+      if (image !== (ambienceImage ?? "")) {
+        const ambienceError = await updateSceneAmbience(storyPostId, image);
         if (ambienceError) return setError(ambienceError);
       }
       setEditing(false);
@@ -124,15 +125,6 @@ export function SceneMeta({
               <input type="file" accept="image/*" onChange={pickImage} className="hidden" />
             </label>
           )}
-          <input
-            value={music}
-            onChange={(e) => setMusic(e.target.value)}
-            maxLength={500}
-            inputMode="url"
-            placeholder="Musik-Link (YouTube, Spotify …)"
-            aria-label="Musik-Link"
-            className="min-w-0 flex-1 rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
-          />
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -152,7 +144,7 @@ export function SceneMeta({
   }
 
   const dateLabel = formatRange(calendar, dates);
-  if (!location && !inWorldTime && !dateLabel && !shortSummary && !ambienceMusic && !canEdit) return null;
+  if (!location && !inWorldTime && !dateLabel && !shortSummary && tracks.length === 0 && !canAddTracks && !canEdit) return null;
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-fg-soft">
@@ -174,7 +166,7 @@ export function SceneMeta({
           {[dateLabel, inWorldTime].filter(Boolean).join(", ")}
         </Link>
       )}
-      {ambienceMusic && <SceneMusic url={ambienceMusic} />}
+      <SceneTracks storyPostId={storyPostId} tracks={tracks} canAdd={canAddTracks} />
       {canEdit && (
         <button
           type="button"
@@ -182,7 +174,7 @@ export function SceneMeta({
           className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-muted transition hover:bg-surface-2 hover:text-fg"
         >
           <Pencil className="h-3 w-3" strokeWidth={2} />
-          {location || inWorldTime || dateLabel || shortSummary || ambienceMusic || ambienceImage ? "Ändern" : "Ort und Zeit ergänzen"}
+          {location || inWorldTime || dateLabel || shortSummary || ambienceImage ? "Ändern" : "Ort und Zeit ergänzen"}
         </button>
       )}
     </div>

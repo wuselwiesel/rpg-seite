@@ -28,6 +28,7 @@ import { JumpToLast } from "./jump-to-last";
 import { ChapterJump } from "./chapter-jump";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
+import type { SceneTrack } from "./scene-tracks";
 import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
@@ -141,6 +142,22 @@ export default async function StoryPostDetailPage({
   // Besitzer:in oder Admin der Welt (Moderation: anpinnen, abschließen, archivieren)
   const isWorldOwner = world?.created_by === user.id || myWorldRole?.role === "admin";
   const isAuthor = myCharacterIds.has(storyPost.character_id);
+
+  // Musikliste der Szene (jede:r Mitspielende darf Titel hinzufügen; entfernen: wer ihn hinzugefügt hat, die Autor:in, Admins)
+  const { data: trackRows } = await supabase
+    .from("scene_tracks")
+    .select("id, url, title, added_by")
+    .eq("story_post_id", storyPost.id)
+    .order("created_at")
+    .returns<{ id: string; url: string; title: string | null; added_by: string }[]>();
+  const memberName = new Map(worldMembers.map((m) => [m.id, m.name]));
+  const tracks: SceneTrack[] = (trackRows ?? []).map((t) => ({
+    id: t.id,
+    url: t.url,
+    title: t.title,
+    addedBy: t.added_by === user.id ? "dir" : (memberName.get(t.added_by) ?? "jemandem"),
+    canRemove: t.added_by === user.id || isAuthor || isWorldOwner,
+  }));
 
   const chapters = (entries ?? []).filter((e) => e.kind === "chapter");
   const lastChapter = chapters[chapters.length - 1] ?? null;
@@ -296,7 +313,8 @@ export default async function StoryPostDetailPage({
                 calendar={calendar}
                 shortSummary={storyPost.short_summary ?? null}
                 ambienceImage={storyPost.ambience_image_url ?? null}
-                ambienceMusic={storyPost.ambience_music_url ?? null}
+                tracks={tracks}
+                canAddTracks={myCharacterIds.size > 0 || isWorldOwner}
                 canEdit={myCharacterIds.size > 0 || isWorldOwner}
               />
             </>

@@ -1,7 +1,16 @@
 // Musik-Links einer Szene: YouTube, Spotify, SoundCloud oder eine Audiodatei. Der Player wird erst nach einem Klick geladen.
 export type MusicLink =
-  | { kind: "youtube" | "spotify" | "soundcloud"; embed: string; label: string }
+  | { kind: "youtube" | "spotify" | "soundcloud"; embed: string; label: string; detail?: string }
   | { kind: "audio"; src: string; label: string };
+
+const SPOTIFY_KINDS: Record<string, string> = {
+  track: "Titel",
+  album: "Album",
+  playlist: "Playlist",
+  episode: "Folge",
+  show: "Podcast",
+  artist: "Künstler:in",
+};
 
 const AUDIO_EXT = /\.(mp3|ogg|oga|wav|m4a|aac|flac|opus)(\?|#|$)/i;
 
@@ -29,7 +38,7 @@ export function parseMusicLink(raw: string | null | undefined): MusicLink | null
   }
   if (host === "open.spotify.com") {
     const m = url.pathname.match(/^\/(?:intl-[a-z]+\/)?(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]+)/);
-    if (m) return { kind: "spotify", label: "Spotify", embed: `https://open.spotify.com/embed/${m[1]}/${m[2]}` };
+    if (m) return { kind: "spotify", label: "Spotify", detail: SPOTIFY_KINDS[m[1]], embed: `https://open.spotify.com/embed/${m[1]}/${m[2]}` };
   }
   if (host === "soundcloud.com") {
     return { kind: "soundcloud", label: "SoundCloud", embed: `https://w.soundcloud.com/player/?url=${encodeURIComponent(`${url.origin}${url.pathname}`)}&auto_play=true` };

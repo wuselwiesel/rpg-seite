@@ -161,9 +161,15 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Atmosphäre und Spoiler",
-        text: "Eine Szene kann ein Stimmungsbild und Musik haben. Einzelne Nachrichten oder Textstellen lassen sich als Spoiler verstecken, andere sehen sie erst nach einem Klick. Die Symbole oben an der Szene sperren, archivieren oder pinnen sie.",
+        text: "Eine Szene kann ein Stimmungsbild haben. Einzelne Nachrichten oder Textstellen lassen sich als Spoiler verstecken, andere sehen sie erst nach einem Klick. Die Symbole oben an der Szene sperren, archivieren oder pinnen sie.",
         route: "@thread|/story",
         match: { attr: "scene-controls" },
+      },
+      {
+        title: "Musik zur Szene",
+        text: "Über „Musik“ unter dem Titel hängen alle Mitspielenden Links an: Spotify (Titel, Album, Playlist), YouTube, SoundCloud oder eine Audiodatei. Ein Name ist optional. Mit dem Abspielen-Knopf lädt der Player des jeweiligen Titels, jede Person hört dabei für sich. Entfernen darf, wer den Titel hinzugefügt hat, die Autor:in der Szene und Admins.",
+        route: "@thread|/story",
+        match: { attr: "scene-meta" },
       },
       {
         title: "Chat nur für diese Szene",

@@ -620,12 +620,11 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
   return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
 }
 
-// Hintergrundbild und Musik-Link einer Szene (wie Ort/Zeit: alle Mitspielenden der Welt, RPC set_scene_ambience).
-export async function updateSceneAmbience(storyPostId: string, imageUrl: string, musicUrl: string): Promise<string | null> {
+// Hintergrundbild einer Szene (wie Ort/Zeit: alle Mitspielenden der Welt, RPC set_scene_ambience). Musik steht in scene_tracks.
+export async function updateSceneAmbience(storyPostId: string, imageUrl: string): Promise<string | null> {
   const image = imageUrl.trim();
-  const music = musicUrl.trim();
+  const music = "";
   if (image && !image.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`)) return "Dieses Bild kann nicht verwendet werden.";
-  if (music && !parseMusicLink(music)) return "Bitte einen Link zu YouTube, Spotify, SoundCloud oder einer Audiodatei (mp3, ogg, wav, m4a) angeben.";
   const supabase = await createClient();
   const {
     data: { user },
@@ -633,6 +632,38 @@ export async function updateSceneAmbience(storyPostId: string, imageUrl: string,
   if (!user) return "Nicht angemeldet.";
   const { error } = await supabase.rpc("set_scene_ambience", { p_story_post_id: storyPostId, p_image: image, p_music: music });
   if (error) return error.message === "Keine Berechtigung" ? "Das dürfen nur Mitspielende dieser Welt (bei geheimen Szenen nur, wer sie sehen darf)." : error.message;
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
+// Musikliste einer Szene: Titel hinzufügen (alle Mitspielenden, RPC add_scene_track) und entfernen (RLS: wer ihn hinzugefügt hat, Autor:in, Welt-Admins)
+export async function addSceneTrack(storyPostId: string, url: string, title: string): Promise<string | null> {
+  const link = url.trim();
+  if (!parseMusicLink(link)) return "Bitte einen Link zu YouTube, Spotify, SoundCloud oder einer Audiodatei (mp3, ogg, wav, m4a) angeben.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("add_scene_track", { p_story_post_id: storyPostId, p_url: link, p_title: title.replace(/\s+/g, " ").trim().slice(0, 80) });
+  if (error) {
+    if (error.message === "Keine Berechtigung") return "Das dürfen nur Mitspielende dieser Welt (bei geheimen Szenen nur, wer sie sehen darf).";
+    if (error.message === "Zu viele Titel") return "Mehr als 30 Titel pro Szene gehen nicht.";
+    return error.message;
+  }
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
+export async function removeSceneTrack(trackId: string, storyPostId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error, count } = await supabase.from("scene_tracks").delete({ count: "exact" }).eq("id", trackId);
+  if (error) return error.message;
+  if (!count) return "Den Titel darf nur entfernen, wer ihn hinzugefügt hat, die Autor:in der Szene oder ein Admin.";
   revalidatePath(`/story/${storyPostId}`);
   return null;
 }
