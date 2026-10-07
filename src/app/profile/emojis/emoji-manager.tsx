@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
+import { RevealRow } from "@/components/reveal-row";
 import { EmojiUploadForm } from "@/components/emoji-upload-form";
 import { deleteCustomEmoji } from "./actions";
 
@@ -35,21 +36,21 @@ export function EmojiManager({
         ) : (
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {emojis.map((e) => (
-              <li key={e.id} className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
+              <RevealRow
+                key={e.id}
+                className="rounded-xl bg-surface-2 px-3 py-2"
+                actions={
+                  e.created_by === currentUserId ? (
+                    <button type="button" onClick={() => remove(e.id)} aria-label={`:${e.name}: löschen`} className="shrink-0 rounded-full p-1 text-muted transition hover:text-red-500">
+                      <Trash2 className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                  ) : null
+                }
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={e.image_url} alt={`:${e.name}:`} className="h-8 w-8 shrink-0 object-contain" />
                 <span className="min-w-0 flex-1 truncate text-sm text-fg">:{e.name}:</span>
-                {e.created_by === currentUserId && (
-                  <button
-                    type="button"
-                    onClick={() => remove(e.id)}
-                    aria-label={`:${e.name}: löschen`}
-                    className="shrink-0 rounded-full p-1 text-muted transition hover:text-red-500"
-                  >
-                    <Trash2 className="h-4 w-4" strokeWidth={2} />
-                  </button>
-                )}
-              </li>
+              </RevealRow>
             ))}
           </ul>
         )}
