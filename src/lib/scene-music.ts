@@ -45,6 +45,8 @@ export function parseMusicLink(raw: string | null | undefined): MusicLink | null
   if (host === "open.spotify.com") {
     const m = url.pathname.match(/^\/(?:intl-[a-z]+\/)?(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]+)/);
     if (m) return { kind: "spotify", label: "Spotify", detail: SPOTIFY_KINDS[m[1]], embed: `https://open.spotify.com/embed/${m[1]}/${m[2]}`, uri: `spotify:${m[1]}:${m[2]}` };
+    // Jam-Links gibt es in mehreren Formen (socialsession, jam …): jeder andere Spotify-Link öffnet sich einfach in Spotify
+    if (/^\/(?:intl-[a-z]+\/)?(?:jam|socialsession|session)\b/i.test(url.pathname)) return { kind: "external", label: "Spotify", detail: "Jam", href: url.toString() };
   }
   if (host === "soundcloud.com") {
     return { kind: "soundcloud", label: "SoundCloud", embed: `https://w.soundcloud.com/player/?url=${encodeURIComponent(`${url.origin}${url.pathname}`)}&auto_play=true` };

@@ -14,6 +14,7 @@ describe("parseMusicLink", () => {
   it("erkennt Spotify Jam und Kurzlinks als externen Link", () => {
     expect(parseMusicLink("https://open.spotify.com/socialsession/AbC123xyz?si=1")).toMatchObject({ kind: "external", detail: "Jam" });
     expect(parseMusicLink("https://spotify.link/Ab12Cd")).toMatchObject({ kind: "external", detail: "Link" });
+    expect(parseMusicLink("https://open.spotify.com/jam/AbC123")).toMatchObject({ kind: "external", detail: "Jam" });
     expect(parseMusicLink("https://spotify.link/")).toBeNull();
   });
   it("erkennt Audiodateien", () => {
