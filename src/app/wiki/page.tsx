@@ -82,7 +82,7 @@ export default async function WikiHomePage() {
   const viewChip =
     "flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:border-accent hover:text-accent";
   const views = (
-    <nav aria-label="Ansichten" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] @xl:mx-0 @xl:flex-wrap @xl:overflow-visible @xl:px-0 [&::-webkit-scrollbar]:hidden">
+    <nav aria-label="Ansichten" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
       <Link href="/wiki/karten" className={viewChip}>
         <MapIcon className="h-4 w-4" strokeWidth={2} />
         Karten{maps.length > 0 ? ` ${maps.length}` : ""}
