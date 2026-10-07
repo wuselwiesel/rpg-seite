@@ -219,7 +219,7 @@ export function StoryEntryItem({
     <div className="flex gap-3">
       {isNarrator ? (
         <NarratorAvatar size={32} />
-      ) : (
+      ) : segments ? null : (
         <Link href={`/characters/${entry.character_id}/chabo`} aria-label={`ChaBo von ${entry.characters?.name ?? "Charakter"}`} className="h-fit shrink-0">
           <CharacterAvatar
             name={entry.characters?.name ?? "?"}
