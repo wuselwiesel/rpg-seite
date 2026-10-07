@@ -72,11 +72,6 @@ export function SidebarNav({
               ChaBo
             </NavLink>
           )}
-          {activeCharacter && (
-            <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />} exact>
-              Profil
-            </NavLink>
-          )}
         </nav>
         <Link
           href={inWiki ? "/wiki/new" : "/story/new"}
@@ -100,11 +95,6 @@ export function SidebarNav({
           Suche
         </NavLink>
         <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
-        {activeCharacter && (
-          <NavLink href={`/characters/${activeCharacter.id}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
-            Profil
-          </NavLink>
-        )}
       </nav>
       <Link
         href="/posts/new"

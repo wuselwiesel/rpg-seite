@@ -149,7 +149,7 @@ export async function Sidebar() {
             <Link href={`/characters/${activeCharacter.id}`} aria-label={activeCharacter.name}>
               <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={34} />
             </Link>
-            <PresenceControl characterId={activeCharacter.id} online={!!activeCharacter.presence_online} placement="bottom-right" />
+            <PresenceControl characterId={activeCharacter.id} online={!!activeCharacter.presence_online} placement="bottom-right" direction="up" />
           </div>
           <Link href={`/characters/${activeCharacter.id}`} className="min-w-0 flex-1 truncate text-sm font-medium text-fg hover:text-accent">
             {activeCharacter.name}

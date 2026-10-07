@@ -33,7 +33,7 @@ export function PresenceBadge({ online, className = "" }: { online: boolean | nu
 
 // Der Punkt eines eigenen Charakters zum Antippen: öffnet ein kleines Menü mit Online und Offline (wie bei Discord).
 // `placement` setzt ihn unten rechts/links auf das Profilbild; sonst steht er für sich.
-export function PresenceControl({ characterId, online, placement = "inline", className = "" }: { characterId: string; online: boolean; placement?: "inline" | "bottom-right" | "bottom-left"; className?: string }) {
+export function PresenceControl({ characterId, online, placement = "inline", direction = "down", className = "" }: { characterId: string; online: boolean; placement?: "inline" | "bottom-right" | "bottom-left"; direction?: "up" | "down"; className?: string }) {
   const overlay = placement !== "inline";
   const [value, setValue] = useState(online);
   const [open, setOpen] = useState(false);
@@ -98,7 +98,7 @@ export function PresenceControl({ characterId, online, placement = "inline", cla
         <PresenceDot online={value} overlay={false} className={overlay ? "box-content h-3 w-3 border-2 border-app" : ""} />
       </button>
       {open && (
-        <div role="menu" className="absolute left-0 top-full z-50 mt-1 w-32 rounded-lg border border-line bg-surface p-1 shadow-lg">
+        <div role="menu" className={`absolute left-0 z-50 w-32 rounded-lg border border-line bg-surface p-1 shadow-lg ${direction === "up" ? "bottom-full mb-1" : "top-full mt-1"}`}>
           {item(true, "Online", "bg-emerald-500")}
           {item(false, "Offline", "bg-neutral-400 dark:bg-neutral-500")}
         </div>
