@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { createStoryEntry } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { useDraft } from "@/lib/use-draft";
@@ -81,6 +81,43 @@ export function StoryEntryForm({
   }
   useEffect(() => () => stopKeeping.current?.(), []);
 
+  // Sicherheitsnetz: Springt die Seite nach dem Senden trotzdem weg (z. B. wenn die Szene neu aufgebaut wird und das Formular neu entsteht),
+  // holt dieser Schritt das Schreibfeld wieder ins Bild und setzt den Cursor hinein. Wer währenddessen selbst scrollt, wird nicht gestört.
+  const sentKey = `wortwinkel:sent:${storyPostId}`;
+  const ensureVisible = useCallback(() => {
+    let userScrolled = false;
+    const stop = () => {
+      userScrolled = true;
+    };
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchmove", stop, { passive: true });
+    const timers = [0, 250, 700, 1400].map((ms) =>
+      window.setTimeout(() => {
+        if (userScrolled) return;
+        const form = formRef.current;
+        if (!form) return;
+        form.scrollIntoView({ block: "nearest", behavior: "instant" as ScrollBehavior });
+        if (ms >= 250) form.querySelector<HTMLElement>(".ProseMirror")?.focus({ preventScroll: true });
+      }, ms),
+    );
+    window.setTimeout(() => {
+      timers.forEach((t) => window.clearTimeout(t));
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchmove", stop);
+    }, 1600);
+  }, []);
+  useEffect(() => {
+    try {
+      const at = Number(sessionStorage.getItem(sentKey));
+      if (at && Date.now() - at < 10_000) {
+        sessionStorage.removeItem(sentKey);
+        ensureVisible();
+      }
+    } catch {
+      /* egal */
+    }
+  }, [sentKey, ensureVisible]);
+
   // Nach dem Zurücksetzen steht der Cursor sofort wieder im Schreibfeld
   useEffect(() => {
     if (resetKey === 0) return;
@@ -98,6 +135,11 @@ export function StoryEntryForm({
   // Sofort beim Absenden leeren; schlägt das Senden fehl, kommt der Text zurück.
   function handleSubmit() {
     keepInPlace();
+    try {
+      sessionStorage.setItem(sentKey, String(Date.now()));
+    } catch {
+      /* egal */
+    }
     sentHtml.current = latestHtml.current;
     // Erst nach dem Absenden leeren: Das Formular hat seine Daten dann schon eingesammelt.
     setTimeout(() => {
@@ -113,6 +155,14 @@ export function StoryEntryForm({
       setRestoreText(sentHtml.current);
       update({ content: sentHtml.current });
       setResetKey((k) => k + 1);
+    } else if (wasPending.current && !pending) {
+      // Gesendet: Schreibfeld im Bild halten (das Sicherheitsnetz oben)
+      try {
+        sessionStorage.removeItem(sentKey);
+      } catch {
+        /* egal */
+      }
+      ensureVisible();
     }
     wasPending.current = pending;
     // eslint-disable-next-line react-hooks/exhaustive-deps
