@@ -17,6 +17,7 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
+import { parseSpeakerIds } from "@/lib/speakers";
 import type { Character, StoryEntry } from "@/lib/types";
 
 // Flagge, Stift und Papierkorb: mit Maus erst beim Darüberfahren, am Handy erst nach einmal Antippen der Nachricht
@@ -55,6 +56,13 @@ export function StoryEntryItem({
 }) {
   const isRoll = !!entry.roll_label;
   const isNarrator = entry.kind === "narrator";
+  // Mehrere Figuren in einer Nachricht: die Namen der Sprecher in der Kopfzeile (der ersten Figur gehört die Nachricht)
+  const speakerNames = isNarrator
+    ? []
+    : parseSpeakerIds(entry.content)
+        .map((id) => mentionCharacters.find((c) => c.id === id)?.name)
+        .filter((n): n is string => Boolean(n));
+  const headerName = speakerNames.length > 1 ? speakerNames.join(" & ") : (entry.characters?.name ?? "");
   const [editing, setEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
   const updateAction = updateStoryEntry.bind(null, entry.id, storyPostId);
@@ -241,7 +249,7 @@ export function StoryEntryItem({
               <p className="text-sm font-medium text-fg">Erzähler:in</p>
             ) : (
               <Link href={`/characters/${entry.character_id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
-                {entry.characters?.name}
+                {headerName}
               </Link>
             )}
             <p className="text-xs text-muted">

@@ -11,6 +11,8 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
+import { applySpeakers } from "@/lib/speakers";
+import { getOwnCharacters } from "@/lib/active-character";
 import { isEmptyRecap, recapToHtml } from "@/lib/recap-html";
 import { extractHashtags } from "@/lib/hashtags";
 import { notifyMentionedCharacterIds, createNotification } from "@/lib/notifications";
@@ -244,6 +246,8 @@ async function assignNextTurn(
   storyPostId: string,
   writerCharacterId: string,
   choice: string,
+  // Weitere eigene Figuren, die in derselben Nachricht gesprochen haben: sie sind nicht „als Nächstes dran“
+  alsoOwnIds: string[] = [],
 ): Promise<string | null> {
   if (choice === "__none__") {
     await supabase.rpc("set_story_turn", { p_story_post_id: storyPostId, p_character_id: null });
@@ -265,6 +269,7 @@ async function assignNextTurn(
       if (t > (lastActive.get(e.character_id) ?? 0)) lastActive.set(e.character_id, t);
     }
     lastActive.delete(writerCharacterId);
+    for (const id of alsoOwnIds) lastActive.delete(id);
     let newest = -Infinity;
     for (const [id, t] of lastActive) {
       if (t > newest) {
@@ -324,7 +329,7 @@ export async function createStoryEntry(
   formData: FormData,
 ) {
   const rawContent = String(formData.get("content") ?? "").trim();
-  const content = sanitizePostHtml(rawContent);
+  let content = sanitizePostHtml(rawContent);
   if (!stripHtml(content)) return "Text darf nicht leer sein.";
   const narrator = formData.get("narrator") === "on";
   const nextChoice = String(formData.get("next_character_id") ?? "").trim();
@@ -342,6 +347,10 @@ export async function createStoryEntry(
     return "Zu viele Beiträge in kurzer Zeit. Kurz warten und nochmal versuchen.";
   }
 
+  // „Felicity: …“ / „Nick: …“ in einer Nachricht: Zeilen mit dem Namen einer eigenen Figur werden zu gekennzeichneten Absätzen
+  const spoken = narrator ? { html: content, speakerIds: [] as string[] } : applySpeakers(content, await getOwnCharacters(user.id, worldId));
+  content = sanitizePostHtml(spoken.html);
+
   const { error } = await supabase
     .from("story_entries")
     .insert({ story_post_id: storyPostId, character_id: characterId, content, kind: narrator ? "narrator" : "entry" });
@@ -357,9 +366,12 @@ export async function createStoryEntry(
     narrator,
   );
 
-  await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice, true, narrator);
+  await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice, true, narrator, spoken.speakerIds);
 
-  after(() => syncCharacterBadges(characterId));
+  after(() => {
+    void syncCharacterBadges(characterId);
+    for (const id of spoken.speakerIds) if (id !== characterId) void syncCharacterBadges(id);
+  });
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
   return null;
@@ -374,13 +386,14 @@ async function afterWriting(
   nextChoice: string,
   notify = true,
   neutralActor = false,
+  alsoOwnIds: string[] = [],
 ) {
   const { data: before } = await supabase
     .from("story_posts")
     .select("title, turn_character_id")
     .eq("id", storyPostId)
     .maybeSingle();
-  const next = await assignNextTurn(supabase, storyPostId, characterId, nextChoice);
+  const next = await assignNextTurn(supabase, storyPostId, characterId, nextChoice, alsoOwnIds);
   if (notify && next && next !== before?.turn_character_id && before) {
     await notifyTurn(supabase, storyPostId, await sceneNotificationTitle(supabase, storyPostId, before.title), userId, characterId, next, neutralActor);
   }
@@ -772,7 +785,7 @@ export async function updateStoryEntry(
   formData: FormData,
 ) {
   const rawContent = String(formData.get("content") ?? "").trim();
-  const content = sanitizePostHtml(rawContent);
+  let content = sanitizePostHtml(rawContent);
   if (!stripHtml(content)) return "Text darf nicht leer sein.";
 
   const supabase = await createClient();
@@ -780,6 +793,12 @@ export async function updateStoryEntry(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
+
+  // Auch beim Bearbeiten: Sprecherzeilen („Name: …“) erkennen (Erzähler:in-Nachrichten ausgenommen)
+  const { data: entryRow } = await supabase.from("story_entries").select("kind, story_posts(world_id)").eq("id", entryId).maybeSingle<{ kind: string; story_posts: { world_id: string } | null }>();
+  if (entryRow && entryRow.kind !== "narrator" && entryRow.story_posts?.world_id) {
+    content = sanitizePostHtml(applySpeakers(content, await getOwnCharacters(user.id, entryRow.story_posts.world_id)).html);
+  }
 
   const { error } = await supabase
     .from("story_entries")

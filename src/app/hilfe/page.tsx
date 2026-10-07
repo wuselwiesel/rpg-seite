@@ -34,6 +34,7 @@ const TOC = [
   ["zufall", "Zufall und NPCs"],
   ["uebersicht", "Welches Talent braucht welche Attribute?"],
   ["kuerzel", "Tastenkürzel und Schreibhilfen"],
+  ["mehrere-figuren", "Mehrere Figuren in einer Nachricht"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -370,6 +371,22 @@ export default function HelpPage() {
           <li>
             <strong>Im Szenen-Chat zitieren:</strong> Nach der Auswahl das Zitat-Symbol antippen. Das Zitat landet im Chat-Eingabefeld, du kannst Text dazuschreiben oder es allein senden. Ein Klick auf das Zitat im Chat springt zu den Nachrichten in der Szene. Gespeicherte Ausschnitte kannst du im ChaBo mit „Im Chat der Szene teilen“ senden.
           </li>
+        </ul>
+      </Section>
+
+      <Section id="mehrere-figuren" title="14. Mehrere Figuren in einer Nachricht">
+        <p className={p}>
+          In einer Szene kannst du mit mehreren deiner Figuren in <strong>einer</strong> Nachricht schreiben. Beginne jede Zeile mit dem Namen der Figur und einem Doppelpunkt:
+        </p>
+        <div className={example}>
+          <p>Felicity: Sie ging die Treppen runter. „Hallo?“</p>
+          <p>Nick: Er sah zu ihr auf. „Hey“</p>
+        </div>
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>Es zählt der volle Name, der Vorname (wenn er bei deinen Figuren nur einmal vorkommt) oder der Benutzername der Figur. Groß- und Kleinschreibung ist egal.</li>
+          <li>Jede Zeile wird ein eigener Absatz, der Name steht farbig davor. Eine neue Zeile ohne Namen darunter bleibt ein eigener Absatz ohne Sprecher. Mit Umschalt + Enter machst du eine neue Zeile, ohne zu senden.</li>
+          <li>Oben an der Nachricht stehen alle Namen („Felicity &amp; Nick“). Die Nachricht gehört der Figur, als die du schreibst. Danach ist nicht eine deiner eigenen Figuren dran.</li>
+          <li>Das funktioniert nur mit deinen eigenen Figuren und nicht bei Nachrichten als Erzähler:in. Auch beim späteren Bearbeiten werden Namen mit Doppelpunkt wieder erkannt.</li>
         </ul>
       </Section>
     </div>

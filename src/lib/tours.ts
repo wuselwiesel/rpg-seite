@@ -143,6 +143,12 @@ export const TOURS: Tour[] = [
         match: { attr: "story-composer" },
       },
       {
+        title: "Mehrere Figuren in einer Nachricht",
+        text: "Schreibst du mit mehreren deiner Figuren, setz in jede Zeile den Namen davor: „Felicity: Sie ging die Treppen runter.“ und darunter „Nick: Er sah zu ihr auf.“ Beim Senden wird daraus eine Nachricht, in der jede Figur ihren eigenen farbigen Namen und Absatz hat. Es zählt der volle Name, der Vorname oder der Benutzername deiner eigenen Figuren; eine neue Zeile ohne Senden geht mit Umschalt + Enter.",
+        route: "@thread|/story",
+        match: { attr: "story-composer" },
+      },
+      {
         title: "Wer ist dran?",
         text: "Oben in der Szene steht, wer als Nächstes schreibt. Wer dran ist, bekommt eine Benachrichtigung. Das kannst du beim Senden festlegen oder offen lassen.",
         route: "@thread|/story",
