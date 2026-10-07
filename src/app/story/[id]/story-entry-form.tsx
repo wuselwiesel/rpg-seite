@@ -2,7 +2,9 @@
 
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { createStoryEntry } from "../actions";
+import { Layers } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { BundleBuilder } from "./bundle-builder";
 import { useDraft } from "@/lib/use-draft";
 import type { Character } from "@/lib/types";
 
@@ -15,6 +17,7 @@ export function StoryEntryForm({
   narrator,
   showToolbar,
   writerId,
+  ownCharacters = [],
   onTyping,
 }: {
   storyPostId: string;
@@ -25,6 +28,8 @@ export function StoryEntryForm({
   narrator: boolean;
   showToolbar: boolean;
   writerId: string;
+  // Eigene Charaktere in dieser Welt: ab zwei lässt sich „Bündeln“ (mehrere Figuren in einer Nachricht) einschalten
+  ownCharacters?: Character[];
   // Meldet anderen, die die Szene offen haben, dass hier gerade geschrieben wird.
   onTyping?: () => void;
 }) {
@@ -40,6 +45,8 @@ export function StoryEntryForm({
   const latestHtml = useRef("");
   const sentHtml = useRef("");
   const wasPending = useRef(false);
+  const [bundling, setBundling] = useState(false);
+  const [bundleKey, setBundleKey] = useState(0);
   const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
 
   // Wie im Chat: Nach dem Senden bleibt das Schreibfeld an derselben Stelle auf dem Bildschirm (die neue Nachricht schiebt sich darüber),
@@ -156,6 +163,8 @@ export function StoryEntryForm({
       update({ content: sentHtml.current });
       setResetKey((k) => k + 1);
     } else if (wasPending.current && !pending) {
+      // Gebündelt gesendet: Abschnitte zurücksetzen (bei einem Fehler bleiben sie stehen)
+      setBundleKey((k) => k + 1);
       // Gesendet: Schreibfeld im Bild halten (das Sicherheitsnetz oben)
       try {
         sessionStorage.removeItem(sentKey);
@@ -172,7 +181,33 @@ export function StoryEntryForm({
     <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-2">
       <input type="hidden" name="character_id" value={writerId} />
       {narrator && <input type="hidden" name="narrator" value="on" />}
-      {restored && (
+      {!narrator && ownCharacters.length > 1 && (
+        <button
+          type="button"
+          onClick={() => setBundling((v) => !v)}
+          aria-pressed={bundling}
+          className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm transition ${
+            bundling ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+          }`}
+        >
+          <Layers className="h-3.5 w-3.5" strokeWidth={2} />
+          Bündeln
+        </button>
+      )}
+      {bundling && !narrator && ownCharacters.length > 1 ? (
+        <BundleBuilder
+          key={bundleKey}
+          ownCharacters={ownCharacters}
+          mentionCharacters={characters}
+          initial={[
+            { characterId: writerId, html: "" },
+            { characterId: ownCharacters.find((c) => c.id !== writerId)?.id ?? writerId, html: "" },
+          ]}
+          showToolbar={showToolbar}
+          onTyping={onTyping}
+        />
+      ) : (
+      restored && (
       <RichTextEditor
         key={resetKey}
         name="content"
@@ -194,7 +229,7 @@ export function StoryEntryForm({
             : `Schreib die Geschichte weiter als ${characterName}... (@ um Charaktere zu markieren)`
         }
       />
-      )}
+      ))}
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button

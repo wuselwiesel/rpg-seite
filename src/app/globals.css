@@ -838,13 +838,6 @@ body {
   font-style: italic;
 }
 
-/* Sprecher in Nachrichten mit mehreren Figuren („Felicity: …“) */
-.post-content span[data-type="speaker"] {
-  font-weight: 600;
-  color: var(--accent);
-  margin-right: 0.25em;
-}
-
 .post-content a {
   color: var(--accent);
   text-decoration: underline;

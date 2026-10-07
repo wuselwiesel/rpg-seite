@@ -17,7 +17,8 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
-import { parseSpeakerIds } from "@/lib/speakers";
+import { splitSegments } from "@/lib/segments";
+import { BundleBuilder } from "./bundle-builder";
 import type { Character, StoryEntry } from "@/lib/types";
 
 // Flagge, Stift und Papierkorb: mit Maus erst beim Darüberfahren, am Handy erst nach einmal Antippen der Nachricht
@@ -37,6 +38,7 @@ export function StoryEntryItem({
   markedEvent = null,
   eventType = null,
   sceneDate = null,
+  ownCharacters = [],
 }: {
   entry: StoryEntry;
   storyPostId: string;
@@ -53,16 +55,15 @@ export function StoryEntryItem({
   markedEvent?: { id: string; title: string } | null;
   eventType?: string | null;
   sceneDate?: EventDate | null;
+  // Eigene Figuren: nötig, um gebündelte Nachrichten abschnittsweise zu bearbeiten
+  ownCharacters?: Character[];
 }) {
   const isRoll = !!entry.roll_label;
   const isNarrator = entry.kind === "narrator";
-  // Mehrere Figuren in einer Nachricht: die Namen der Sprecher in der Kopfzeile (der ersten Figur gehört die Nachricht)
-  const speakerNames = isNarrator
-    ? []
-    : parseSpeakerIds(entry.content)
-        .map((id) => mentionCharacters.find((c) => c.id === id)?.name)
-        .filter((n): n is string => Boolean(n));
-  const headerName = speakerNames.length > 1 ? speakerNames.join(" & ") : (entry.characters?.name ?? "");
+  // Gebündelte Nachricht (mehrere Figuren): Abschnitte mit Bild und Namen
+  const segments = isNarrator ? null : splitSegments(displayHtml ?? entry.content);
+  const editSegments = isNarrator ? null : splitSegments(entry.content);
+  const headerName = entry.characters?.name ?? "";
   const [editing, setEditing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
   const updateAction = updateStoryEntry.bind(null, entry.id, storyPostId);
@@ -362,14 +363,23 @@ export function StoryEntryItem({
 
         {editing ? (
           <form action={formAction} className="flex flex-col gap-2">
-            <RichTextEditor
-              name="content"
-              initialContent={entry.content}
-              mentionCharacters={mentionCharacters}
-              minHeight={80}
-              showToolbar={showToolbar}
-              allowFontSelection
-            />
+            {editSegments && ownCharacters.length > 0 ? (
+              <BundleBuilder
+                ownCharacters={ownCharacters}
+                mentionCharacters={mentionCharacters}
+                initial={editSegments.map((sg) => ({ characterId: sg.id, html: sg.html }))}
+                showToolbar={showToolbar}
+              />
+            ) : (
+              <RichTextEditor
+                name="content"
+                initialContent={entry.content}
+                mentionCharacters={mentionCharacters}
+                minHeight={80}
+                showToolbar={showToolbar}
+                allowFontSelection
+              />
+            )}
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
             <div className="flex items-center gap-2">
               <button
@@ -456,7 +466,29 @@ export function StoryEntryItem({
           // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -
           // Einträge kommen nie ungeprüft vom Client in die Datenbank.
           <SpoilerGate spoiler={spoiler}>
-            <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={displayHtml ?? entry.content} />
+            {segments ? (
+              <div className="flex flex-col divide-y divide-line">
+                {segments.map((seg, i) => {
+                  const c = mentionCharacters.find((x) => x.id === seg.id);
+                  const name = c?.name ?? seg.name;
+                  return (
+                    <div key={i} className="flex gap-2.5 py-2 first:pt-0 last:pb-0">
+                      <Link href={`/characters/${seg.id}/chabo`} aria-label={`ChaBo von ${name}`} className="h-fit shrink-0">
+                        <CharacterAvatar name={name} avatarUrl={c?.avatar_url} size={28} />
+                      </Link>
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/characters/${seg.id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
+                          {name}
+                        </Link>
+                        <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={seg.html} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={displayHtml ?? entry.content} />
+            )}
           </SpoilerGate>
         )}
       </div>

@@ -374,19 +374,15 @@ export default function HelpPage() {
         </ul>
       </Section>
 
-      <Section id="mehrere-figuren" title="14. Mehrere Figuren in einer Nachricht">
+      <Section id="mehrere-figuren" title="14. Mehrere Figuren in einer Nachricht (Bündeln)">
         <p className={p}>
-          In einer Szene kannst du mit mehreren deiner Figuren in <strong>einer</strong> Nachricht schreiben. Beginne jede Zeile mit dem Namen der Figur und einem Doppelpunkt:
+          Hast du in einer Welt mindestens zwei Figuren, siehst du über dem Schreibfeld der Szene den Knopf <strong>Bündeln</strong>. Damit schreibst du mit mehreren deiner Figuren in <strong>einer</strong> Nachricht.
         </p>
-        <div className={example}>
-          <p>Felicity: Sie ging die Treppen runter. „Hallo?“</p>
-          <p>Nick: Er sah zu ihr auf. „Hey“</p>
-        </div>
         <ul className="flex list-disc flex-col gap-2 pl-5">
-          <li>Es zählt der volle Name, der Vorname (wenn er bei deinen Figuren nur einmal vorkommt) oder der Benutzername der Figur. Groß- und Kleinschreibung ist egal.</li>
-          <li>Jede Zeile wird ein eigener Absatz, der Name steht farbig davor. Eine neue Zeile ohne Namen darunter bleibt ein eigener Absatz ohne Sprecher. Mit Umschalt + Enter machst du eine neue Zeile, ohne zu senden.</li>
-          <li>Oben an der Nachricht stehen alle Namen („Felicity &amp; Nick“). Die Nachricht gehört der Figur, als die du schreibst. Danach ist nicht eine deiner eigenen Figuren dran.</li>
-          <li>Das funktioniert nur mit deinen eigenen Figuren und nicht bei Nachrichten als Erzähler:in. Auch beim späteren Bearbeiten werden Namen mit Doppelpunkt wieder erkannt.</li>
+          <li>Je Abschnitt wählst du die Figur per Klick und schreibst ihren Text. Mit „Weitere Figur“ kommt ein neuer Abschnitt dazu (bis zu 8). Das Entfernen-Kreuz erscheint am Handy nach Antippen des Abschnitts, am Laptop beim Darüberfahren.</li>
+          <li>Nach dem Senden sieht die Nachricht aus wie mehrere Nachrichten: jede Figur mit Profilbild, Namen und eigenem Text, durch eine Linie getrennt. Ein Klick auf Bild oder Namen öffnet den ChaBo.</li>
+          <li>Oben an der Nachricht steht die erste Figur. Danach ist keine deiner eigenen Figuren als Nächstes dran.</li>
+          <li>Das funktioniert nur mit deinen eigenen Figuren und nicht als Erzähler:in. Beim Bearbeiten bleiben die Abschnitte erhalten.</li>
         </ul>
       </Section>
     </div>

@@ -46,7 +46,7 @@ export function sanitizePostHtmlCore(html: string): string {
       a: ["href", "target", "rel"],
       img: ["src", "alt"],
       span: ["data-type", "data-id", "class", "style"],
-      div: ["data-callout", "data-type"],
+      div: ["data-callout", "data-type", "data-id", "data-name"],
       details: ["open"],
       th: ["colspan", "rowspan"],
       td: ["colspan", "rowspan"],
@@ -58,6 +58,12 @@ export function sanitizePostHtmlCore(html: string): string {
         const out: Record<string, string> = {};
         if (attribs["data-callout"] && (CALLOUT_KINDS as readonly string[]).includes(attribs["data-callout"])) out["data-callout"] = attribs["data-callout"];
         else if (attribs["data-type"] === "detailsContent") out["data-type"] = "detailsContent";
+        // Abschnitt einer gebündelten Nachricht (mehrere Figuren): nur mit gültiger Figuren-ID
+        else if (attribs["data-type"] === "segment" && /^[0-9a-f-]{36}$/i.test(attribs["data-id"] ?? "")) {
+          out["data-type"] = "segment";
+          out["data-id"] = attribs["data-id"];
+          out["data-name"] = (attribs["data-name"] ?? "").slice(0, 80);
+        }
         return { tagName, attribs: out };
       },
       th: (tagName, attribs) => ({ tagName, attribs: spanAttribs(attribs) }),

@@ -319,6 +319,7 @@ export function StoryComposer({
           narrator={narrator}
           showToolbar={showToolbar}
           writerId={writerId}
+          ownCharacters={ownCharacters}
           onTyping={() => announceTyping("write")}
         />
       ) : (

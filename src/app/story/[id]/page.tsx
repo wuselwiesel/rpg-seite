@@ -421,6 +421,7 @@ export default async function StoryPostDetailPage({
                 markedEvent={markedByEntry.get(entry.id) ?? null}
                 eventType={eventType}
                 sceneDate={datesFromRow(storyPost).start}
+                ownCharacters={ownCharacters}
               />
             ),
           }));
@@ -429,6 +430,7 @@ export default async function StoryPostDetailPage({
         storyPostId={storyPost.id}
         myCharacterIds={Array.from(myCharacterIds)}
         mentionCharacters={mentionableCharacters}
+        ownCharacters={ownCharacters}
       />
 
       {linkedPosts && linkedPosts.length > 0 && (

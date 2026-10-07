@@ -144,7 +144,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Mehrere Figuren in einer Nachricht",
-        text: "Schreibst du mit mehreren deiner Figuren, setz in jede Zeile den Namen davor: „Felicity: Sie ging die Treppen runter.“ und darunter „Nick: Er sah zu ihr auf.“ Beim Senden wird daraus eine Nachricht, in der jede Figur ihren eigenen farbigen Namen und Absatz hat. Es zählt der volle Name, der Vorname oder der Benutzername deiner eigenen Figuren; eine neue Zeile ohne Senden geht mit Umschalt + Enter.",
+        text: "Hast du mehrere Figuren in der Welt, schaltest du über dem Schreibfeld „Bündeln“ ein. Je Abschnitt tippst du eine deiner Figuren an und schreibst ihren Text; mit „Weitere Figur“ kommt der nächste dazu. Beim Senden wird daraus eine Nachricht, die aussieht wie mehrere: jede Figur mit Bild und Namen.",
         route: "@thread|/story",
         match: { attr: "story-composer" },
       },

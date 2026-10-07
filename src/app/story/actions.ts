@@ -11,7 +11,7 @@ import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { stripHtml } from "@/lib/strip-html";
-import { applySpeakers } from "@/lib/speakers";
+import { buildSegments } from "@/lib/segments";
 import { getOwnCharacters } from "@/lib/active-character";
 import { isEmptyRecap, recapToHtml } from "@/lib/recap-html";
 import { extractHashtags } from "@/lib/hashtags";
@@ -322,15 +322,46 @@ async function notifyTurn(
   });
 }
 
+// Gebündelte Nachricht (mehrere eigene Figuren): Abschnitte aus dem Formular prüfen und zu einem Text zusammensetzen.
+// Nur eigene Figuren dieser Welt, jeder Abschnitt braucht Text; bei nur einem Abschnitt entsteht eine normale Nachricht.
+async function bundleFromForm(
+  formData: FormData,
+  userId: string,
+  worldId: string,
+): Promise<{ error: string } | { content: string; firstId: string; ids: string[] } | null> {
+  const raw = formData.get("segments");
+  if (typeof raw !== "string" || !raw) return null;
+  let parsed: { character_id?: unknown; html?: unknown }[];
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { error: "Die gebündelte Nachricht konnte nicht gelesen werden." };
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 8) return { error: "Eine gebündelte Nachricht hat 1 bis 8 Abschnitte." };
+  const own = await getOwnCharacters(userId, worldId);
+  const parts: { id: string; name: string; html: string }[] = [];
+  for (const p of parsed) {
+    const character = own.find((c) => c.id === p.character_id);
+    if (!character) return { error: "Du kannst nur mit deinen eigenen Charakteren schreiben." };
+    const html = sanitizePostHtml(String(p.html ?? "").trim());
+    if (!stripHtml(html) && !html.includes("<img")) continue;
+    parts.push({ id: character.id, name: character.name, html });
+  }
+  if (parts.length === 0) return { error: "Text darf nicht leer sein." };
+  const content = parts.length === 1 ? parts[0].html : sanitizePostHtml(buildSegments(parts));
+  return { content, firstId: parts[0].id, ids: Array.from(new Set(parts.map((p) => p.id))) };
+}
+
 export async function createStoryEntry(
   storyPostId: string,
   worldId: string,
   _prevState: string | null,
   formData: FormData,
 ) {
+  const isBundle = typeof formData.get("segments") === "string" && formData.get("segments") !== "";
   const rawContent = String(formData.get("content") ?? "").trim();
   let content = sanitizePostHtml(rawContent);
-  if (!stripHtml(content)) return "Text darf nicht leer sein.";
+  if (!isBundle && !stripHtml(content)) return "Text darf nicht leer sein.";
   const narrator = formData.get("narrator") === "on";
   const nextChoice = String(formData.get("next_character_id") ?? "").trim();
 
@@ -340,16 +371,24 @@ export async function createStoryEntry(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
+  let characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
   if (!characterId) return "Du brauchst zuerst einen Charakter in dieser Welt.";
+
+  // Gebündelt: mehrere eigene Figuren in einer Nachricht; sie gehört der ersten Figur
+  let bundledIds: string[] = [];
+  if (isBundle && !narrator) {
+    const bundle = await bundleFromForm(formData, user.id, worldId);
+    if (bundle && "error" in bundle) return bundle.error;
+    if (bundle) {
+      content = bundle.content;
+      characterId = bundle.firstId;
+      bundledIds = bundle.ids;
+    }
+  }
 
   if (await isRateLimited(supabase, "story_entries", "character_id", characterId, 10, 15)) {
     return "Zu viele Beiträge in kurzer Zeit. Kurz warten und nochmal versuchen.";
   }
-
-  // „Felicity: …“ / „Nick: …“ in einer Nachricht: Zeilen mit dem Namen einer eigenen Figur werden zu gekennzeichneten Absätzen
-  const spoken = narrator ? { html: content, speakerIds: [] as string[] } : applySpeakers(content, await getOwnCharacters(user.id, worldId));
-  content = sanitizePostHtml(spoken.html);
 
   const { error } = await supabase
     .from("story_entries")
@@ -366,11 +405,11 @@ export async function createStoryEntry(
     narrator,
   );
 
-  await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice, true, narrator, spoken.speakerIds);
+  await afterWriting(supabase, storyPostId, user.id, characterId, nextChoice, true, narrator, bundledIds);
 
   after(() => {
     void syncCharacterBadges(characterId);
-    for (const id of spoken.speakerIds) if (id !== characterId) void syncCharacterBadges(id);
+    for (const id of bundledIds) if (id !== characterId) void syncCharacterBadges(id);
   });
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");
@@ -784,9 +823,10 @@ export async function updateStoryEntry(
   _prevState: string | null,
   formData: FormData,
 ) {
+  const isBundle = typeof formData.get("segments") === "string" && formData.get("segments") !== "";
   const rawContent = String(formData.get("content") ?? "").trim();
   let content = sanitizePostHtml(rawContent);
-  if (!stripHtml(content)) return "Text darf nicht leer sein.";
+  if (!isBundle && !stripHtml(content)) return "Text darf nicht leer sein.";
 
   const supabase = await createClient();
   const {
@@ -794,10 +834,14 @@ export async function updateStoryEntry(
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  // Auch beim Bearbeiten: Sprecherzeilen („Name: …“) erkennen (Erzähler:in-Nachrichten ausgenommen)
-  const { data: entryRow } = await supabase.from("story_entries").select("kind, story_posts(world_id)").eq("id", entryId).maybeSingle<{ kind: string; story_posts: { world_id: string } | null }>();
-  if (entryRow && entryRow.kind !== "narrator" && entryRow.story_posts?.world_id) {
-    content = sanitizePostHtml(applySpeakers(content, await getOwnCharacters(user.id, entryRow.story_posts.world_id)).html);
+  // Gebündelte Nachricht bearbeiten: Abschnitte neu zusammensetzen
+  if (isBundle) {
+    const { data: entryRow } = await supabase.from("story_entries").select("story_posts(world_id)").eq("id", entryId).maybeSingle<{ story_posts: { world_id: string } | null }>();
+    if (!entryRow?.story_posts?.world_id) return "Nachricht nicht gefunden.";
+    const bundle = await bundleFromForm(formData, user.id, entryRow.story_posts.world_id);
+    if (!bundle) return "Text darf nicht leer sein.";
+    if ("error" in bundle) return bundle.error;
+    content = bundle.content;
   }
 
   const { error } = await supabase

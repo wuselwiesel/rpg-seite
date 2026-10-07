@@ -34,6 +34,7 @@ export function EntryList({
   storyPostId,
   myCharacterIds,
   mentionCharacters,
+  ownCharacters = [],
 }: {
   items: EntryListItem[];
   characters: FilterCharacter[];
@@ -42,6 +43,7 @@ export function EntryList({
   // die Charaktere für Avatar/Name und @-Erwähnungen im Bearbeiten-Formular.
   myCharacterIds: string[];
   mentionCharacters: Character[];
+  ownCharacters?: Character[];
 }) {
   const [filterId, setFilterId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("mentions");
@@ -136,6 +138,7 @@ export function EntryList({
         storyPostId={storyPostId}
         canManage={myCharacterIds.includes(entry.character_id)}
         mentionCharacters={mentionCharacters}
+        ownCharacters={ownCharacters}
       />
     ),
   }));
