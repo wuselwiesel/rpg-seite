@@ -8,7 +8,7 @@ describe("parseMusicLink", () => {
     expect(parseMusicLink("https://www.youtube.com/playlist?list=PLabcdefghijklmnop")).toMatchObject({ kind: "youtube", embed: expect.stringContaining("videoseries?list=") });
   });
   it("erkennt Spotify und SoundCloud", () => {
-    expect(parseMusicLink("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC?si=x")).toMatchObject({ kind: "spotify", embed: "https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC" });
+    expect(parseMusicLink("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC?si=x")).toMatchObject({ kind: "spotify", embed: "https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC", uri: "spotify:track:4uLU6hMCjMI75M1A2tKUQC" });
     expect(parseMusicLink("https://soundcloud.com/artist/track")?.kind).toBe("soundcloud");
   });
   it("erkennt Audiodateien", () => {
