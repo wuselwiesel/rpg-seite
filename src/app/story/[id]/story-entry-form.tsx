@@ -47,6 +47,8 @@ export function StoryEntryForm({
   const wasPending = useRef(false);
   const [bundling, setBundling] = useState(false);
   const [bundleKey, setBundleKey] = useState(0);
+  // Text, der beim Einschalten von „Bündeln“ schon im Schreibfeld stand: wandert in den ersten Abschnitt
+  const [carryOver, setCarryOver] = useState("");
   const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
 
   // Wie im Chat: Nach dem Senden bleibt das Schreibfeld an derselben Stelle auf dem Bildschirm (die neue Nachricht schiebt sich darüber),
@@ -165,6 +167,7 @@ export function StoryEntryForm({
     } else if (wasPending.current && !pending) {
       // Gebündelt gesendet: Abschnitte zurücksetzen (bei einem Fehler bleiben sie stehen)
       setBundleKey((k) => k + 1);
+      setCarryOver("");
       // Gesendet: Schreibfeld im Bild halten (das Sicherheitsnetz oben)
       try {
         sessionStorage.removeItem(sentKey);
@@ -184,7 +187,10 @@ export function StoryEntryForm({
       {!narrator && ownCharacters.length > 1 && (
         <button
           type="button"
-          onClick={() => setBundling((v) => !v)}
+          onClick={() => {
+            if (!bundling) setCarryOver(latestHtml.current || draft.content);
+            setBundling((v) => !v);
+          }}
           aria-pressed={bundling}
           className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm transition ${
             bundling ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
@@ -200,7 +206,7 @@ export function StoryEntryForm({
           ownCharacters={ownCharacters}
           mentionCharacters={characters}
           initial={[
-            { characterId: writerId, html: "" },
+            { characterId: writerId, html: carryOver },
             { characterId: ownCharacters.find((c) => c.id !== writerId)?.id ?? writerId, html: "" },
           ]}
           showToolbar={showToolbar}
