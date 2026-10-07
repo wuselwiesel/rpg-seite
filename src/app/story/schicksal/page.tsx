@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMentionableCharacters, getOwnCharacters } from "@/lib/active-character";
@@ -51,9 +52,12 @@ export default async function SchicksalPage() {
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Schicksalswürfel</h1>
-      <p className="mb-6 text-sm text-muted">
+      <p className="mb-2 text-sm text-muted">
         Würfle ein einschneidendes Schicksal für einen deiner Charaktere und poste es als neue Szene in der Story.
       </p>
+      <Link href="/story/schicksal/eigene" className="mb-6 inline-block text-sm text-accent hover:underline">
+        Eigene Schicksale
+      </Link>
       <SchicksalForm
         ownCharacters={ownCharacters}
         worldOptions={worldOptions}

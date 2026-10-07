@@ -113,11 +113,13 @@ export function rollFate(
   slots: SlotConfig[],
   severityRange: SeverityRange,
   categories: FateCategory[] = [],
+  // Eigene Schicksale der Welt, die unter die eingebauten gemischt werden
+  customFates: Fate[] = [],
 ): FateRollResult | { error: string } {
   const numSlots = slots.length;
   const minIndex = SEVERITY_ORDER.indexOf(severityRange.min);
   const maxIndex = SEVERITY_ORDER.indexOf(severityRange.max);
-  const eligible = FATES.filter((f) => {
+  const eligible = [...FATES, ...customFates].filter((f) => {
     const i = SEVERITY_ORDER.indexOf(f.severity);
     // Wurde ein Zusatz-Charakter konfiguriert, sollen auch nur Schicksale gewürfelt werden,
     // die tatsächlich einen weiteren Charakter einbinden können (keine reinen Solo-Schicksale).

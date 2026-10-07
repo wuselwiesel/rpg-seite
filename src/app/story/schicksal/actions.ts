@@ -6,6 +6,7 @@ import { getMentionableCharacters, getOwnCharacters } from "@/lib/active-charact
 import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { rollFate } from "@/lib/fate-engine";
 import { ALL_TAGS, FATES } from "@/lib/fate-data";
+import { rowsToFates, type CustomFateRow } from "@/lib/fate-custom";
 import { FATE_CATEGORIES, SEVERITY_ORDER } from "@/lib/fate-types";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { extractHashtags } from "@/lib/hashtags";
@@ -29,7 +30,7 @@ function toMeta(c: Character): CharacterMeta {
 }
 
 export type FatePreview = {
-  fateId: number;
+  fateId: number | string;
   category: string;
   severity: string;
   text: string;
@@ -92,7 +93,8 @@ export async function previewFateAction(
   }
 
   const targetPool = slotMentionable.flat().map(toMeta);
-  const result = rollFate(char1Pool, targetPool, char1Config, slots, severityRange, categories);
+  const { data: customRows } = await supabase.from("world_custom_fates").select("id, category, severity, text, targets, created_by").eq("world_id", activeWorld.id).returns<CustomFateRow[]>();
+  const result = rollFate(char1Pool, targetPool, char1Config, slots, severityRange, categories, rowsToFates(customRows ?? []));
   if ("error" in result) return result;
 
   return {
@@ -117,7 +119,7 @@ const MAX_THEME_TAGS = 5;
 const MAX_THEME_TAG_LENGTH = 40;
 
 export async function postFateResultAction(
-  fateId: number,
+  fateId: number | string,
   char1Id: string,
   targetIds: string[],
   themeTags: string[] = [],
@@ -131,7 +133,17 @@ export async function postFateResultAction(
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) return { error: "Keine aktive Welt." };
 
-  const fate = FATES.find((f) => f.id === fateId);
+  // Eingebaut (Zahl) oder ein eigenes Schicksal dieser Welt (UUID)
+  let fate = typeof fateId === "number" ? FATES.find((f) => f.id === fateId) : undefined;
+  if (!fate && typeof fateId === "string") {
+    const { data: row } = await supabase
+      .from("world_custom_fates")
+      .select("id, category, severity, text, targets, created_by")
+      .eq("id", fateId)
+      .eq("world_id", activeWorld.id)
+      .maybeSingle<CustomFateRow>();
+    fate = rowsToFates(row ? [row] : [])[0];
+  }
   if (!fate) return { error: "Unbekanntes Schicksal." };
 
   const myWorlds = await getUserWorlds(user.id);
@@ -177,7 +189,7 @@ export async function postFateResultAction(
   // schon als Autor:in sichtbar) oder als Erwähnung (fremder Charakter, Erzähler:in-Modus), die
   // übrigen Charaktere immer als klickbare @-Erwähnung.
   const template = targets.length === fate.maxTargets ? fate.text : (fate.soloText ?? fate.text);
-  let html = template
+  let html = escapeHtml(template)
     .split("{character1}")
     .join(narrator ? mentionSpan(char1Subject) : `<strong>${escapeHtml(char1Subject.name)}</strong>`);
   targets.forEach((target, i) => {

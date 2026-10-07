@@ -36,7 +36,8 @@ export type FateRoleRequirement = {
 };
 
 export type Fate = {
-  id: number;
+  // Zahl bei den eingebauten, UUID bei den eigenen Schicksalen einer Welt
+  id: number | string;
   category: FateCategory;
   severity: FateSeverity;
   // Anzahl zusätzlicher, benannter Charaktere (character2, character3, ...).

@@ -1053,3 +1053,45 @@ export async function toggleStoryBookmark(storyPostId: string): Promise<{ error:
   revalidatePath("/story");
   return { error: null, bookmarked: true };
 }
+
+// „Mit dabei“ einer Szene nachträglich ändern (nur die Autor:in): Neue werden benachrichtigt, bei geheimen Szenen dürfen sie die Szene sehen.
+export async function setSceneCast(storyPostId: string, castCharacterIds: string[]): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: post } = await supabase
+    .from("story_posts")
+    .select("id, world_id, character_id, is_private, narrator, characters!story_posts_character_id_fkey(owner_id)")
+    .eq("id", storyPostId)
+    .maybeSingle<{ id: string; world_id: string; character_id: string; is_private: boolean; narrator: boolean; characters: { owner_id: string } | null }>();
+  if (!post) return "Szene nicht gefunden.";
+  if (post.characters?.owner_id !== user.id) return "Nur die Autor:in der Szene kann das ändern.";
+
+  const wanted = Array.from(new Set(castCharacterIds.filter((id) => id && id !== post.character_id))).slice(0, 40);
+  const { data: valid } = wanted.length ? await supabase.from("characters").select("id").in("id", wanted).eq("world_id", post.world_id).is("deleted_at", null) : { data: [] as { id: string }[] };
+  const nextIds = (valid ?? []).map((c) => c.id);
+
+  const { data: current } = await supabase.from("story_post_cast").select("character_id").eq("story_post_id", storyPostId);
+  const have = new Set((current ?? []).map((r) => r.character_id as string));
+  const toAdd = nextIds.filter((id) => !have.has(id));
+  const toRemove = Array.from(have).filter((id) => !nextIds.includes(id));
+
+  if (toRemove.length) {
+    const { error } = await supabase.from("story_post_cast").delete().eq("story_post_id", storyPostId).in("character_id", toRemove);
+    if (error) return error.message;
+  }
+  if (toAdd.length) {
+    const { error } = await supabase.from("story_post_cast").insert(toAdd.map((id) => ({ story_post_id: storyPostId, character_id: id })));
+    if (error) return error.message;
+    if (post.is_private) {
+      await supabase.from("story_post_viewers").upsert(toAdd.map((id) => ({ story_post_id: storyPostId, character_id: id })), { onConflict: "story_post_id,character_id", ignoreDuplicates: true });
+    }
+    await notifyMentionedCharacterIds(toAdd, user.id, post.character_id, `/story/${storyPostId}`, "hat eine Szene mit dir begonnen", post.narrator);
+  }
+
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}

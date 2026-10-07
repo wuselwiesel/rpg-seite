@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SceneSummary } from "./scene-summary";
 import { recapToHtml } from "@/lib/recap-html";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveCharacter, getMentionableCharacters, getOwnCharacters, getOwnNpcs } from "@/lib/active-character";
+import { getActiveCharacter, getMentionableCharacters, getOwnCharacters, getOwnNpcs, getWorldCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { formatDateTime, timeAgoShort } from "@/lib/format";
@@ -16,6 +16,7 @@ import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import { getWikiTypes } from "@/lib/wiki-data";
 import { datesFromRow } from "@/lib/wiki-calendar";
 import type { StoryEntry, StoryPost } from "@/lib/types";
+import { SceneCast } from "./scene-cast";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { EntryList } from "./entry-list";
@@ -186,6 +187,11 @@ export default async function StoryPostDetailPage({
     .returns<{ characters: { id: string; name: string; avatar_url: string | null } | null }[]>();
   const cast = (castRows ?? []).map((r) => r.characters).filter((c): c is { id: string; name: string; avatar_url: string | null } => !!c);
 
+  // Auswahl für „Mit dabei“ (nur die Autor:in kann sie ändern): alle Charaktere der Welt außer der Autor-Figur
+  const castOptions = isAuthor
+    ? (await getWorldCharacters(user.id, storyPost.world_id)).filter((c) => c.id !== storyPost.character_id).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
+    : [];
+
   // Charaktere für den Filter: erst die eigenen, dann alle übrigen, die in der Szene schreiben oder erwähnt werden.
   const involvedIds = new Set<string>([storyPost.character_id, ...participantIds, ...cast.map((c) => c.id)]);
   for (const e of entries ?? []) {
@@ -259,17 +265,12 @@ export default async function StoryPostDetailPage({
             {storyPost.story_arcs.name}
           </Link>
         )}
-        {cast.length > 0 && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-muted">Mit dabei</span>
-            {cast.map((c) => (
-              <Link key={c.id} href={`/characters/${c.id}`} className="flex items-center gap-1.5 rounded-full bg-surface-2 py-0.5 pl-0.5 pr-2.5 text-sm text-fg-soft transition hover:text-fg">
-                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={22} />
-                {c.name}
-              </Link>
-            ))}
-          </div>
-        )}
+        <SceneCast
+          storyPostId={storyPost.id}
+          cast={cast}
+          options={castOptions}
+          canEdit={isAuthor && !storyPost.locked}
+        />
         <StoryPostBody
           storyPostId={storyPost.id}
           title={storyPost.title}

@@ -160,3 +160,17 @@ describe("FATES-Datenbank (Regressionsschutz)", () => {
     }
   });
 });
+
+describe("eigene Schicksale", () => {
+  it("werden gewürfelt und mit den Namen gefüllt", () => {
+    // „Gefahr“ / „mittel“ gibt es eingebaut nicht, deshalb kann nur das eigene Schicksal gewählt werden
+    expect(FATES.some((f) => f.category === "Gefahr" && f.severity === "mittel")).toBe(false);
+    const custom: Fate = { id: "eigenes-1", category: "Gefahr", severity: "mittel", minTargets: 0, maxTargets: 0, text: "{character1} verliert den Schlüssel." };
+    const result = rollFate([char({ id: "1", name: "Mara" })], [], { mode: "pool", gender: "alle", ownerId: "alle" }, [], { min: "mittel", max: "mittel" }, ["Gefahr"], [custom]);
+    expect("error" in result).toBe(false);
+    if (!("error" in result)) {
+      expect(result.fate.id).toBe("eigenes-1");
+      expect(result.text).toBe("Mara verliert den Schlüssel.");
+    }
+  });
+});

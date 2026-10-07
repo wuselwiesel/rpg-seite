@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Feather } from "lucide-react";
-import { CharacterAvatar } from "@/components/character-avatar";
+import { CastPicker } from "@/components/cast-picker";
 import { createStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { WriterSelect } from "@/components/writer-select";
@@ -16,6 +16,7 @@ const NEW_ARC_VALUE = "__new__";
 export function NewStoryPostForm({
   arcs,
   allCharacters,
+  worldCharacters,
   ownCharacters,
   activeCharacterId,
   locations,
@@ -23,6 +24,8 @@ export function NewStoryPostForm({
 }: {
   arcs: StoryArc[];
   allCharacters: Character[];
+  // Alle Charaktere der Welt (für „Mit dabei“)
+  worldCharacters: Character[];
   ownCharacters: Character[];
   activeCharacterId: string | null;
   locations: string[];
@@ -163,33 +166,15 @@ export function NewStoryPostForm({
         <input type="hidden" name="arc_id" value={arcChoice} />
       )}
 
-      {otherCharacters.length > 0 && (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm text-fg-soft">Mit dabei (optional)</legend>
-          <div className="flex flex-wrap gap-1.5">
-            {otherCharacters.map((c) => {
-              const on = cast.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setCast((prev) => (on ? prev.filter((id) => id !== c.id) : [...prev, c.id]))}
-                  className={`flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}
-                >
-                  <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={22} />
-                  {c.name}
-                </button>
-              );
-            })}
-          </div>
-          {cast
-            .filter((id) => otherCharacters.some((c) => c.id === id))
-            .map((id) => (
-              <input key={id} type="hidden" name="cast_character_id" value={id} />
-            ))}
-        </fieldset>
-      )}
+      <div className="flex flex-col gap-1.5">
+        <p className="text-sm text-fg-soft">Mit dabei (optional)</p>
+        <CastPicker
+          options={worldCharacters.filter((c) => c.id !== writerId)}
+          value={cast.filter((id) => id !== writerId)}
+          onChange={setCast}
+          inputName="cast_character_id"
+        />
+      </div>
 
       {otherCharacters.length > 0 && (
         <div className="flex flex-col gap-2 rounded-md border border-line px-3 py-2.5">

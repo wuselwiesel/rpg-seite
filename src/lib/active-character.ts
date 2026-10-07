@@ -73,3 +73,11 @@ export const getMentionableCharacters = cache(async (userId: string, worldId: st
 
   return data ?? [];
 });
+
+// Alle (nicht gelöschten) Charaktere einer Welt, für die Auswahl „Mit dabei“; die eigenen zuerst, dann nach Name.
+export const getWorldCharacters = cache(async (userId: string, worldId: string): Promise<Character[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("characters").select("*").eq("world_id", worldId).is("deleted_at", null).order("name").returns<Character[]>();
+  const all = data ?? [];
+  return [...all.filter((c) => c.owner_id === userId), ...all.filter((c) => c.owner_id !== userId)];
+});
