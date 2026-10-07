@@ -167,7 +167,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Musik zur Szene",
-        text: "Über „Musik“ unter dem Titel hängen alle Mitspielenden Links an: Spotify (Titel, Album, Playlist), YouTube, SoundCloud oder eine Audiodatei. Ein Name ist optional. Mit dem Abspielen-Knopf lädt der Player des jeweiligen Titels, jede Person hört dabei für sich. Entfernen darf, wer den Titel hinzugefügt hat, die Autor:in der Szene und Admins.",
+        text: "Über „Musik“ unter dem Titel hängen alle Mitspielenden Links an: Spotify (Titel, Album, Playlist), YouTube, SoundCloud oder eine Audiodatei. Ein Name ist optional. Mit dem Abspielen-Knopf lädt der Player des jeweiligen Titels, du hörst allein. Mit dem Personen-Symbol neben dem Titel (beim Darüberfahren, am Handy nach einem Antippen) sagst du allen mit offener Szene Bescheid: Sie bekommen den Hinweis „… hört gerade …“ und können mit einem Klick mithören. Niemand muss mitmachen, und es läuft nicht synchron. Entfernen darf, wer den Titel hinzugefügt hat, die Autor:in der Szene und Admins.",
         route: "@thread|/story",
         match: { attr: "scene-meta" },
       },

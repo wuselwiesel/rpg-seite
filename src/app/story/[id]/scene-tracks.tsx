@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { ListMusic, Music, Pause, Play, Plus, X } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { ListMusic, Music, Pause, Play, Plus, Users, X } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { RevealRow } from "@/components/reveal-row";
 import { parseMusicLink } from "@/lib/scene-music";
 import { addSceneTrack, removeSceneTrack } from "../actions";
@@ -17,13 +18,54 @@ function trackLabel(track: SceneTrack): string {
 }
 
 // Musikliste einer Szene: alle Mitspielenden hängen Links an (Spotify, YouTube, SoundCloud, Audiodatei); ein Tipp auf Abspielen lädt den Player des Titels.
-export function SceneTracks({ storyPostId, tracks, canAdd }: { storyPostId: string; tracks: SceneTrack[]; canAdd: boolean }) {
+type StartMessage = { trackId: string; by: string; byId: string };
+
+export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: { storyPostId: string; tracks: SceneTrack[]; canAdd: boolean; selfId: string; selfName: string }) {
   const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // „Gemeinsam starten“: wer den Knopf drückt, schickt allen mit offener Szene einen Hinweis; mitspielen ist freiwillig (ein Klick),
+  // denn Browser starten Musik nicht von selbst. Wer lieber allein hört, ignoriert den Hinweis.
+  const [invite, setInvite] = useState<StartMessage | null>(null);
+  const [sent, setSent] = useState<string | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`scene-music-${storyPostId}`)
+      .on("broadcast", { event: "start" }, ({ payload }) => {
+        const msg = payload as StartMessage;
+        if (msg?.byId && msg.byId !== selfId) setInvite(msg);
+      })
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      channelRef.current = null;
+      void supabase.removeChannel(channel);
+    };
+  }, [storyPostId, selfId]);
+
+  function startTogether(id: string) {
+    setPlaying(id);
+    setSent(id);
+    void channelRef.current?.send({ type: "broadcast", event: "start", payload: { trackId: id, by: selfName, byId: selfId } satisfies StartMessage });
+    window.setTimeout(() => setSent((s) => (s === id ? null : s)), 4000);
+  }
+
+  function joinInvite() {
+    if (!invite) return;
+    if (tracks.some((t) => t.id === invite.trackId)) {
+      setOpen(true);
+      setPlaying(invite.trackId);
+    }
+    setInvite(null);
+  }
+
+  const inviteTrack = invite ? tracks.find((t) => t.id === invite.trackId) : null;
 
   if (tracks.length === 0 && !canAdd) return null;
 
@@ -58,6 +100,20 @@ export function SceneTracks({ storyPostId, tracks, canAdd }: { storyPostId: stri
         {open ? <X className="h-3 w-3" strokeWidth={2} /> : tracks.length > 1 ? <ListMusic className="h-3 w-3" strokeWidth={2} /> : <Music className="h-3 w-3" strokeWidth={2} />}
         {open ? "Musik schließen" : tracks.length > 0 ? `Musik · ${tracks.length}` : "Musik hinzufügen"}
       </button>
+      {invite && inviteTrack && (
+        <div className="flex basis-full flex-wrap items-center gap-2 rounded-xl bg-accent-strong/15 px-3 py-2 text-sm text-fg" role="status">
+          <Users className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
+          <span className="min-w-0 flex-1">
+            {invite.by} hört gerade <span className="font-medium">{trackLabel(inviteTrack)}</span>
+          </span>
+          <button type="button" onClick={joinInvite} className="rounded-full bg-accent-strong px-3 py-1 text-xs font-medium text-on-accent-strong transition hover:opacity-90">
+            Mithören
+          </button>
+          <button type="button" onClick={() => setInvite(null)} aria-label="Hinweis schließen" className="rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg">
+            <X className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        </div>
+      )}
       {open && (
         <div className="basis-full rounded-xl border border-line bg-surface p-2">
           {tracks.length > 0 && (
@@ -71,18 +127,31 @@ export function SceneTracks({ storyPostId, tracks, canAdd }: { storyPostId: stri
                     keepVisible={isPlaying}
                     className="flex-wrap rounded-lg px-1 py-1"
                     actions={
-                      t.canRemove ? (
-                        <button
-                          type="button"
-                          onClick={() => remove(t.id)}
-                          disabled={pending}
-                          aria-label="Titel entfernen"
-                          title="Entfernen"
-                          className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
-                        >
-                          <X className="h-3.5 w-3.5" strokeWidth={2} />
-                        </button>
-                      ) : null
+                      <>
+                        {link && (
+                          <button
+                            type="button"
+                            onClick={() => startTogether(t.id)}
+                            aria-label="Gemeinsam starten"
+                            title={sent === t.id ? "Hinweis gesendet" : "Gemeinsam starten"}
+                            className={`rounded-full p-1.5 transition hover:bg-surface-2 ${sent === t.id ? "text-accent" : "text-muted hover:text-fg"}`}
+                          >
+                            <Users className="h-3.5 w-3.5" strokeWidth={2} />
+                          </button>
+                        )}
+                        {t.canRemove && (
+                          <button
+                            type="button"
+                            onClick={() => remove(t.id)}
+                            disabled={pending}
+                            aria-label="Titel entfernen"
+                            title="Entfernen"
+                            className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
+                          >
+                            <X className="h-3.5 w-3.5" strokeWidth={2} />
+                          </button>
+                        )}
+                      </>
                     }
                   >
                     <button

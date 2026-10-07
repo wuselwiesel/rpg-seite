@@ -22,6 +22,8 @@ export function SceneMeta({
   ambienceImage = null,
   tracks = [],
   canAddTracks = false,
+  selfId = "",
+  selfName = "",
 }: {
   storyPostId: string;
   location: string | null;
@@ -34,6 +36,8 @@ export function SceneMeta({
   ambienceImage?: string | null;
   tracks?: SceneTrack[];
   canAddTracks?: boolean;
+  selfId?: string;
+  selfName?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [loc, setLoc] = useState(location ?? "");
@@ -166,7 +170,7 @@ export function SceneMeta({
           {[dateLabel, inWorldTime].filter(Boolean).join(", ")}
         </Link>
       )}
-      <SceneTracks storyPostId={storyPostId} tracks={tracks} canAdd={canAddTracks} />
+      <SceneTracks storyPostId={storyPostId} tracks={tracks} canAdd={canAddTracks} selfId={selfId} selfName={selfName} />
       {canEdit && (
         <button
           type="button"

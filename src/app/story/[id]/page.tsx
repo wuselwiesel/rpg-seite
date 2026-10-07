@@ -323,6 +323,8 @@ export default async function StoryPostDetailPage({
                 ambienceImage={storyPost.ambience_image_url ?? null}
                 tracks={tracks}
                 canAddTracks={myCharacterIds.size > 0 || isWorldOwner}
+                selfId={user.id}
+                selfName={memberName.get(user.id) ?? "Jemand"}
                 canEdit={myCharacterIds.size > 0 || isWorldOwner}
               />
             </>
