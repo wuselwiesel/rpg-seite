@@ -7,6 +7,8 @@ import type { Character } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 import { stripHtml } from "@/lib/strip-html";
 
+const SURFACES = ["bg-surface-2", "bg-surface-3", "bg-surface"];
+
 export function EntryCard({
   id,
   title,
@@ -63,10 +65,9 @@ export function EntryCard({
   narrator?: boolean;
 }) {
   const preview = stripHtml(content);
-  // Ruhige Rangordnung statt wechselnder Pastellflächen: weiß mit feiner Linie; Erzähler:in-Beiträge leicht getönt,
-  // „Du bist dran“ mit kräftigem Rand links, Angepinntes mit Akzentlinie oben.
-  void index;
-  const surface = narrator ? "border-line bg-surface-2" : "border-line bg-surface";
+  // Wechselnde Pastelltöne wie gewohnt; „Du bist dran“ bekommt zusätzlich einen kräftigen Rand links,
+  // Angepinntes eine Akzentlinie oben.
+  const surface = `border-transparent ${SURFACES[index % SURFACES.length]}`;
   const emphasis = yourTurn ? "border-l-[4px] border-l-accent-strong" : pinned ? "border-t-[3px] border-t-accent" : "";
 
   return (
