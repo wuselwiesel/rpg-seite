@@ -205,6 +205,31 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
     await notifyMentionedCharacterIds(castIds, user.id, characterId, `/story/${data.id}`, "hat eine Szene mit dir begonnen", formData.get("narrator") === "on");
   }
 
+  // Alle anderen in der Welt erfahren von der neuen Szene (geheime Szenen nur über „Mit dabei“/Zuschauer:innen)
+  if (!isPrivate) {
+    const [{ data: members }, { data: castOwners }, { data: writer }] = await Promise.all([
+      supabase.from("world_members").select("user_id").eq("world_id", activeWorld.id),
+      castIds.length ? supabase.from("characters").select("owner_id").in("id", castIds) : Promise.resolve({ data: [] as { owner_id: string }[] }),
+      supabase.from("characters").select("name, avatar_url").eq("id", characterId).maybeSingle(),
+    ]);
+    const skip = new Set([user.id, ...(castOwners ?? []).map((c) => c.owner_id)]);
+    const narratorScene = formData.get("narrator") === "on";
+    await Promise.all(
+      (members ?? [])
+        .filter((m) => !skip.has(m.user_id))
+        .map((m) =>
+          createNotification(supabase, {
+            userId: m.user_id,
+            type: "new_scene",
+            actorName: narratorScene ? "Erzähler:in" : (writer?.name ?? "Jemand"),
+            actorAvatarUrl: narratorScene ? null : (writer?.avatar_url ?? null),
+            link: `/story/${data.id}`,
+            message: `hat eine neue Szene begonnen: „${title}“`,
+          }),
+        ),
+    );
+  }
+
   if (location) await ensureLocationWikiPage(supabase, activeWorld.id, user.id, location);
 
   revalidatePath("/story");
