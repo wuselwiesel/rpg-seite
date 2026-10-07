@@ -1,7 +1,9 @@
 // Musik-Links einer Szene: YouTube, Spotify, SoundCloud oder eine Audiodatei. Der Player wird erst nach einem Klick geladen.
 export type MusicLink =
   | { kind: "youtube" | "spotify" | "soundcloud"; embed: string; label: string; detail?: string; uri?: string }
-  | { kind: "audio"; src: string; label: string };
+  | { kind: "audio"; src: string; label: string }
+  // Spotify Jam (gemeinsame Hör-Sitzung) und Spotify-Kurzlinks: lassen sich nicht einbetten, öffnen sich in Spotify (App oder Web-Player)
+  | { kind: "external"; href: string; label: string; detail?: string };
 
 const SPOTIFY_KINDS: Record<string, string> = {
   track: "Titel",
@@ -36,6 +38,10 @@ export function parseMusicLink(raw: string | null | undefined): MusicLink | null
     if (v && /^[\w-]{6,20}$/.test(v)) return { kind: "youtube", label: "YouTube", embed: `https://www.youtube-nocookie.com/embed/${v}?autoplay=1` };
     if (list && /^[\w-]{10,60}$/.test(list)) return { kind: "youtube", label: "YouTube", embed: `https://www.youtube-nocookie.com/embed/videoseries?list=${list}&autoplay=1` };
   }
+  if (host === "open.spotify.com" && /^\/(?:intl-[a-z]+\/)?socialsession\/[A-Za-z0-9_-]+/.test(url.pathname)) {
+    return { kind: "external", label: "Spotify", detail: "Jam", href: url.toString() };
+  }
+  if (host === "spotify.link" && url.pathname.length > 1) return { kind: "external", label: "Spotify", detail: "Link", href: url.toString() };
   if (host === "open.spotify.com") {
     const m = url.pathname.match(/^\/(?:intl-[a-z]+\/)?(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]+)/);
     if (m) return { kind: "spotify", label: "Spotify", detail: SPOTIFY_KINDS[m[1]], embed: `https://open.spotify.com/embed/${m[1]}/${m[2]}`, uri: `spotify:${m[1]}:${m[2]}` };

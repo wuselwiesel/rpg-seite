@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ListMusic, Music, Pause, Play, Plus, Users, X } from "lucide-react";
+import { ExternalLink, ListMusic, Music, Pause, Play, Plus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { RevealRow } from "@/components/reveal-row";
 import { parseMusicLink } from "@/lib/scene-music";
@@ -17,14 +17,15 @@ function trackLabel(track: SceneTrack): string {
   if (track.title) return track.title;
   if (!link) return track.url;
   if (link.kind === "audio") return link.label;
-  return link.kind === "spotify" && link.detail ? `${link.label} · ${link.detail}` : link.label;
+  return (link.kind === "spotify" || link.kind === "external") && link.detail ? `${link.label} · ${link.detail}` : link.label;
 }
 
 // Musikliste einer Szene: alle Mitspielenden hängen Links an (Spotify, YouTube, SoundCloud, Audiodatei); ein Tipp auf Abspielen lädt den Player des Titels.
 // Gemeinsam hören: Wer teilt („Gemeinsam starten“), schickt Position und Pause-Zustand über einen Broadcast-Kanal; wer „Mithören“ wählt, springt an
 // dieselbe Stelle und folgt Pause/Weiterspielen. Das geht nur bei Spotify (steuerbarer Player). Alleine hören bleibt wie gehabt.
 type StartMessage = { trackId: string; by: string; byId: string };
-type SyncMessage = StartMessage & { position: number; paused: boolean };
+// uri = der Titel, der gerade läuft (bei Playlists und Alben wechselt er)
+type SyncMessage = StartMessage & { position: number; paused: boolean; uri?: string };
 type Role = { kind: "host"; trackId: string } | { kind: "follow"; trackId: string; by: string; byId: string } | null;
 
 export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: { storyPostId: string; tracks: SceneTrack[]; canAdd: boolean; selfId: string; selfName: string }) {
@@ -42,7 +43,7 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
   const roleRef = useRef<Role>(null);
   const tracksRef = useRef(tracks);
   const controllers = useRef(new Map<string, SpotifyController>());
-  const local = useRef(new Map<string, { position: number; paused: boolean; duration: number; at: number }>());
+  const local = useRef(new Map<string, { position: number; paused: boolean; duration: number; at: number; uri?: string }>());
   const dismissed = useRef(new Set<string>());
   const lastHeard = useRef(0);
   const lastSent = useRef({ at: 0, paused: true });
@@ -65,6 +66,19 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
     const controller = controllers.current.get(msg.trackId);
     const state = local.current.get(msg.trackId);
     if (!controller || !state) return;
+    // Playlist oder Album: läuft bei dir ein anderer Titel als beim Host, zuerst denselben Titel laden (die nächste Rückmeldung springt dann an die Stelle)
+    if (msg.uri && state.uri && msg.uri !== state.uri) {
+      try {
+        controller.loadUri(msg.uri);
+        if (!msg.paused) controller.play();
+      } catch {
+        /* Player gerade nicht bereit */
+      }
+      state.uri = msg.uri;
+      state.at = 0;
+      state.paused = true;
+      return;
+    }
     const estimated = state.paused ? state.position : state.position + (Date.now() - state.at);
     const action = decideSync({ position: msg.position, paused: msg.paused }, { position: estimated, paused: state.paused, duration: state.duration });
     try {
@@ -140,13 +154,13 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
 
   // Position des eigenen Players: merken, und als Host regelmäßig (alle 2 s, sofort bei Pause/Weiterspielen) an die anderen schicken
   function handleUpdate(trackId: string, s: SpotifyPlayback) {
-    local.current.set(trackId, { position: s.position, paused: s.isPaused, duration: s.duration, at: Date.now() });
+    local.current.set(trackId, { position: s.position, paused: s.isPaused, duration: s.duration, at: Date.now(), uri: s.playingURI });
     const r = roleRef.current;
     if (r?.kind !== "host" || r.trackId !== trackId || s.isBuffering) return;
     const now = Date.now();
     if (s.isPaused !== lastSent.current.paused || now - lastSent.current.at >= 2000) {
       lastSent.current = { at: now, paused: s.isPaused };
-      send("sync", { trackId, by: selfName, byId: selfId, position: s.position, paused: s.isPaused });
+      send("sync", { trackId, by: selfName, byId: selfId, position: s.position, paused: s.isPaused, uri: s.playingURI });
     }
   }
 
@@ -270,7 +284,7 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
                     className="flex-wrap rounded-lg px-1 py-1"
                     actions={
                       <>
-                        {link && (
+                        {link && link.kind !== "external" && (
                           <button
                             type="button"
                             onClick={() => startTogether(t.id)}
@@ -296,6 +310,17 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
                       </>
                     }
                   >
+                    {link?.kind === "external" ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={link.detail === "Jam" ? "Jam in Spotify öffnen" : "In Spotify öffnen"}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-strong text-on-accent-strong transition hover:opacity-90"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      </a>
+                    ) : (
                     <button
                       type="button"
                       onClick={() => togglePlay(t.id)}
@@ -305,10 +330,11 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
                     >
                       {isPlaying ? <Pause className="h-3.5 w-3.5" strokeWidth={2.25} /> : <Play className="h-3.5 w-3.5" strokeWidth={2.25} />}
                     </button>
+                    )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm text-fg">{trackLabel(t)}</span>
                       <span className="block truncate text-xs text-muted">
-                        {role?.trackId === t.id && role.kind === "host" ? "Du teilst gerade, andere können mithören" : role?.trackId === t.id && role.kind === "follow" ? `Du hörst mit bei ${role.by}` : `von ${t.addedBy}`}
+                        {role?.trackId === t.id && role.kind === "host" ? "Du teilst gerade, andere können mithören" : role?.trackId === t.id && role.kind === "follow" ? `Du hörst mit bei ${role.by}` : link?.kind === "external" ? `${link.detail === "Jam" ? "Jam" : "Spotify-Link"} · öffnet sich in Spotify, von ${t.addedBy}` : `von ${t.addedBy}`}
                       </span>
                     </span>
                     {role?.trackId === t.id && (
@@ -320,7 +346,7 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
                         {role.kind === "host" ? "Teilen beenden" : "Selbst weiterhören"}
                       </button>
                     )}
-                    {isPlaying && link && (
+                    {isPlaying && link && link.kind !== "external" && (
                       <div className="basis-full pt-1">
                         {link.kind === "audio" ? (
                           <audio src={link.src} controls autoPlay className="w-full" />
