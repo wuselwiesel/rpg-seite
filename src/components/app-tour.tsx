@@ -48,15 +48,17 @@ function hrefOf(selector: string, pattern?: RegExp): string | null {
   return null;
 }
 
-// Was sich auf der aktuellen Seite an Zielen für die Platzhalter-Routen finden lässt
+// Was sich auf der aktuellen Seite an Zielen für die Platzhalter-Routen finden lässt. Das Profil des aktiven Charakters
+// leitet sich aus seinem ChaBo-Link ab: Andere Links auf Charaktere (Beiträge, Follower …) dürfen nicht dafür gelten.
 function scanRefs(): Partial<Refs> {
   const found: Partial<Refs> = {};
   const thread = hrefOf('[data-tour="story-list"] a[href^="/story/"]');
   if (thread) found.thread = thread;
   const chabo = hrefOf('a[href$="/chabo"]', /^\/characters\/[0-9a-f-]{36}\/chabo$/);
-  if (chabo) found.chabo = chabo;
-  const profile = hrefOf('a[href^="/characters/"]', /^\/characters\/[0-9a-f-]{36}$/);
-  if (profile) found.profile = profile;
+  if (chabo) {
+    found.chabo = chabo;
+    found.profile = chabo.replace(/\/chabo$/, "");
+  }
   const chat = hrefOf('a[href^="/chats/"]', /^\/chats\/[0-9a-f-]{36}/);
   if (chat) found.chat = chat;
   return found;
@@ -84,6 +86,8 @@ export function AppTour() {
   const pathname = usePathname();
   const router = useRouter();
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Seitenwechsel pro Schritt begrenzen, damit der Rundgang nie endlos zwischen Seiten springt
+  const pushes = useRef(0);
 
   const tour = tourId ? getTour(tourId) : undefined;
   const active = view === "tour" && !!tour;
@@ -128,23 +132,28 @@ export function AppTour() {
   useEffect(() => {
     if (!active || !step) return;
     const target = resolveRoute(step.route, refs);
-    if (target && pathname !== target) router.push(target);
+    if (target && pathname !== target && pushes.current < 4) {
+      pushes.current += 1;
+      router.push(target);
+    }
   }, [active, step, pathname, router, refs]);
 
   // Ziel-Element suchen (mit ein paar Versuchen, falls die Seite gerade erst lädt) und Position verfolgen.
   const locate = useCallback(() => {
     if (!step) return;
     // Auf jeder Seite merken, was sich für die Platzhalter-Routen findet.
+    // Ein einmal gefundener Wert bleibt für den ganzen Rundgang stehen: Wechselte er mit jeder Seite, könnte der Rundgang
+    // zwischen zwei Seiten hin- und herspringen.
     const found = scanRefs();
-    const changed = (Object.keys(found) as (keyof Refs)[]).some((k) => found[k] !== refs[k]);
-    if (changed) setRefs((prev) => ({ ...prev, ...found }));
+    const fresh = (Object.keys(found) as (keyof Refs)[]).filter((k) => !refs[k]);
+    if (fresh.length > 0) setRefs((prev) => ({ ...prev, ...Object.fromEntries(fresh.filter((k) => !prev[k]).map((k) => [k, found[k]])) }));
 
     if (!step.match) {
       setRect(null);
       setSearching(false);
       return;
     }
-    const target = resolveRoute(step.route, { ...refs, ...found });
+    const target = resolveRoute(step.route, { ...found, ...Object.fromEntries(Object.entries(refs).filter(([, v]) => v)) } as Refs);
     if (target && pathname !== target) return;
     const el = findTarget(step.match);
     if (!el) {
@@ -163,6 +172,7 @@ export function AppTour() {
 
   useEffect(() => {
     if (!active) return;
+    pushes.current = 0;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Zielelement neu suchen, sobald sich der Tour-Schritt ändert
     setRect(null);
     setSearching(true);

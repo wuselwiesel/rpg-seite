@@ -432,7 +432,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Freund:innen",
-        text: "Hier schickst du Freundschaftsanfragen, siehst, wer online ist, und beendest Freundschaften. Freund:innen kannst du in Welten einladen und Badges verleihen.",
+        text: "Wer in derselben Welt ist, ist automatisch mit dir befreundet. Zusätzlich schickst du hier Freundschaftsanfragen an Leute aus anderen Welten, siehst, wer online ist, und beendest Freundschaften. Freund:innen kannst du in Welten einladen und ihnen Badges verleihen.",
         route: "/friends",
       },
       {
