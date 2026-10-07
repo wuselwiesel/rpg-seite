@@ -130,7 +130,7 @@ export function ChatThemePicker({
       {open && (
         <div
           role="menu"
-          className={`absolute top-full z-50 mt-2 flex w-72 flex-col rounded-2xl border border-line bg-surface p-1.5 text-fg shadow-lg ${
+          className={`absolute top-full z-50 mt-2 flex w-72 flex-col rounded-2xl border border-line bg-surface p-1.5 text-fg shadow-lg max-sm:fixed max-sm:inset-x-3 max-sm:top-auto max-sm:w-auto ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >

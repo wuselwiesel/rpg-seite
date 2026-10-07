@@ -524,9 +524,11 @@ export function ChatRoom({
           </div>
         </div>
         <div className="flex min-w-0 items-center gap-3">
-          <p className="min-w-0 truncate text-right text-xs text-muted">
-            {participants.map((p) => p.name).join(", ")}
-          </p>
+          {isGroup && (
+            <p className="min-w-0 truncate text-right text-xs text-muted">
+              {participants.map((p) => p.name).join(", ")}
+            </p>
+          )}
           <ChatThemePicker
             kind="rp"
             chatId={chatId}

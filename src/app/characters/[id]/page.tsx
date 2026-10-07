@@ -253,7 +253,7 @@ export default async function CharacterProfilePage({
                     <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
                   )}
                   {canMessage && !isNpcProfile && (
-                    <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
+                    <Link href={`/chats/mit/${character.id}`} prefetch={false} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                       <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
                       Nachricht
                     </Link>
@@ -353,7 +353,7 @@ export default async function CharacterProfilePage({
                 <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
               )}
               {canMessage && !isNpcProfile && (
-                <Link href={`/chats/new?with=${character.id}`} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
+                <Link href={`/chats/mit/${character.id}`} prefetch={false} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                   Nachricht
                 </Link>
               )}
