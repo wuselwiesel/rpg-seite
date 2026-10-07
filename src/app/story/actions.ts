@@ -1095,3 +1095,37 @@ export async function setSceneCast(storyPostId: string, castCharacterIds: string
   revalidatePath(`/story/${storyPostId}`);
   return null;
 }
+
+// Handlungsstrang einer Szene nachträglich setzen, ändern oder entfernen; mit `newArcName` wird zuerst ein neuer Strang angelegt (oder ein gleichnamiger genutzt).
+export async function setSceneArc(storyPostId: string, arcId: string | null, newArcName?: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: post } = await supabase.from("story_posts").select("id, world_id").eq("id", storyPostId).maybeSingle<{ id: string; world_id: string }>();
+  if (!post) return "Szene nicht gefunden.";
+
+  let nextArc: string | null = arcId || null;
+  const name = (newArcName ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (name) {
+    const { data: same } = await supabase.from("story_arcs").select("id, name").eq("world_id", post.world_id).ilike("name", name.replace(/[\\%_]/g, (m) => `\\${m}`));
+    const found = same?.find((a) => a.name.toLowerCase() === name.toLowerCase());
+    if (found) nextArc = found.id;
+    else {
+      const { data: created, error } = await supabase.from("story_arcs").insert({ world_id: post.world_id, name, created_by: user.id }).select("id").single<{ id: string }>();
+      if (error || !created) return error?.message ?? "Handlungsstrang konnte nicht erstellt werden.";
+      nextArc = created.id;
+    }
+  } else if (nextArc) {
+    const { data: arc } = await supabase.from("story_arcs").select("id").eq("id", nextArc).eq("world_id", post.world_id).maybeSingle();
+    if (!arc) return "Diesen Handlungsstrang gibt es nicht.";
+  }
+
+  const { error, count } = await supabase.from("story_posts").update({ arc_id: nextArc }, { count: "exact" }).eq("id", storyPostId);
+  if (error) return error.message;
+  if (!count) return "Das darf nur die Autor:in oder die Welt-Besitzerin ändern.";
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/story");
+  return null;
+}

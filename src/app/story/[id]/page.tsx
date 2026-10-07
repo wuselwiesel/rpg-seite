@@ -17,6 +17,7 @@ import { getWikiTypes } from "@/lib/wiki-data";
 import { datesFromRow } from "@/lib/wiki-calendar";
 import type { StoryEntry, StoryPost } from "@/lib/types";
 import { SceneCast } from "./scene-cast";
+import { SceneArc } from "./scene-arc";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { EntryList } from "./entry-list";
@@ -187,6 +188,12 @@ export default async function StoryPostDetailPage({
     .returns<{ characters: { id: string; name: string; avatar_url: string | null } | null }[]>();
   const cast = (castRows ?? []).map((r) => r.characters).filter((c): c is { id: string; name: string; avatar_url: string | null } => !!c);
 
+  // Handlungsstränge der Welt (nur für die, die den Strang ändern dürfen)
+  const { data: arcRows } = isAuthor || isWorldOwner
+    ? await supabase.from("story_arcs").select("id, name").eq("world_id", storyPost.world_id).order("name").returns<{ id: string; name: string }[]>()
+    : { data: [] as { id: string; name: string }[] };
+  const arcOptions = arcRows ?? [];
+
   // Auswahl für „Mit dabei“ (nur die Autor:in kann sie ändern): alle Charaktere der Welt außer der Autor-Figur
   const castOptions = isAuthor
     ? (await getWorldCharacters(user.id, storyPost.world_id)).filter((c) => c.id !== storyPost.character_id).map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))
@@ -257,14 +264,12 @@ export default async function StoryPostDetailPage({
           options={chainOptions}
           canEdit={isAuthor || isWorldOwner}
         />
-        {storyPost.story_arcs?.name && storyPost.arc_id && (
-          <Link
-            href={`/story?arc=${storyPost.arc_id}`}
-            className="mb-2 inline-flex w-fit items-center rounded-full bg-accent-strong/15 px-2.5 py-0.5 text-xs font-medium text-accent transition hover:bg-accent-strong/25"
-          >
-            {storyPost.story_arcs.name}
-          </Link>
-        )}
+        <SceneArc
+          storyPostId={storyPost.id}
+          arc={storyPost.arc_id && storyPost.story_arcs?.name ? { id: storyPost.arc_id, name: storyPost.story_arcs.name } : null}
+          arcs={arcOptions}
+          canEdit={(isAuthor || isWorldOwner) && !storyPost.locked}
+        />
         <SceneCast
           storyPostId={storyPost.id}
           cast={cast}
