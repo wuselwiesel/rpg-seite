@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
-import { CharacterAvatar } from "@/components/character-avatar";
 import { WriterSelect } from "@/components/writer-select";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import type { Character } from "@/lib/types";
