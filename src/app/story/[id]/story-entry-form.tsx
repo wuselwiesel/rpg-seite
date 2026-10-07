@@ -48,6 +48,7 @@ export function StoryEntryForm({
   const [bundling, setBundling] = useState(false);
   const [bundleKey, setBundleKey] = useState(0);
   // Text, der beim Einschalten von „Bündeln“ schon im Schreibfeld stand: wandert in den ersten Abschnitt
+  const bundleHtml = useRef<string[]>([]);
   const [carryOver, setCarryOver] = useState("");
   const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
 
@@ -188,7 +189,18 @@ export function StoryEntryForm({
         <button
           type="button"
           onClick={() => {
-            if (!bundling) setCarryOver(latestHtml.current || draft.content);
+            if (!bundling) {
+              const carried = latestHtml.current || draft.content;
+              setCarryOver(carried);
+              bundleHtml.current = [carried];
+            } else {
+              // Zurück zum normalen Schreibfeld: die Texte der Abschnitte wandern zusammen hinein
+              const merged = bundleHtml.current.filter((h) => h.replace(/<[^>]*>/g, "").trim()).join("");
+              latestHtml.current = merged;
+              setRestoreText(merged);
+              update({ content: merged });
+              setResetKey((k) => k + 1);
+            }
             setBundling((v) => !v);
           }}
           aria-pressed={bundling}
@@ -211,6 +223,9 @@ export function StoryEntryForm({
           ]}
           showToolbar={showToolbar}
           onTyping={onTyping}
+          onChange={(segs) => {
+            bundleHtml.current = segs.map((sg) => sg.html);
+          }}
         />
       ) : (
       restored && (
