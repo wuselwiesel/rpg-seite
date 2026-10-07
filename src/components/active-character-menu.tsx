@@ -14,11 +14,14 @@ export function ActiveCharacterMenu({
   characters,
   activeCharacter,
   avatarOnly = false,
+  hideChevron = false,
 }: {
   characters: Character[];
   activeCharacter: Character | null;
   // Nur Avatar + Pfeil (z. B. im Feed neben dem Logo), sonst Avatar + Benutzername.
   avatarOnly?: boolean;
+  // Ohne Pfeil, wenn die Kopfzeile eng ist (Startseite mit Logo)
+  hideChevron?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -56,7 +59,7 @@ export function ActiveCharacterMenu({
             {activeCharacter.username ?? activeCharacter.name}
           </span>
         )}
-        <ChevronDown className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
+        {!hideChevron && <ChevronDown className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />}
       </button>
 
       {open && (

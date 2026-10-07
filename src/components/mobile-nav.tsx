@@ -78,6 +78,7 @@ export function MobileNav({
             characters={characters}
             activeCharacter={activeCharacter}
             avatarOnly
+            hideChevron={pathname === "/"}
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -86,7 +87,7 @@ export function MobileNav({
             initialNotifications={initialNotifications}
             initialUnreadCount={initialUnreadCount}
           />
-          <MobileModeButton />
+          <MobileModeButton compact={pathname === "/"} />
           <button
             type="button"
             onClick={() => setMoreOpen(true)}

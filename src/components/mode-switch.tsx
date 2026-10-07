@@ -32,7 +32,7 @@ export function ModeSwitch() {
 }
 
 // Handy: drei Segmente, der aktive Modus mit Beschriftung, die anderen nur als Symbol – ein Tipp zum Wechseln.
-export function MobileModeButton() {
+export function MobileModeButton({ compact = false }: { compact?: boolean }) {
   const mode = useAppMode();
 
   return (
@@ -46,11 +46,11 @@ export function MobileModeButton() {
             aria-label={label}
             aria-current={active ? "page" : undefined}
             className={`flex h-8 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-all ${
-              active ? "bg-accent-strong px-3 text-on-accent-strong shadow-sm" : "w-8 text-muted hover:text-fg"
+              active ? `bg-accent-strong text-on-accent-strong shadow-sm ${compact ? "w-8" : "px-3"}` : "w-8 text-muted hover:text-fg"
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-            {active && label}
+            {active && !compact && label}
           </Link>
         );
       })}

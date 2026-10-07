@@ -137,7 +137,7 @@ export function EntryCard({
         </div>
       )}
       <Link href={detailHref} className="block">
-        <h2 className="mb-1.5 flex items-center gap-2 font-serif text-[1.7rem] leading-[1.15] text-fg">
+        <h2 className="mb-1.5 flex items-center gap-2 font-serif text-[2rem] leading-[1.1] text-fg">
           {pinned && <Pin className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
           {isPrivate && <EyeOff className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />}
           {title}
