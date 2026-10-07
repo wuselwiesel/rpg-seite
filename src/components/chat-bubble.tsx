@@ -394,7 +394,7 @@ function BubbleInner({
             </div>
             {view && (
               <Link
-                href={view.kind === "account" ? `/redaktion/chat/${view.id}` : `/chats/${view.id}`}
+                href={view.kind === "account" ? `/redaktion/chat/${view.id}` : `/chats/${view.id}${data?.activeCharacterId ? `?as=${data.activeCharacterId}` : ""}`}
                 onClick={() => setOpen(false)}
                 aria-label="Im Vollbild öffnen"
                 title="Im Vollbild öffnen"
