@@ -238,7 +238,7 @@ export default async function StoryPostDetailPage({
     )}
     <div className="mx-auto max-w-2xl xl:max-w-3xl px-4 py-10">
       <OnlineMembers members={worldMembers} selfId={user.id} className="-mt-6 mb-2 flex justify-end" />
-      <article className="mb-8 rounded-lg border border-line bg-surface p-6">
+      <article className="group/scene mb-8 rounded-lg border border-line bg-surface p-6">
         <StoryPostControls
           storyPostId={storyPost.id}
           isPrivate={storyPost.is_private}

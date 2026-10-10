@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Bookmark, BookOpen, Lock, Pin, Archive, EyeOff, ShieldAlert } from "lucide-react";
 import { toggleStoryPostFlag, toggleStoryBookmark } from "../actions";
@@ -32,6 +32,28 @@ export function StoryPostControls({
   const [isArchived, setIsArchived] = useState(archived);
   const [isSpoiler, setIsSpoiler] = useState(spoiler);
   const [, startTransition] = useTransition();
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // Am Handy blendet ein Tipp auf die Karte die Symbole ein (Kartenelement trägt `group/scene`), ein Tipp daneben wieder aus.
+  useEffect(() => {
+    const card = rowRef.current?.closest("article");
+    if (!card) return;
+    const toggle = (e: MouseEvent) => {
+      if (!window.matchMedia("(hover: none)").matches) return;
+      if ((e.target as HTMLElement).closest("a, button, input, textarea, select")) return;
+      if (card.hasAttribute("data-tapped")) card.removeAttribute("data-tapped");
+      else card.setAttribute("data-tapped", "");
+    };
+    const outside = (e: PointerEvent) => {
+      if (!card.contains(e.target as Node)) card.removeAttribute("data-tapped");
+    };
+    card.addEventListener("click", toggle);
+    document.addEventListener("pointerdown", outside);
+    return () => {
+      card.removeEventListener("click", toggle);
+      document.removeEventListener("pointerdown", outside);
+    };
+  }, []);
 
   function handleBookmark() {
     const next = !bookmarked;
@@ -58,7 +80,7 @@ export function StoryPostControls({
   }
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2" data-tour="scene-controls">
+    <div ref={rowRef} className="mb-2 flex flex-wrap items-center gap-2" data-tour="scene-controls">
       {isPrivate && (
         <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-medium text-fg-soft">
           <EyeOff className="h-3 w-3" strokeWidth={2} />
@@ -90,7 +112,7 @@ export function StoryPostControls({
         </span>
       )}
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/scene:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:opacity-0 [@media(hover:none)]:group-data-[tapped]/scene:pointer-events-auto [@media(hover:none)]:group-data-[tapped]/scene:opacity-100">
         <Link
           href={`/story/${storyPostId}/buch`}
           title="Als Buch ansehen, als PDF oder E-Book speichern"

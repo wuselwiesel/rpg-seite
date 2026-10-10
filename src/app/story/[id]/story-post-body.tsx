@@ -4,6 +4,7 @@ import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { SpoilerGate } from "@/components/spoiler-gate";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { SCENE_REVEAL } from "@/lib/reveal-classes";
 import { deleteStoryPost, updateStoryPost } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 
@@ -99,7 +100,7 @@ export function StoryPostBody({
       <div className="mb-3 flex items-start justify-between gap-3">
         <h1 className="font-serif text-3xl text-fg">{title}</h1>
         {canEdit && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div className={`flex shrink-0 items-center gap-1 ${SCENE_REVEAL}`}>
             <button
               type="button"
               onClick={() => setEditing(true)}

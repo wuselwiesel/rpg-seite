@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Flag } from "lucide-react";
+import { SCENE_REVEAL } from "@/lib/reveal-classes";
 import { MarkEventForm } from "./mark-event-form";
 import { unmarkEvent } from "@/app/wiki/actions";
 import type { EventDate, WikiCalendar } from "@/lib/wiki-calendar";
@@ -49,7 +50,7 @@ export function SceneMarkFlag({
             title="Als Ereignis markieren"
             aria-label="Als Ereignis markieren"
             aria-pressed={open}
-            className="rounded p-1 text-muted transition hover:bg-surface-2 hover:text-accent"
+            className={`rounded p-1 text-muted transition hover:bg-surface-2 hover:text-accent ${open ? "" : SCENE_REVEAL}`}
           >
             <Flag className="h-4 w-4" strokeWidth={2} />
           </button>
