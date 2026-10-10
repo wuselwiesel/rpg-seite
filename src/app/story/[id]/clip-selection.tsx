@@ -233,7 +233,13 @@ function SaveClipDialog({
   async function save() {
     setPending(true);
     setError(null);
-    const result = await saveSceneClip({ storyPostId, entryIds, title, note, characterIds: chosen, collectionName: collection, publishToWiki: wiki });
+    let result: Awaited<ReturnType<typeof saveSceneClip>>;
+    try {
+      result = await saveSceneClip({ storyPostId, entryIds, title, note, characterIds: chosen, collectionName: collection, publishToWiki: wiki });
+    } catch {
+      setPending(false);
+      return setError("Speichern hat nicht geklappt. Bitte noch einmal versuchen.");
+    }
     setPending(false);
     if ("error" in result) return setError(result.error);
     onSaved(chosen.length, result.wikiError ? `Gespeichert, aber nicht im Wiki: ${result.wikiError}` : wiki ? "Gespeichert und im Wiki für alle" : undefined);

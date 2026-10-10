@@ -52,14 +52,17 @@ export async function saveSceneClip(input: {
     .single<{ id: string }>();
   if (error || !clip) return { error: error?.message ?? "Ausschnitt konnte nicht gespeichert werden." };
 
-  for (const characterId of characterIds) {
-    const collectionId = await ensureCollection(supabase, characterId, collectionName);
-    if (!collectionId) continue;
-    const { count } = await supabase.from("clip_collection_items").select("clip_id", { count: "exact", head: true }).eq("collection_id", collectionId);
-    await supabase.from("clip_collection_items").insert({ collection_id: collectionId, clip_id: clip.id, position: count ?? 0 });
-  }
+  // Je Charakter parallel einsortieren. Kein revalidatePath: Das würde die gerade offene (oft lange) Szene neu rendern und das Speichern ausbremsen;
+  // die ChaBo-Seiten werden ohnehin bei jedem Aufruf frisch geladen.
+  await Promise.all(
+    characterIds.map(async (characterId) => {
+      const collectionId = await ensureCollection(supabase, characterId, collectionName);
+      if (!collectionId) return;
+      const { count } = await supabase.from("clip_collection_items").select("clip_id", { count: "exact", head: true }).eq("collection_id", collectionId);
+      await supabase.from("clip_collection_items").insert({ collection_id: collectionId, clip_id: clip.id, position: count ?? 0 });
+    }),
+  );
 
-  for (const id of characterIds) revalidatePath(`/characters/${id}`);
   if (input.publishToWiki) {
     const wiki = await publishClipToWiki(clip.id);
     if ("error" in wiki) return { ok: true, clipId: clip.id, wikiError: wiki.error };
