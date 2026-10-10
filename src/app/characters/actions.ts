@@ -401,6 +401,8 @@ export async function updateRelationship(
   if (error) return error.message;
   if (!count) return "Keine Berechtigung, diese Beziehung zu ändern.";
 
+  // Die ChaBo-Zeilen beider Figuren folgen der Änderung (ein Fehler hier darf das Speichern nicht verhindern)
+  await supabase.rpc("sync_relationship_sheets", { p_rel: relationshipId });
   revalidatePath("/characters/relationships");
   return null;
 }
@@ -434,7 +436,7 @@ export async function createRelationship(_prevState: string | null, formData: Fo
     .maybeSingle();
   if (!character) return "Charakter nicht gefunden.";
 
-  const { error } = await supabase.from("character_relationships").insert({
+  const { data: created, error } = await supabase.from("character_relationships").insert({
     world_id: character.world_id,
     character_a_id: characterAId,
     character_b_id: characterBId,
@@ -445,9 +447,11 @@ export async function createRelationship(_prevState: string | null, formData: Fo
     family_role: familyRole,
     change_date: since,
     created_by: user.id,
-  });
+  }).select("id").single<{ id: string }>();
 
   if (error) return error.message;
+  // In die ChaBo-Zeilen beider Figuren übernehmen
+  if (created) await supabase.rpc("sync_relationship_sheets", { p_rel: created.id });
 
   revalidatePath("/characters/relationships");
   return null;
@@ -460,6 +464,12 @@ export async function deleteRelationship(relationshipId: string): Promise<string
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
+  const { data: edge } = await supabase
+    .from("character_relationships")
+    .select("character_a_id, character_b_id")
+    .eq("id", relationshipId)
+    .maybeSingle<{ character_a_id: string; character_b_id: string }>();
+
   const { error, count } = await supabase
     .from("character_relationships")
     .delete({ count: "exact" })
@@ -467,6 +477,8 @@ export async function deleteRelationship(relationshipId: string): Promise<string
 
   if (error) return error.message;
   if (!count) return "Konnte nicht gelöscht werden.";
+  // Auch aus den ChaBo-Zeilen beider Figuren nehmen
+  if (edge) await supabase.rpc("unlink_relationship_sheets", { p_rel: relationshipId, p_a: edge.character_a_id, p_b: edge.character_b_id });
 
   revalidatePath("/characters/relationships");
   return null;

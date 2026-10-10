@@ -19,3 +19,29 @@ export const FAMILY_ROLES: { id: FamilyRole; label: string }[] = [
 export function categoryInfo(id: string) {
   return REL_CATEGORIES.find((c) => c.id === id) ?? REL_CATEGORIES[REL_CATEGORIES.length - 1];
 }
+
+// Aus der Bezeichnung einer ChaBo-Zeile („Mutter“, „Beste Freundin“ …) die passende Beziehungsart im Beziehungsnetz erraten.
+// `targetIsParent`: bei Eltern-Beziehungen (A ist Elternteil von B) ist die erwähnte Figur der Elternteil.
+export type RelationGuess = { category: RelationshipCategory; familyRole: FamilyRole | null; targetIsParent: boolean; color: string };
+
+export function guessRelation(label: string): RelationGuess {
+  const l = label.toLowerCase().replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+  const has = (re: RegExp) => re.test(l);
+  const out = (category: RelationshipCategory, familyRole: FamilyRole | null = null, targetIsParent = false): RelationGuess => ({
+    category,
+    familyRole,
+    targetIsParent,
+    color: categoryInfo(category).color,
+  });
+  if (has(/\bex\b|\bex-/)) return out("liebe");
+  if (has(/\b(mutter|vater|mama|papa|mum|mom|dad|eltern|elternteil|stiefmutter|stiefvater|adoptivmutter|adoptivvater)\b/)) return out("familie", "eltern", true);
+  if (has(/\b(kind|sohn|tochter|stiefsohn|stieftochter|adoptivsohn|adoptivtochter)\b/)) return out("familie", "eltern", false);
+  if (has(/\b(bruder|schwester|geschwister|zwilling|halbbruder|halbschwester|stiefbruder|stiefschwester)\b/)) return out("familie", "geschwister");
+  if (has(/\b(ehemann|ehefrau|ehepartner|gatte|gattin|verlobter|verlobte)\b/)) return out("familie", "partner");
+  if (has(/\b(onkel|tante|cousin|cousine|oma|opa|großmutter|großvater|grossmutter|grossvater|neffe|nichte|verwandt|verwandte|verwandter)\b/)) return out("familie", "verwandt");
+  if (has(/rival|feind|gegner|hass|erzfeind/)) return out("rivalitaet");
+  if (has(/partner|liiert|verliebt|affäre|affaere|lover|liebe|crush|schwarm/)) return out("liebe");
+  if (has(/freund|vertraut|kumpel|bff/)) return out("freundschaft");
+  if (has(/verbünd|verbuend|bündnis|buendnis|allianz|mentor|kolleg|verbündete/)) return out("buendnis");
+  return out("sonstiges");
+}

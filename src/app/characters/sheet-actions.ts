@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { hasErrors, hasSecrets, normalizeSheet, splitSecrets, stripSecrets, validateSheet } from "@/lib/sheet-rules";
+import { syncFamilyRows } from "@/lib/family-sync";
 import { diffSheets, mergeWithRecent, type SheetChange } from "@/lib/sheet-diff";
 
 // Speichert den Charakterbogen (nur die Besitzer:in des Charakters, dafür sorgt zusätzlich die RLS).
@@ -54,6 +55,8 @@ export async function saveCharacterSheet(characterId: string, raw: unknown): Pro
   const prev = prevRow ? stripSecrets(normalizeSheet(prevRow.data)) : null;
   // Geheimes kommt nie in die für alle lesbare Zeile, sondern in eine eigene (nur für die Besitzer:in)
   const { open, secrets } = splitSecrets(data);
+  // Beziehungen im ChaBo und im Beziehungsnetz gleichen sich ab
+  open.family = await syncFamilyRows(supabase, user.id, characterId, open.family, prev?.family ?? []);
 
   const { data: row, error } = await supabase
     .from("character_sheets")

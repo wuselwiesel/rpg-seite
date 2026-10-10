@@ -59,7 +59,8 @@ export const TALENT_ATTRS: Record<string, [AttrCode, AttrCode]> = {
   "Überleben": ["KO", "MU"],
 };
 
-export type SheetItem = { label: string; value: string; secret?: boolean };
+// `relId`: Zeile gehört zu dieser Beziehung im Beziehungsnetz (nur Familie/Beziehungen im ChaBo; gleicht beide Orte ab)
+export type SheetItem = { label: string; value: string; secret?: boolean; relId?: string };
 export type NoteBlock = { label: string; html: string; secret?: boolean };
 
 export type SheetData = {
@@ -222,7 +223,13 @@ export function normalizeSheet(raw: unknown): SheetData {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rec = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
   const base = emptySheet();
-  const item = (f: unknown): SheetItem => ({ label: clip(rec(f).label, 40), value: clip(rec(f).value, 200), ...(rec(f).secret === true ? { secret: true } : {}) });
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const item = (f: unknown): SheetItem => ({
+    label: clip(rec(f).label, 40),
+    value: clip(rec(f).value, 200),
+    ...(rec(f).secret === true ? { secret: true } : {}),
+    ...(typeof rec(f).relId === "string" && uuid.test(rec(f).relId as string) && rec(f).secret !== true ? { relId: rec(f).relId as string } : {}),
+  });
 
   const attrBasis: Record<string, string> = {};
   const attrBonus: Record<string, string> = {};
