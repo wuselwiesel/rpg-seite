@@ -14,9 +14,9 @@ export const ATTR_TABLE = [
 ];
 
 export const TALENT_LIST = [
-  "Körperbeherrschung", "Manipulation/Überzeugen", "Betören", "Beruhigen",
+  "Körperbeherrschung", "Manipulation/Überzeugen", "Betören", "Küssen", "Beruhigen",
   "Menschenkenntnis", "Willensstärke", "Lügen", "Verbergen/Verheimlichen",
-  "Singen", "Tanzen", "Reflexe", "Schwimmen", "Klettern", "Werfen", "Medizin",
+  "Singen", "Tanzen", "Reflexe", "Klettern", "Fahren", "Medizin",
   "Tierkunde", "Pflanzenkunde", "Mythologie", "Reparieren", "Empathie",
   "Sinnesschärfe", "Überleben",
 ];
