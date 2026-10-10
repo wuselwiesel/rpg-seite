@@ -163,7 +163,8 @@ export function StoryEntryForm({
     }
     sentHtml.current = latestHtml.current;
     // Erst nach dem Absenden leeren: Das Formular hat seine Daten dann schon eingesammelt.
-    // Der gespeicherte Entwurf bleibt, bis das Senden geklappt hat (siehe unten); so geht nichts verloren, wenn die Seite dazwischen neu lädt.
+    // Der gespeicherte Entwurf wird sofort gelöscht: Sonst käme der gesendete Text nach einem Neuladen oder Neuaufbau der Seite zurück.
+    // Schlägt das Senden fehl, holt der Fehlerfall den Text aus dem Speicher zurück.
     const wasBundling = bundling;
     sentSegs.current = bundleSegs.current;
     setTimeout(() => {
@@ -174,6 +175,8 @@ export function StoryEntryForm({
         setBundleRestore(null);
         setBundleKey((k) => k + 1);
       }
+      clear();
+      update({ content: "" });
       latestHtml.current = "";
       setRestoreText("");
       setResetKey((k) => k + 1);
@@ -190,12 +193,6 @@ export function StoryEntryForm({
         setBundleKey((k) => k + 1);
       }
     } else if (wasPending.current && !pending) {
-      // Gesendet: Entwurf endgültig löschen
-      // (hat man schon die nächste Nachricht begonnen, bleibt deren Entwurf)
-      if (!latestHtml.current) {
-        clear();
-        update({ content: "" });
-      }
       sentSegs.current = [];
       setBundleRestore(null);
       // Gesendet: Schreibfeld im Bild halten (das Sicherheitsnetz oben)
