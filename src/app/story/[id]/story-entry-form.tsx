@@ -4,7 +4,7 @@ import { useActionState, useCallback, useEffect, useRef, useState } from "react"
 import { createStoryEntry } from "../actions";
 import { Layers } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { BundleBuilder } from "./bundle-builder";
+import { BundleBuilder, type BundleSegment } from "./bundle-builder";
 import { useDraft } from "@/lib/use-draft";
 import type { Character } from "@/lib/types";
 
@@ -36,7 +36,15 @@ export function StoryEntryForm({
   const selectable = characters.filter((c) => c.id !== writerId);
   const involved = selectable.filter((c) => participantIds.includes(c.id));
   const others = selectable.filter((c) => !participantIds.includes(c.id));
-  const action = createStoryEntry.bind(null, storyPostId, worldId);
+  // Schlägt der Aufruf selbst fehl (Netz weg, Seite nach einem Update veraltet), bleibt der Text erhalten und eine Meldung erscheint,
+  // statt dass die Nachricht stillschweigend verschwindet.
+  const action = async (prev: string | null, formData: FormData) => {
+    try {
+      return await createStoryEntry(storyPostId, worldId, prev, formData);
+    } catch {
+      return "Das Senden hat nicht geklappt. Dein Text ist noch da, bitte noch einmal absenden.";
+    }
+  };
   const [error, formAction, pending] = useActionState(action, null);
   const [resetKey, setResetKey] = useState(0);
   // Inhalt, mit dem der Editor nach einem Zurücksetzen startet (leer; bei einem Fehler der gesendete Text).
@@ -48,7 +56,10 @@ export function StoryEntryForm({
   const [bundling, setBundling] = useState(false);
   const [bundleKey, setBundleKey] = useState(0);
   // Text, der beim Einschalten von „Bündeln“ schon im Schreibfeld stand: wandert in den ersten Abschnitt
-  const bundleHtml = useRef<string[]>([]);
+  // Aktueller Stand der Abschnitte (für Zurückschalten und für den Fall, dass das Senden fehlschlägt)
+  const bundleSegs = useRef<BundleSegment[]>([]);
+  const sentSegs = useRef<BundleSegment[]>([]);
+  const [bundleRestore, setBundleRestore] = useState<BundleSegment[] | null>(null);
   const [carryOver, setCarryOver] = useState("");
   const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
 
@@ -152,9 +163,18 @@ export function StoryEntryForm({
     }
     sentHtml.current = latestHtml.current;
     // Erst nach dem Absenden leeren: Das Formular hat seine Daten dann schon eingesammelt.
+    // Der gespeicherte Entwurf bleibt, bis das Senden geklappt hat (siehe unten); so geht nichts verloren, wenn die Seite dazwischen neu lädt.
+    const wasBundling = bundling;
+    sentSegs.current = bundleSegs.current;
     setTimeout(() => {
-      clear();
-      update({ content: "" });
+      if (wasBundling) {
+        // Wie beim einzelnen Schreibfeld: sofort leeren, bei einem Fehler kommt der Text zurück
+        bundleSegs.current = [];
+        setCarryOver("");
+        setBundleRestore(null);
+        setBundleKey((k) => k + 1);
+      }
+      latestHtml.current = "";
       setRestoreText("");
       setResetKey((k) => k + 1);
     }, 30);
@@ -165,10 +185,19 @@ export function StoryEntryForm({
       setRestoreText(sentHtml.current);
       update({ content: sentHtml.current });
       setResetKey((k) => k + 1);
+      if (sentSegs.current.length > 0) {
+        setBundleRestore(sentSegs.current);
+        setBundleKey((k) => k + 1);
+      }
     } else if (wasPending.current && !pending) {
-      // Gebündelt gesendet: Abschnitte zurücksetzen (bei einem Fehler bleiben sie stehen)
-      setBundleKey((k) => k + 1);
-      setCarryOver("");
+      // Gesendet: Entwurf endgültig löschen
+      // (hat man schon die nächste Nachricht begonnen, bleibt deren Entwurf)
+      if (!latestHtml.current) {
+        clear();
+        update({ content: "" });
+      }
+      sentSegs.current = [];
+      setBundleRestore(null);
       // Gesendet: Schreibfeld im Bild halten (das Sicherheitsnetz oben)
       try {
         sessionStorage.removeItem(sentKey);
@@ -190,12 +219,16 @@ export function StoryEntryForm({
           type="button"
           onClick={() => {
             if (!bundling) {
-              const carried = latestHtml.current || draft.content;
+              const carried = latestHtml.current || (resetKey > 0 ? restoreText : draft.content);
               setCarryOver(carried);
-              bundleHtml.current = [carried];
+              setBundleRestore(null);
+              bundleSegs.current = [
+                { characterId: writerId, html: carried },
+                { characterId: ownCharacters.find((c) => c.id !== writerId)?.id ?? writerId, html: "" },
+              ];
             } else {
               // Zurück zum normalen Schreibfeld: die Texte der Abschnitte wandern zusammen hinein
-              const merged = bundleHtml.current.filter((h) => h.replace(/<[^>]*>/g, "").trim()).join("");
+              const merged = bundleSegs.current.map((sg) => sg.html).filter((h) => h.replace(/<[^>]*>/g, "").trim()).join("");
               latestHtml.current = merged;
               setRestoreText(merged);
               update({ content: merged });
@@ -217,14 +250,16 @@ export function StoryEntryForm({
           key={bundleKey}
           ownCharacters={ownCharacters}
           mentionCharacters={characters}
-          initial={[
-            { characterId: writerId, html: carryOver },
-            { characterId: ownCharacters.find((c) => c.id !== writerId)?.id ?? writerId, html: "" },
-          ]}
+          initial={
+            bundleRestore ?? [
+              { characterId: writerId, html: carryOver },
+              { characterId: ownCharacters.find((c) => c.id !== writerId)?.id ?? writerId, html: "" },
+            ]
+          }
           showToolbar={showToolbar}
           onTyping={onTyping}
           onChange={(segs) => {
-            bundleHtml.current = segs.map((sg) => sg.html);
+            bundleSegs.current = segs;
           }}
         />
       ) : (
