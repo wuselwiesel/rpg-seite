@@ -225,14 +225,17 @@ export function StoryEntryItem({
   const firstAvatar = first ? firstChar?.avatar_url : entry.characters?.avatar_url;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
     <div className="flex gap-3">
       {isNarrator ? (
         <NarratorAvatar size={32} />
       ) : (
-        <Link href={`/characters/${firstId}/chabo`} aria-label={`ChaBo von ${firstName || "Charakter"}`} className="h-fit shrink-0">
-          <CharacterAvatar name={firstName || "?"} avatarUrl={firstAvatar} size={32} />
-        </Link>
+        <div className="flex shrink-0 flex-col items-center">
+          <Link href={`/characters/${firstId}/chabo`} aria-label={`ChaBo von ${firstName || "Charakter"}`} className="h-fit shrink-0">
+            <CharacterAvatar name={firstName || "?"} avatarUrl={firstAvatar} size={32} />
+          </Link>
+          {bundled && bundled.length > 1 && <span className="mt-1 w-px flex-1 bg-line" />}
+        </div>
       )}
       <div
         id={`beitrag-${entry.id}`}
@@ -248,7 +251,7 @@ export function StoryEntryItem({
           if ((e.target as HTMLElement).closest("a, button, input, textarea, select, form, [contenteditable]")) return;
           setTapped((v) => !v);
         }}
-        className={`group flex-1 scroll-mt-24 rounded-lg border bg-surface px-4 py-2 ${selectedForClip ? "ring-2 ring-accent" : ""} ${clipSelection?.picking ? "cursor-pointer select-none" : ""} ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}
+        className={`group min-w-0 flex-1 scroll-mt-24 rounded-lg ${bundled && bundled.length > 1 ? "rounded-b-none" : ""} border bg-surface px-4 py-2 ${selectedForClip ? "ring-2 ring-accent" : ""} ${clipSelection?.picking ? "cursor-pointer select-none" : ""} ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}
       >
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2">
@@ -481,15 +484,19 @@ export function StoryEntryItem({
         )}
       </div>
     </div>
-    {bundled?.slice(1).map((seg, i) => {
+    {bundled?.slice(1).map((seg, i, rest) => {
+      const isLast = i === rest.length - 1;
       const c = mentionCharacters.find((x) => x.id === seg.id);
       const name = c?.name ?? seg.name;
       return (
         <div key={i} className="flex gap-3">
-          <Link href={`/characters/${seg.id}/chabo`} aria-label={`ChaBo von ${name}`} className="h-fit shrink-0">
-            <CharacterAvatar name={name} avatarUrl={c?.avatar_url} size={32} />
-          </Link>
-          <div className="flex-1 rounded-lg border border-line bg-surface px-4 py-2">
+          <div className="flex shrink-0 flex-col items-center">
+            <Link href={`/characters/${seg.id}/chabo`} aria-label={`ChaBo von ${name}`} className="h-fit shrink-0">
+              <CharacterAvatar name={name} avatarUrl={c?.avatar_url} size={32} />
+            </Link>
+            {!isLast && <span className="mt-1 w-px flex-1 bg-line" />}
+          </div>
+          <div className={`min-w-0 flex-1 border border-t-0 border-line bg-surface px-4 py-2 ${isLast ? "rounded-b-lg" : ""}`}>
             <div className="mb-1 flex items-baseline gap-2">
               <Link href={`/characters/${seg.id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
                 {name}
