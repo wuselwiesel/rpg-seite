@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, CircleHelp, Clover, Dices, Lock, LockOpen, Pencil, Plus, Undo2, X } from "lucide-react";
+import { Check, CircleHelp, Clover, Dices, Eye, EyeOff, Pencil, Plus, Undo2, X } from "lucide-react";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
@@ -79,7 +79,10 @@ type Status = { kind: "idle" } | { kind: "pending" } | { kind: "saved" } | { kin
 let blockCounter = 0;
 const uid = () => `b${blockCounter++}`;
 
-// Schloss-Knopf: geheime Zeilen und Notizen sieht nur die Besitzer:in
+// Auge-Knopf: geheime Zeilen und Notizen sieht nur die Besitzer:in. Geheimes trägt dauerhaft das durchgestrichene Auge;
+// sonst erscheint der Knopf erst beim Darüberfahren (am Handy beim Antippen der Zeile) und nennt sich „Geheim halten“.
+const SECRET_REVEAL =
+  "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/sec:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100";
 function LockToggle({ secret, onToggle }: { secret: boolean; onToggle: () => void }) {
   return (
     <button
@@ -87,17 +90,24 @@ function LockToggle({ secret, onToggle }: { secret: boolean; onToggle: () => voi
       onClick={onToggle}
       aria-pressed={secret}
       aria-label="Geheim halten"
-      title="Geheim halten"
-      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition ${secret ? "bg-accent/15 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+      className={`group/lk relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition ${
+        secret ? "bg-accent/15 text-accent" : `text-muted hover:bg-surface-2 hover:text-fg ${SECRET_REVEAL}`
+      }`}
     >
-      {secret ? <Lock className="h-4 w-4" strokeWidth={2} /> : <LockOpen className="h-4 w-4" strokeWidth={2} />}
+      {secret ? <EyeOff className="h-4 w-4" strokeWidth={2} /> : <Eye className="h-4 w-4" strokeWidth={2} />}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute -top-7 right-0 z-30 whitespace-nowrap rounded-md border border-line bg-surface px-2 py-0.5 text-xs text-fg-soft opacity-0 shadow-sm transition-opacity [@media(hover:hover)]:group-hover/lk:opacity-100 [@media(hover:hover)]:group-focus-visible/lk:opacity-100"
+      >
+        Geheim halten
+      </span>
     </button>
   );
 }
 
-// Kleines Schloss vor geheimen Einträgen in der Ansicht (sichtbar nur für die Besitzer:in)
+// Durchgestrichenes Auge vor geheimen Einträgen in der Ansicht (sichtbar nur für die Besitzer:in)
 function SecretMark() {
-  return <Lock aria-label="Geheim" className="mr-1.5 inline h-3 w-3 -translate-y-px text-accent" strokeWidth={2.25} />;
+  return <EyeOff aria-label="Geheim" className="mr-1.5 inline h-3.5 w-3.5 -translate-y-px text-accent" strokeWidth={2.25} />;
 }
 
 function Meter({ used, max, label }: { used: number; max: number; label: string }) {
@@ -114,6 +124,25 @@ function Meter({ used, max, label }: { used: number; max: number; label: string 
       <div className="h-1.5 overflow-hidden rounded-full bg-surface-3">
         <div className={`h-full rounded-full ${over ? "bg-red-500" : "bg-accent"}`} style={{ width: `${Math.min(100, Math.max(0, (used / max) * 100))}%` }} />
       </div>
+    </div>
+  );
+}
+
+// Kleine Anzeige der noch freien Punkte, die beim Scrollen durch die Liste im Bild bleibt (nur im Bearbeiten-Modus)
+function StickyBudget({ used, max, label }: { used: number; max: number; label: string }) {
+  const left = max - used;
+  const over = left < 0;
+  return (
+    <div className="pointer-events-none sticky top-[4.5rem] z-20 -mb-1 flex justify-end lg:top-3">
+      <span
+        role="status"
+        className={`pointer-events-auto rounded-full border px-2.5 py-0.5 text-xs shadow-sm backdrop-blur ${
+          over ? "border-red-500/40 bg-surface/95 text-red-600 dark:text-red-400" : left === 0 ? "border-accent/40 bg-surface/95 text-accent" : "border-line bg-surface/95 text-fg-soft"
+        }`}
+      >
+        {label} {used} / {max}
+        {over ? ` · ${-left} zu viel` : left > 0 ? ` · ${left} frei` : ""}
+      </span>
     </div>
   );
 }
@@ -369,7 +398,7 @@ export function Chabo({
                     </button>
                   </div>
                   {data.personalFields.map((f, i) => (
-                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2 gap-y-1.5 @xl:grid-cols-[9rem_minmax(0,1fr)_auto_auto]">
+                    <div key={i} className="group/sec grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2 gap-y-1.5 @xl:grid-cols-[9rem_minmax(0,1fr)_auto_auto]">
                       <input value={f.label} maxLength={40} placeholder="Bezeichnung" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={`${textInput} col-span-3 @xl:col-span-1`} />
                       <div className="relative min-w-0">
                         <MentionInput value={f.value} targets={mentionCharacters} placeholder="Angabe, mit @ Charaktere verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, personalFields: data.personalFields.map((x, j) => (j === i ? { ...x, value } : x)) })} className={fieldKind(f.label) ? `${textInput} pr-10` : textInput} />
@@ -429,7 +458,7 @@ export function Chabo({
                 ))}
               </datalist>
               {data.family.map((f, i) => (
-                <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-2 gap-y-1.5 @xl:grid-cols-[11rem_minmax(0,1fr)_auto_auto]">
+                <div key={i} className="group/sec grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-2 gap-y-1.5 @xl:grid-cols-[11rem_minmax(0,1fr)_auto_auto]">
                   <input value={f.label} maxLength={40} list="chabo-familie-vorschlaege" placeholder="z. B. Mutter" aria-label="Bezeichnung" onChange={(e) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={`${textInput} col-span-3 @xl:col-span-1`} />
                   <MentionInput value={f.value} targets={mentionCharacters} placeholder="Name, mit @ Charakter verlinken" ariaLabel={f.label || "Angabe"} onChange={(value) => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, value } : x)) })} className={textInput} />
                   <LockToggle secret={Boolean(f.secret)} onToggle={() => commit({ ...data, family: data.family.map((x, j) => (j === i ? { ...x, secret: x.secret ? undefined : true } : x)) })} />
@@ -466,6 +495,7 @@ export function Chabo({
       )}
 
       <section aria-label="Attribute" className={card}>
+        {editing && <StickyBudget used={bud.basisUsed} max={BASIS_BUDGET} label="Attributpunkte" />}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="font-serif text-xl text-fg">Attribute</h2>
           {editing && (
@@ -565,6 +595,7 @@ export function Chabo({
       </section>
 
       <section aria-label="Talente" className={card}>
+        {editing && <StickyBudget used={bud.talentUsed} max={TALENT_BONUS_BUDGET} label="Talentpunkte" />}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="font-serif text-xl text-fg">Talente</h2>
           {editing && (
@@ -669,7 +700,7 @@ export function Chabo({
           <div className="flex flex-col gap-4">
             {data.notesBlocks.map((b, i) => (
               <div key={blockIds[i] ?? i} className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
+                <div className="group/sec flex items-center gap-2">
                   <input value={b.label} maxLength={60} placeholder="Überschrift" aria-label="Überschrift des Blocks" onChange={(e) => commit({ ...data, notesBlocks: data.notesBlocks.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} className={textInput} />
                   <LockToggle secret={Boolean(b.secret)} onToggle={() => commit({ ...data, notesBlocks: data.notesBlocks.map((x, j) => (j === i ? { ...x, secret: x.secret ? undefined : true } : x)) })} />
                   <button
