@@ -215,17 +215,23 @@ export function StoryEntryItem({
     );
   }
 
+  // Gebündelte Nachricht (nicht beim Bearbeiten): jeder Abschnitt sieht aus wie eine eigene Nachricht.
+  // Der erste steckt in der Karte mit den Aktionen, die weiteren folgen darunter.
+  const bundled = !editing && segments ? segments : null;
+  const first = bundled ? bundled[0] : null;
+  const firstChar = first ? mentionCharacters.find((x) => x.id === first.id) : null;
+  const firstId = first?.id ?? entry.character_id;
+  const firstName = first ? (firstChar?.name ?? first.name) : headerName;
+  const firstAvatar = first ? firstChar?.avatar_url : entry.characters?.avatar_url;
+
   return (
+    <div className="flex flex-col gap-4">
     <div className="flex gap-3">
       {isNarrator ? (
         <NarratorAvatar size={32} />
-      ) : segments ? null : (
-        <Link href={`/characters/${entry.character_id}/chabo`} aria-label={`ChaBo von ${entry.characters?.name ?? "Charakter"}`} className="h-fit shrink-0">
-          <CharacterAvatar
-            name={entry.characters?.name ?? "?"}
-            avatarUrl={entry.characters?.avatar_url}
-            size={32}
-          />
+      ) : (
+        <Link href={`/characters/${firstId}/chabo`} aria-label={`ChaBo von ${firstName || "Charakter"}`} className="h-fit shrink-0">
+          <CharacterAvatar name={firstName || "?"} avatarUrl={firstAvatar} size={32} />
         </Link>
       )}
       <div
@@ -248,9 +254,9 @@ export function StoryEntryItem({
           <div className="flex items-baseline gap-2">
             {isNarrator ? (
               <p className="text-sm font-medium text-fg">Erzähler:in</p>
-            ) : segments ? null : (
-              <Link href={`/characters/${entry.character_id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
-                {headerName}
+            ) : (
+              <Link href={`/characters/${firstId}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
+                {firstName}
               </Link>
             )}
             <p className="text-xs text-muted">
@@ -466,32 +472,37 @@ export function StoryEntryItem({
           // Bereits serverseitig sanitisiert (siehe createStoryEntry/updateStoryEntry) -
           // Einträge kommen nie ungeprüft vom Client in die Datenbank.
           <SpoilerGate spoiler={spoiler}>
-            {segments ? (
-              <div className="flex flex-col">
-                {segments.map((seg, i) => {
-                  const c = mentionCharacters.find((x) => x.id === seg.id);
-                  const name = c?.name ?? seg.name;
-                  return (
-                    <div key={i} className="flex gap-2.5 py-2 first:pt-1 last:pb-0">
-                      <Link href={`/characters/${seg.id}/chabo`} aria-label={`ChaBo von ${name}`} className="h-fit shrink-0">
-                        <CharacterAvatar name={name} avatarUrl={c?.avatar_url} size={28} />
-                      </Link>
-                      <div className="min-w-0 flex-1">
-                        <Link href={`/characters/${seg.id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
-                          {name}
-                        </Link>
-                        <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={seg.html} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {first ? (
+              <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={first.html} />
             ) : (
               <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={displayHtml ?? entry.content} />
             )}
           </SpoilerGate>
         )}
       </div>
+    </div>
+    {bundled?.slice(1).map((seg, i) => {
+      const c = mentionCharacters.find((x) => x.id === seg.id);
+      const name = c?.name ?? seg.name;
+      return (
+        <div key={i} className="flex gap-3">
+          <Link href={`/characters/${seg.id}/chabo`} aria-label={`ChaBo von ${name}`} className="h-fit shrink-0">
+            <CharacterAvatar name={name} avatarUrl={c?.avatar_url} size={32} />
+          </Link>
+          <div className="flex-1 rounded-lg border border-line bg-surface px-4 py-2">
+            <div className="mb-1 flex items-baseline gap-2">
+              <Link href={`/characters/${seg.id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
+                {name}
+              </Link>
+              <p className="text-xs text-muted">{formatDateTime(entry.created_at)}</p>
+            </div>
+            <SpoilerGate spoiler={spoiler}>
+              <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={seg.html} />
+            </SpoilerGate>
+          </div>
+        </div>
+      );
+    })}
     </div>
   );
 }
