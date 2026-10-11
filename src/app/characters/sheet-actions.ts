@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { hasErrors, hasSecrets, normalizeSheet, splitSecrets, stripSecrets, validateSheet } from "@/lib/sheet-rules";
+import { getCharacterTalents } from "@/lib/world-talents";
 import { syncFamilyRows } from "@/lib/family-sync";
 import { diffSheets, mergeWithRecent, type SheetChange } from "@/lib/sheet-diff";
 
@@ -46,15 +47,20 @@ export async function saveCharacterSheet(characterId: string, raw: unknown): Pro
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const data = normalizeSheet(raw);
+  const talentDefs = await getCharacterTalents(characterId);
+  const data = normalizeSheet(raw, talentDefs);
   const errors = validateSheet(data);
   if (hasErrors(errors)) return errors.budget[0] ?? "Einige Werte sind ungültig.";
   data.notesBlocks = data.notesBlocks.map((b) => ({ label: b.label, html: sanitizePostHtml(b.html) }));
 
   const { data: prevRow } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
-  const prev = prevRow ? stripSecrets(normalizeSheet(prevRow.data)) : null;
+  const prev = prevRow ? stripSecrets(normalizeSheet(prevRow.data, talentDefs)) : null;
   // Geheimes kommt nie in die für alle lesbare Zeile, sondern in eine eigene (nur für die Besitzer:in)
-  const { open, secrets } = splitSecrets(data);
+  const split = splitSecrets(data);
+  const secrets = split.secrets;
+  // Die Talentliste der Welt gehört nicht in den gespeicherten Bogen
+  const { talentDefs: _defs, ...open } = split.open;
+  void _defs;
   // Beziehungen im ChaBo und im Beziehungsnetz gleichen sich ab
   open.family = await syncFamilyRows(supabase, user.id, characterId, open.family, prev?.family ?? []);
 

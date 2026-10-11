@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { Clover, Dices } from "lucide-react";
 import { createDiceRoll, getLuckPointsRemaining, rerollWithLuck, type DiceRollState } from "../actions";
 import { parseSheetUrl, fetchPublicSheet } from "@/lib/charakterbogen";
+import { parseTalentConfig } from "@/lib/talents";
 import { getStatOptions, luckPointsFromGl, type StatOption } from "@/lib/charakterbogen-stats";
 import { normalizeSheet } from "@/lib/sheet-rules";
 import { DICE_CONDITIONS, resolveCondition } from "@/lib/dice-conditions";
@@ -84,7 +85,9 @@ export function DiceRollForm({
         const { data } = await createClient().from("character_sheets").select("data").eq("character_id", writerId).maybeSingle<{ data: unknown }>();
         if (cancelled) return;
         if (data) {
-          setStatOptions(getStatOptions(normalizeSheet(data.data)));
+          const { data: world } = await createClient().from("worlds").select("talent_config").eq("id", worldId).maybeSingle<{ talent_config: unknown }>();
+          if (cancelled) return;
+          setStatOptions(getStatOptions(normalizeSheet(data.data, world?.talent_config ? parseTalentConfig(world.talent_config) : undefined)));
           return;
         }
         const ref = sheetUrl ? parseSheetUrl(sheetUrl) : null;
@@ -102,7 +105,7 @@ export function DiceRollForm({
     return () => {
       cancelled = true;
     };
-  }, [sheetUrl, writerId]);
+  }, [sheetUrl, writerId, worldId]);
 
   // Vor dem ersten Wurf schon anzeigen, wie viele Glückspunkte in dieser Szene noch übrig sind.
   useEffect(() => {

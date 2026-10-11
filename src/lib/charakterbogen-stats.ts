@@ -1,4 +1,5 @@
 import type { CharakterbogenData } from "@/lib/charakterbogen";
+import { DEFAULT_TALENTS, talentSlug } from "@/lib/talents";
 
 export const ATTR_TABLE = [
   { code: "MU", name: "Mut" },
@@ -13,29 +14,11 @@ export const ATTR_TABLE = [
   { code: "GL", name: "Glück" },
 ];
 
-export const TALENT_LIST = [
-  "Körperbeherrschung", "Manipulation/Überzeugen", "Betören", "Küssen", "Beruhigen",
-  "Menschenkenntnis", "Willensstärke", "Lügen", "Verbergen/Verheimlichen",
-  "Singen", "Tanzen", "Reflexe", "Klettern", "Fahren", "Medizin",
-  "Tierkunde", "Pflanzenkunde", "Mythologie", "Reparieren", "Empathie",
-  "Sinnesschärfe", "Überleben",
-];
+export const TALENT_LIST = DEFAULT_TALENTS.map((t) => t.name);
 
 export const TALENT_MAX = 19;
 
-export function talentSlug(name: string) {
-  return (
-    "talent_" +
-    name
-      .toLowerCase()
-      .replace(/ä/g, "ae")
-      .replace(/ö/g, "oe")
-      .replace(/ü/g, "ue")
-      .replace(/ß/g, "ss")
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-  );
-}
+export { talentSlug };
 
 export function num(v: string | undefined) {
   const n = Number(v);
@@ -67,7 +50,7 @@ export function getStatOptions(data: CharakterbogenData): StatOption[] {
       base: num(data.attrBasis?.[a.code]),
       category: "Attribut" as const,
     })),
-    ...TALENT_LIST.map((name) => {
+    ...(data.talentDefs ?? DEFAULT_TALENTS).map(({ name }) => {
       const tid = talentSlug(name);
       return {
         name,

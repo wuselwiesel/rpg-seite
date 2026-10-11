@@ -1,6 +1,7 @@
 // Regeln des Charakterbogens („ChaBo“): Attribute, Talente, Budgets, Glückspunkte, Besondere Natur.
 // Rein und ohne DOM, damit Server (Speichern) und Oberfläche dieselben Zahlen benutzen. Datenform wie der alte Charakterbogen.
-import { ATTR_TABLE, TALENT_LIST, luckPointsFromGl, talentSlug } from "@/lib/charakterbogen-stats";
+import { ATTR_TABLE, luckPointsFromGl } from "@/lib/charakterbogen-stats";
+import { DEFAULT_TALENTS, talentSlug, type TalentDef } from "@/lib/talents";
 
 export const BASIS_MIN = 1;
 export const BASIS_MAX = 19;
@@ -33,37 +34,16 @@ export const RACE_BONUSES: Record<Exclude<Race, "none">, Partial<Record<AttrCode
   vampir: { GE: 5, KO: 5, IN: 3, KK: 3, CH: 5, SB: -5 },
 };
 
-// Jedes Talent ist der gerundete Durchschnitt zweier Attribut-Gesamtwerte (Glück fließt in keins ein).
-export const TALENT_ATTRS: Record<string, [AttrCode, AttrCode]> = {
-  "Körperbeherrschung": ["GE", "SB"],
-  "Manipulation/Überzeugen": ["CH", "IG"],
-  "Betören": ["CH", "IN"],
-  "Küssen": ["CH", "GE"],
-  "Beruhigen": ["CH", "SB"],
-  "Menschenkenntnis": ["IN", "SB"],
-  "Willensstärke": ["MU", "SB"],
-  "Lügen": ["CH", "IG"],
-  "Verbergen/Verheimlichen": ["GE", "IN"],
-  "Singen": ["CH", "KO"],
-  "Tanzen": ["GE", "KO"],
-  "Reflexe": ["GE", "IN"],
-  "Klettern": ["GE", "KK"],
-  "Fahren": ["IN", "FF"],
-  "Medizin": ["IG", "FF"],
-  "Tierkunde": ["IN", "MU"],
-  "Pflanzenkunde": ["IG", "IN"],
-  "Mythologie": ["IG", "MU"],
-  "Reparieren": ["FF", "IG"],
-  "Empathie": ["IN", "CH"],
-  "Sinnesschärfe": ["IN", "IG"],
-  "Überleben": ["KO", "MU"],
-};
+// Standard-Talente: Name → die zwei Attribute, aus denen der Basiswert entsteht (die Liste je Welt kann abweichen, siehe talents.ts).
+export const TALENT_ATTRS: Record<string, [AttrCode, AttrCode]> = Object.fromEntries(DEFAULT_TALENTS.map((t) => [t.name, t.attrs])) as Record<string, [AttrCode, AttrCode]>;
 
 // `relId`: Zeile gehört zu dieser Beziehung im Beziehungsnetz (nur Familie/Beziehungen im ChaBo; gleicht beide Orte ab)
 export type SheetItem = { label: string; value: string; secret?: boolean; relId?: string };
 export type NoteBlock = { label: string; html: string; secret?: boolean };
 
 export type SheetData = {
+  // Talentliste der Welt; wird nicht gespeichert (fehlt sie, gilt die Standardliste)
+  talentDefs?: TalentDef[];
   race: Race;
   portraitUrl: string | null;
   luckPointsUsed: number;
@@ -129,9 +109,8 @@ export type TalentRow = {
 
 export function talentRows(data: SheetData): TalentRow[] {
   const totals = new Map(attrRows(data).map((r) => [r.code, r.total]));
-  return TALENT_LIST.map((name) => {
+  return (data.talentDefs ?? DEFAULT_TALENTS).map(({ name, attrs }) => {
     const slug = talentSlug(name);
-    const attrs = TALENT_ATTRS[name];
     const a1 = totals.get(attrs[0]);
     const a2 = totals.get(attrs[1]);
     const basis = a1 != null && a2 != null ? Math.round((a1 + a2) / 2) : null;
@@ -196,7 +175,7 @@ export function validateSheet(data: SheetData): SheetErrors {
       if (e2) errors.attrBonus[a.code] = e2;
     }
   }
-  for (const name of TALENT_LIST) {
+  for (const { name } of data.talentDefs ?? DEFAULT_TALENTS) {
     const slug = talentSlug(name);
     const e = rangeError(data.talentBonus[slug], TALENT_BONUS_MIN, TALENT_BONUS_MAX);
     if (e) errors.talentBonus[slug] = e;
@@ -219,7 +198,7 @@ const numStr = (v: unknown) => {
 
 // Macht aus beliebigen Daten (Formular, alter Bogen, Datenbank) einen gültigen SheetData; kaputte Werte werden leer.
 // Die Notiz-Texte (HTML) bereinigt der Server zusätzlich mit sanitizePostHtml.
-export function normalizeSheet(raw: unknown): SheetData {
+export function normalizeSheet(raw: unknown, talentDefs?: TalentDef[]): SheetData {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rec = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
   const base = emptySheet();
@@ -238,7 +217,7 @@ export function normalizeSheet(raw: unknown): SheetData {
     attrBonus[a.code] = a.code === "GL" ? "" : numStr(rec(r.attrBonus)[a.code]);
   }
   const talentBonus: Record<string, string> = {};
-  for (const name of TALENT_LIST) talentBonus[talentSlug(name)] = numStr(rec(r.talentBonus)[talentSlug(name)]);
+  for (const { name } of talentDefs ?? DEFAULT_TALENTS) talentBonus[talentSlug(name)] = numStr(rec(r.talentBonus)[talentSlug(name)]);
 
   const fields = Array.isArray(r.personalFields) ? r.personalFields : null;
   const personalFields = fields
@@ -260,6 +239,7 @@ export function normalizeSheet(raw: unknown): SheetData {
   const used = Number(r.luckPointsUsed);
 
   const data: SheetData = {
+    ...(talentDefs ? { talentDefs } : {}),
     race,
     portraitUrl: portrait,
     luckPointsUsed: Number.isInteger(used) && used >= 0 && used <= 99 ? used : 0,

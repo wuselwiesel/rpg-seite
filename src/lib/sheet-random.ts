@@ -1,7 +1,8 @@
 // Zufällige Verteilung von Attributen und Talenten für den ChaBo. Rein; die Zufallsquelle kommt als Parameter (`Rng`, Zahl in [0, 1)),
 // damit Tests mit festem Seed laufen. Regeln wie in sheet-rules.ts: Attribute Basis 1–19, genau 90 Punkte, Glück nur 1/5/10/15;
 // Talente genau 20 Bonuspunkte, Bonus 0–19 (keine negativen), Gesamtwert (Basis + Bonus) höchstens 19. Rassen-Boni bleiben unangetastet.
-import { ATTR_TABLE, TALENT_LIST, talentSlug } from "@/lib/charakterbogen-stats";
+import { ATTR_TABLE } from "@/lib/charakterbogen-stats";
+import { DEFAULT_TALENTS, talentSlug } from "@/lib/talents";
 import {
   BASIS_BUDGET,
   BASIS_MAX,
@@ -151,7 +152,7 @@ export function rollTalents(data: SheetData, style: TalentStyle, rng: Rng): Shee
   }
 
   const talentBonus: Record<string, string> = { ...data.talentBonus };
-  TALENT_LIST.forEach((name) => {
+  (data.talentDefs ?? DEFAULT_TALENTS).forEach(({ name }) => {
     const idx = rows.findIndex((r) => r.name === name);
     talentBonus[talentSlug(name)] = idx >= 0 && bonus[idx] > 0 ? String(bonus[idx]) : "";
   });

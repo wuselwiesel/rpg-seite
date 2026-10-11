@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
+import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
 
 export async function createWorld(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -135,6 +136,31 @@ export async function updateWorld(
   revalidatePath("/worlds");
   revalidatePath("/", "layout");
   redirect(`/worlds/${worldId}`);
+}
+
+// Talentliste der Welt speichern (Besitzer:in und Admins). Leere oder unveränderte Standardliste = Standard.
+export async function saveWorldTalents(worldId: string, _prevState: string | null, formData: FormData): Promise<string | null> {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(String(formData.get("talents") ?? "[]"));
+  } catch {
+    return "Die Liste ist ungültig.";
+  }
+  const list = parseTalentConfig(raw);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error, count } = await supabase
+    .from("worlds")
+    .update({ talent_config: isDefaultTalents(list) ? null : list }, { count: "exact" })
+    .eq("id", worldId);
+  if (error) return error.message;
+  if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
+  revalidatePath(`/worlds/${worldId}/edit`);
+  revalidatePath("/characters", "layout");
+  return "ok";
 }
 
 export async function followWorld(worldId: string) {

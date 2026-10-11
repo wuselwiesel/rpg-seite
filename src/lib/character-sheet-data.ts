@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getCharacterTalents } from "@/lib/world-talents";
 import { mergeSecrets, normalizeSheet, parseSecrets, stripSecrets, type SheetData } from "@/lib/sheet-rules";
 
 // Charakterbogen („ChaBo“) eines Charakters oder null, wenn es noch keinen gibt. Sichtbar für alle in der Welt (RLS).
@@ -9,7 +10,7 @@ export const getCharacterSheet = cache(async (characterId: string, withSecrets =
   const supabase = await createClient();
   const { data } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
   if (!data) return null;
-  const open = stripSecrets(normalizeSheet(data.data));
+  const open = stripSecrets(normalizeSheet(data.data, await getCharacterTalents(characterId)));
   if (!withSecrets) return open;
   const { data: secret } = await supabase.from("character_sheet_secrets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
   return secret ? mergeSecrets(open, parseSecrets(secret.data)) : open;

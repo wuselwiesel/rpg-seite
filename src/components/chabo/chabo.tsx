@@ -244,7 +244,7 @@ export function Chabo({
         setImportError("Der alte Charakterbogen ist nicht öffentlich oder wurde nicht gefunden.");
         return;
       }
-      const next = normalizeSheet(sheet.data);
+      const next = normalizeSheet(sheet.data, data.talentDefs);
       // Altes Bild (als Daten-Adresse im Bogen) in den Speicher übernehmen
       const dataUrl = sheet.data.portrait?.dataUrl;
       if (dataUrl?.startsWith("data:image/")) {

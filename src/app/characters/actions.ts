@@ -11,6 +11,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { hasErrors, normalizeSheet, validateSheet, withDerived, type SheetData } from "@/lib/sheet-rules";
 import { getCharacterAccess } from "@/lib/npc-data";
+import { parseTalentConfig } from "@/lib/talents";
 import { createNotification } from "@/lib/notifications";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
@@ -67,17 +68,14 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   if (username.error) return username.error;
 
   // Gewürfelter Bogen (Komplett würfeln): wird vor dem Anlegen geprüft und danach mit dem Charakter gespeichert
-  let sheet: SheetData | null = null;
+  let sheetParsed: unknown = null;
   const sheetRaw = String(formData.get("sheet_json") ?? "").trim();
   if (sheetRaw) {
     try {
-      sheet = normalizeSheet(JSON.parse(sheetRaw));
+      sheetParsed = JSON.parse(sheetRaw);
     } catch {
       return "Der gewürfelte Bogen ist ungültig.";
     }
-    const errors = validateSheet(sheet);
-    if (hasErrors(errors)) return errors.budget[0] ?? "Der gewürfelte Bogen ist ungültig.";
-    sheet = withDerived({ ...sheet, notesBlocks: sheet.notesBlocks.map((b) => ({ label: b.label, html: sanitizePostHtml(b.html) })) });
   }
 
   const supabase = await createClient();
@@ -92,6 +90,17 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) {
     return "Keine aktive Welt ausgewählt.";
+  }
+
+  // Die Talentliste der Welt gilt auch für den gewürfelten Bogen
+  let sheet: SheetData | null = null;
+  if (sheetParsed) {
+    const { data: worldRow } = await supabase.from("worlds").select("talent_config").eq("id", activeWorld.id).maybeSingle<{ talent_config: unknown }>();
+    const defs = worldRow?.talent_config ? parseTalentConfig(worldRow.talent_config) : undefined;
+    sheet = normalizeSheet(sheetParsed, defs);
+    const errors = validateSheet(sheet);
+    if (hasErrors(errors)) return errors.budget[0] ?? "Der gewürfelte Bogen ist ungültig.";
+    sheet = withDerived({ ...sheet, notesBlocks: sheet.notesBlocks.map((b) => ({ label: b.label, html: sanitizePostHtml(b.html) })) });
   }
 
   const { data, error } = await supabase
@@ -117,7 +126,10 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   }
 
   if (sheet) {
-    const { error: sheetError } = await supabase.from("character_sheets").insert({ character_id: data.id, data: sheet });
+    // Die Talentliste der Welt gehört nicht in den gespeicherten Bogen
+    const { talentDefs: _defs, ...stored } = sheet;
+    void _defs;
+    const { error: sheetError } = await supabase.from("character_sheets").insert({ character_id: data.id, data: stored });
     if (sheetError) {
       // Lieber nichts anlegen als einen Charakter ohne den gewürfelten Bogen: wieder entfernen
       await supabase.from("characters").delete().eq("id", data.id);

@@ -44,6 +44,8 @@ export type CharakterbogenData = {
   attrBonus?: Record<string, string>;
   talentBasis?: Record<string, string>;
   talentBonus?: Record<string, string>;
+  // Talentliste der Welt (nicht gespeichert); fehlt sie, gilt die Standardliste
+  talentDefs?: { name: string; attrs: [string, string] }[];
   notesBlocks?: { label: string; html: string }[];
 };
 

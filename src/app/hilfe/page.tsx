@@ -291,6 +291,9 @@ export default function HelpPage() {
       </Section>
 
       <Section id="uebersicht" title="11. Welches Talent braucht welche Attribute?">
+        <p className={p}>
+          Das ist die Standardliste. Besitzer:innen und Admins einer Welt können sie unter „Welt bearbeiten“ → „Talente“ ändern: Talente umbenennen, entfernen, hinzufügen und festlegen, aus welchen zwei Attributen sie sich zusammensetzen. Entfernte Talente verlieren in den Bögen ihre verteilten Punkte.
+        </p>
         <div className="overflow-hidden rounded-2xl border border-line bg-surface">
           <div className="grid grid-cols-2 border-b border-line bg-surface-2 px-4 py-2 text-xs font-medium text-muted">
             <span>Talent</span>

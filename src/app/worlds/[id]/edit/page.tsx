@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { World } from "@/lib/types";
 import { EditWorldForm } from "./edit-world-form";
 import { DeleteWorldButton } from "./delete-world-button";
+import { TalentEditor } from "./talent-editor";
+import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
 
 export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/edit">) {
   const { id } = await params;
@@ -27,13 +29,21 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10">
+    <div className="mx-auto max-w-xl px-4 py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Welt bearbeiten</h1>
       <p className="mb-6 text-sm text-muted">
         Titelbild, Name und Beschreibung von {world.name}.
       </p>
 
       <EditWorldForm world={world} />
+
+      <section className="mt-8 border-t border-line pt-6">
+        <h2 className="mb-3 font-serif text-xl text-fg">Talente</h2>
+        <TalentEditor
+          worldId={world.id}
+          initial={(world as unknown as { talent_config?: unknown }).talent_config ? parseTalentConfig((world as unknown as { talent_config?: unknown }).talent_config) : DEFAULT_TALENTS}
+        />
+      </section>
 
       {isOwner && (
         <div className="mt-8 border-t border-line pt-6">

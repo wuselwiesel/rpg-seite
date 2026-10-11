@@ -5376,4 +5376,7 @@ begin
 end;
 $$;
 
+-- Talente je Welt (siehe migration_world_talent_config.sql)
+alter table public.worlds add column if not exists talent_config jsonb;
+
 notify pgrst, 'reload schema';
