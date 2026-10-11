@@ -4,6 +4,7 @@ import type { World } from "@/lib/types";
 import { EditWorldForm } from "./edit-world-form";
 import { DeleteWorldButton } from "./delete-world-button";
 import { TalentEditor } from "./talent-editor";
+import { WelcomeEditor } from "./welcome-editor";
 import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
 
 export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/edit">) {
@@ -36,6 +37,11 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
       </p>
 
       <EditWorldForm world={world} />
+
+      <section className="mt-8 border-t border-line pt-6">
+        <h2 className="mb-3 font-serif text-xl text-fg">Willkommen</h2>
+        <WelcomeEditor worldId={world.id} initial={world.welcome_html ?? ""} />
+      </section>
 
       <section className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-xl text-fg">Talente</h2>

@@ -21,6 +21,7 @@ import { SceneArc } from "./scene-arc";
 import { StoryComposer } from "./story-composer";
 import { StoryEntryItem } from "./story-entry-item";
 import { EntryList } from "./entry-list";
+import { TurnTitle } from "@/components/turn-title";
 import { ClipSelectionProvider } from "./clip-selection";
 import { ScrollToLast } from "./scroll-to-last";
 import { ScrollToEntry } from "./scroll-to-entry";
@@ -332,6 +333,7 @@ export default async function StoryPostDetailPage({
         />
       </article>
 
+      {!storyPost.locked && <TurnTitle isMine={turnIsMine} title={storyPost.title} />}
       {turnCharacter && !storyPost.locked && (
         <TurnBanner
           storyPostId={storyPost.id}

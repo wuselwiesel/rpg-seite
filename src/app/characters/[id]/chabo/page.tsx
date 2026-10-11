@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCharacterSheet } from "@/lib/character-sheet-data";
+import { CharacterGallery } from "@/components/character-gallery";
+import { CharacterScenesTimeline } from "@/components/character-scenes-timeline";
 import { getMentionableCharacters, getOwnCharacters, getOwnNpcs, getWorldNpcs } from "@/lib/active-character";
 import { getCharacterAccess } from "@/lib/npc-data";
 import { NpcBadge } from "@/components/npc-badge";
@@ -56,6 +58,8 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
         </div>
       </div>
       <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} randomLists={randomLists} />
+      <CharacterGallery characterId={id} canEdit={isOwn} />
+      <CharacterScenesTimeline characterId={id} isOwn={isOwn} />
     </div>
   );
 }

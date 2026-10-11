@@ -137,3 +137,19 @@ export async function changePassword(_prevState: string | null, formData: FormDa
   }
   return "ok";
 }
+
+// Gelöschte Nachricht oder Beziehung aus dem Papierkorb zurückholen
+export async function restoreTrashItem(id: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data, error } = await supabase.rpc("restore_trash_item", { p_id: id });
+  if (error) return error.message;
+  if (data !== "ok") return typeof data === "string" ? data : "Konnte nicht wiederhergestellt werden.";
+  revalidatePath("/story", "layout");
+  revalidatePath("/characters/relationships");
+  revalidatePath("/profile/papierkorb");
+  return null;
+}

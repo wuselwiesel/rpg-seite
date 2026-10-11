@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
+import { sanitizePostHtml } from "@/lib/sanitize";
 
 export async function createWorld(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -136,6 +137,25 @@ export async function updateWorld(
   revalidatePath("/worlds");
   revalidatePath("/", "layout");
   redirect(`/worlds/${worldId}`);
+}
+
+// Willkommenstext der Welt (Regeln, Orte, offene Rollen) speichern
+export async function saveWorldWelcome(worldId: string, _prevState: string | null, formData: FormData): Promise<string | null> {
+  const html = sanitizePostHtml(String(formData.get("welcome") ?? "").trim());
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const text = html.replace(/<[^>]*>/g, "").trim();
+  const { error, count } = await supabase
+    .from("worlds")
+    .update({ welcome_html: text || /<img/i.test(html) ? html : null }, { count: "exact" })
+    .eq("id", worldId);
+  if (error) return error.message;
+  if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
+  revalidatePath(`/worlds/${worldId}`);
+  return "ok";
 }
 
 // Talentliste der Welt speichern (Besitzer:in und Admins). Leere oder unveränderte Standardliste = Standard.

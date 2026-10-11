@@ -57,6 +57,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
   const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
+  const quote = String(formData.get("quote") ?? "").trim().slice(0, 200);
   const gender = parseGender(formData.get("gender"));
   const species = parseSpecies(formData.get("species"));
   const isNpc = formData.get("is_npc") === "on";
@@ -112,6 +113,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       ...(username.value ? { username: username.value } : {}),
       bio: bio || null,
       house: house || null,
+      quote: quote || null,
       gender,
       species,
       avatar_url: avatarUrl || null,
@@ -156,6 +158,7 @@ export async function updateCharacter(
   const avatarUrl = String(formData.get("avatar_url") ?? "").trim();
   const sheetUrl = String(formData.get("sheet_url") ?? "").trim();
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
+  const quote = String(formData.get("quote") ?? "").trim().slice(0, 200);
   const gender = parseGender(formData.get("gender"));
   const species = parseSpecies(formData.get("species"));
   const relationshipStatus = parseRelationshipStatus(formData.get("relationship_status"));
@@ -216,6 +219,7 @@ export async function updateCharacter(
       banner_url: bannerUrl,
       custom_fields: customFields,
       house: house || null,
+      ...(formData.has("quote") ? { quote: quote || null } : {}),
       gender,
       species,
       relationship_status: relationshipStatus,

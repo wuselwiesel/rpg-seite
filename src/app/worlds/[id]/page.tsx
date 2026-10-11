@@ -9,6 +9,7 @@ import { LeaveWorldButton } from "./leave-world-button";
 import { InviteFriendForm } from "./invite-friend-form";
 import { InviteLink } from "@/components/invite-link";
 import { MemberActions } from "./member-actions";
+import { sanitizePostHtml } from "@/lib/sanitize";
 import type { Profile, World } from "@/lib/types";
 
 type WorldMemberRow = { user_id: string; role: "member" | "admin"; profiles: Profile };
@@ -75,6 +76,12 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
           )}
         </div>
       </div>
+
+      {world.welcome_html && sanitizePostHtml(world.welcome_html).replace(/<[^>]*>/g, "").trim() && (
+        <section aria-label="Willkommen" className="mb-8 rounded-2xl border border-line bg-surface p-5">
+          <div className="post-content text-[15.5px] leading-[1.75] text-fg" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(world.welcome_html) }} />
+        </section>
+      )}
 
       <h2 className="mb-3 font-serif text-xl text-fg">Mitglieder</h2>
       <ul className="mb-8 flex flex-col gap-2">

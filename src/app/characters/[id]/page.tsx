@@ -277,6 +277,7 @@ export default async function CharacterProfilePage({
               </span>
             )}
           </h1>
+          {character.quote && <p className="mt-1 font-serif text-base italic text-fg-soft">„{character.quote}“</p>}
           <p className="text-sm text-muted">
             {character.username ? `@${character.username}` : isOwn ? "kein.nutzername" : null}
             {character.worlds?.name && <>{character.username || isOwn ? " · " : ""}in {character.worlds.name}</>}

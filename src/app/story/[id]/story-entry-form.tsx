@@ -63,7 +63,7 @@ export function StoryEntryForm({
   const sentSegs = useRef<BundleSegment[]>([]);
   const [bundleRestore, setBundleRestore] = useState<BundleSegment[] | null>(null);
   const [carryOver, setCarryOver] = useState("");
-  const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}`, { content: "" });
+  const { draft, restored, update, clear } = useDraft(`draft:entry:${storyPostId}:${narrator ? "narrator" : writerId}`, { content: "" });
 
   // Wie im Chat: Nach dem Senden bleibt das Schreibfeld an derselben Stelle auf dem Bildschirm (die neue Nachricht schiebt sich darüber),
   // die Seite springt nicht nach oben, und man kann gleich weiterschreiben. Sobald man selbst scrollt, hört das auf.

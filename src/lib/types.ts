@@ -13,6 +13,8 @@ export type World = {
   cover_image_url: string | null;
   created_by: string;
   created_at: string;
+  welcome_html?: string | null;
+  talent_config?: unknown;
 };
 
 export type Friendship = {
@@ -40,6 +42,7 @@ export type Character = {
   theme_accent?: string | null;
   theme_bg?: string | null;
   house?: string | null;
+  quote?: string | null;
   avatar_url: string | null;
   banner_url?: string | null;
   status_text?: string | null;

@@ -81,6 +81,15 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
 
   const folderTrail = folderPath(folders, page.folder_id ?? null);
   const pageTrail = pageAncestors(pageRows, page.id);
+  // Szenen, die an diesem Ort spielen (Ortsangabe der Szene = Titel der Seite)
+  const { data: placeScenes } = await supabase
+    .from("story_posts")
+    .select("id, title, created_at")
+    .eq("world_id", page.world_id)
+    .ilike("location", page.title.replace(/[\\%_]/g, (m) => `\\${m}`))
+    .order("created_at", { ascending: false })
+    .limit(12)
+    .returns<{ id: string; title: string; created_at: string }[]>();
   const backlinks = findBacklinks(linkPages, page.id)
     .map((bid) => pageRows.find((p) => p.id === bid))
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
@@ -294,6 +303,24 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
                 >
                   <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
                   {m.mapTitle}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {placeScenes && placeScenes.length > 0 && (
+        <section aria-labelledby="szenen-hier">
+          <h2 id="szenen-hier" className={sectionHead}>
+            Szenen an diesem Ort <span className="text-base text-muted">{placeScenes.length}</span>
+          </h2>
+          <ul className="flex flex-col gap-1.5">
+            {placeScenes.map((sc) => (
+              <li key={sc.id}>
+                <Link href={`/story/${sc.id}`} className="text-fg-soft transition hover:text-accent">
+                  {sc.title}
+                  <span className="ml-2 text-xs text-muted">{formatDateTime(sc.created_at)}</span>
                 </Link>
               </li>
             ))}

@@ -311,6 +311,7 @@ export function StoryComposer({
 
       {mode === "chat" ? null : mode === "write" ? (
         <StoryEntryForm
+          key={`${writerId}-${narrator ? "n" : "c"}`}
           storyPostId={storyPostId}
           worldId={worldId}
           characterName={writer?.name ?? "deinem Charakter"}

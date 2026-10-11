@@ -11,6 +11,7 @@ import {
   Newspaper,
   Palette,
   SmilePlus,
+  Trash2,
   UserRound,
   Users,
   type LucideIcon,
@@ -37,6 +38,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
       { href: "/profile/emojis", label: "Eigene Emojis", hint: "Bilder als :name: in Texten nutzen", Icon: SmilePlus },
       { href: "/profile/zufallslisten", label: "Zufallslisten", hint: "Eigene Namen, Hobbys und mehr für den Würfel", Icon: Dices },
       { href: "/profile/benachrichtigungen", label: "Benachrichtigungen", hint: "Push, Ruhezeiten, Stummschalten", Icon: Bell },
+      { href: "/profile/papierkorb", label: "Papierkorb", hint: "Gelöschtes der letzten 30 Tage zurückholen", Icon: Trash2 },
     ],
   },
 ];
