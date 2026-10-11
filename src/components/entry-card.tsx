@@ -25,8 +25,7 @@ export function EntryCard({
   likeButton,
   tags,
   tagHrefBase,
-  arcName,
-  arcHref,
+  arcs,
   isPrivate,
   recapHtml = "",
   pinned,
@@ -51,8 +50,7 @@ export function EntryCard({
   likeButton?: React.ReactNode;
   tags?: string[];
   tagHrefBase?: string;
-  arcName?: string;
-  arcHref?: string;
+  arcs?: { id: string; name: string }[];
   isPrivate?: boolean;
   // Selbst geschriebene Zusammenfassung der Szene (bereinigtes HTML), klappt in der Karte auf
   recapHtml?: string;
@@ -97,13 +95,18 @@ export function EntryCard({
           </div>
         </Link>
       )}
-      {arcName && arcHref && (
-        <Link
-          href={arcHref}
-          className="mb-2 inline-flex w-fit items-center rounded-full bg-accent-strong/15 px-2.5 py-0.5 text-xs font-medium text-accent transition hover:bg-accent-strong/25"
-        >
-          {arcName}
-        </Link>
+      {arcs && arcs.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {arcs.map((a) => (
+            <Link
+              key={a.id}
+              href={`/story?arc=${a.id}`}
+              className="inline-flex w-fit items-center rounded-full bg-accent-strong/15 px-2.5 py-0.5 text-xs font-medium text-accent transition hover:bg-accent-strong/25"
+            >
+              {a.name}
+            </Link>
+          ))}
+        </div>
       )}
       {(location || inWorldTime || yourTurn) && (
         <div className="mb-2 flex flex-wrap gap-1.5 text-xs text-fg-soft">

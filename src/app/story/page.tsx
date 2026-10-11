@@ -52,7 +52,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
   let storyQuery = supabase
     .from("story_posts")
-    .select("*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs(name)", {
+    .select("*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs!arc_id(name), story_post_arcs(arc_id, story_arcs(name))", {
       count: "exact",
     })
     .eq("world_id", activeWorld.id)
@@ -66,7 +66,10 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
   }
   if (tag) storyQuery = storyQuery.contains("tags", [tag]);
-  if (arc) storyQuery = storyQuery.eq("arc_id", arc);
+  if (arc) {
+    const { data: inArc } = await supabase.from("story_post_arcs").select("story_post_id").eq("arc_id", arc).limit(2000);
+    storyQuery = storyQuery.in("id", (inArc ?? []).map((r) => r.story_post_id as string));
+  }
   if (ort) storyQuery = storyQuery.eq("location", ort);
   if (from) storyQuery = storyQuery.gte("created_at", new Date(from).toISOString());
   if (to) {
@@ -97,7 +100,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery.returns<StoryPost[]>(),
     supabase
       .from("story_arcs")
-      .select("*, story_posts(count)")
+      .select("*, story_posts:story_post_arcs(count)")
       .eq("world_id", activeWorld.id)
       .order("name")
       .returns<(StoryArc & { story_posts: { count: number }[] })[]>(),
@@ -331,8 +334,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               index={index}
               tags={post.tags}
               tagHrefBase="/story"
-              arcName={post.story_arcs?.name}
-              arcHref={post.arc_id ? `/story?arc=${post.arc_id}` : undefined}
+              arcs={(post.story_post_arcs ?? []).filter((a) => a.story_arcs?.name).map((a) => ({ id: a.arc_id, name: a.story_arcs!.name }))}
               isPrivate={post.is_private}
               recapHtml={recapOf(post)}
               pinned={post.pinned}

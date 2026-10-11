@@ -55,7 +55,7 @@ export default async function StoryPostDetailPage({
 
   const { data: storyPost } = await supabase
     .from("story_posts")
-    .select("*, characters!story_posts_character_id_fkey(*), story_arcs(name)")
+    .select("*, characters!story_posts_character_id_fkey(*), story_arcs!arc_id(name)")
     .eq("id", id)
     .maybeSingle<StoryPost>();
 
@@ -206,6 +206,18 @@ export default async function StoryPostDetailPage({
     .returns<{ characters: { id: string; name: string; avatar_url: string | null } | null }[]>();
   const cast = (castRows ?? []).map((r) => r.characters).filter((c): c is { id: string; name: string; avatar_url: string | null } => !!c);
 
+  // Handlungsstränge dieser Szene (mehrere möglich; der erste steht auch in story_posts.arc_id)
+  const { data: sceneArcRows } = await supabase
+    .from("story_post_arcs")
+    .select("arc_id, created_at, story_arcs(name)")
+    .eq("story_post_id", id)
+    .order("created_at")
+    .returns<{ arc_id: string; created_at: string; story_arcs: { name: string } | null }[]>();
+  const sceneArcs = (sceneArcRows ?? [])
+    .filter((r) => r.story_arcs?.name)
+    .map((r) => ({ id: r.arc_id, name: r.story_arcs!.name }))
+    .sort((a, b) => (a.id === storyPost.arc_id ? -1 : b.id === storyPost.arc_id ? 1 : 0));
+
   // Handlungsstränge der Welt (nur für die, die den Strang ändern dürfen)
   const { data: arcRows } = isAuthor || isWorldOwner
     ? await supabase.from("story_arcs").select("id, name").eq("world_id", storyPost.world_id).order("name").returns<{ id: string; name: string }[]>()
@@ -293,7 +305,7 @@ export default async function StoryPostDetailPage({
         />
         <SceneArc
           storyPostId={storyPost.id}
-          arc={storyPost.arc_id && storyPost.story_arcs?.name ? { id: storyPost.arc_id, name: storyPost.story_arcs.name } : null}
+          sceneArcs={sceneArcs}
           arcs={arcOptions}
           canEdit={myCharacterIds.size > 0 || isWorldOwner}
         />

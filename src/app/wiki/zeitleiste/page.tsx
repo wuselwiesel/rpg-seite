@@ -174,7 +174,7 @@ export default async function WikiTimelinePage({ searchParams }: PageProps<"/wik
     supabase
       .from("story_posts")
       .select(
-        "id, title, content, recap, short_summary, location, in_world_time, tags, narrator, event_year, event_month, event_day, event_end_year, event_end_month, event_end_day, characters!story_posts_character_id_fkey(name, avatar_url), story_arcs(name)",
+        "id, title, content, recap, short_summary, location, in_world_time, tags, narrator, event_year, event_month, event_day, event_end_year, event_end_month, event_end_day, characters!story_posts_character_id_fkey(name, avatar_url), story_arcs!arc_id(name)",
       )
       .eq("world_id", world.id)
       .eq("archived", false)

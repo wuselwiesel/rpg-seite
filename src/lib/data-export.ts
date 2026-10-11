@@ -62,10 +62,11 @@ export async function exportWorld(worldId: string) {
   const characterIds = col(characters, "id");
   const sceneIds = col(scenes, "id");
   const mapIds = col(wikiMaps, "id");
-  const [entries, posts, sheets] = await Promise.all([
+  const [entries, posts, sheets, sceneArcs] = await Promise.all([
     byValues(sb, "story_entries", "story_post_id", sceneIds),
     byValues(sb, "posts", "character_id", characterIds),
     byValues(sb, "character_sheets", "character_id", characterIds),
+    byValues(sb, "story_post_arcs", "story_post_id", sceneIds),
   ]);
   const [comments, pins] = await Promise.all([byValues(sb, "comments", "post_id", col(posts, "id")), byValues(sb, "wiki_map_pins", "map_id", mapIds)]);
 
@@ -75,7 +76,7 @@ export async function exportWorld(worldId: string) {
     welt: world,
     mitglieder: members,
     charaktere: characters.map((c) => ({ ...c, charakterbogen: sheets.find((s) => s.character_id === c.id) ?? null })),
-    szenen: scenes.map((s) => ({ ...s, eintraege: entries.filter((e) => e.story_post_id === s.id) })),
+    szenen: scenes.map((s) => ({ ...s, eintraege: entries.filter((e) => e.story_post_id === s.id), erzaehlstraenge: sceneArcs.filter((a) => a.story_post_id === s.id).map((a) => a.arc_id) })),
     erzaehlstraenge: arcs,
     beitraege: posts.map((p) => ({ ...p, kommentare: comments.filter((c) => c.post_id === p.id) })),
     wiki: { seiten: wikiPages, ordner: wikiFolders, typen: wikiTypes, karten: wikiMaps.map((m) => ({ ...m, pins: pins.filter((p) => p.map_id === m.id) })), kalender: wikiCalendars },

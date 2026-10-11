@@ -53,21 +53,23 @@ type EntryRow = {
 
 export async function loadBook(scope: { sceneId: string } | { arcId: string }): Promise<Book | null> {
   const supabase = await createClient();
-  const select = "id, title, content, location, in_world_time, created_at, characters!story_posts_character_id_fkey(name), worlds(name, cover_image_url), story_arcs(name)";
+  const select = "id, title, content, location, in_world_time, created_at, characters!story_posts_character_id_fkey(name), worlds(name, cover_image_url), story_arcs!arc_id(name)";
   let rows: SceneRow[] = [];
   let arcName: string | null = null;
   if ("sceneId" in scope) {
     const { data } = await supabase.from("story_posts").select(select).eq("id", scope.sceneId).returns<SceneRow[]>();
     rows = data ?? [];
   } else {
+    const { data: inArc } = await supabase.from("story_post_arcs").select("story_post_id").eq("arc_id", scope.arcId).limit(2000);
     const { data } = await supabase
       .from("story_posts")
       .select(select)
-      .eq("arc_id", scope.arcId)
+      .in("id", (inArc ?? []).map((r) => r.story_post_id as string))
       .order("created_at", { ascending: true })
       .returns<SceneRow[]>();
     rows = data ?? [];
-    arcName = rows[0]?.story_arcs?.name ?? null;
+    const { data: arcRow } = await supabase.from("story_arcs").select("name").eq("id", scope.arcId).maybeSingle<{ name: string }>();
+    arcName = arcRow?.name ?? null;
   }
   if (rows.length === 0) return null;
 

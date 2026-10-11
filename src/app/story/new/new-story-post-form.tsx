@@ -11,7 +11,6 @@ import { EventDateRange } from "@/components/event-date-fields";
 import type { WikiCalendar } from "@/lib/wiki-calendar";
 import type { Character, StoryArc } from "@/lib/types";
 
-const NEW_ARC_VALUE = "__new__";
 
 export function NewStoryPostForm({
   arcs,
@@ -34,7 +33,7 @@ export function NewStoryPostForm({
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
   const otherCharacters = allCharacters.filter((c) => c.id !== writerId);
   const [error, formAction, pending] = useActionState(createStoryPost, null);
-  const [arcChoice, setArcChoice] = useState("");
+  const [arcChoices, setArcChoices] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
   const [narrator, setNarrator] = useState(false);
   // Wer auf jeden Fall in der Szene dabei ist (wird verlinkt und benachrichtigt)
@@ -137,34 +136,38 @@ export function NewStoryPostForm({
         </div>
       </details>
 
-      <label className="flex flex-col gap-1 text-sm text-fg-soft">
-        Handlungsstrang (optional)
-        <select
-          value={arcChoice}
-          onChange={(e) => setArcChoice(e.target.value)}
-          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-        >
-          <option value="">Keinem Handlungsstrang zuordnen</option>
-          {arcs.map((arc) => (
-            <option key={arc.id} value={arc.id}>
-              {arc.name}
-            </option>
-          ))}
-          <option value={NEW_ARC_VALUE}>+ Neuen Handlungsstrang erschaffen</option>
-        </select>
-      </label>
-
-      {arcChoice === NEW_ARC_VALUE ? (
+      <div className="flex flex-col gap-1.5">
+        <p className="text-sm text-fg-soft">Handlungsstränge (optional, mehrere möglich)</p>
+        {arcs.length > 0 && (
+          <div role="group" aria-label="Handlungsstränge" className="flex flex-wrap gap-1.5">
+            {arcs.map((arc) => {
+              const on = arcChoices.includes(arc.id);
+              return (
+                <button
+                  key={arc.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setArcChoices((cur) => (cur.includes(arc.id) ? cur.filter((x) => x !== arc.id) : [...cur, arc.id]))}
+                  className={`rounded-full px-3 py-1 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "border border-line bg-surface text-fg-soft hover:border-accent hover:text-accent"}`}
+                >
+                  {arc.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {arcChoices.map((id) => (
+          <input key={id} type="hidden" name="arc_id" value={id} />
+        ))}
         <input
           type="text"
           name="new_arc_name"
-          required
-          placeholder="z. B. Der Sturm-Arc"
+          maxLength={80}
+          placeholder="Neuer Handlungsstrang, z. B. Der Sturm-Arc"
+          aria-label="Name eines neuen Handlungsstrangs"
           className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
         />
-      ) : (
-        <input type="hidden" name="arc_id" value={arcChoice} />
-      )}
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <p className="text-sm text-fg-soft">Mit dabei (optional)</p>

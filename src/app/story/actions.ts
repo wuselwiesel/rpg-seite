@@ -140,21 +140,26 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
 
   const tags = extractHashtags(`${title} ${stripHtml(content)}`);
 
-  const newArcName = String(formData.get("new_arc_name") ?? "").trim();
-  const selectedArcId = String(formData.get("arc_id") ?? "").trim();
-  let arcId: string | null = null;
+  const newArcName = String(formData.get("new_arc_name") ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  // Mehrere Handlungsstränge: bestehende per Auswahl, ein neuer über den Namen
+  const arcIds: string[] = formData.getAll("arc_id").map(String).filter((v) => uuidRe.test(v));
 
   if (newArcName) {
-    const { data: arc, error: arcError } = await supabase
-      .from("story_arcs")
-      .insert({ world_id: activeWorld.id, name: newArcName, created_by: user.id })
-      .select("id")
-      .single();
-    if (arcError || !arc) return arcError?.message ?? "Handlungsstrang konnte nicht erstellt werden.";
-    arcId = arc.id;
-  } else if (selectedArcId) {
-    arcId = selectedArcId;
+    const { data: same } = await supabase.from("story_arcs").select("id, name").eq("world_id", activeWorld.id).ilike("name", newArcName.replace(/[\\%_]/g, (m) => `\\${m}`));
+    const found = same?.find((a) => a.name.toLowerCase() === newArcName.toLowerCase());
+    if (found) arcIds.push(found.id);
+    else {
+      const { data: arc, error: arcError } = await supabase
+        .from("story_arcs")
+        .insert({ world_id: activeWorld.id, name: newArcName, created_by: user.id })
+        .select("id")
+        .single();
+      if (arcError || !arc) return arcError?.message ?? "Handlungsstrang konnte nicht erstellt werden.";
+      arcIds.push(arc.id);
+    }
   }
+  const arcId: string | null = arcIds[0] ?? null;
 
   const location = String(formData.get("location") ?? "").trim().slice(0, 80) || null;
   const inWorldTime = String(formData.get("in_world_time") ?? "").trim().slice(0, 80) || null;
@@ -193,6 +198,8 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
     .single();
 
   if (error || !data) return error?.message ?? "Szene konnte nicht erstellt werden.";
+
+  if (arcIds.length > 0) await supabase.rpc("set_scene_arcs", { p_story_post_id: data.id, p_arc_ids: arcIds });
 
   // Wer mit dabei ist, darf eine geheime Szene auch sehen
   const allowedViewers = Array.from(new Set([...viewerCharacterIds, ...castIds]));
@@ -501,6 +508,13 @@ export async function startNextScene(previousId: string, formData: FormData): Pr
     // Ohne Abschluss der alten Szene gäbe es eine verwaiste Folgeszene
     await supabase.from("story_posts").delete().eq("id", created.id);
     return { error: finishError.message === "Keine Berechtigung" ? "Nur wer in dieser Szene mitgespielt hat, kann ein neues Kapitel beginnen." : finishError.message };
+  }
+
+  // Die Folgeszene gehört zu denselben Handlungssträngen
+  {
+    const { data: prevArcs } = await supabase.from("story_post_arcs").select("arc_id").eq("story_post_id", previousId).order("created_at");
+    const ids = (prevArcs ?? []).map((a) => a.arc_id as string);
+    if (ids.length > 0) await supabase.rpc("set_scene_arcs", { p_story_post_id: created.id, p_arc_ids: prev.arc_id ? [prev.arc_id, ...ids.filter((x) => x !== prev.arc_id)] : ids });
   }
 
   // Geheime Szene: dieselben Charaktere dürfen auch die Folgeszene sehen
@@ -1216,8 +1230,8 @@ export async function setSceneCast(storyPostId: string, castCharacterIds: string
   return null;
 }
 
-// Handlungsstrang einer Szene nachträglich setzen, ändern oder entfernen; mit `newArcName` wird zuerst ein neuer Strang angelegt (oder ein gleichnamiger genutzt).
-export async function setSceneArc(storyPostId: string, arcId: string | null, newArcName?: string): Promise<string | null> {
+// Handlungsstränge einer Szene nachträglich setzen (mehrere möglich, leer = keiner); mit `newArcName` wird zusätzlich ein neuer Strang angelegt (oder ein gleichnamiger genutzt).
+export async function setSceneArcs(storyPostId: string, arcIds: string[], newArcName?: string): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -1226,24 +1240,23 @@ export async function setSceneArc(storyPostId: string, arcId: string | null, new
   const { data: post } = await supabase.from("story_posts").select("id, world_id").eq("id", storyPostId).maybeSingle<{ id: string; world_id: string }>();
   if (!post) return "Szene nicht gefunden.";
 
-  let nextArc: string | null = arcId || null;
+  const next = [...new Set(arcIds.filter(Boolean))];
   const name = (newArcName ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
   if (name) {
     const { data: same } = await supabase.from("story_arcs").select("id, name").eq("world_id", post.world_id).ilike("name", name.replace(/[\\%_]/g, (m) => `\\${m}`));
     const found = same?.find((a) => a.name.toLowerCase() === name.toLowerCase());
-    if (found) nextArc = found.id;
-    else {
+    if (found) {
+      if (!next.includes(found.id)) next.push(found.id);
+    } else {
       const { data: created, error } = await supabase.from("story_arcs").insert({ world_id: post.world_id, name, created_by: user.id }).select("id").single<{ id: string }>();
       if (error || !created) return error?.message ?? "Handlungsstrang konnte nicht erstellt werden.";
-      nextArc = created.id;
+      next.push(created.id);
     }
-  } else if (nextArc) {
-    const { data: arc } = await supabase.from("story_arcs").select("id").eq("id", nextArc).eq("world_id", post.world_id).maybeSingle();
-    if (!arc) return "Diesen Handlungsstrang gibt es nicht.";
   }
+  if (next.length > 12) return "Eine Szene kann höchstens zu 12 Handlungssträngen gehören.";
 
-  // Alle Mitspielenden der Welt dürfen den Handlungsstrang setzen, auch bei fremden und abgeschlossenen Szenen (RPC set_scene_arc)
-  const { error } = await supabase.rpc("set_scene_arc", { p_story_post_id: storyPostId, p_arc_id: nextArc });
+  // Alle Mitspielenden der Welt dürfen die Handlungsstränge setzen, auch bei fremden und abgeschlossenen Szenen (RPC set_scene_arcs)
+  const { error } = await supabase.rpc("set_scene_arcs", { p_story_post_id: storyPostId, p_arc_ids: next });
   if (error) return error.message === "Keine Berechtigung" ? "Das dürfen nur Mitspielende dieser Welt (bei geheimen Szenen nur, wer sie sehen darf)." : error.message;
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/story");

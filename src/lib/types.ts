@@ -160,6 +160,7 @@ export type StoryPost = {
   characters: Character | null;
   story_entries?: { count: number }[];
   story_arcs?: { name: string } | null;
+  story_post_arcs?: { arc_id: string; story_arcs: { name: string } | null }[];
 };
 
 export type StoryEntry = {
