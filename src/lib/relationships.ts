@@ -1,18 +1,45 @@
 import type { FamilyRole, RelationshipCategory } from "@/lib/types";
 
 export const REL_CATEGORIES: { id: RelationshipCategory; label: string; color: string; suggestions: string[] }[] = [
-  { id: "familie", label: "Familie", color: "#b07a4a", suggestions: ["Geschwister", "Eltern und Kind", "Ehepaar", "Cousins", "Verwandt"] },
-  { id: "liebe", label: "Liebe", color: "#d0587e", suggestions: ["Liiert", "Verliebt", "Verlobt", "Heimliche Liebe", "Ex-Partner:innen"] },
-  { id: "freundschaft", label: "Freundschaft", color: "#5b9d6f", suggestions: ["Befreundet", "Beste Freund:innen", "Vertraut", "Bekannt"] },
-  { id: "buendnis", label: "Bündnis", color: "#4f7fb5", suggestions: ["Verbündet", "Zweckbündnis", "Mentor:in", "Kolleg:innen"] },
-  { id: "rivalitaet", label: "Rivalität", color: "#c4553f", suggestions: ["Rivalen", "Verfeindet", "Erzfeinde", "Misstrauisch"] },
-  { id: "sonstiges", label: "Sonstiges", color: "#9a9a9a", suggestions: ["Verbunden", "Es ist kompliziert"] },
+  {
+    id: "familie",
+    label: "Familie",
+    color: "#b07a4a",
+    suggestions: ["Mutter und Kind", "Vater und Kind", "Eltern und Kind", "Geschwister", "Halbgeschwister", "Zwillinge", "Ehepaar", "Cousins", "Großeltern und Enkel", "Onkel/Tante und Nichte/Neffe", "Adoptiveltern und Kind", "Verwandt"],
+  },
+  {
+    id: "liebe",
+    label: "Liebe",
+    color: "#d0587e",
+    suggestions: ["Liiert", "Verliebt", "Verlobt", "Verheiratet", "Heimliche Liebe", "Affäre", "On-Off-Beziehung", "Ex-Partner:innen", "Schwarm"],
+  },
+  {
+    id: "freundschaft",
+    label: "Freundschaft",
+    color: "#5b9d6f",
+    suggestions: ["Befreundet", "Beste Freund:innen", "Kindheitsfreunde", "Vertraut", "Bekannt", "Mitbewohner:innen"],
+  },
+  {
+    id: "buendnis",
+    label: "Bündnis",
+    color: "#4f7fb5",
+    suggestions: ["Verbündet", "Zweckbündnis", "Mentor:in und Schüler:in", "Kolleg:innen", "Gildenmitglieder"],
+  },
+  {
+    id: "rivalitaet",
+    label: "Rivalität",
+    color: "#c4553f",
+    suggestions: ["Rivalen", "Verfeindet", "Erzfeinde", "Misstrauisch", "Konkurrenz"],
+  },
+  { id: "sonstiges", label: "Sonstiges", color: "#9a9a9a", suggestions: ["Verbunden", "Es ist kompliziert", "Schuldet etwas"] },
 ];
 
 export const FAMILY_ROLES: { id: FamilyRole; label: string }[] = [
   { id: "eltern", label: "A ist Elternteil von B" },
   { id: "partner", label: "A und B sind ein Paar / verheiratet" },
   { id: "geschwister", label: "A und B sind Geschwister" },
+  { id: "halbgeschwister", label: "A und B sind Halbgeschwister" },
+  { id: "adoptiv", label: "A hat B adoptiert" },
   { id: "verwandt", label: "Sonstige Verwandtschaft" },
 ];
 
@@ -34,9 +61,11 @@ export function guessRelation(label: string): RelationGuess {
     color: categoryInfo(category).color,
   });
   if (has(/\bex\b|\bex-/)) return out("liebe");
-  if (has(/\b(mutter|vater|mama|papa|mum|mom|dad|eltern|elternteil|stiefmutter|stiefvater|adoptivmutter|adoptivvater)\b/)) return out("familie", "eltern", true);
-  if (has(/\b(kind|sohn|tochter|stiefsohn|stieftochter|adoptivsohn|adoptivtochter)\b/)) return out("familie", "eltern", false);
-  if (has(/\b(bruder|schwester|geschwister|zwilling|halbbruder|halbschwester|stiefbruder|stiefschwester)\b/)) return out("familie", "geschwister");
+  if (has(/\b(adoptivmutter|adoptivvater|adoptiveltern|adoptivsohn|adoptivtochter|adoptivkind)\b/)) return out("familie", "adoptiv", !/sohn|tochter|kind/.test(l));
+  if (has(/\b(mutter|vater|mama|papa|mum|mom|dad|eltern|elternteil|stiefmutter|stiefvater)\b/)) return out("familie", "eltern", true);
+  if (has(/\b(kind|sohn|tochter|stiefsohn|stieftochter)\b/)) return out("familie", "eltern", false);
+  if (has(/\b(halbbruder|halbschwester|halbgeschwister|stiefbruder|stiefschwester)\b/)) return out("familie", "halbgeschwister");
+  if (has(/\b(bruder|schwester|geschwister|zwilling)\b/)) return out("familie", "geschwister");
   if (has(/\b(ehemann|ehefrau|ehepartner|gatte|gattin|verlobter|verlobte)\b/)) return out("familie", "partner");
   if (has(/\b(onkel|tante|cousin|cousine|oma|opa|großmutter|großvater|grossmutter|grossvater|neffe|nichte|verwandt|verwandte|verwandter)\b/)) return out("familie", "verwandt");
   if (has(/rival|feind|gegner|hass|erzfeind/)) return out("rivalitaet");

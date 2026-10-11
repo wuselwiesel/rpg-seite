@@ -6,6 +6,7 @@ import { Layers } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { BundleBuilder, type BundleSegment } from "./bundle-builder";
 import { useDraft } from "@/lib/use-draft";
+import { ACTION_FAILED_EVENT } from "@/components/update-notice";
 import type { Character } from "@/lib/types";
 
 export function StoryEntryForm({
@@ -42,6 +43,7 @@ export function StoryEntryForm({
     try {
       return await createStoryEntry(storyPostId, worldId, prev, formData);
     } catch {
+      window.dispatchEvent(new Event(ACTION_FAILED_EVENT));
       return "Das Senden hat nicht geklappt. Dein Text ist noch da, bitte noch einmal absenden.";
     }
   };

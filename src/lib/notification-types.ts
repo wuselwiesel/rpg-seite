@@ -11,6 +11,7 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "new_scene", label: "Neue Szenen in deiner Welt", types: ["new_scene"] },
   { key: "roll", label: "Würfe gegen dich", types: ["roll"] },
   { key: "friend", label: "Freundschaftsanfragen", types: ["friend_request", "friend_accept"] },
+  { key: "relationship", label: "Beziehungen", types: ["relationship"] },
   { key: "badge", label: "Badges", types: ["badge"] },
   { key: "redaktion", label: "Redaktion", types: ["redaktion_post", "redaktion_comment", "redaktion_reaction"] },
 ];

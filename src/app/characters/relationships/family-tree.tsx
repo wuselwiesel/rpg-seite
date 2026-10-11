@@ -32,13 +32,20 @@ export function FamilyTree({
     const byId = new Map(characters.map((c) => [c.id, c]));
     const people = Array.from(ids).filter((id) => byId.has(id));
     const parents = new Map<string, string[]>(); // child -> parents
-    const partners: [string, string][] = [];
+    const adopted = new Set<string>(); // „Kind|Elternteil“ – Adoptivbeziehungen (gestrichelt)
+    const partners: [string, string][] = []; // bestehende Paare
+    const exPartners: [string, string][] = []; // beendete Partnerschaften
     const siblings: [string, string][] = [];
+    const halfSiblings: [string, string][] = [];
     const relatives: [string, string][] = [];
     for (const r of familyRels) {
-      if (r.family_role === "eltern") parents.set(r.character_b_id, [...(parents.get(r.character_b_id) ?? []), r.character_a_id]);
-      else if (r.family_role === "partner") partners.push([r.character_a_id, r.character_b_id]);
+      const isEnded = !!r.ended_on || !!r.ended_label;
+      if (r.family_role === "eltern" || r.family_role === "adoptiv") {
+        parents.set(r.character_b_id, [...(parents.get(r.character_b_id) ?? []), r.character_a_id]);
+        if (r.family_role === "adoptiv") adopted.add(`${r.character_b_id}|${r.character_a_id}`);
+      } else if (r.family_role === "partner") (isEnded ? exPartners : partners).push([r.character_a_id, r.character_b_id]);
       else if (r.family_role === "geschwister") siblings.push([r.character_a_id, r.character_b_id]);
+      else if (r.family_role === "halbgeschwister") halfSiblings.push([r.character_a_id, r.character_b_id]);
       else relatives.push([r.character_a_id, r.character_b_id]);
     }
 
@@ -53,7 +60,7 @@ export function FamilyTree({
           changed = true;
         }
       }
-      for (const [a, b] of [...partners, ...siblings]) {
+      for (const [a, b] of [...partners, ...siblings, ...halfSiblings]) {
         const g = Math.max(gen.get(a) ?? 0, gen.get(b) ?? 0);
         if (gen.get(a) !== g || gen.get(b) !== g) {
           gen.set(a, g);
@@ -69,12 +76,23 @@ export function FamilyTree({
     const units: { members: string[]; gen: number }[] = [];
     for (const id of people) {
       if (unitOf.has(id)) continue;
-      const members = [id];
-      const partner = partners.find(([a, b]) => a === id || b === id);
-      if (partner) {
-        const other = partner[0] === id ? partner[1] : partner[0];
-        if (!unitOf.has(other) && byId.has(other)) members.push(other);
+      // Alle zusammenhängenden (bestehenden) Partner:innen bilden eine Einheit; wer mehrere hat, steht in der Mitte.
+      const comp = new Set<string>([id]);
+      const queue = [id];
+      while (queue.length) {
+        const cur = queue.pop() as string;
+        for (const [a, b] of partners) {
+          const other = a === cur ? b : b === cur ? a : null;
+          if (other && !comp.has(other) && !unitOf.has(other) && byId.has(other)) {
+            comp.add(other);
+            queue.push(other);
+          }
+        }
       }
+      const degree = (m: string) => partners.filter(([a, b]) => (a === m || b === m) && comp.has(a) && comp.has(b)).length;
+      const sorted = Array.from(comp).sort((x, y) => degree(y) - degree(x));
+      const members: string[] = [];
+      sorted.forEach((m, i) => (i % 2 === 0 ? members.push(m) : members.unshift(m)));
       const index = units.length;
       for (const m of members) unitOf.set(m, index);
       units.push({ members, gen: gen.get(id) ?? 0 });
@@ -116,7 +134,7 @@ export function FamilyTree({
     placed.forEach((row, g) =>
       row.forEach((u) => u.members.forEach((m, k) => pos.set(m, { x: u.x + k * NODE_W + NODE_W / 2, y: 50 + g * ROW_H }))),
     );
-    return { people, pos, parents, partners, siblings, relatives, totalWidth, height: 50 + maxGen * ROW_H + 90, byId };
+    return { people, pos, parents, adopted, partners, exPartners, siblings, halfSiblings, relatives, totalWidth, height: 50 + maxGen * ROW_H + 90, byId };
   }, [characters, familyRels]);
 
   const houseColor = useMemo(() => {
@@ -133,7 +151,7 @@ export function FamilyTree({
     );
   }
 
-  const { pos, parents, partners, siblings, relatives, totalWidth, height, byId } = layout;
+  const { pos, parents, adopted, partners, exPartners, siblings, halfSiblings, relatives, totalWidth, height, byId } = layout;
 
   // Eltern-Kind-Linien: vom Mittelpunkt der Eltern (Paar) bzw. dem einzelnen Elternteil zum Kind.
   const parentLines = Array.from(parents.entries()).flatMap(([child, ps]) => {
@@ -143,7 +161,8 @@ export function FamilyTree({
     const px = pp.reduce((s, p) => s + p.x, 0) / pp.length;
     const py = pp[0].y + R + 36;
     const midY = (py + (c.y - R - 4)) / 2;
-    return [{ key: child, d: `M ${px} ${py} V ${midY} H ${c.x} V ${c.y - R - 4}` }];
+    const isAdopted = ps.every((p) => adopted.has(`${child}|${p}`));
+    return [{ key: child, adopted: isAdopted, d: `M ${px} ${py} V ${midY} H ${c.x} V ${c.y - R - 4}` }];
   });
 
   return (
@@ -161,13 +180,27 @@ export function FamilyTree({
             })}
           </defs>
           {parentLines.map((l) => (
-            <path key={l.key} d={l.d} fill="none" className="stroke-muted" strokeWidth={2} />
+            <path key={l.key} d={l.d} fill="none" className="stroke-muted" strokeWidth={2} strokeDasharray={l.adopted ? "6 4" : undefined} />
           ))}
           {partners.map(([a, b], i) => {
             const pa = pos.get(a);
             const pb = pos.get(b);
             if (!pa || !pb) return null;
             return <line key={`p${i}`} x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} stroke="#d0587e" strokeWidth={3} />;
+          })}
+          {exPartners.map(([a, b], i) => {
+            const pa = pos.get(a);
+            const pb = pos.get(b);
+            if (!pa || !pb) return null;
+            const dy = 14 + (i % 3) * 5;
+            return <path key={`x${i}`} d={`M ${pa.x} ${pa.y + R} V ${pa.y + R + dy} H ${pb.x} V ${pb.y + R}`} fill="none" stroke="#d0587e" strokeWidth={1.5} strokeDasharray="3 4" opacity={0.7} />;
+          })}
+          {halfSiblings.map(([a, b], i) => {
+            const pa = pos.get(a);
+            const pb = pos.get(b);
+            if (!pa || !pb) return null;
+            const top = pa.y - R - 18;
+            return <path key={`h${i}`} d={`M ${pa.x} ${pa.y - R} V ${top} H ${pb.x} V ${pb.y - R}`} fill="none" className="stroke-muted" strokeWidth={1.5} strokeDasharray="1 4" />;
           })}
           {siblings.map(([a, b], i) => {
             const pa = pos.get(a);
@@ -216,6 +249,8 @@ export function FamilyTree({
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-[#d0587e]" /> Paar / Ehe</span>
         <span className="flex items-center gap-1.5"><span className="h-3 w-0.5 bg-line" /> Eltern → Kind</span>
         <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t border-dashed border-muted" /> Geschwister / Verwandte</span>
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t border-dotted border-muted" /> Halbgeschwister</span>
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 border-t border-dashed border-[#d0587e]" /> Frühere Partnerschaft</span>
         {Array.from(houseColor.entries()).map(([house, color]) => (
           <span key={house} className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-full border-2" style={{ borderColor: color }} /> {house}

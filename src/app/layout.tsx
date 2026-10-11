@@ -38,6 +38,7 @@ import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
 import { SpoilerReveal } from "@/components/spoiler-reveal";
 import { MentionLinks } from "@/components/mention-links";
 import { AppLogoSync } from "@/components/app-logo-sync";
+import { UpdateNotice } from "@/components/update-notice";
 import { SelectionCookieKeeper } from "@/components/selection-cookie-keeper";
 import { ThemeColorSync } from "@/components/theme-color-sync";
 import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
@@ -183,6 +184,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ModeProvider initial={rememberedMode}>
         <ModeTheme />
         <AppLogoSync />
+        <UpdateNotice />
         <SelectionCookieKeeper />
         <ThemeColorSync />
         <DefaultFontSync loggedIn={accountFont.loggedIn} accountFontId={accountFont.fontId} />

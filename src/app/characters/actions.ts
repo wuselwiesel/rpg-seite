@@ -11,6 +11,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { hasErrors, normalizeSheet, validateSheet, withDerived, type SheetData } from "@/lib/sheet-rules";
 import { getCharacterAccess } from "@/lib/npc-data";
+import { createNotification } from "@/lib/notifications";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
 const GENDERS = ["maennlich", "weiblich", "divers"] as const;
@@ -329,7 +330,7 @@ export async function setActiveCharacter(characterId: string) {
 }
 
 const CATEGORIES = ["familie", "liebe", "freundschaft", "buendnis", "rivalitaet", "sonstiges"] as const;
-const FAMILY_ROLES = ["eltern", "partner", "geschwister", "verwandt"] as const;
+const FAMILY_ROLES = ["eltern", "partner", "geschwister", "verwandt", "halbgeschwister", "adoptiv"] as const;
 
 function parseCategory(raw: FormDataEntryValue | null): (typeof CATEGORIES)[number] {
   const value = String(raw ?? "");
@@ -375,11 +376,18 @@ export async function updateRelationship(
   formData: FormData,
 ): Promise<string | null> {
   const type = String(formData.get("type") ?? "").trim().slice(0, 60);
+  const typeB = String(formData.get("type_b") ?? "").trim().slice(0, 60);
   const color = String(formData.get("color") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim().slice(0, 200);
   const note = String(formData.get("note") ?? "").trim().slice(0, 300);
   const since = parseDate(formData.get("since"));
   if (since === false) return "Ungültiges Datum.";
+  let endedOn = parseDate(formData.get("ended_on"));
+  if (endedOn === false) return "Ungültiges Datum.";
+  const endedLabel = String(formData.get("ended_label") ?? "").trim().slice(0, 40);
+  // „Beendet“ ohne Datum gilt ab heute
+  if (formData.get("ended") === "on" && !endedOn) endedOn = new Date().toISOString().slice(0, 10);
+  if (formData.get("ended") !== "on") endedOn = null;
   const category = parseCategory(formData.get("category"));
   const familyRole = category === "familie" ? parseFamilyRole(formData.get("family_role")) : null;
   if (!type) return "Bitte eine Bezeichnung angeben.";
@@ -394,7 +402,18 @@ export async function updateRelationship(
   const { error, count } = await supabase
     .from("character_relationships")
     .update(
-      { type, color, label: label || null, category, family_role: familyRole, change_note: note || null, change_date: since },
+      {
+        type,
+        type_b: typeB || null,
+        color,
+        label: label || null,
+        category,
+        family_role: familyRole,
+        change_note: note || null,
+        change_date: since,
+        ended_on: endedOn,
+        ended_label: endedLabel || null,
+      },
       { count: "exact" },
     )
     .eq("id", relationshipId);
@@ -414,6 +433,9 @@ export async function createRelationship(_prevState: string | null, formData: Fo
   const color = String(formData.get("color") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
   const since = parseDate(formData.get("since"));
+  const typeB = String(formData.get("type_b") ?? "").trim().slice(0, 60);
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+  const isSecret = formData.get("is_secret") === "on";
   const category = parseCategory(formData.get("category"));
   const familyRole = category === "familie" ? parseFamilyRole(formData.get("family_role")) : null;
 
@@ -441,17 +463,25 @@ export async function createRelationship(_prevState: string | null, formData: Fo
     character_a_id: characterAId,
     character_b_id: characterBId,
     type,
+    type_b: typeB || null,
     color,
     label: label || null,
     category,
     family_role: familyRole,
+    is_secret: isSecret,
+    ended_on: formData.get("ended") === "on" ? (parseDate(formData.get("ended_on")) || new Date().toISOString().slice(0, 10)) : null,
+    ended_label: formData.get("ended") === "on" ? String(formData.get("ended_label") ?? "").trim().slice(0, 40) || null : null,
     change_date: since,
+    change_note: note || null,
     created_by: user.id,
   }).select("id").single<{ id: string }>();
 
   if (error) return error.message;
-  // In die ChaBo-Zeilen beider Figuren übernehmen
-  if (created) await supabase.rpc("sync_relationship_sheets", { p_rel: created.id });
+  if (created) {
+    // In die ChaBo-Zeilen beider Figuren übernehmen (geheime Beziehungen bleiben im Netz)
+    await supabase.rpc("sync_relationship_sheets", { p_rel: created.id });
+    if (!isSecret) await notifyRelationshipOwners(supabase, user.id, created.id, characterAId, characterBId, type);
+  }
 
   revalidatePath("/characters/relationships");
   return null;
@@ -507,5 +537,116 @@ export async function toggleFollowCharacter(
   if (error && error.code !== "23505") return error.message;
 
   revalidatePath(`/characters/${followedId}`);
+  return null;
+}
+
+
+// Besitzer:innen der beteiligten Charaktere (außer dem Eintragenden) erfahren von der neuen Beziehung.
+async function notifyRelationshipOwners(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  relationshipId: string,
+  aId: string,
+  bId: string,
+  type: string,
+) {
+  try {
+    const { data: chars } = await supabase.from("characters").select("id, name, owner_id").in("id", [aId, bId]).returns<{ id: string; name: string; owner_id: string }[]>();
+    const { data: me } = await supabase.from("profiles").select("username, avatar_url").eq("id", userId).maybeSingle<{ username: string; avatar_url: string | null }>();
+    if (!chars || chars.length < 2) return;
+    for (const c of chars) {
+      if (c.owner_id === userId) continue;
+      const other = chars.find((x) => x.id !== c.id);
+      await createNotification(supabase, {
+        userId: c.owner_id,
+        type: "relationship",
+        actorName: me?.username ?? "Jemand",
+        actorAvatarUrl: me?.avatar_url ?? null,
+        link: `/characters/relationships?fokus=${c.id}&beziehung=${relationshipId}`,
+        message: `hat „${type}“ zwischen ${c.name} und ${other?.name ?? "einer Figur"} eingetragen`,
+        recipientName: c.name,
+      });
+    }
+  } catch {
+    // Benachrichtigungen sind nachrangig
+  }
+}
+
+export type SharedScene = { id: string; title: string; created_at: string };
+
+// Szenen, in denen beide Charaktere geschrieben haben oder der eine den anderen erwähnt wurde.
+export async function getSharedScenes(aId: string, bId: string): Promise<SharedScene[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const idRe = /^[0-9a-f-]{36}$/i;
+  if (!idRe.test(aId) || !idRe.test(bId)) return [];
+
+  const [{ data: written }, { data: mentionA }, { data: mentionB }] = await Promise.all([
+    supabase.from("story_entries").select("story_post_id, character_id").in("character_id", [aId, bId]).limit(2000),
+    supabase.from("story_entries").select("story_post_id").ilike("content", `%data-id="${aId}"%`).limit(500),
+    supabase.from("story_entries").select("story_post_id").ilike("content", `%data-id="${bId}"%`).limit(500),
+  ]);
+  const writers = new Map<string, Set<string>>();
+  for (const r of written ?? []) {
+    const set = writers.get(r.story_post_id as string) ?? new Set<string>();
+    set.add(r.character_id as string);
+    writers.set(r.story_post_id as string, set);
+  }
+  const mentionedA = new Set((mentionA ?? []).map((r) => r.story_post_id as string));
+  const mentionedB = new Set((mentionB ?? []).map((r) => r.story_post_id as string));
+  const ids: string[] = [];
+  for (const [postId, set] of writers) {
+    const both = set.has(aId) && set.has(bId);
+    const aWroteBMentioned = set.has(aId) && mentionedB.has(postId);
+    const bWroteAMentioned = set.has(bId) && mentionedA.has(postId);
+    if (both || aWroteBMentioned || bWroteAMentioned) ids.push(postId);
+  }
+  if (ids.length === 0) return [];
+  const { data: posts } = await supabase
+    .from("story_posts")
+    .select("id, title, created_at")
+    .in("id", ids.slice(0, 60))
+    .order("created_at", { ascending: false })
+    .limit(10)
+    .returns<SharedScene[]>();
+  return posts ?? [];
+}
+
+// Widerspruch zwischen ChaBo-Zeile und Beziehungsnetz auflösen: „netz“ schreibt die Bezeichnung des Netzes in den ChaBo,
+// „chabo“ übernimmt die Bezeichnung des ChaBo ins Netz.
+export async function resolveRelationshipConflict(relationshipId: string, characterId: string, use: "netz" | "chabo"): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: edge } = await supabase
+    .from("character_relationships")
+    .select("character_a_id, character_b_id, type, type_b, family_role")
+    .eq("id", relationshipId)
+    .maybeSingle<{ character_a_id: string; character_b_id: string; type: string; type_b: string | null; family_role: string | null }>();
+  if (!edge) return "Beziehung nicht gefunden.";
+
+  if (use === "netz") {
+    const { error } = await supabase.rpc("sync_relationship_sheets", { p_rel: relationshipId });
+    if (error) return error.message;
+  } else {
+    const { data: sheet } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: { family?: { label?: string; relId?: string }[] } }>();
+    const row = sheet?.data?.family?.find((r) => r.relId === relationshipId);
+    const label = String(row?.label ?? "").trim().slice(0, 60);
+    if (!label) return "Im ChaBo steht keine Bezeichnung.";
+    const isA = edge.character_a_id === characterId;
+    const { error, count } = await supabase
+      .from("character_relationships")
+      .update(isA ? { type: label } : { type_b: label }, { count: "exact" })
+      .eq("id", relationshipId);
+    if (error) return error.message;
+    if (!count) return "Keine Berechtigung, diese Beziehung zu ändern.";
+    await supabase.rpc("sync_relationship_sheets", { p_rel: relationshipId, p_skip: characterId });
+  }
+  revalidatePath("/characters/relationships");
   return null;
 }

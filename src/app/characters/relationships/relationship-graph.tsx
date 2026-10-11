@@ -6,6 +6,9 @@ import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, f
 import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 import type { Character, CharacterRelationship, RelationshipHistoryEntry } from "@/lib/types";
 import { buildAdjacency, groupHistory, neighborhood, relationshipsAsOf } from "@/lib/relationship-graph";
+import { deleteRelationship } from "../actions";
+import { EditForm, SharedScenes, type RelationshipConflict } from "./relationship-list";
+import { RelationshipForm } from "./relationship-form";
 
 const W = 800;
 const H = 560;
@@ -61,11 +64,20 @@ export function RelationshipGraph({
   relationships,
   initialFocusId,
   history = [],
+  allCharacters,
+  currentUserId,
+  isWorldOwner = false,
+  conflicts = {},
 }: {
   characters: Character[];
   relationships: CharacterRelationship[];
   initialFocusId?: string | null;
   history?: RelationshipHistoryEntry[];
+  // Alle Charaktere der Welt (zum Anlegen neuer Beziehungen), eigene ID, Rechte
+  allCharacters?: Character[];
+  currentUserId?: string;
+  isWorldOwner?: boolean;
+  conflicts?: Record<string, RelationshipConflict[]>;
 }) {
   const clipBase = useId().replace(/:/g, "");
   const byId = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters]);
@@ -82,6 +94,13 @@ export function RelationshipGraph({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [view, setView] = useState<View>({ k: 1, x: 0, y: 0 });
+  // Ausgewählte Beziehung (Linie angetippt) und „Beziehung ziehen“: erst eine, dann die zweite Figur antippen
+  const [selectedRelId, setSelectedRelId] = useState<string | null>(null);
+  const [editingRel, setEditingRel] = useState(false);
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkFrom, setLinkFrom] = useState<string | null>(null);
+  const [linkTo, setLinkTo] = useState<string | null>(null);
+  const ownCharacters = useMemo(() => characters.filter((c) => c.owner_id === currentUserId), [characters, currentUserId]);
 
   const focus = focusId && byId.has(focusId) ? focusId : null;
 
@@ -269,9 +288,28 @@ export function RelationshipGraph({
         <button type="button" onClick={() => focusOn(null)} className={chip(!focus)}>
           Ganze Welt
         </button>
-        {startFocus && (
-          <button type="button" onClick={() => focusOn(startFocus)} className={chip(focus === startFocus)}>
-            Mein Charakter
+        {ownCharacters.length > 0 && (
+          <>
+            {ownCharacters.slice(0, 6).map((c) => (
+              <button key={c.id} type="button" onClick={() => focusOn(c.id)} className={chip(focus === c.id)}>
+                {c.name}
+              </button>
+            ))}
+          </>
+        )}
+        {allCharacters && allCharacters.length > 1 && (
+          <button
+            type="button"
+            onClick={() => {
+              setLinkMode((v) => !v);
+              setLinkFrom(null);
+              setLinkTo(null);
+              setSelectedRelId(null);
+            }}
+            aria-pressed={linkMode}
+            className={`ml-auto ${chip(linkMode)}`}
+          >
+            {linkMode ? "Abbrechen" : "Beziehung ziehen"}
           </button>
         )}
         {focus && (
@@ -448,8 +486,22 @@ export function RelationshipGraph({
                       d={`M${a.x},${a.y} Q${cx},${cy} ${b.x},${b.y}`}
                       fill="none"
                       stroke={rel.color}
-                      strokeWidth={(hot ? 3.5 : 2.2) / Math.sqrt(view.k)}
+                      strokeWidth={(selectedRelId === rel.id ? 4.5 : hot ? 3.5 : 2.2) / Math.sqrt(view.k)}
+                      strokeDasharray={rel.ended_on || rel.ended_label ? "6 5" : rel.is_secret ? "2 4" : undefined}
                       opacity={0.8}
+                    />
+                    <path
+                      d={`M${a.x},${a.y} Q${cx},${cy} ${b.x},${b.y}`}
+                      fill="none"
+                      stroke="transparent"
+                      strokeWidth={18 / Math.sqrt(view.k)}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        if (linkMode) return;
+                        setSelectedId(null);
+                        setEditingRel(false);
+                        setSelectedRelId(rel.id === selectedRelId ? null : rel.id);
+                      }}
                     />
                     {(hot || view.k >= 2.2) && (
                       <text
@@ -459,7 +511,7 @@ export function RelationshipGraph({
                         className="fill-fg-soft"
                         style={{ fontSize: 10 / Math.sqrt(view.k), paintOrder: "stroke", stroke: "var(--surface)", strokeWidth: 3 }}
                       >
-                        {rel.type}
+                        {rel.type_b && rel.type_b !== rel.type ? `${rel.type} / ${rel.type_b}` : rel.type}
                       </text>
                     )}
                   </g>
@@ -479,7 +531,15 @@ export function RelationshipGraph({
                     className="cursor-pointer"
                     onPointerEnter={(e) => e.pointerType === "mouse" && setHoverId(id)}
                     onPointerLeave={() => setHoverId(null)}
-                    onClick={() => setSelectedId(id === selectedId ? null : id)}
+                    onClick={() => {
+                      if (linkMode) {
+                        if (!linkFrom) setLinkFrom(id);
+                        else if (id !== linkFrom) setLinkTo(id);
+                        return;
+                      }
+                      setSelectedRelId(null);
+                      setSelectedId(id === selectedId ? null : id);
+                    }}
                   >
                     <circle
                       cx={pos.x}
@@ -537,6 +597,119 @@ export function RelationshipGraph({
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {linkMode && (
+        <div className="flex flex-col gap-2 rounded-xl bg-surface p-3 text-sm">
+          {!linkTo ? (
+            <p className="text-fg-soft">
+              {linkFrom ? (
+                <>
+                  <span className="font-medium text-fg">{byId.get(linkFrom)?.name}</span> ausgewählt – jetzt die zweite Figur antippen.
+                </>
+              ) : (
+                "Erste Figur antippen."
+              )}
+            </p>
+          ) : (
+            allCharacters && (
+              <RelationshipForm
+                key={`${linkFrom}-${linkTo}`}
+                characters={allCharacters}
+                initialA={linkFrom ?? undefined}
+                initialB={linkTo}
+                open
+                onDone={() => {
+                  setLinkMode(false);
+                  setLinkFrom(null);
+                  setLinkTo(null);
+                }}
+              />
+            )
+          )}
+        </div>
+      )}
+
+      {selectedRelId && (() => {
+        const rel = relationships.find((r) => r.id === selectedRelId);
+        if (!rel) return null;
+        const a = byId.get(rel.character_a_id);
+        const b = byId.get(rel.character_b_id);
+        const ended = !!rel.ended_on || !!rel.ended_label;
+        const mine = rel.created_by === currentUserId || isWorldOwner || [a, b].some((c) => c?.owner_id === currentUserId);
+        const rowConflicts = conflicts[rel.id] ?? [];
+        return (
+          <div className="flex flex-col gap-1 rounded-xl bg-surface p-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: rel.color }} />
+              <span className="font-medium text-fg">{a?.name}</span>
+              <span className="text-fg-soft">
+                {rel.type_b ? `sieht ${b?.name} als ${rel.type} · ${b?.name} sieht ${a?.name} als ${rel.type_b}` : `· ${rel.type} ·`}
+              </span>
+              {!rel.type_b && <span className="font-medium text-fg">{b?.name}</span>}
+              {ended && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-muted">{rel.ended_label || "beendet"}</span>}
+              <span className="flex-1" />
+              {mine && (
+                <>
+                  <button type="button" onClick={() => setEditingRel((v) => !v)} className={chip(editingRel)}>
+                    Bearbeiten
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm("Diese Beziehung wirklich löschen? Sie verschwindet auch aus den ChaBos.")) return;
+                      const error = await deleteRelationship(rel.id);
+                      if (error) alert(error);
+                      else setSelectedRelId(null);
+                    }}
+                    className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-red-500"
+                  >
+                    Löschen
+                  </button>
+                </>
+              )}
+            </div>
+            {rel.label && <p className="text-xs text-muted">{rel.label}</p>}
+            {rowConflicts.map((c) => (
+              <p key={c.characterId} className="text-xs text-fg-soft">
+                Im ChaBo von {c.characterName} steht „{c.label}“, hier „{c.expected}“.
+              </p>
+            ))}
+            <SharedScenes rel={rel} />
+            {editingRel && allCharacters && <EditForm rel={rel} characters={allCharacters} onDone={() => setEditingRel(false)} />}
+          </div>
+        );
+      })()}
+
+      {focus && (
+        <div className="flex flex-col gap-1 rounded-xl bg-surface p-3 text-sm">
+          {(() => {
+            const mine = shownRels.filter((r) => r.character_a_id === focus || r.character_b_id === focus);
+            if (mine.length === 0) return <p className="text-muted">Noch keine Beziehungen.</p>;
+            return mine.map((r) => {
+              const otherId = r.character_a_id === focus ? r.character_b_id : r.character_a_id;
+              const mineIsA = r.character_a_id === focus;
+              const label = mineIsA ? r.type : r.type_b || r.type;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setEditingRel(false);
+                    setSelectedRelId(r.id === selectedRelId ? null : r.id);
+                  }}
+                  className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-surface-2"
+                >
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
+                  <span className="text-fg">{byId.get(otherId)?.name ?? "?"}</span>
+                  <span className="text-muted">{label}</span>
+                  {(r.ended_on || r.ended_label) && <span className="text-xs text-muted">· beendet</span>}
+                </button>
+              );
+            });
+          })()}
         </div>
       )}
 

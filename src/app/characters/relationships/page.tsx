@@ -12,6 +12,8 @@ import { RelationshipForm } from "./relationship-form";
 import { RelationshipList } from "./relationship-list";
 import { RelationshipTimeline } from "./relationship-timeline";
 import { FamilyTree } from "./family-tree";
+import { canonicalLabel } from "@/lib/family-sync";
+import type { RelationshipConflict } from "./relationship-list";
 
 const VIEWS = [
   { id: "netz", label: "Netz" },
@@ -51,6 +53,33 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
   const isWorldOwner = worldRow?.created_by === user.id;
   const allChars = characters ?? [];
   const allRels = relationships ?? [];
+
+  // Widersprüche: Der ChaBo einer beteiligten Figur nennt die Beziehung anders als das Netz
+  const { data: sheetRows } = allRels.length
+    ? await supabase
+        .from("character_sheets")
+        .select("character_id, data")
+        .in("character_id", Array.from(new Set(allRels.flatMap((r) => [r.character_a_id, r.character_b_id]))))
+        .returns<{ character_id: string; data: { family?: { label?: string; relId?: string }[] } | null }[]>()
+    : { data: [] as { character_id: string; data: { family?: { label?: string; relId?: string }[] } | null }[] };
+  const charName = new Map(allChars.map((c) => [c.id, c.name]));
+  const conflicts: Record<string, RelationshipConflict[]> = {};
+  for (const sheet of sheetRows ?? []) {
+    for (const row of sheet.data?.family ?? []) {
+      if (!row.relId) continue;
+      const rel = allRels.find((r) => r.id === row.relId);
+      if (!rel) continue;
+      const selfIsA = rel.character_a_id === sheet.character_id;
+      if (!selfIsA && rel.character_b_id !== sheet.character_id) continue;
+      const expected = canonicalLabel(rel, selfIsA);
+      const label = String(row.label ?? "").trim();
+      if (label && label.toLowerCase() !== expected.toLowerCase()) {
+        (conflicts[rel.id] ??= []).push({ characterId: sheet.character_id, characterName: charName.get(sheet.character_id) ?? "?", label, expected });
+      }
+    }
+  }
+  const focusParam = typeof params.fokus === "string" ? params.fokus : null;
+  const highlightId = typeof params.beziehung === "string" ? params.beziehung : null;
   const counts = new Map<string, number>();
   for (const r of allRels) counts.set(r.category, (counts.get(r.category) ?? 0) + 1);
 
@@ -134,7 +163,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
 
       {view === "netz" && (
         <div className="mb-8 rounded-2xl bg-surface-2 p-6">
-          <RelationshipGraph characters={shownChars} relationships={shownRels} initialFocusId={activeCharacter?.id} history={history ?? []} />
+          <RelationshipGraph characters={shownChars} relationships={shownRels} initialFocusId={focusParam ?? activeCharacter?.id} history={history ?? []} allCharacters={allChars} currentUserId={user.id} isWorldOwner={isWorldOwner} conflicts={conflicts} />
         </div>
       )}
 
@@ -181,24 +210,12 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
               </div>
             </div>
           )}
-          {houses.length === 0 && (
-            <p className="mt-4 text-xs text-muted">
-              Tipp: Trag bei deinem Charakter unter „Bearbeiten“ ein Haus oder eine Familie ein, dann erscheinen die Häuser
-              farbig im Stammbaum.
-            </p>
-          )}
         </div>
       )}
 
-      <details className="group mb-4 rounded-2xl border border-line bg-surface">
-        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
-          Neue Beziehung
-          <ChevronDown className="h-4 w-4 text-muted transition group-open:rotate-180" strokeWidth={2} />
-        </summary>
-        <div className="px-4 pb-4">
-          <RelationshipForm characters={allChars} />
-        </div>
-      </details>
+      <div className="mb-4">
+        <RelationshipForm characters={allChars} />
+      </div>
 
       <details className="group rounded-2xl border border-line bg-surface">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
@@ -208,7 +225,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
           <ChevronDown className="h-4 w-4 text-muted transition group-open:rotate-180" strokeWidth={2} />
         </summary>
         <div className="px-4 pb-4">
-          <RelationshipList relationships={listRels} characters={allChars} currentUserId={user.id} isWorldOwner={isWorldOwner} />
+          <RelationshipList relationships={listRels} characters={allChars} currentUserId={user.id} isWorldOwner={isWorldOwner} conflicts={conflicts} highlightId={highlightId} />
         </div>
       </details>
     </div>

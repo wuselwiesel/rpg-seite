@@ -10,13 +10,21 @@ export function singleMentionId(value: string, chars: MentionTarget[], selfId: s
   return ids.size === 1 ? [...ids][0] : null;
 }
 
-// Bezeichnung, die eine Beziehung aus Sicht einer Figur im ChaBo trägt (dieselbe Regel wie in sync_relationship_sheets)
-export function canonicalLabel(edge: { type: string; family_role: string | null }, selfIsA: boolean): string {
-  if (edge.family_role === "eltern") return selfIsA ? "Kind" : "Elternteil";
-  return edge.type.slice(0, 40);
+// Bezeichnung, die eine Beziehung aus Sicht einer Figur im ChaBo trägt (dieselbe Regel wie in sync_relationship_sheets):
+// Seite A sieht B als `type`, Seite B sieht A als `type_b` (leer = `type`); beendete Beziehungen heißen „Ehemals …“ oder wie eingetragen.
+export function canonicalLabel(
+  edge: { type: string; family_role: string | null; type_b?: string | null; ended_on?: string | null; ended_label?: string | null },
+  selfIsA: boolean,
+): string {
+  let label: string;
+  if (edge.family_role === "eltern") label = selfIsA ? "Kind" : "Elternteil";
+  else if (edge.family_role === "adoptiv") label = selfIsA ? "Adoptivkind" : "Adoptivelternteil";
+  else label = (selfIsA ? edge.type : edge.type_b?.trim() || edge.type).slice(0, 40);
+  if (edge.ended_on || edge.ended_label?.trim()) label = (edge.ended_label?.trim() || `Ehemals ${label}`).slice(0, 40);
+  return label;
 }
 
-type Edge = { id: string; world_id: string; character_a_id: string; character_b_id: string; type: string; family_role: string | null };
+type Edge = { id: string; world_id: string; character_a_id: string; character_b_id: string; type: string; type_b: string | null; family_role: string | null; ended_on: string | null; ended_label: string | null; is_secret: boolean };
 const norm = (s: string) => s.trim().toLowerCase();
 
 // Gleicht die Zeilen des Abschnitts „Familie/Beziehungen“ mit dem Beziehungsnetz ab (Richtung ChaBo → Netz) und liefert die Zeilen mit `relId`.
@@ -44,7 +52,7 @@ export async function syncFamilyRows(
     if (relIds.size > 0) {
       const { data } = await supabase
         .from("character_relationships")
-        .select("id, world_id, character_a_id, character_b_id, type, family_role")
+        .select("id, world_id, character_a_id, character_b_id, type, type_b, family_role, ended_on, ended_label, is_secret")
         .in("id", [...relIds])
         .returns<Edge[]>();
       for (const e of data ?? []) edges.set(e.id, e);
@@ -87,10 +95,16 @@ export async function syncFamilyRows(
           const label = r.label.trim();
           if (label && label !== canonicalLabel(edge, edge.character_a_id === characterId)) {
             const g = guessRelation(label);
-            const swap = g.familyRole === "eltern" ? (g.targetIsParent ? { a: targetId, b: characterId } : { a: characterId, b: targetId }) : null;
+            const swap = g.familyRole === "eltern" || g.familyRole === "adoptiv" ? (g.targetIsParent ? { a: targetId, b: characterId } : { a: characterId, b: targetId }) : null;
+            const isA = edge.character_a_id === characterId;
             const { error } = await supabase
               .from("character_relationships")
-              .update({ type: label.slice(0, 60), category: g.category, color: g.color, family_role: g.familyRole, ...(swap ? { character_a_id: swap.a, character_b_id: swap.b } : {}) })
+              .update({
+                // Die eigene Seite benennt, was die andere Figur für diese ist: A schreibt `type`, B schreibt `type_b`
+                ...(isA ? { type: label.slice(0, 60) } : { type_b: label.slice(0, 60) }),
+                ...(isA ? { category: g.category, color: g.color, family_role: g.familyRole } : {}),
+                ...(isA && swap ? { character_a_id: swap.a, character_b_id: swap.b } : {}),
+              })
               .eq("id", edge.id);
             if (!error) touched.add(edge.id);
           }
@@ -111,7 +125,7 @@ export async function syncFamilyRows(
         } else {
           const label = r.label.trim() || "Verbunden";
           const g = guessRelation(label);
-          const parentIsTarget = g.familyRole === "eltern" && g.targetIsParent;
+          const parentIsTarget = (g.familyRole === "eltern" || g.familyRole === "adoptiv") && g.targetIsParent;
           const { data: created } = await supabase
             .from("character_relationships")
             .insert({

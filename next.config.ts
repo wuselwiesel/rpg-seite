@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Kennung der Version, die im Browser läuft (zum Erkennen veralteter offener Seiten)
+  env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev" },
   // Erlaubt Dev-Zugriff über 127.0.0.1 (z. B. iOS-Simulator), sonst wird die Seite nicht hydriert.
   allowedDevOrigins: ["127.0.0.1"],
   experimental: {

@@ -295,13 +295,18 @@ export type CharacterRelationship = {
   label: string | null;
   category: RelationshipCategory;
   family_role: FamilyRole | null;
+  // Sicht von B auf A (leer = wie type)
+  type_b?: string | null;
+  is_secret?: boolean;
+  ended_on?: string | null;
+  ended_label?: string | null;
   created_by: string;
   created_at: string;
   updated_at?: string;
 };
 
 export type RelationshipCategory = "familie" | "liebe" | "freundschaft" | "buendnis" | "rivalitaet" | "sonstiges";
-export type FamilyRole = "eltern" | "partner" | "geschwister" | "verwandt";
+export type FamilyRole = "eltern" | "partner" | "geschwister" | "verwandt" | "halbgeschwister" | "adoptiv";
 
 export type RelationshipHistoryEntry = {
   id: string;
@@ -311,6 +316,9 @@ export type RelationshipHistoryEntry = {
   color: string;
   label: string | null;
   note: string | null;
+  type_b?: string | null;
+  ended_on?: string | null;
+  ended_label?: string | null;
   // Vom Nutzer gewähltes Datum, ab dem dieser Stand gilt (sonst zählt created_at).
   occurred_on?: string | null;
   created_at: string;

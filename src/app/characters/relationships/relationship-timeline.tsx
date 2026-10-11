@@ -31,15 +31,15 @@ export function RelationshipTimeline({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editingStep, setEditingStep] = useState<string | null>(null);
-  const canDelete = (rel: CharacterRelationship) =>
-    rel.created_by === currentUserId || isWorldOwner;
   const canEdit = (rel: CharacterRelationship) =>
-    canDelete(rel) ||
+    rel.created_by === currentUserId ||
+    isWorldOwner ||
     characters.some(
       (c) =>
         c.owner_id === currentUserId &&
         (c.id === rel.character_a_id || c.id === rel.character_b_id),
     );
+  const canDelete = canEdit;
 
   async function handleDelete(id: string) {
     if (!confirm("Diese Beziehung samt Verlauf wirklich löschen?")) return;
@@ -146,7 +146,7 @@ export function RelationshipTimeline({
                       <span className="text-muted">{steps[i - 1].type} → </span>
                     )}
                     <span className="font-medium" style={{ color: step.color }}>
-                      {step.type}
+                      {step.ended_label || (step.ended_on ? `Beendet: ${step.type}` : step.type)}
                     </span>
                     {step.label && (
                       <span className="text-fg-soft"> – {step.label}</span>
@@ -181,7 +181,7 @@ export function RelationshipTimeline({
               )}
             </div>
             {editingId === rel.id && (
-              <EditForm rel={rel} onDone={() => setEditingId(null)} />
+              <EditForm rel={rel} characters={characters} onDone={() => setEditingId(null)} />
             )}
           </li>
         ))}
