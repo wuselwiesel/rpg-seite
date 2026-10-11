@@ -65,7 +65,8 @@ export function StoryEntryItem({
   const editSegments = isNarrator ? null : splitSegments(entry.content);
   const headerName = entry.characters?.name ?? "";
   const [editing, setEditing] = useState(false);
-  const [showToolbar, setShowToolbar] = useState(false);
+  // Beim Bearbeiten ist die Formatierungsleiste gleich da (über das „T“ lässt sie sich ausblenden)
+  const [showToolbar, setShowToolbar] = useState(true);
   const updateAction = updateStoryEntry.bind(null, entry.id, storyPostId);
   const [error, formAction, pending] = useActionState(updateAction, null);
   const wasPending = useRef(false);
