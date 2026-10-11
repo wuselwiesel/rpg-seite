@@ -12,12 +12,17 @@ import { defaultHome, newBlock } from "@/lib/wiki-home";
 describe("Wiki-Startseite: Editor", () => {
   it("rendert Bausteine, Auswahl zum Hinzufügen und Entfernen", () => {
     const html = renderToString(
-      <HomeEditor worldId="w" initial={{ blocks: [...defaultHome().blocks, newBlock("text"), newBlock("tiles")] }} hasHome options={[{ kind: "page", id: "p1", title: "Hauptstadt" }]} />,
+      <HomeEditor worldId="w" initial={{ blocks: [...defaultHome().blocks, newBlock("text"), newBlock("tiles"), newBlock("image"), newBlock("links"), newBlock("divider")] }} hasHome options={[{ kind: "page", id: "p1", title: "Hauptstadt" }]} />,
     );
     expect(html).toContain("Titelbild");
     expect(html).toContain("Schnellzugriffe");
-    expect(html).toContain("Hauptstadt");
-    expect(html).toContain("Startseite entfernen");
+    expect(html).toContain("Startseite zurücksetzen");
+    expect(html).toContain("Vorschau");
     expect(html).toContain("Speichern");
+  });
+  it("ein einzelner Kachel-Baustein ist aufgeklappt und bietet Einträge an", () => {
+    const html = renderToString(<HomeEditor worldId="w" initial={{ blocks: [newBlock("tiles")] }} hasHome={false} options={[{ kind: "page", id: "p1", title: "Hauptstadt" }]} />);
+    expect(html).toContain("Hauptstadt");
+    expect(html).toContain("Spalten");
   });
 });

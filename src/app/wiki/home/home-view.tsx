@@ -125,13 +125,16 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
     switch (b.type) {
       case "hero": {
         const title = b.title || world.name;
+        const ratio = { s: "aspect-[16/5]", m: "aspect-[16/7]", l: "aspect-[16/10]" }[b.size];
+        const pad = { s: "p-4 @xl:p-6", m: "p-5 @xl:p-8", l: "p-6 @xl:p-12" }[b.size];
+        const center = b.align === "center" ? "text-center [&_p]:mx-auto" : "";
         return (
-          <header className="relative overflow-hidden rounded-2xl border border-line bg-surface-2">
+          <header className={`relative overflow-hidden rounded-2xl border border-line bg-surface-2 ${center}`}>
             {b.image && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.image} alt="" className="aspect-[16/7] w-full object-cover" />
+              <img src={b.image} alt="" className={`${ratio} w-full object-cover`} />
             )}
-            <div className={b.image ? "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 @xl:p-8" : "p-5 @xl:p-8"}>
+            <div className={b.image ? `absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent ${pad}` : pad}>
               <h1 className={`font-serif text-4xl leading-tight @xl:text-6xl ${b.image ? "text-white" : "text-fg"}`}>{title}</h1>
               {b.subtitle && <p className={`mt-2 max-w-prose ${b.image ? "text-white/85" : "text-fg-soft"}`}>{b.subtitle}</p>}
             </div>
@@ -176,7 +179,7 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
         return (
           <section>
             {b.title && <h2 className={sectionTitle}>{b.title}</h2>}
-            <ul className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">{items}</ul>
+            <ul className={`grid gap-3 @xl:grid-cols-2 ${{ 2: "", 3: "@4xl:grid-cols-3", 4: "@4xl:grid-cols-4" }[b.columns]}`}>{items}</ul>
           </section>
         );
       }
@@ -196,6 +199,39 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
           </section>
         );
       }
+      case "image":
+        if (!b.image) return null;
+        return (
+          <figure className={b.width === "narrow" ? "mx-auto max-w-2xl" : ""}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={b.image} alt={b.caption} loading="lazy" className="w-full rounded-2xl border border-line object-cover" />
+            {b.caption && <figcaption className="mt-2 text-sm text-muted">{b.caption}</figcaption>}
+          </figure>
+        );
+      case "links":
+        if (b.items.length === 0) return null;
+        return (
+          <section>
+            {b.title && <h2 className={sectionTitle}>{b.title}</h2>}
+            <ul className="flex flex-wrap gap-2">
+              {b.items.map((l, i) => (
+                <li key={i}>
+                  {l.url.startsWith("/") ? (
+                    <Link href={l.url} className="inline-flex rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
+                      {l.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      case "divider":
+        return b.style === "line" ? <hr className="border-line" /> : <div aria-hidden className="h-8" />;
       case "search":
         return (
           <form method="get" action="/wiki/suche" role="search" className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 focus-within:border-accent">

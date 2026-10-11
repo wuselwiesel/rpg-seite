@@ -30,6 +30,22 @@ describe("parseWikiHome", () => {
     expect(h?.blocks[0]).toMatchObject({ image: "" });
     expect(h?.blocks[1]).toMatchObject({ html: "<B>X</B>" });
   });
+  it("neue Bausteine: Bild, Knöpfe, Trenner und Optionen", () => {
+    const h = parseWikiHome({
+      blocks: [
+        { type: "hero", align: "center", size: "l" },
+        { type: "image", image: "https://x.test/a.png", caption: "Karte", width: "narrow" },
+        { type: "links", items: [{ label: "A", url: "/wiki/karten" }, { label: "B", url: "javascript:x" }, { label: "", url: "https://x.test" }, { label: "C", url: "//evil.test" }] },
+        { type: "divider", style: "space" },
+        { type: "tiles", columns: 4, items: [] },
+      ],
+    });
+    expect(h?.blocks[0]).toMatchObject({ align: "center", size: "l" });
+    expect(h?.blocks[1]).toMatchObject({ image: "https://x.test/a.png", width: "narrow" });
+    expect(h?.blocks[2]).toMatchObject({ items: [{ label: "A", url: "/wiki/karten" }] });
+    expect(h?.blocks[3]).toMatchObject({ style: "space" });
+    expect(h?.blocks[4]).toMatchObject({ columns: 4 });
+  });
   it("Standardvorbelegung ist gültig", () => {
     expect(parseWikiHome(defaultHome())?.blocks).toHaveLength(4);
   });

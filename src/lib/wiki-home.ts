@@ -2,6 +2,7 @@
 
 export const MAX_BLOCKS = 30;
 export const MAX_TILES = 24;
+export const MAX_LINKS = 12;
 export const LIST_SOURCES = [
   { id: "recent", label: "Zuletzt bearbeitet" },
   { id: "newest", label: "Neu im Wiki" },
@@ -15,13 +16,17 @@ export type TileKind = "page" | "folder" | "map";
 export type Tile = { kind: TileKind; id: string };
 
 type Base = { id: string; hidden?: boolean };
-export type HeroBlock = Base & { type: "hero"; title: string; subtitle: string; image: string };
+export type HeroBlock = Base & { type: "hero"; title: string; subtitle: string; image: string; align: "left" | "center"; size: "s" | "m" | "l" };
 export type TextBlock = Base & { type: "text"; title: string; html: string };
-export type TilesBlock = Base & { type: "tiles"; title: string; items: Tile[] };
+export type TilesBlock = Base & { type: "tiles"; title: string; items: Tile[]; columns: 2 | 3 | 4 };
 export type ListBlock = Base & { type: "list"; title: string; source: ListSource; count: number };
+export type ImageBlock = Base & { type: "image"; image: string; caption: string; width: "full" | "narrow" };
+export type LinkItem = { label: string; url: string };
+export type LinksBlock = Base & { type: "links"; title: string; items: LinkItem[] };
+export type DividerBlock = Base & { type: "divider"; style: "line" | "space" };
 export type SearchBlock = Base & { type: "search" };
 export type ShortcutsBlock = Base & { type: "shortcuts" };
-export type HomeBlock = HeroBlock | TextBlock | TilesBlock | ListBlock | SearchBlock | ShortcutsBlock;
+export type HomeBlock = HeroBlock | TextBlock | TilesBlock | ListBlock | ImageBlock | LinksBlock | DividerBlock | SearchBlock | ShortcutsBlock;
 export type BlockType = HomeBlock["type"];
 export type WikiHome = { blocks: HomeBlock[] };
 
@@ -30,25 +35,37 @@ export const BLOCK_TYPES: { type: BlockType; label: string }[] = [
   { type: "text", label: "Text" },
   { type: "tiles", label: "Kacheln" },
   { type: "list", label: "Liste" },
+  { type: "image", label: "Bild" },
+  { type: "links", label: "Knöpfe" },
+  { type: "divider", label: "Trenner" },
   { type: "search", label: "Suche" },
   { type: "shortcuts", label: "Schnellzugriffe" },
 ];
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, max) : "");
+const httpsUrl = (v: unknown) => (typeof v === "string" && /^https:\/\//.test(v.trim()) ? v.trim().slice(0, 600) : "");
+// Knopf-Ziele: https-Adressen oder Seiten dieser App ("/wiki/…")
+const linkUrl = (v: unknown) => (typeof v === "string" && /^(https:\/\/|\/(?!\/))/.test(v.trim()) ? v.trim().slice(0, 600) : "");
 const newId = () => Math.random().toString(36).slice(2, 10);
 
 export function newBlock(type: BlockType): HomeBlock {
   const id = newId();
   switch (type) {
     case "hero":
-      return { id, type, title: "", subtitle: "", image: "" };
+      return { id, type, title: "", subtitle: "", image: "", align: "left", size: "m" };
     case "text":
       return { id, type, title: "", html: "" };
     case "tiles":
-      return { id, type, title: "", items: [] };
+      return { id, type, title: "", items: [], columns: 3 };
     case "list":
       return { id, type, title: "", source: "recent", count: 6 };
+    case "image":
+      return { id, type, image: "", caption: "", width: "full" };
+    case "links":
+      return { id, type, title: "", items: [{ label: "", url: "" }] };
+    case "divider":
+      return { id, type, style: "line" };
     case "search":
       return { id, type };
     case "shortcuts":
@@ -77,8 +94,15 @@ export function parseWikiHome(raw: unknown, sanitizeHtml: (html: string) => stri
     const base = { id, ...(o.hidden === true ? { hidden: true } : {}) };
     switch (o.type) {
       case "hero": {
-        const image = typeof o.image === "string" && /^https:\/\//.test(o.image) ? o.image.slice(0, 600) : "";
-        blocks.push({ ...base, type: "hero", title: str(o.title, 120), subtitle: str(o.subtitle, 240), image });
+        blocks.push({
+          ...base,
+          type: "hero",
+          title: str(o.title, 120),
+          subtitle: str(o.subtitle, 240),
+          image: httpsUrl(o.image),
+          align: o.align === "center" ? "center" : "left",
+          size: o.size === "s" || o.size === "l" ? o.size : "m",
+        });
         break;
       }
       case "text":
@@ -93,7 +117,7 @@ export function parseWikiHome(raw: unknown, sanitizeHtml: (html: string) => stri
           }
           if (items.length >= MAX_TILES) break;
         }
-        blocks.push({ ...base, type: "tiles", title: str(o.title, 120), items });
+        blocks.push({ ...base, type: "tiles", title: str(o.title, 120), items, columns: o.columns === 2 || o.columns === 4 ? o.columns : 3 });
         break;
       }
       case "list": {
@@ -103,6 +127,24 @@ export function parseWikiHome(raw: unknown, sanitizeHtml: (html: string) => stri
         blocks.push({ ...base, type: "list", title: str(o.title, 120), source, count });
         break;
       }
+      case "image":
+        blocks.push({ ...base, type: "image", image: httpsUrl(o.image), caption: str(o.caption, 200), width: o.width === "narrow" ? "narrow" : "full" });
+        break;
+      case "links": {
+        const items: LinkItem[] = [];
+        for (const it of Array.isArray(o.items) ? o.items : []) {
+          const ir = it && typeof it === "object" ? (it as Record<string, unknown>) : {};
+          const url = linkUrl(ir.url);
+          const label = str(ir.label, 60);
+          if (url && label) items.push({ label, url });
+          if (items.length >= MAX_LINKS) break;
+        }
+        blocks.push({ ...base, type: "links", title: str(o.title, 120), items });
+        break;
+      }
+      case "divider":
+        blocks.push({ ...base, type: "divider", style: o.style === "space" ? "space" : "line" });
+        break;
       case "search":
         blocks.push({ ...base, type: "search" });
         break;
