@@ -28,12 +28,14 @@ export function MapViewer({
   pages,
   otherMaps,
   initialPinId,
+  scenesByPin = {},
 }: {
   map: WikiMap;
   initialPins: WikiMapPin[];
   pages: Option[];
   otherMaps: Option[];
   initialPinId?: string;
+  scenesByPin?: Record<string, { id: string; title: string }[]>;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -391,7 +393,7 @@ export function MapViewer({
             <span aria-hidden className="inline-flex items-center">{selected.icon ? <EmojiText text={selected.icon} /> : <MapPin className="inline h-5 w-5" strokeWidth={2} />}</span>
             {selected.label}
           </h2>
-          {!selected.page_id && !selected.target_map_id && <p className="text-sm text-muted">Dieser Pin führt nirgendwohin.</p>}
+          {!selected.page_id && !selected.target_map_id && !scenesByPin[selected.id] && <p className="text-sm text-muted">Dieser Pin führt nirgendwohin.</p>}
           <div className="flex flex-wrap gap-2">
             {selected.page_id && (
               <Link href={`/wiki/${selected.page_id}`} className="rounded-lg bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
@@ -404,6 +406,17 @@ export function MapViewer({
               </Link>
             )}
           </div>
+          {(scenesByPin[selected.id]?.length ?? 0) > 0 && (
+            <ul className="mt-1 flex flex-col gap-1" aria-label="Szenen an diesem Ort">
+              {scenesByPin[selected.id].map((sc) => (
+                <li key={sc.id}>
+                  <Link href={`/story/${sc.id}`} className="text-sm text-fg-soft transition hover:text-accent">
+                    {sc.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       ) : (
         !editing && pins.length > 0 && (

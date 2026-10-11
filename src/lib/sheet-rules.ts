@@ -207,7 +207,7 @@ export function normalizeSheet(raw: unknown, talentDefs?: TalentDef[]): SheetDat
     label: clip(rec(f).label, 40),
     value: clip(rec(f).value, 200),
     ...(rec(f).secret === true ? { secret: true } : {}),
-    ...(typeof rec(f).relId === "string" && uuid.test(rec(f).relId as string) && rec(f).secret !== true ? { relId: rec(f).relId as string } : {}),
+    ...(typeof rec(f).relId === "string" && uuid.test(rec(f).relId as string) ? { relId: rec(f).relId as string } : {}),
   });
 
   const attrBasis: Record<string, string> = {};
@@ -306,13 +306,20 @@ function mergeList<T extends { secret?: boolean }>(open: T[], secret: Positioned
   return out;
 }
 
+const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Liest die geheimen Daten aus der Datenbank (beliebige Form) in eine gültige Form.
 export function parseSecrets(raw: unknown): SheetSecrets {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const asObj = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
   const pos = (v: unknown) => (Number.isInteger(v) && (v as number) >= 0 && (v as number) < 200 ? (v as number) : 0);
   const items = (v: unknown): Positioned<SheetItem>[] =>
-    (Array.isArray(v) ? v : []).slice(0, MAX_PERSONAL_FIELDS).map((x) => ({ label: clip(asObj(x).label, 40), value: clip(asObj(x).value, 200), pos: pos(asObj(x).pos) }));
+    (Array.isArray(v) ? v : []).slice(0, MAX_PERSONAL_FIELDS).map((x) => ({
+      label: clip(asObj(x).label, 40),
+      value: clip(asObj(x).value, 200),
+      ...(typeof asObj(x).relId === "string" && uuidRe.test(asObj(x).relId as string) ? { relId: asObj(x).relId as string } : {}),
+      pos: pos(asObj(x).pos),
+    }));
   const blocks = (v: unknown): Positioned<NoteBlock>[] =>
     (Array.isArray(v) ? v : []).slice(0, MAX_NOTE_BLOCKS).map((x) => ({ label: clip(asObj(x).label, 60), html: clip(asObj(x).html, MAX_NOTE_HTML), pos: pos(asObj(x).pos) }));
   return { personalFields: items(r.personalFields), family: items(r.family), notesBlocks: blocks(r.notesBlocks) };

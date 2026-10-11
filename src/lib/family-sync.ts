@@ -76,7 +76,7 @@ export async function syncFamilyRows(
     const touched = new Set<string>();
     const out: SheetItem[] = [];
     for (const r of next) {
-      const targetId = r.secret ? null : singleMentionId(r.value, targets, characterId);
+      const targetId = singleMentionId(r.value, targets, characterId);
       if (!targetId) {
         out.push(r);
         continue;
@@ -91,7 +91,17 @@ export async function syncFamilyRows(
           edges.delete(relId);
           relId = undefined;
           edge = undefined;
+        } else if (!!r.secret && !edge.is_secret) {
+          // Zeile wurde geheim: die offene Beziehung fällt weg, an ihre Stelle tritt eine geheime
+          await dropEdge(edge);
+          edges.delete(relId);
+          relId = undefined;
+          edge = undefined;
         } else {
+          if (!r.secret && edge.is_secret) {
+            const { error } = await supabase.from("character_relationships").update({ is_secret: false }).eq("id", edge.id);
+            if (!error) touched.add(edge.id);
+          }
           const label = r.label.trim();
           if (label && label !== canonicalLabel(edge, edge.character_a_id === characterId)) {
             const g = guessRelation(label);
@@ -114,13 +124,16 @@ export async function syncFamilyRows(
         // Gibt es zwischen den beiden schon eine Beziehung, wird sie verknüpft statt eine zweite anzulegen
         const { data: existing } = await supabase
           .from("character_relationships")
-          .select("id")
+          .select("id, is_secret")
           .eq("world_id", worldId)
           .or(`and(character_a_id.eq.${characterId},character_b_id.eq.${targetId}),and(character_a_id.eq.${targetId},character_b_id.eq.${characterId})`)
           .limit(1)
-          .maybeSingle<{ id: string }>();
-        if (existing) {
+          .maybeSingle<{ id: string; is_secret: boolean }>();
+        if (existing && r.secret && !existing.is_secret) {
+          // Es gibt schon eine offene Beziehung: eine geheime Zeile macht sie nicht noch einmal auf
+        } else if (existing) {
           relId = existing.id;
+          if (existing.is_secret && !r.secret) await supabase.from("character_relationships").update({ is_secret: false }).eq("id", existing.id);
           touched.add(existing.id);
         } else {
           const label = r.label.trim() || "Verbunden";
@@ -136,6 +149,7 @@ export async function syncFamilyRows(
               color: g.color,
               category: g.category,
               family_role: g.familyRole,
+              is_secret: !!r.secret,
               created_by: userId,
             })
             .select("id")

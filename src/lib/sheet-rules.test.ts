@@ -210,6 +210,15 @@ describe("Geheimes", () => {
     expect(back.family).toEqual(d.family);
     expect(back.notesBlocks).toEqual(d.notesBlocks);
   });
+  it("geheime Beziehungszeilen behalten ihre Verknüpfung beim Hin und Zurück", () => {
+    const relId = "11111111-2222-4333-8444-555555555555";
+    const d = normalizeSheet({ family: [{ label: "Vater", value: "@Karl", secret: true, relId }, { label: "Mutter", value: "@Eva" }] });
+    expect(d.family[0].relId).toBe(relId);
+    const { open, secrets } = splitSecrets(d);
+    expect(JSON.stringify(open)).not.toContain(relId);
+    const back = mergeSecrets(open, parseSecrets(JSON.parse(JSON.stringify(secrets))));
+    expect(back.family[0]).toEqual({ label: "Vater", value: "@Karl", secret: true, relId });
+  });
   it("mehrere geheime Einträge an verschiedenen Stellen", () => {
     const d = normalizeSheet({ personalFields: [{ label: "a", value: "1", secret: true }, { label: "b", value: "2" }, { label: "c", value: "3", secret: true }, { label: "d", value: "4" }] });
     const { open, secrets } = splitSecrets(d);

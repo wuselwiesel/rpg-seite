@@ -26,6 +26,23 @@ export default async function WikiMapPage({ params, searchParams }: PageProps<"/
       : (await supabase.from("worlds").select("created_by").eq("id", map.world_id).maybeSingle()).data?.created_by;
 
   const [maps, pageRows] = await Promise.all([getWikiMaps(map.world_id), getWikiPageRows(map.world_id)]);
+  // Szenen, deren Ortsangabe dem Pin-Namen oder dem Titel der verknüpften Seite entspricht
+  const { data: located } = await supabase
+    .from("story_posts")
+    .select("id, title, location")
+    .eq("world_id", map.world_id)
+    .not("location", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(500)
+    .returns<{ id: string; title: string; location: string | null }[]>();
+  const norm = (v: string) => v.trim().toLowerCase();
+  const pageTitleById = new Map(pageRows.map((p) => [p.id, p.title]));
+  const scenesByPin: Record<string, { id: string; title: string }[]> = {};
+  for (const pin of pins) {
+    const names = new Set([norm(pin.label), ...(pin.page_id && pageTitleById.has(pin.page_id) ? [norm(pageTitleById.get(pin.page_id) as string)] : [])]);
+    const hits = (located ?? []).filter((sc) => sc.location && names.has(norm(sc.location))).slice(0, 8);
+    if (hits.length > 0) scenesByPin[pin.id] = hits.map((h) => ({ id: h.id, title: h.title }));
+  }
   const canDelete = map.created_by === user.id || worldOwnerId === user.id;
   const pinParam = Array.isArray(sp.pin) ? sp.pin[0] : sp.pin;
 
@@ -45,6 +62,7 @@ export default async function WikiMapPage({ params, searchParams }: PageProps<"/
         initialPins={pins}
         pages={pageRows.map((p) => ({ id: p.id, title: p.title })).sort((a, b) => a.title.localeCompare(b.title, "de"))}
         otherMaps={maps.filter((m) => m.id !== map.id).map((m) => ({ id: m.id, title: m.title }))}
+        scenesByPin={scenesByPin}
         initialPinId={pins.some((p) => p.id === pinParam) ? pinParam : undefined}
       />
     </div>

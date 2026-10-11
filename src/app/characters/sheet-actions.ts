@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizePostHtml } from "@/lib/sanitize";
-import { hasErrors, hasSecrets, normalizeSheet, splitSecrets, stripSecrets, validateSheet } from "@/lib/sheet-rules";
+import { hasErrors, hasSecrets, mergeSecrets, normalizeSheet, parseSecrets, splitSecrets, stripSecrets, validateSheet } from "@/lib/sheet-rules";
 import { getCharacterTalents } from "@/lib/world-talents";
 import { syncFamilyRows } from "@/lib/family-sync";
 import { diffSheets, mergeWithRecent, type SheetChange } from "@/lib/sheet-diff";
@@ -55,14 +55,16 @@ export async function saveCharacterSheet(characterId: string, raw: unknown): Pro
 
   const { data: prevRow } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
   const prev = prevRow ? stripSecrets(normalizeSheet(prevRow.data, talentDefs)) : null;
+  const { data: prevSecretRow } = await supabase.from("character_sheet_secrets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
+  const prevFamily = prevRow ? (prevSecretRow ? mergeSecrets(normalizeSheet(prevRow.data, talentDefs), parseSecrets(prevSecretRow.data)) : normalizeSheet(prevRow.data, talentDefs)).family : [];
+  // Beziehungen im ChaBo und im Beziehungsnetz gleichen sich ab (auch geheime Zeilen: die werden zu geheimen Beziehungen)
+  data.family = await syncFamilyRows(supabase, user.id, characterId, data.family, prevFamily);
   // Geheimes kommt nie in die für alle lesbare Zeile, sondern in eine eigene (nur für die Besitzer:in)
   const split = splitSecrets(data);
   const secrets = split.secrets;
   // Die Talentliste der Welt gehört nicht in den gespeicherten Bogen
   const { talentDefs: _defs, ...open } = split.open;
   void _defs;
-  // Beziehungen im ChaBo und im Beziehungsnetz gleichen sich ab
-  open.family = await syncFamilyRows(supabase, user.id, characterId, open.family, prev?.family ?? []);
 
   const { data: row, error } = await supabase
     .from("character_sheets")
