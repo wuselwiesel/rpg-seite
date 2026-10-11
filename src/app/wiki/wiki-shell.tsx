@@ -4,7 +4,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings, Users } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -59,6 +59,7 @@ function currentFromPath(pathname: string): { folder: string | null; page: strin
 // Wiki-Rahmen: links die Ordner (einklappbar, mit Unterordnern, Seiten und Unterseiten), rechts der Inhalt.
 // Werkzeuge des Wikis: am Laptop als Reiter unter der Kopfzeile, am Handy im aufklappbaren Bereich (ausgeschrieben, nichts wird gekürzt)
 const WIKI_TOOLS = [
+  { href: "/wiki/uebersicht", label: "Übersicht", Icon: LayoutList },
   { href: "/wiki/karten", label: "Karten", Icon: MapIcon },
   { href: "/wiki/graph", label: "Graph", Icon: Network },
   { href: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },

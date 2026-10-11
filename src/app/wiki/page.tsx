@@ -2,12 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWorldAdminFlag } from "@/lib/world-admin";
-import { parseWikiHome, visibleBlocks } from "@/lib/wiki-home";
-import { WikiOverview } from "./wiki-overview";
+import { defaultHome, parseWikiHome, visibleBlocks } from "@/lib/wiki-home";
 import { HomeView } from "./home/home-view";
 import { HomeEditorPage } from "./home/home-editor-page";
 
-// „Wiki“: erst die selbst eingerichtete Startseite der Welt, sonst die automatische Übersicht
+// „Wiki“: öffnet immer zuerst die Startseite der Welt (eigene Seite ohne Ordner); die Übersicht liegt unter /wiki/uebersicht
 export default async function WikiHomePage({ searchParams }: PageProps<"/wiki">) {
   const sp = await searchParams;
   const supabase = await createClient();
@@ -21,6 +20,7 @@ export default async function WikiHomePage({ searchParams }: PageProps<"/wiki">)
   const home = parseWikiHome(world.wiki_home);
   const canEdit = await getWorldAdminFlag(user.id, world);
   if (canEdit && sp.bearbeiten) return <HomeEditorPage worldId={world.id} home={home} />;
-  if (visibleBlocks(home).length > 0) return <HomeView world={world} userId={user.id} home={home!} canEdit={canEdit} />;
-  return <WikiOverview canEditHome={canEdit} hasHome={!!home} />;
+  // Immer zuerst die Startseite; solange keine eingerichtet ist, mit der Standard-Vorbelegung
+  const shown = visibleBlocks(home).length > 0 ? home! : defaultHome();
+  return <HomeView world={world} userId={user.id} home={shown} canEdit={canEdit} />;
 }
