@@ -10,6 +10,7 @@ import { StoryEntryForm } from "./story-entry-form";
 import { DiceRollForm } from "./dice-roll-form";
 import { NextSceneForm } from "./next-scene-form";
 import { WriterSelect } from "@/components/writer-select";
+import { OnlineLine } from "@/components/online-members";
 import { ChaboDrawer } from "@/components/chabo/chabo-drawer";
 import type { Character } from "@/lib/types";
 import type { WikiCalendar } from "@/lib/wiki-calendar";
@@ -25,6 +26,7 @@ export function StoryComposer({
   locations,
   sceneLocation,
   userId,
+  worldMembers,
   startInChat = false,
 }: {
   storyPostId: string;
@@ -40,6 +42,8 @@ export function StoryComposer({
   sceneLocation: string | null;
   // Eigenes Konto (für den Chat dieser Szene) und ob der Reiter „Chat“ gleich offen sein soll (Link aus einer Benachrichtigung)
   userId: string;
+  // Mitglieder der Welt (für „… ist online“ im Schreibbereich)
+  worldMembers: { id: string; name: string; avatarUrl: string | null }[];
   startInChat?: boolean;
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
@@ -293,6 +297,8 @@ export function StoryComposer({
       {mode === "write" && showChapter && (
         <NextSceneForm storyPostId={storyPostId} writerId={writerId} calendar={calendar} locations={locations} location={sceneLocation} onDone={() => setShowChapter(false)} />
       )}
+
+      <OnlineLine members={worldMembers} selfId={userId} className="-mt-1" />
 
       {mode !== "chat" && Object.keys(typing).length > 0 && (
         <div className="-mt-1 flex items-center gap-2 text-xs text-muted" role="status">

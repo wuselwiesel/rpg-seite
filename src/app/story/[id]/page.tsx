@@ -498,6 +498,7 @@ export default async function StoryPostDetailPage({
             locations={locations}
             sceneLocation={storyPost.location}
             userId={user.id}
+            worldMembers={worldMembers}
             startInChat={chatParam === "1"}
           />
         </div>

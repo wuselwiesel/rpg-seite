@@ -67,3 +67,20 @@ export function OnlineMembers({ members, selfId, className = "" }: { members: Me
     </div>
   );
 }
+
+// Zeile für den Schreibbereich: „● Hörnchen ist online“ – dort, wo man gerade schreibt (oben in der Szene ist der Hinweis klein)
+export function OnlineLine({ members, selfId, className = "" }: { members: Member[]; selfId: string; className?: string }) {
+  const { enabled, onlineIds } = useOnline();
+  const online = enabled ? members.filter((m) => m.id !== selfId && onlineIds.has(m.id)) : [];
+  if (online.length === 0) return null;
+  const names = online.map((m) => m.name);
+  const text = names.length <= 3 ? names.join(", ") : `${names.slice(0, 2).join(", ")} und ${names.length - 2} weitere`;
+  return (
+    <p className={`flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 ${className}`} role="status">
+      <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+      <span className="min-w-0 truncate">
+        {text} {names.length === 1 ? "ist" : "sind"} online
+      </span>
+    </p>
+  );
+}
