@@ -1823,6 +1823,11 @@ create policy "story_posts_delete_author" on public.story_posts
     or exists (select 1 from public.worlds w where w.id = world_id and w.created_by = auth.uid())
   );
 
+-- Wiki-Startseite der Welt (Baukasten aus Bausteinen), von Besitzer:in/Admins gepflegt; null = keine eigene Startseite
+alter table public.worlds add column if not exists wiki_home jsonb;
+alter table public.worlds drop constraint if exists worlds_wiki_home_size;
+alter table public.worlds add constraint worlds_wiki_home_size check (wiki_home is null or pg_column_size(wiki_home) <= 120000);
+
 notify pgrst, 'reload schema';
 
 -- Push-Abos: Gerät gehört dem angemeldeten Konto
@@ -1844,6 +1849,11 @@ end;
 $$;
 
 grant execute on function public.claim_push_subscription(text, text, text) to authenticated;
+
+-- Wiki-Startseite der Welt (Baukasten aus Bausteinen), von Besitzer:in/Admins gepflegt; null = keine eigene Startseite
+alter table public.worlds add column if not exists wiki_home jsonb;
+alter table public.worlds drop constraint if exists worlds_wiki_home_size;
+alter table public.worlds add constraint worlds_wiki_home_size check (wiki_home is null or pg_column_size(wiki_home) <= 120000);
 
 notify pgrst, 'reload schema';
 
@@ -1873,6 +1883,11 @@ end;
 $$;
 
 grant execute on function public.set_story_summary(uuid, text, integer) to authenticated;
+
+-- Wiki-Startseite der Welt (Baukasten aus Bausteinen), von Besitzer:in/Admins gepflegt; null = keine eigene Startseite
+alter table public.worlds add column if not exists wiki_home jsonb;
+alter table public.worlds drop constraint if exists worlds_wiki_home_size;
+alter table public.worlds add constraint worlds_wiki_home_size check (wiki_home is null or pg_column_size(wiki_home) <= 120000);
 
 notify pgrst, 'reload schema';
 
@@ -5519,5 +5534,10 @@ grant execute on function public.restore_trash_item(uuid) to authenticated;
 alter table public.worlds add column if not exists welcome_html text;
 alter table public.worlds drop constraint if exists worlds_welcome_len;
 alter table public.worlds add constraint worlds_welcome_len check (welcome_html is null or char_length(welcome_html) <= 30000);
+
+-- Wiki-Startseite der Welt (Baukasten aus Bausteinen), von Besitzer:in/Admins gepflegt; null = keine eigene Startseite
+alter table public.worlds add column if not exists wiki_home jsonb;
+alter table public.worlds drop constraint if exists worlds_wiki_home_size;
+alter table public.worlds add constraint worlds_wiki_home_size check (wiki_home is null or pg_column_size(wiki_home) <= 120000);
 
 notify pgrst, 'reload schema';

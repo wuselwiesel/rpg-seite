@@ -15,6 +15,7 @@ export type World = {
   created_at: string;
   welcome_html?: string | null;
   talent_config?: unknown;
+  wiki_home?: unknown;
 };
 
 export type Friendship = {

@@ -280,6 +280,13 @@ export default function HelpPage() {
           <li>Der Würfel mischt deine Einträge unter die mitgelieferten. Je mehr du einträgst, desto öfter kommen sie vor.</li>
         </ul>
 
+        <h3 className="mt-2 font-medium text-fg">Wiki-Startseite</h3>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
+          <li>Besitzer:in und Admins einer Welt richten im Wiki über <strong>Startseite einrichten</strong> (bzw. <strong>Startseite anpassen</strong>) eine eigene Startseite ein. Sie erscheint, sobald jemand „Wiki“ öffnet.</li>
+          <li>Bausteine sind Titelbild, Text, Kacheln (Artikel, Ordner, Karten), Listen (zuletzt bearbeitet, neu, Favoriten, Entwürfe, Szenen, Tags), Suche und Schnellzugriffe. Du kannst sie verschieben, ausblenden und löschen.</li>
+          <li>Die automatische Übersicht bleibt über <strong>Übersicht</strong> erreichbar. Wird die Startseite entfernt, erscheint sie wieder als Wiki-Einstieg.</li>
+        </ul>
+
         <h3 className="mt-2 font-medium text-fg">NPCs</h3>
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
           <li>Ein <strong>NPC</strong> ist ein Charakter ohne Spieler:in dahinter, zum Beispiel eine Lehrerin oder ein Händler. Du legst ihn wie einen Charakter an und schaltest dabei „NPC“ ein. Unter „Charaktere“ gibt es den Reiter <strong>NPCs</strong>.</li>
