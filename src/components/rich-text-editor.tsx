@@ -101,13 +101,13 @@ function SelectionMenu({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu
       editor={editor}
-      options={{ placement: coarse ? "bottom" : "top", offset: 8 }}
+      options={{ placement: coarse ? "bottom" : "top", offset: 8, shift: { padding: 8 } }}
       shouldShow={({ editor: ed, state }) => ed.isEditable && !state.selection.empty && !ed.isActive("image")}
     >
       <div
         role="toolbar"
         aria-label="Formatierung der Auswahl"
-        className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1 shadow-lg"
+        className="flex max-w-[calc(100vw-1rem)] items-center gap-0.5 overflow-x-auto rounded-lg border border-line bg-surface p-1 shadow-lg"
         onMouseDown={(e) => e.preventDefault()}
       >
         <ToolbarButton label="Fett" active={on.bold} onClick={() => editor.chain().focus().toggleBold().run()}>

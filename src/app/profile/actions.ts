@@ -115,3 +115,25 @@ export async function setPresenceStatus(emoji: string, text: string): Promise<st
   const { error } = await supabase.from("profiles").update({ presence_emoji: cleanEmoji, presence_text: cleanPresenceText(text) }).eq("id", user.id);
   return error ? error.message : null;
 }
+
+// Passwort ändern: angemeldet genügt, das alte Passwort wird nicht abgefragt.
+export async function changePassword(_prevState: string | null, formData: FormData): Promise<string | null> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 6) return "Das Passwort braucht mindestens 6 Zeichen.";
+  if (password !== confirm) return "Die beiden Passwörter sind nicht gleich.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    if (/same.*password|different from the old/i.test(error.message)) return "Das neue Passwort muss sich vom alten unterscheiden.";
+    if (/reauth|recent/i.test(error.message)) return "Bitte melde dich einmal ab und wieder an und versuche es dann erneut.";
+    return error.message;
+  }
+  return "ok";
+}

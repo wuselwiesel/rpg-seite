@@ -775,7 +775,15 @@
   --font-serif: var(--font-serif);
 }
 
+html {
+  /* Kein Doppeltipp-Zoom, Tippen reagiert sofort */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
+  overflow-x: clip;
   background: var(--app);
   color: var(--fg);
   color-scheme: light;

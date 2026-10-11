@@ -132,6 +132,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#fbf5f0",
+  // Fühlt sich wie eine App an: kein Hineinzoomen, und die Seite schrumpft nicht von selbst, wenn etwas breiter als der Bildschirm ist.
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   // Ohne "cover" bleibt env(safe-area-inset-bottom) wirkungslos (0) und die untere Leiste
   // sitzt beim Scrollen nicht bündig am echten Bildschirmrand, sondern wirkt "hochgerutscht".
   viewportFit: "cover",
@@ -153,6 +159,10 @@ try {
   if (palette) document.documentElement.setAttribute('data-palette', palette);
 } catch (e) {}
 if (location.pathname.indexOf('/redaktion') === 0) document.documentElement.setAttribute('data-mode', 'redaktion');
+// iPhone-Safari ignoriert user-scalable=no: Zwei-Finger-Zoom der Seite hier abfangen (Karten und Bildausschnitt haben eigene Gesten).
+document.addEventListener('gesturestart', function (e) {
+  if (!e.target.closest || !e.target.closest('[data-allow-zoom]')) e.preventDefault();
+}, { passive: false });
 `;
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

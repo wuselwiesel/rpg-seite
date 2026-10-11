@@ -205,7 +205,7 @@ export function StoryComposer({
           <button
             type="button"
             onClick={() => setMode("write")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+            className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition sm:px-3 ${
               mode === "write" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
@@ -214,7 +214,7 @@ export function StoryComposer({
           <button
             type="button"
             onClick={() => setMode("roll")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+            className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition sm:px-3 ${
               mode === "roll" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
@@ -223,7 +223,7 @@ export function StoryComposer({
           <button
             type="button"
             onClick={() => setMode("chat")}
-            className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition ${
+            className={`relative rounded-md px-2.5 py-1.5 text-sm font-medium transition sm:px-3 ${
               mode === "chat" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
