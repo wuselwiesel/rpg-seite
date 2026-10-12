@@ -28,7 +28,7 @@ values ('de000000-0000-4000-8000-010000000003', 'de000000-0000-4000-8000-0000000
 on conflict (id) do nothing;
 
 insert into public.characters (id, owner_id, name, avatar_url, bio, world_id, species, gender, status_text, quote, is_npc)
-values ('de000000-0000-4000-8000-010000000004', 'de000000-0000-4000-8000-000000000001', 'Jorin Kesselbach', 'https://vdflmmdmezaersrssdci.supabase.co/storage/v1/object/public/avatars/testdata/schattenmoor-av14.jpg', 'Erfinder. Seine Maschinen sind laut, seine Absichten gut. Das Nebelhorn auf dem Dach der Werkstatt ist seine Erfindung.', 'de000000-0000-4000-8000-000000000002', 'mensch', 'maennlich', 'In der Werkstatt', 'Es ist nicht kaputt. Es ist nur noch nicht fertig.', false)
+values ('de000000-0000-4000-8000-010000000004', 'de000000-0000-4000-8000-000000000001', 'Jorin Kesselbach', '/demo/vampir.jpg', 'Erfinder. Seine Maschinen sind laut, seine Absichten gut. Das Nebelhorn auf dem Dach der Werkstatt ist seine Erfindung.', 'de000000-0000-4000-8000-000000000002', 'mensch', 'maennlich', 'In der Werkstatt', 'Es ist nicht kaputt. Es ist nur noch nicht fertig.', false)
 on conflict (id) do nothing;
 
 insert into public.characters (id, owner_id, name, avatar_url, bio, world_id, species, gender, status_text, quote, is_npc)
@@ -56,11 +56,11 @@ values ('de000000-0000-4000-8000-020000000003', 'de000000-0000-4000-8000-0100000
 on conflict (id) do nothing;
 
 insert into public.posts (id, character_id, title, content, tags, media_url, media_type, pinned, bonus_likes)
-values ('de000000-0000-4000-8000-020000000004', 'de000000-0000-4000-8000-010000000004', '', '<p>Das Nebelhorn hat gestern zum ersten Mal einen Ton getroffen. Es war ein A. Die Möwen sind beleidigt.</p>', ARRAY['erfindungen']::text[], 'https://vdflmmdmezaersrssdci.supabase.co/storage/v1/object/public/post-media/testdata/schattenmoor-full4.jpg', 'image', false, 11)
+values ('de000000-0000-4000-8000-020000000004', 'de000000-0000-4000-8000-010000000004', '', '<p>Das Nebelhorn hat gestern zum ersten Mal einen Ton getroffen. Es war ein A. Die Möwen sind beleidigt.</p>', ARRAY['erfindungen']::text[], '/demo/schattenwesen.jpg', 'image', false, 11)
 on conflict (id) do nothing;
 
 insert into public.posts (id, character_id, title, content, tags, media_url, media_type, pinned, bonus_likes)
-values ('de000000-0000-4000-8000-020000000005', 'de000000-0000-4000-8000-010000000005', '', '<p>Ein Brief ohne Absender, adressiert an „die, die zuhört“. Ich habe ihn bei Rosalind abgegeben.</p>', ARRAY['post']::text[], 'https://vdflmmdmezaersrssdci.supabase.co/storage/v1/object/public/post-media/testdata/schattenmoor-full5.jpg', 'image', false, 5)
+values ('de000000-0000-4000-8000-020000000005', 'de000000-0000-4000-8000-010000000005', '', '<p>Ein Brief ohne Absender, adressiert an „die, die zuhört“. Ich habe ihn bei Rosalind abgegeben.</p>', ARRAY['post']::text[], '/demo/schwarze-rose.jpg', 'image', false, 5)
 on conflict (id) do nothing;
 
 insert into public.posts (id, character_id, title, content, tags, media_url, media_type, pinned, bonus_likes)
@@ -221,7 +221,7 @@ values ('de000000-0000-4000-8000-070000000007', 'de000000-0000-4000-8000-0000000
 on conflict (id) do nothing;
 
 insert into public.wiki_pages (id, world_id, category, title, content, created_by, aliases, cover_image_url, folder_id, lead, fields, page_type, tags)
-values ('de000000-0000-4000-8000-070000000008', 'de000000-0000-4000-8000-000000000002', 'sonstiges', 'Das Sommerfest', '<h2>Was geschah?</h2><p>Girlanden, drei Kuchen, eine Konfettikanone und ein Logbuch, in dem nichts stand. Nachzulesen in der Szene „Das Sommerfest am Pier“.</p>', 'de000000-0000-4000-8000-000000000001', '{}'::text[], 'https://vdflmmdmezaersrssdci.supabase.co/storage/v1/object/public/post-media/testdata/schattenmoor-banner9.jpg', 'de000000-0000-4000-8000-060000000003', 'Mittsommer am großen Pier.', '[{"icon": "", "title": "Ort", "text": "Der große Pier"}, {"icon": "", "title": "Beteiligte", "text": "Alle"}]'::jsonb, 'ereignis', ARRAY['fest']::text[])
+values ('de000000-0000-4000-8000-070000000008', 'de000000-0000-4000-8000-000000000002', 'sonstiges', 'Das Sommerfest', '<h2>Was geschah?</h2><p>Girlanden, drei Kuchen, eine Konfettikanone und ein Logbuch, in dem nichts stand. Nachzulesen in der Szene „Das Sommerfest am Pier“.</p>', 'de000000-0000-4000-8000-000000000001', '{}'::text[], '/demo/hexenkreis.jpg', 'de000000-0000-4000-8000-060000000003', 'Mittsommer am großen Pier.', '[{"icon": "", "title": "Ort", "text": "Der große Pier"}, {"icon": "", "title": "Beteiligte", "text": "Alle"}]'::jsonb, 'ereignis', ARRAY['fest']::text[])
 on conflict (id) do nothing;
 
 insert into public.wiki_pages (id, world_id, category, title, content, created_by, aliases, cover_image_url, folder_id, lead, fields, page_type, tags)
@@ -231,6 +231,14 @@ on conflict (id) do nothing;
 insert into public.wiki_pages (id, world_id, category, title, content, created_by, aliases, cover_image_url, folder_id, lead, fields, page_type, tags)
 values ('de000000-0000-4000-8000-07000000000a', 'de000000-0000-4000-8000-000000000002', 'sonstiges', 'Der Hirsch der Nordmole', '<h2>Die Erzählung</h2><p>Wer früh morgens am Ende der [[Die Nordmole|Nordmole]] steht, sieht manchmal einen Hirsch im Dunst. [[Ilvy Möwenstein|Ilvy]] hat ihn dreimal gezeichnet und jedes Mal an einer anderen Stelle eingetragen.</p>', 'de000000-0000-4000-8000-000000000001', '{}'::text[], '/demo/hirsch.jpg', 'de000000-0000-4000-8000-060000000003', 'Ein Schatten mit Geweih, den nur der Nebel kennt.', '[{"icon": "", "title": "Herkunft", "text": "Unbekannt"}, {"icon": "", "title": "Wahrheitsgehalt", "text": "Ungeklärt"}]'::jsonb, 'mythos', ARRAY['mythos']::text[])
 on conflict (id) do nothing;
+
+insert into public.wiki_pages (id, world_id, category, title, content, created_by, aliases, cover_image_url, folder_id, lead, fields, page_type, tags)
+values ('de000000-0000-4000-8000-07000000000b', 'de000000-0000-4000-8000-000000000002', 'sonstiges', 'Der Spiegel im Lampenhaus', '<h2>Beschreibung</h2><p>In einer Kammer hinter dem Lampenhaus der [[Die Nordmole|Nordmole]] hängt ein ovaler Spiegel, angelaufen und rund wie ein Kuchenteller. Mit Kreide steht auf dem Rahmen: „Für die vierzehnte.“</p><h2>Gerüchte</h2><p>Wer hineinsieht, erkennt sich selbst – nur eben ohne Gesicht. [[Jorin Kesselbach]] hat mit einer Blechdose daran gehorcht und keinen Ausschlag gefunden. Mehr in der Szene „Die Laterne, die zweimal leuchtet“.</p>', 'de000000-0000-4000-8000-000000000001', '{}'::text[], '/demo/spiegel.jpg', 'de000000-0000-4000-8000-060000000003', 'Rund, angelaufen und nicht ganz ehrlich.', '[{"icon": "", "title": "Art", "text": "Gegenstand"}, {"icon": "", "title": "Fundort", "text": "Kammer hinter dem Lampenhaus"}]'::jsonb, 'gegenstand', ARRAY['gegenstand']::text[])
+on conflict (id) do nothing;
+
+update public.story_posts set ambience_image_url = '/demo/hexenkreis.jpg' where id = 'de000000-0000-4000-8000-040000000001';
+
+update public.story_posts set ambience_image_url = '/demo/spiegel.jpg' where id = 'de000000-0000-4000-8000-040000000002';
 
 insert into public.character_relationships (id, world_id, character_a_id, character_b_id, type, label, created_by, category, color)
 values ('de000000-0000-4000-8000-090000000001', 'de000000-0000-4000-8000-000000000002', 'de000000-0000-4000-8000-010000000001', 'de000000-0000-4000-8000-010000000002', 'Patenschaft', 'Hat ihm das Leiterklettern verboten', 'de000000-0000-4000-8000-000000000001', 'freundschaft', '#3a8f5c') on conflict (id) do nothing;
