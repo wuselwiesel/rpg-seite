@@ -43,7 +43,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Welten entdecken und üben",
-        text: "Über die Weltauswahl kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt „Windlichthafen“ ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen, nachts wird alles aufgeräumt.",
+        text: "Über die Weltauswahl kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt in Schattenmoor ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen, nachts wird alles aufgeräumt.",
         route: "/",
         match: { attr: "world" },
       },

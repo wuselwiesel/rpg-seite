@@ -399,7 +399,7 @@ export default function HelpPage() {
       <Section id="welten" title="15. Welten entdecken, Übungswelt und Rechte">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Übungswelt:</strong> Der Windlichthafen ist eine Welt zum Ausprobieren. Du kannst dort einen Charakter anlegen, in Szenen schreiben, würfeln und Wiki-Seiten bauen. Alles, was Übende anlegen, wird nachts aufgeräumt. Die Hafenbewohner, Beispielszenen und Wiki-Seiten bleiben.
+            <strong>Übungswelt:</strong> Schattenmoor ist als Übungswelt zum Ausprobieren da. Du kannst dort einen Charakter anlegen, in Szenen schreiben, würfeln und Wiki-Seiten bauen. Alles, was Übende anlegen, wird nachts aufgeräumt. Die Hafenbewohner, Beispielszenen und Wiki-Seiten bleiben.
           </li>
           <li>
             <strong>Welten entdecken:</strong> Unter „Welten“ → „Welten entdecken“ siehst du die öffentlichen Welten mit Mitgliederzahl und letzter Aktivität. Steht dort „Erkunden“, kannst du Willkommenstext, Wiki, Figuren und manchmal auch Szenen ansehen, bevor du beitrittst. Was sichtbar ist, bestimmen die Admins der Welt.
