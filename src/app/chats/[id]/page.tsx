@@ -10,6 +10,9 @@ type ChatWithParticipants = Chat & {
   chat_participants: { muted: boolean; characters: Character }[];
 };
 
+// Nur die neuesten Nachrichten laden; frühere lädt der Chat auf Wunsch nach.
+const MESSAGE_WINDOW = 100;
+
 export default async function ChatDetailPage({ params, searchParams }: PageProps<"/chats/[id]">) {
   const { id } = await params;
   const { as: asCharacterId } = await searchParams;
@@ -59,7 +62,8 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
         "*, characters(*), reactions(emoji, character_id), shared_post:shared_post_id(id, content, media_url, media_type, media_urls, characters!posts_character_id_fkey(name, username, avatar_url)), story:story_id(id, image_url, video_url, bg, text_content, expires_at)",
       )
       .eq("chat_id", id)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(MESSAGE_WINDOW + 1)
       .returns<Message[]>(),
     supabase.from("characters").select("id").eq("owner_id", user.id),
     supabase.from("chat_reads").select("user_id, last_read_at").eq("chat_id", id).neq("user_id", user.id),
@@ -72,6 +76,8 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       .maybeSingle<ChatTheme>(),
   ]);
   const myCharacterIds = (myCharacters ?? []).map((c) => c.id);
+  const hasOlder = (messages?.length ?? 0) > MESSAGE_WINDOW;
+  const windowMessages = (messages ?? []).slice(0, MESSAGE_WINDOW).reverse();
 
   const participants = chat.chat_participants.map((p) => p.characters);
   const title = chat.is_group
@@ -98,7 +104,8 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       canDelete={!chat.is_group || chat.created_by === user.id}
       participants={participants}
       availableCharacters={availableCharacters}
-      initialMessages={messages ?? []}
+      initialMessages={windowMessages}
+      olderBefore={hasOlder ? (windowMessages[0]?.created_at ?? null) : null}
       activeCharacter={activeCharacter}
       myCharacterIds={myCharacterIds}
       initialReads={reads ?? []}

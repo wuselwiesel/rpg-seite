@@ -21,6 +21,8 @@ export type AccountMessage = {
   pending?: boolean;
 };
 
+const OLDER_PAGE = 100;
+
 export type AccountReaction = { message_id: string; user_id: string; emoji: string };
 
 // Live-Nachrichten eines Redaktions-Chats (Realtime + optimistisches Senden); wird vom Chatfenster und von der Chat-Blase genutzt.
@@ -32,11 +34,15 @@ export function useAccountChat(
   initialReads: Record<string, string>,
   onIncoming?: (message: AccountMessage) => void,
   initialReactions: AccountReaction[] = [],
+  // Zeitpunkt der ältesten schon geladenen Nachricht, wenn es davor noch frühere gibt (sonst null)
+  olderBefore: string | null = null,
 ) {
   const [messages, setMessages] = useState(initialMessages);
   const [reads, setReads] = useState(initialReads);
   const [reactions, setReactions] = useState(initialReactions);
   const [error, setError] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<string | null>(olderBefore);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const onIncomingRef = useRef(onIncoming);
   useEffect(() => {
     onIncomingRef.current = onIncoming;
@@ -116,6 +122,35 @@ export function useAccountChat(
     };
   }, [chatId, userId, markRead]);
 
+  // Frühere Nachrichten nachladen; liefert, ob etwas dazukam
+  async function loadOlder(): Promise<boolean> {
+    if (!cursor || loadingOlder) return false;
+    setLoadingOlder(true);
+    const { data, error: err } = await createClient()
+      .from("account_messages")
+      .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, created_at, updated_at")
+      .eq("chat_id", chatId)
+      .lt("created_at", cursor)
+      .order("created_at", { ascending: false })
+      .limit(OLDER_PAGE + 1)
+      .returns<AccountMessage[]>();
+    setLoadingOlder(false);
+    if (err) {
+      setError(err.message);
+      return false;
+    }
+    const rows = data ?? [];
+    const page = rows.slice(0, OLDER_PAGE);
+    setCursor(rows.length > OLDER_PAGE ? page[page.length - 1].created_at : null);
+    if (page.length === 0) return false;
+    setMessages((prev) => {
+      const have = new Set(prev.map((m) => m.id));
+      const merged = [...page.filter((m) => !have.has(m.id)), ...prev];
+      return merged.sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    });
+    return true;
+  }
+
   // Mit `image` wird das Bild zuerst hochgeladen; bis dahin zeigt die Nachricht die lokale Vorschau.
   async function send(content: string, image?: { file: File; previewUrl: string } | null, replyToId?: string | null, quoteDraft?: QuoteDraft | null): Promise<boolean> {
     const text = content.trim();
@@ -188,5 +223,5 @@ export function useAccountChat(
     }
   }
 
-  return { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction, markRead };
+  return { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction, markRead, hasOlder: cursor !== null, loadingOlder, loadOlder };
 }

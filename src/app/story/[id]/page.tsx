@@ -26,6 +26,7 @@ import { ClipSelectionProvider } from "./clip-selection";
 import { ScrollToLast } from "./scroll-to-last";
 import { ScrollToEntry } from "./scroll-to-entry";
 import { JumpToLast } from "./jump-to-last";
+import { SceneSearch } from "./scene-search";
 import { ChapterJump } from "./chapter-jump";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
@@ -36,6 +37,8 @@ import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
 import { SceneMarkFlag } from "./scene-mark-flag";
 import { getWorldMembers } from "@/lib/world-members";
+
+const ENTRY_WINDOW = 80;
 
 export default async function StoryPostDetailPage({
   params,
@@ -76,14 +79,41 @@ export default async function StoryPostDetailPage({
     }
   }
 
-  const { data: entries } = await supabase
-    .from("story_entries")
-    .select(
-      "*, characters!story_entries_character_id_fkey(*), roll_target_character:roll_target_character_id(name)",
-    )
-    .eq("story_post_id", id)
-    .order("created_at", { ascending: true })
-    .returns<StoryEntry[]>();
+  // Lange Szenen: zuerst nur die neuesten Beiträge (plus alle Kapitel); frühere lädt die Liste auf Wunsch nach.
+  const ENTRIES_SELECT =
+    "*, characters!story_entries_character_id_fkey(*), roll_target_character:roll_target_character_id(name)";
+  const NOT_CHAPTER = "kind.is.null,kind.neq.chapter";
+  const [{ data: recentRows }, { data: chapterRows }, { count: totalCount }, { count: writingTotal }, { data: writerRows }] =
+    await Promise.all([
+      supabase
+        .from("story_entries")
+        .select(ENTRIES_SELECT)
+        .eq("story_post_id", id)
+        .or(NOT_CHAPTER)
+        .order("created_at", { ascending: false })
+        .limit(ENTRY_WINDOW)
+        .returns<StoryEntry[]>(),
+      supabase
+        .from("story_entries")
+        .select(ENTRIES_SELECT)
+        .eq("story_post_id", id)
+        .eq("kind", "chapter")
+        .order("created_at", { ascending: true })
+        .returns<StoryEntry[]>(),
+      supabase.from("story_entries").select("id", { count: "exact", head: true }).eq("story_post_id", id).or(NOT_CHAPTER),
+      supabase
+        .from("story_entries")
+        .select("id", { count: "exact", head: true })
+        .eq("story_post_id", id)
+        .or(NOT_CHAPTER)
+        .is("roll_label", null),
+      supabase.from("story_entries").select("character_id").eq("story_post_id", id).limit(2000),
+    ]);
+  const recent = (recentRows ?? []).slice().reverse();
+  const entries = [...recent, ...(chapterRows ?? [])].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+  // Beiträge, die noch nicht geladen sind (ohne Kapitel), und der Zeitpunkt des ältesten geladenen
+  const olderCount = Math.max(0, (totalCount ?? recent.length) - recent.length);
+  const olderBefore = olderCount > 0 && recent.length > 0 ? recent[0].created_at : null;
 
   const mentionableCharacters = await getMentionableCharacters(user.id, storyPost.world_id);
   // In Szenen schreibt man als eigener Charakter oder als eigener NPC (die Auswahl trennt beides)
@@ -165,7 +195,7 @@ export default async function StoryPostDetailPage({
   const writing = continuations.filter((e) => !e.roll_label);
   const lastWriter = (entries ?? []).length ? entries![entries!.length - 1].characters : storyPost.characters;
   const participantIds = Array.from(
-    new Set([storyPost.character_id, ...(entries ?? []).map((e) => e.character_id)]),
+    new Set([storyPost.character_id, ...(writerRows ?? []).map((e) => e.character_id as string), ...(entries ?? []).map((e) => e.character_id)]),
   );
   const turnCharacter = storyPost.turn_character_id
     ? mentionableCharacters.find((c) => c.id === storyPost.turn_character_id) ?? null
@@ -370,7 +400,7 @@ export default async function StoryPostDetailPage({
         items={recapItems}
         aiSummary={storyPost.ai_summary ?? null}
         aiSummaryCount={storyPost.ai_summary_count ?? null}
-        entryCount={writing.length}
+        entryCount={writingTotal ?? writing.length}
         aiProvider={
           storyPost.is_private ? null : process.env.GROQ_API_KEY ? "Groq" : process.env.GEMINI_API_KEY ? "Google Gemini" : null
         }
@@ -401,9 +431,12 @@ export default async function StoryPostDetailPage({
       <ScrollToEntry />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-serif text-xl text-fg">
-          Fortsetzungen {continuations.length ? `(${continuations.length})` : ""}
+          Fortsetzungen {(totalCount ?? continuations.length) ? `(${totalCount ?? continuations.length})` : ""}
         </h2>
-        {(entries?.length ?? 0) > 1 && <JumpToLast variant="inline" />}
+        <div className="flex items-center gap-1">
+          {(totalCount ?? 0) >= 6 && <SceneSearch storyPostId={storyPost.id} />}
+          {(entries?.length ?? 0) > 1 && <JumpToLast variant="inline" />}
+        </div>
       </div>
       {/* Schwebende Sprungknöpfe in einer Reihe: Kapitel (nur Symbol) links von „Zur letzten Nachricht“ */}
       <div className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 flex items-center gap-2 lg:bottom-6">
@@ -417,6 +450,7 @@ export default async function StoryPostDetailPage({
           return (entries ?? []).map((entry) => ({
             id: entry.id,
             kind: entry.kind ?? "entry",
+            createdAt: entry.created_at,
             authorId: entry.character_id,
             mentionedIds: entry.kind === "chapter" ? [] : parseMentionedCharacterIdsFromHtml(entry.content),
             node: (
@@ -440,6 +474,8 @@ export default async function StoryPostDetailPage({
         })()}
         characters={filterCharacters}
         storyPostId={storyPost.id}
+        olderCount={olderCount}
+        olderBefore={olderBefore}
         myCharacterIds={Array.from(myCharacterIds)}
         mentionCharacters={mentionableCharacters}
         ownCharacters={ownCharacters}

@@ -24,6 +24,8 @@ import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
 import type { Character, Message } from "@/lib/types";
 
+const OLDER_PAGE = 100;
+
 // „n online“ bei einer Gruppe (nichts, wenn niemand online ist)
 function GroupOnline({ online }: { online: number }) {
   if (online === 0) return null;
@@ -45,6 +47,7 @@ export function ChatRoom({
   participants,
   availableCharacters,
   initialMessages,
+  olderBefore = null,
   activeCharacter,
   myCharacterIds,
   initialReads,
@@ -60,6 +63,8 @@ export function ChatRoom({
   participants: Character[];
   availableCharacters: Character[];
   initialMessages: Message[];
+  // Zeitpunkt der ältesten geladenen Nachricht, wenn es davor noch frühere gibt
+  olderBefore?: string | null;
   activeCharacter: Character;
   myCharacterIds: string[];
   // Lesezeitpunkte der anderen Teilnehmer:innen (für "Gelesen")
@@ -70,6 +75,10 @@ export function ChatRoom({
   // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
   const myCharacterIdSet = new Set([activeCharacter.id]);
   const [messages, setMessages] = useState(initialMessages);
+  const [olderCursor, setOlderCursor] = useState<string | null>(olderBefore);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const holdScroll = useRef(false);
   const [draft, setDraft] = useState("");
   const enterSends = useEnterSends();
   const [sending, setSending] = useState(false);
@@ -261,8 +270,44 @@ export function ChatRoom({
   }
 
   useEffect(() => {
+    // Beim Nachladen früherer Nachrichten nicht ans Ende springen
+    if (holdScroll.current) {
+      holdScroll.current = false;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  async function showOlder() {
+    if (!olderCursor || loadingOlder) return;
+    const el = listRef.current;
+    const before = el?.scrollHeight ?? 0;
+    const top = el?.scrollTop ?? 0;
+    setLoadingOlder(true);
+    const { data } = await createClient()
+      .from("messages")
+      .select(
+        "*, characters(*), reactions(emoji, character_id), shared_post:shared_post_id(id, content, media_url, media_type, media_urls, characters!posts_character_id_fkey(name, username, avatar_url)), story:story_id(id, image_url, video_url, bg, text_content, expires_at)",
+      )
+      .eq("chat_id", chatId)
+      .lt("created_at", olderCursor)
+      .order("created_at", { ascending: false })
+      .limit(OLDER_PAGE + 1)
+      .returns<Message[]>();
+    setLoadingOlder(false);
+    const rows = data ?? [];
+    const page = rows.slice(0, OLDER_PAGE);
+    setOlderCursor(rows.length > OLDER_PAGE ? page[page.length - 1].created_at : null);
+    if (page.length === 0) return;
+    holdScroll.current = true;
+    setMessages((prev) => {
+      const have = new Set(prev.map((m) => m.id));
+      return [...page.reverse().filter((m) => !have.has(m.id)), ...prev];
+    });
+    requestAnimationFrame(() => {
+      if (el) el.scrollTop = top + (el.scrollHeight - before);
+    });
+  }
 
   const wasAddPending = useRef(false);
   useEffect(() => {
@@ -599,7 +644,19 @@ export function ChatRoom({
         </form>
       )}
 
-      <div className="flex-1 overflow-y-auto py-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto py-4">
+        {olderCursor && (
+          <div className="mb-3 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void showOlder()}
+              disabled={loadingOlder}
+              className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-fg disabled:opacity-60"
+            >
+              {loadingOlder ? "Lade …" : "Frühere Nachrichten laden"}
+            </button>
+          </div>
+        )}
         <div className="flex flex-col gap-3">
           {messages.map((message, index) => {
             const isOwn = message.character_id === activeCharacter.id;

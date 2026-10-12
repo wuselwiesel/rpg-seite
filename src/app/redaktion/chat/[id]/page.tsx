@@ -6,6 +6,9 @@ import { getAcceptedFriends } from "@/lib/friends";
 import { AccountChatRoom, type AccountMessage } from "./account-chat-room";
 import type { AccountReaction } from "@/lib/use-account-chat";
 
+// Nur die neuesten Nachrichten laden; frühere lädt der Chat auf Wunsch nach.
+const MESSAGE_WINDOW = 100;
+
 export default async function AccountChatPage({ params }: PageProps<"/redaktion/chat/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
@@ -24,7 +27,8 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       .from("account_messages")
       .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, created_at, updated_at")
       .eq("chat_id", id)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(MESSAGE_WINDOW + 1)
       .returns<AccountMessage[]>(),
     supabase
       .from("chat_themes")
@@ -56,6 +60,20 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
   if (!me) notFound();
   // Der Chat einer Szene gehört in die Szene
   if (chat?.story_post_id) redirect(`/story/${chat.story_post_id}?chat=1`);
+  const hasOlder = (messages?.length ?? 0) > MESSAGE_WINDOW;
+  const windowRows = (messages ?? []).slice(0, MESSAGE_WINDOW).reverse();
+  // Angeheftete Nachrichten gehören immer dazu, auch wenn sie älter sind
+  const { data: pinnedRows } = hasOlder
+    ? await supabase
+        .from("account_messages")
+        .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, created_at, updated_at")
+        .eq("chat_id", id)
+        .not("pinned_at", "is", null)
+        .order("created_at", { ascending: true })
+        .returns<AccountMessage[]>()
+    : { data: [] as AccountMessage[] };
+  const windowIds = new Set(windowRows.map((m) => m.id));
+  const initialMessages = [...(pinnedRows ?? []).filter((m) => !windowIds.has(m.id)), ...windowRows];
   const kind = chat?.kind ?? "direct";
   const partner = kind === "direct" ? participants?.find((p) => p.user_id !== user.id) : undefined;
   const members = (participants ?? []).map((p) => ({
@@ -95,7 +113,8 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       partnerProfileId={partner?.user_id ?? null}
       initialReads={Object.fromEntries((participants ?? []).filter((p) => p.user_id !== user.id).map((p) => [p.user_id, p.last_read_at]))}
       initialReactions={(reactionRows ?? []).map((r) => ({ message_id: r.message_id, user_id: r.user_id, emoji: r.emoji }))}
-      initialMessages={messages ?? []}
+      initialMessages={initialMessages}
+      olderBefore={hasOlder ? (windowRows[0]?.created_at ?? null) : null}
       initialMuted={me.muted}
       initialTheme={themeRow ?? EMPTY_CHAT_THEME}
     />

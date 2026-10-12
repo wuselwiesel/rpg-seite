@@ -6,12 +6,15 @@ import { AtSign, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import type { Character, StoryEntry } from "@/lib/types";
+import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
 import { EarlierEntries } from "./earlier-entries";
 import { StoryEntryItem } from "./story-entry-item";
+import { loadEarlierEntries, type LoadedEntry } from "../entries-actions";
 
 export type EntryListItem = {
   id: string;
   kind: string;
+  createdAt: string;
   authorId: string;
   mentionedIds: string[];
   node: React.ReactNode;
@@ -35,8 +38,13 @@ export function EntryList({
   myCharacterIds,
   mentionCharacters,
   ownCharacters = [],
+  olderCount = 0,
+  olderBefore = null,
 }: {
   items: EntryListItem[];
+  // Noch nicht geladene frühere Beiträge und der Zeitpunkt des ältesten geladenen (Kapitel zählen nicht mit)
+  olderCount?: number;
+  olderBefore?: string | null;
   characters: FilterCharacter[];
   storyPostId: string;
   // Für neu eintreffende Beiträge (Realtime): wer darf sie bearbeiten/löschen, und wer sind
@@ -55,6 +63,36 @@ export function EntryList({
   // Gelöschte Beiträge (auch die von anderen) verschwinden sofort bei allen, die die Szene offen haben.
   const router = useRouter();
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  // Nachgeladene frühere Beiträge
+  const [older, setOlder] = useState<LoadedEntry[]>([]);
+  const [remaining, setRemaining] = useState(olderCount);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const cursor = useRef<string | null>(olderBefore);
+  const tried = useRef<Set<string>>(new Set());
+  const known = useRef<Set<string>>(new Set(items.map((i) => i.id)));
+
+  async function loadOlder(until?: string): Promise<boolean> {
+    if (!cursor.current || loadingOlder) return false;
+    setLoadingOlder(true);
+    setLoadError(null);
+    const res = await loadEarlierEntries(storyPostId, cursor.current, until);
+    setLoadingOlder(false);
+    if ("error" in res) {
+      setLoadError(res.error);
+      return false;
+    }
+    if (res.items.length > 0) {
+      for (const it of res.items) {
+        known.current.add(it.entry.id);
+        seenIds.current.add(it.entry.id);
+      }
+      cursor.current = res.items[0].entry.created_at;
+      setOlder((prev) => [...res.items, ...prev]);
+    }
+    setRemaining(res.remaining);
+    return res.items.length > 0;
+  }
 
   // Wenn der eigene Beitrag (Fortsetzung/Wurf/Kapitel) durch revalidatePath() serverseitig neu
   // in `items` auftaucht, muss das hier nachgezogen werden - sonst hält der Realtime-Listener
@@ -104,6 +142,31 @@ export function EntryList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storyPostId]);
 
+  // Sprung zu einem Beitrag, der noch nicht geladen ist (Link, Suchtreffer, Zitat): erst nachladen, dann erneut anspringen
+  useEffect(() => {
+    function missing(ids: string[]) {
+      return ids.find((id) => !known.current.has(id) && !tried.current.has(id));
+    }
+    async function handle(ids: string[]) {
+      const target = missing(ids);
+      if (!target || !cursor.current) return;
+      tried.current.add(target);
+      if (await loadOlder(target)) window.setTimeout(() => window.dispatchEvent(new CustomEvent<string[]>(HIGHLIGHT_EVENT, { detail: ids })), 80);
+    }
+    const onHighlight = (e: Event) => {
+      const ids = (e as CustomEvent<string[]>).detail;
+      if (ids?.length) void handle(ids);
+    };
+    window.addEventListener(HIGHLIGHT_EVENT, onHighlight);
+    // Link mit #beitrag-… beim Öffnen
+    if (location.hash.startsWith("#beitrag-")) {
+      const extra = (new URLSearchParams(location.search).get("hervor") ?? "").split(",").filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+      void handle(extra.length ? extra : [location.hash.slice("#beitrag-".length)]);
+    }
+    return () => window.removeEventListener(HIGHLIGHT_EVENT, onHighlight);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!moreOpen) return;
     function onDown(e: PointerEvent) {
@@ -127,9 +190,27 @@ export function EntryList({
     return m === "mentions" ? mentioned : m === "author" ? written : mentioned || written;
   }
 
+  const olderListItems: EntryListItem[] = older.map(({ entry, displayHtml }) => ({
+    id: entry.id,
+    kind: entry.kind ?? "entry",
+    createdAt: entry.created_at,
+    authorId: entry.character_id,
+    mentionedIds: parseMentionedCharacterIdsFromHtml(entry.content),
+    node: (
+      <StoryEntryItem
+        entry={entry}
+        storyPostId={storyPostId}
+        canManage={myCharacterIds.includes(entry.character_id)}
+        mentionCharacters={mentionCharacters}
+        displayHtml={displayHtml ?? undefined}
+        ownCharacters={ownCharacters}
+      />
+    ),
+  }));
   const liveListItems: EntryListItem[] = liveEntries.map((entry) => ({
     id: entry.id,
     kind: entry.kind ?? "entry",
+    createdAt: entry.created_at,
     authorId: entry.character_id,
     mentionedIds: entry.kind === "chapter" ? [] : parseMentionedCharacterIdsFromHtml(entry.content),
     node: (
@@ -142,7 +223,12 @@ export function EntryList({
       />
     ),
   }));
-  const mergedItems = liveEntries.length > 0 ? [...items, ...liveListItems] : items;
+  // Nachgeladene frühere Beiträge werden nach Zeit zwischen die schon sichtbaren (und die Kapitel) einsortiert
+  const baseItems =
+    olderListItems.length > 0
+      ? [...items, ...olderListItems].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+      : items;
+  const mergedItems = liveEntries.length > 0 ? [...baseItems, ...liveListItems] : baseItems;
   const allItems = deletedIds.size > 0 ? mergedItems.filter((i) => !deletedIds.has(i.id)) : mergedItems;
 
   const filter = filterId ? characters.find((c) => c.id === filterId) ?? null : null;
@@ -288,6 +374,21 @@ export function EntryList({
           <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">
             Keine Beiträge{" "}
             {mode === "mentions" ? "mit einer Erwähnung von" : mode === "author" ? "von" : "zu"} {filter.name.split(" ")[0]}.
+          </p>
+        )}
+        {remaining > 0 && !filter && (
+          <button
+            type="button"
+            onClick={() => void loadOlder()}
+            disabled={loadingOlder}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line bg-surface px-4 py-2.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg active:scale-[0.99] disabled:opacity-60"
+          >
+            {loadingOlder ? "Lade …" : `Frühere Beiträge laden (${remaining})`}
+          </button>
+        )}
+        {loadError && (
+          <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+            {loadError}
           </p>
         )}
         {earlierCount >= 2 ? (

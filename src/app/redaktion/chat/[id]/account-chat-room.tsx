@@ -44,6 +44,7 @@ export function AccountChatRoom({
   initialReads,
   initialReactions,
   initialMessages,
+  olderBefore,
   initialMuted,
   initialTheme,
 }: {
@@ -61,16 +62,18 @@ export function AccountChatRoom({
   initialReads: Record<string, string>;
   initialReactions: AccountReaction[];
   initialMessages: AccountMessage[];
+  olderBefore: string | null;
   initialMuted: boolean;
   initialTheme: ChatTheme;
 }) {
-  const { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction } = useAccountChat(
+  const { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction, hasOlder, loadingOlder, loadOlder } = useAccountChat(
     chatId,
     userId,
     initialMessages,
     initialReads,
     undefined,
     initialReactions,
+    olderBefore,
   );
   const [draft, setDraft] = useState("");
   const image = useImageDraft();
@@ -97,9 +100,31 @@ export function AccountChatRoom({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Beim Nachladen früherer Nachrichten nicht ans Ende springen, sondern die Lesestelle halten
+  const listRef = useRef<HTMLDivElement>(null);
+  const holdScroll = useRef(false);
   useEffect(() => {
+    if (holdScroll.current) {
+      holdScroll.current = false;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length, typing.names.length]);
+
+  async function showOlder() {
+    const el = listRef.current;
+    const before = el?.scrollHeight ?? 0;
+    const top = el?.scrollTop ?? 0;
+    holdScroll.current = true;
+    const added = await loadOlder();
+    if (!added) {
+      holdScroll.current = false;
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (el) el.scrollTop = top + (el.scrollHeight - before);
+    });
+  }
 
   // Kommt eine Nachricht vom Gegenüber an, tippt die Person nicht mehr
   const lastIncomingId = [...messages].reverse().find((m) => m.sender_id !== userId)?.id;
@@ -322,7 +347,19 @@ export function AccountChatRoom({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto py-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto py-4">
+        {hasOlder && (
+          <div className="mb-3 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void showOlder()}
+              disabled={loadingOlder}
+              className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-fg disabled:opacity-60"
+            >
+              {loadingOlder ? "Lade …" : "Frühere Nachrichten laden"}
+            </button>
+          </div>
+        )}
         {messages.length === 0 && <p className="py-10 text-center text-sm text-muted">Schreib die erste Nachricht.</p>}
         <div className="flex flex-col gap-1">
           {messages.map((m, i) => {
