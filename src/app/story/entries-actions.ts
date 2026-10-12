@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { autolinkHtml } from "@/lib/autolink";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import { stripHtml } from "@/lib/strip-html";
+import { snippetAround } from "@/lib/snippet";
 import type { StoryEntry } from "@/lib/types";
 
 // Frühere Beiträge einer langen Szene nachladen (die Seite lädt zuerst nur die neuesten) und in der Szene suchen.
@@ -71,13 +72,6 @@ export async function loadEarlierEntries(storyPostId: string, before: string, un
 }
 
 export type SceneHit = { id: string; name: string; snippet: string; at: string };
-
-function snippetAround(text: string, needle: string): string {
-  const i = text.toLowerCase().indexOf(needle.toLowerCase());
-  if (i < 0) return text.slice(0, 120);
-  const start = Math.max(0, i - 40);
-  return `${start > 0 ? "…" : ""}${text.slice(start, i + needle.length + 70)}${i + needle.length + 70 < text.length ? "…" : ""}`;
-}
 
 // Volltextsuche in den Beiträgen einer Szene (neueste Treffer zuerst)
 export async function searchSceneEntries(storyPostId: string, term: string): Promise<{ hits: SceneHit[] } | { error: string }> {

@@ -10,6 +10,9 @@ import { RecapToggle } from "@/components/recap-toggle";
 import { recapToHtml } from "@/lib/recap-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { MessageHits, type MessageHit } from "./message-hits";
+import { snippetAround } from "@/lib/snippet";
+import { stripHtml } from "@/lib/strip-html";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import type { StoryArc, StoryPost } from "@/lib/types";
@@ -60,6 +63,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     .order("created_at", { ascending: false })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
+  // Je Szene die Nachrichten, in denen der Suchtext steht (nur bei „Szenen und Nachrichten“)
+  const messageHits = new Map<string, { hits: MessageHit[]; total: number }>();
   if (q) {
     const escaped = escapePostgrestValue(q);
     let inMessages = "";
@@ -67,11 +72,21 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       // Szenen, in deren Nachrichten der Text vorkommt (neueste Treffer zuerst, begrenzt, damit die Anfrage kurz bleibt)
       const { data: hits } = await supabase
         .from("story_entries")
-        .select("story_post_id, story_posts!inner(world_id)")
+        .select("id, story_post_id, content, kind, created_at, characters!story_entries_character_id_fkey(name), story_posts!inner(world_id)")
         .eq("story_posts.world_id", activeWorld.id)
         .ilike("content", `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`)
         .order("created_at", { ascending: false })
-        .limit(300);
+        .limit(300)
+        .returns<{ id: string; story_post_id: string; content: string; kind: string | null; created_at: string; characters: { name: string } | null }[]>();
+      for (const h of hits ?? []) {
+        const text = stripHtml(h.content);
+        if (!text.toLowerCase().includes(q.toLowerCase())) continue; // Treffer nur im Markup
+        const list = messageHits.get(h.story_post_id) ?? { hits: [], total: 0 };
+        list.total++;
+        if (list.hits.length < 3)
+          list.hits.push({ id: h.id, name: h.kind === "narrator" ? "Erzähler:in" : (h.characters?.name ?? "?"), snippet: snippetAround(text, q), at: h.created_at });
+        messageHits.set(h.story_post_id, list);
+      }
       const ids = Array.from(new Set((hits ?? []).map((h) => h.story_post_id as string))).slice(0, 150);
       if (ids.length > 0) inMessages = `,id.in.(${ids.join(",")})`;
     }
@@ -334,10 +349,11 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               narrator={!!post.narrator}
             />
             {recapOf(post) && <RecapToggle html={recapOf(post)} className="px-1 pb-3" />}
+            {messageHits.get(post.id) && <div className="px-1 pb-3"><MessageHits storyPostId={post.id} term={q} {...messageHits.get(post.id)!} /></div>}
             </div>
           ) : (
+            <div key={post.id}>
             <EntryCard
-              key={post.id}
               id={post.id}
               title={post.title}
               content={post.is_spoiler ? "<p>Spoiler</p>" : post.content}
@@ -361,6 +377,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
               narrator={!!post.narrator}
             />
+            {messageHits.get(post.id) && <MessageHits storyPostId={post.id} term={q} {...messageHits.get(post.id)!} />}
+            </div>
           ))
         ) : q || tag || from || to || arc || ort || onlyMyTurn ? (
           <p className="text-muted">Keine Einträge gefunden.</p>
