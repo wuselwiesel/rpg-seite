@@ -11,6 +11,8 @@ import { StoriesStrip } from "@/components/stories-strip";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { WorldOnboarding } from "@/components/world-onboarding";
+import { FirstSteps, type FirstStep } from "@/components/first-steps";
+import { AutoTour } from "@/components/auto-tour";
 
 export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -42,11 +44,31 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   ]);
   const myCharacters = ownCharacters.map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }));
 
+  // Erste Schritte: nur für Mitglieder, die in den letzten 30 Tagen beigetreten sind; hakt sich aus den Daten selbst ab
+  const newcomer = !!joinedAt && new Date().getTime() - new Date(joinedAt).getTime() < 30 * 24 * 60 * 60 * 1000;
+  let firstSteps: FirstStep[] = [];
+  if (newcomer) {
+    const ownIds = ownCharacters.map((c) => c.id);
+    const [{ count: postCount }, { count: sceneCount }, { count: entryCount }] = await Promise.all([
+      supabase.from("posts").select("id", { count: "exact", head: true }).in("character_id", ownIds),
+      supabase.from("story_posts").select("id", { count: "exact", head: true }).in("character_id", ownIds),
+      supabase.from("story_entries").select("id", { count: "exact", head: true }).in("character_id", ownIds),
+    ]);
+    firstSteps = [
+      { id: "character", label: "Charakter erstellt", href: `/characters/${activeCharacter.id}`, done: true },
+      { id: "avatar", label: "Profilbild hinzufügen", href: `/characters/${activeCharacter.id}/edit`, done: !!activeCharacter.avatar_url },
+      { id: "post", label: "Ersten Beitrag schreiben", href: "/posts/new", done: (postCount ?? 0) > 0 },
+      { id: "scene", label: "In einer Szene mitschreiben", href: "/story", done: (sceneCount ?? 0) + (entryCount ?? 0) > 0 },
+    ];
+  }
+
   return (
     <PullToRefresh>
     <div className="flex gap-8 px-3 pb-4 pt-2 sm:px-6 sm:py-8 lg:px-10">
       <div className="mx-auto min-w-0 max-w-[470px] xl:max-w-[540px] 2xl:max-w-[600px] flex-1">
-        <WorldOnboarding worldId={activeWorld.id} worldName={activeWorld.name} autoOpen={recentlyJoined} />
+        <AutoTour enabled={recentlyJoined} />
+        <WorldOnboarding worldId={activeWorld.id} worldName={activeWorld.name} autoOpen={false} />
+        {firstSteps.length > 0 && <FirstSteps worldId={activeWorld.id} steps={firstSteps} />}
 
         <div className="relative">
           <Suspense fallback={<div className="mb-3 h-[84px]" />}>
