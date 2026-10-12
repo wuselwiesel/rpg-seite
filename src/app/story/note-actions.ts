@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const MAX = 5000;
 
-// Notiz der Spielleitung zu einer Szene (nur Besitzer:in und Admins der Welt; die Datenbank prüft das ebenfalls)
+// Eigene, nur für dich sichtbare Notiz zu einer Szene (die Datenbank erlaubt nur die eigene Zeile)
 export async function saveSceneNote(storyPostId: string, body: string): Promise<string | null> {
   const supabase = await createClient();
   const {
@@ -19,12 +19,12 @@ export async function saveSceneNote(storyPostId: string, body: string): Promise<
   if (!post) return "Szene nicht gefunden.";
 
   if (!text) {
-    const { error } = await supabase.from("scene_notes").delete().eq("story_post_id", storyPostId);
+    const { error } = await supabase.from("scene_notes").delete().eq("story_post_id", storyPostId).eq("user_id", user.id);
     if (error) return error.message;
   } else {
     const { error } = await supabase.from("scene_notes").upsert(
-      { story_post_id: storyPostId, world_id: post.world_id, body: text, updated_by: user.id, updated_at: new Date().toISOString() },
-      { onConflict: "story_post_id" },
+      { story_post_id: storyPostId, user_id: user.id, world_id: post.world_id, body: text, updated_by: user.id, updated_at: new Date().toISOString() },
+      { onConflict: "story_post_id,user_id" },
     );
     if (error) return error.message;
   }
