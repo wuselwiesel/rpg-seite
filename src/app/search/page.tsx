@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
-import { JoinWorldButton } from "@/app/worlds/join-world-button";
+import { JoinOrRequestButton } from "@/app/worlds/join-or-request-button";
 import {
   searchCharacters,
   searchPosts,
@@ -276,7 +276,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
               ) : (
                 <div className="flex shrink-0 items-center gap-2">
                   <FollowWorldButton worldId={w.id} initialFollowing={followedWorldIds.has(w.id)} />
-                  <JoinWorldButton worldId={w.id} />
+                  <JoinOrRequestButton worldId={w.id} joinMode={(w as { join_mode?: "open" | "request" | "invite" }).join_mode ?? "open"} ownerId={w.created_by} />
                 </div>
               )}
             </li>

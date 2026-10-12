@@ -13,5 +13,6 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "friend", label: "Freundschaftsanfragen", types: ["friend_request", "friend_accept"] },
   { key: "relationship", label: "Beziehungen", types: ["relationship"] },
   { key: "badge", label: "Badges", types: ["badge"] },
+  { key: "world_join", label: "Welt-Beitritt", types: ["world_request", "world_request_result"] },
   { key: "redaktion", label: "Redaktion", types: ["redaktion_post", "redaktion_comment", "redaktion_reaction"] },
 ];

@@ -8,6 +8,11 @@ import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS 
 import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
 import { sanitizePostHtml } from "@/lib/sanitize";
 
+// Beitrittsart aus dem Formular: offen (Standard), auf Anfrage oder nur Einladung
+function parseJoinMode(raw: FormDataEntryValue | null): "open" | "request" | "invite" {
+  return raw === "request" || raw === "invite" ? raw : "open";
+}
+
 export async function createWorld(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
@@ -22,7 +27,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
 
   const { data: world, error } = await supabase
     .from("worlds")
-    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on" })
+    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", join_mode: parseJoinMode(formData.get("join_mode")) })
     .select("id")
     .single();
 
@@ -57,6 +62,11 @@ export async function joinWorld(worldId: string): Promise<string | null> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
+
+  const { data: target } = await supabase.from("worlds").select("join_mode, created_by").eq("id", worldId).maybeSingle<{ join_mode: string; created_by: string }>();
+  if (target && target.join_mode !== "open" && target.created_by !== user.id) {
+    return target.join_mode === "request" ? "Diese Welt braucht eine Anfrage." : "In diese Welt kommt man nur auf Einladung.";
+  }
 
   const { data: existing } = await supabase
     .from("world_members")
@@ -127,6 +137,7 @@ export async function updateWorld(
         cover_image_url: coverImageUrl || null,
         dice_enabled: formData.get("dice_enabled") === "on",
         is_public: formData.get("is_public") === "on",
+        join_mode: parseJoinMode(formData.get("join_mode")),
       },
       { count: "exact" },
     )

@@ -42,6 +42,18 @@ export function EditWorldForm({ world }: { world: World }) {
         />
       </label>
 
+      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+        Beitritt
+        <select
+          name="join_mode"
+          defaultValue={world.join_mode ?? "open"}
+          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+        >
+          <option value="open">Offen</option>
+          <option value="request">Auf Anfrage</option>
+          <option value="invite">Nur auf Einladung</option>
+        </select>
+      </label>
       <label className="flex items-center gap-3 text-sm text-fg">
         <input
           type="checkbox"

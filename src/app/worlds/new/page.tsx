@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createWorld } from "../actions";
@@ -9,6 +9,7 @@ export default function NewWorldPage() {
   const [error, formAction, pending] = useActionState(createWorld, null);
   const searchParams = useSearchParams();
   const isWelcome = searchParams.get("welcome") === "1";
+  const [joinMode, setJoinMode] = useState("open");
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
@@ -48,8 +49,26 @@ export default function NewWorldPage() {
           />
         </label>
 
+        <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          Beitritt
+          <select
+            name="join_mode"
+            value={joinMode}
+            onChange={(e) => setJoinMode(e.target.value)}
+            className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+          >
+            <option value="open">Offen</option>
+            <option value="request">Auf Anfrage</option>
+            <option value="invite">Nur auf Einladung</option>
+          </select>
+        </label>
         <label className="flex items-center gap-3 text-sm text-fg">
-          <input type="checkbox" name="is_public" className="h-4 w-4 accent-[var(--accent-strong)]" />
+          <input
+            type="checkbox"
+            name="is_public"
+            onChange={(e) => e.target.checked && setJoinMode((m) => (m === "open" ? "request" : m))}
+            className="h-4 w-4 accent-[var(--accent-strong)]"
+          />
           Öffentlich
         </label>
 

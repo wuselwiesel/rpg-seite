@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getAcceptedFriends } from "@/lib/friends";
 import { WorldCover, isIconCover } from "@/components/world-cover";
 import { EnterWorldButton } from "../enter-world-button";
-import { JoinWorldButton } from "../join-world-button";
+import { JoinOrRequestButton } from "../join-or-request-button";
+import { JoinRequests, type JoinRequest } from "./join-requests";
 import { LeaveWorldButton } from "./leave-world-button";
 import { InviteFriendForm } from "./invite-friend-form";
 import { InviteLink } from "@/components/invite-link";
@@ -42,6 +43,23 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
   const isMember = memberIds.has(user.id);
   const isAdmin = isOwner || (members ?? []).some((m) => m.user_id === user.id && m.role === "admin");
 
+  // Offene Beitrittsanfragen (nur für Admins sichtbar) bzw. die eigene Anfrage
+  const { data: requestRows } = await supabase
+    .from("world_join_requests")
+    .select("id, user_id, message, created_at, profiles!world_join_requests_user_id_fkey(username, nickname)")
+    .eq("world_id", id)
+    .eq("status", "pending")
+    .order("created_at")
+    .returns<(Omit<JoinRequest, "name"> & { profiles: { username: string; nickname: string | null } | null })[]>();
+  const requests: JoinRequest[] = (requestRows ?? []).map((r) => ({
+    id: r.id,
+    user_id: r.user_id,
+    message: r.message,
+    created_at: r.created_at,
+    name: r.profiles?.nickname || r.profiles?.username || "Unbekannt",
+  }));
+  const myRequest = (requestRows ?? []).some((r) => r.user_id === user.id);
+
   const friends = isAdmin ? await getAcceptedFriends(user.id) : [];
   const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
 
@@ -72,7 +90,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
           {isMember ? (
             <EnterWorldButton worldId={world.id} />
           ) : (
-            <JoinWorldButton worldId={world.id} />
+            <JoinOrRequestButton worldId={world.id} joinMode={world.join_mode ?? "open"} hasRequest={myRequest} ownerId={world.created_by} />
           )}
         </div>
       </div>
@@ -82,6 +100,8 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
           <div className="post-content text-[15.5px] leading-[1.75] text-fg" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(world.welcome_html) }} />
         </section>
       )}
+
+      {isAdmin && requests.length > 0 && <JoinRequests worldId={world.id} requests={requests} />}
 
       <h2 className="mb-3 font-serif text-xl text-fg">Mitglieder</h2>
       <ul className="mb-8 flex flex-col gap-2">

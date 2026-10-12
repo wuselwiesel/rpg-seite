@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { WorldCover } from "@/components/world-cover";
 import type { World } from "@/lib/types";
-import { JoinWorldButton } from "../../join-world-button";
+import { JoinOrRequestButton } from "../../join-or-request-button";
 
 export default async function JoinWorldPage({ params }: PageProps<"/worlds/join/[id]">) {
   const { id } = await params;
@@ -35,13 +35,21 @@ export default async function JoinWorldPage({ params }: PageProps<"/worlds/join/
     .maybeSingle();
   if (membership) redirect(`/worlds/${id}`);
 
+  const { data: pendingRequest } = await supabase
+    .from("world_join_requests")
+    .select("id")
+    .eq("world_id", id)
+    .eq("user_id", user.id)
+    .eq("status", "pending")
+    .maybeSingle();
+
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-sm flex-col items-center justify-center px-4 text-center">
       <WorldCover name={world.name} coverUrl={world.cover_image_url} className="mb-5 h-28 w-28 text-2xl" />
       <p className="mb-1 text-sm text-muted">Du wurdest eingeladen</p>
       <h1 className="mb-2 font-serif text-3xl text-fg">{world.name}</h1>
       {world.description && <p className="mb-6 text-sm text-fg-soft">{world.description}</p>}
-      <JoinWorldButton worldId={world.id} />
+      <JoinOrRequestButton worldId={world.id} joinMode={world.join_mode ?? "open"} hasRequest={!!pendingRequest} ownerId={world.created_by} />
     </div>
   );
 }

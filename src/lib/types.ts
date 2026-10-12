@@ -21,6 +21,8 @@ export type World = {
   // Öffentlich: erscheint in „Welten entdecken“ und der Suche; Übungswelt: gemeinsam genutzte Beispielwelt
   is_public?: boolean;
   is_demo?: boolean;
+  // Beitritt: offen, auf Anfrage (Admins genehmigen) oder nur durch Einladung der Admins
+  join_mode?: "open" | "request" | "invite";
 };
 
 export type Friendship = {

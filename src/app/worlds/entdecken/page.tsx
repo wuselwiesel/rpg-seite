@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { WorldCover } from "@/components/world-cover";
 import { timeAgoShort } from "@/lib/format";
 import { EnterWorldButton } from "../enter-world-button";
-import { JoinWorldButton } from "../join-world-button";
+import { JoinOrRequestButton } from "../join-or-request-button";
 
 export const metadata = { title: "Welten entdecken" };
 
@@ -19,6 +19,9 @@ type Row = {
   scene_count: number;
   last_activity: string | null;
   is_member: boolean;
+  join_mode: "open" | "request" | "invite";
+  has_request: boolean;
+  created_by: string;
 };
 
 export default async function DiscoverWorldsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -87,7 +90,7 @@ export default async function DiscoverWorldsPage({ searchParams }: { searchParam
                   </p>
                 </div>
               </Link>
-              {w.is_member ? <EnterWorldButton worldId={w.id} /> : <JoinWorldButton worldId={w.id} />}
+              {w.is_member ? <EnterWorldButton worldId={w.id} /> : <JoinOrRequestButton worldId={w.id} joinMode={w.join_mode} hasRequest={w.has_request} ownerId={w.created_by} />}
             </li>
           ))}
         </ul>

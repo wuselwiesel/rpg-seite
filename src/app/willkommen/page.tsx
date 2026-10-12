@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Compass, FlaskConical, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getUserWorlds } from "@/lib/worlds";
-import { JoinWorldButton } from "@/app/worlds/join-world-button";
+import { JoinOrRequestButton } from "@/app/worlds/join-or-request-button";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
 import { InviteLinkForm } from "./invite-link-form";
 
@@ -36,7 +36,7 @@ export default async function WelcomePage() {
             {demo.name}
           </h2>
           <p className="text-sm text-fg-soft">Ausprobieren</p>
-          <div className="flex">{demo.is_member ? <EnterWorldButton worldId={demo.id} /> : <JoinWorldButton worldId={demo.id} />}</div>
+          <div className="flex">{demo.is_member ? <EnterWorldButton worldId={demo.id} /> : <JoinOrRequestButton worldId={demo.id} joinMode="open" />}</div>
         </section>
       )}
 
