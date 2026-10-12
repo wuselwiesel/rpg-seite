@@ -13,6 +13,11 @@ function parseJoinMode(raw: FormDataEntryValue | null): "open" | "request" | "in
   return raw === "request" || raw === "invite" ? raw : "open";
 }
 
+// Erkunden vor dem Beitritt: aus (Standard), nur Info oder alles
+function parsePreview(raw: FormDataEntryValue | null): "none" | "info" | "full" {
+  return raw === "info" || raw === "full" ? raw : "none";
+}
+
 export async function createWorld(_prevState: string | null, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
@@ -27,7 +32,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
 
   const { data: world, error } = await supabase
     .from("worlds")
-    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", join_mode: parseJoinMode(formData.get("join_mode")) })
+    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", join_mode: parseJoinMode(formData.get("join_mode")), preview: parsePreview(formData.get("preview")) })
     .select("id")
     .single();
 
@@ -138,6 +143,7 @@ export async function updateWorld(
         dice_enabled: formData.get("dice_enabled") === "on",
         is_public: formData.get("is_public") === "on",
         join_mode: parseJoinMode(formData.get("join_mode")),
+        preview: parsePreview(formData.get("preview")),
       },
       { count: "exact" },
     )

@@ -22,6 +22,7 @@ type Row = {
   join_mode: "open" | "request" | "invite";
   has_request: boolean;
   created_by: string;
+  preview: "none" | "info" | "full";
 };
 
 export default async function DiscoverWorldsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -90,6 +91,11 @@ export default async function DiscoverWorldsPage({ searchParams }: { searchParam
                   </p>
                 </div>
               </Link>
+              {!w.is_member && w.preview !== "none" && (
+                <Link href={`/worlds/${w.id}/vorschau`} className="shrink-0 rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent">
+                  Erkunden
+                </Link>
+              )}
               {w.is_member ? <EnterWorldButton worldId={w.id} /> : <JoinOrRequestButton worldId={w.id} joinMode={w.join_mode} hasRequest={w.has_request} ownerId={w.created_by} />}
             </li>
           ))}

@@ -50,6 +50,18 @@ export default function NewWorldPage() {
         </label>
 
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          Erkunden vor dem Beitritt
+          <select
+            name="preview"
+            defaultValue="none"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+          >
+            <option value="none">Aus</option>
+            <option value="info">Willkommen, Wiki und Figuren</option>
+            <option value="full">Alles, auch Szenen</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Beitritt
           <select
             name="join_mode"

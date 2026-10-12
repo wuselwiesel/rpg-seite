@@ -50,6 +50,11 @@ export default async function JoinWorldPage({ params }: PageProps<"/worlds/join/
       <h1 className="mb-2 font-serif text-3xl text-fg">{world.name}</h1>
       {world.description && <p className="mb-6 text-sm text-fg-soft">{world.description}</p>}
       <JoinOrRequestButton worldId={world.id} joinMode={world.join_mode ?? "open"} hasRequest={!!pendingRequest} ownerId={world.created_by} />
+      {world.preview && world.preview !== "none" && (
+        <Link href={`/worlds/${world.id}/vorschau`} className="mt-4 text-sm text-accent hover:underline">
+          Welt erkunden
+        </Link>
+      )}
     </div>
   );
 }

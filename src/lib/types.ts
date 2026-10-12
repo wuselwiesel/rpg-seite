@@ -23,6 +23,8 @@ export type World = {
   is_demo?: boolean;
   // Beitritt: offen, auf Anfrage (Admins genehmigen) oder nur durch Einladung der Admins
   join_mode?: "open" | "request" | "invite";
+  // Erkunden vor dem Beitritt: aus, Info (Willkommen, Wiki, Figuren) oder alles (auch Szenen)
+  preview?: "none" | "info" | "full";
 };
 
 export type Friendship = {

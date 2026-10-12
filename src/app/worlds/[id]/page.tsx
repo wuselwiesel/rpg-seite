@@ -87,6 +87,14 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
               Bearbeiten
             </Link>
           )}
+          {!isMember && world.preview && world.preview !== "none" && (
+            <Link
+              href={`/worlds/${world.id}/vorschau`}
+              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
+            >
+              Erkunden
+            </Link>
+          )}
           {isMember ? (
             <EnterWorldButton worldId={world.id} />
           ) : (
