@@ -76,6 +76,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
       <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
           <h1 className="font-serif text-3xl text-fg">{world.name}</h1>
+          {world.is_demo && <p className="mt-1 text-xs font-medium text-accent">Übungswelt · nachts zurückgesetzt</p>}
           {world.description && <p className="mt-1 text-sm text-muted">{world.description}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">

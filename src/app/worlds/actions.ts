@@ -94,7 +94,14 @@ export async function joinWorld(worldId: string): Promise<string | null> {
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
 
   revalidatePath("/", "layout");
-  redirect("/");
+  // Ohne eigenen Charakter in dieser Welt geht es direkt ins Kurzformular
+  const { count } = await supabase
+    .from("characters")
+    .select("id", { count: "exact", head: true })
+    .eq("world_id", worldId)
+    .eq("owner_id", user.id)
+    .is("deleted_at", null);
+  redirect(count ? "/" : "/characters/new?welcome=1");
 }
 
 export async function addWorldMember(

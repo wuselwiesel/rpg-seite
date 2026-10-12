@@ -50,7 +50,7 @@ export function WorldSwitcher({
             {activeWorld.name}
           </span>
           <span className="hidden text-xs text-muted min-[420px]:block lg:block">
-            {worlds.length > 1 ? `${worlds.length} Welten` : "Welt wechseln"}
+            {activeWorld.is_demo ? "Übungswelt · nachts zurückgesetzt" : worlds.length > 1 ? `${worlds.length} Welten` : "Welt wechseln"}
           </span>
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />

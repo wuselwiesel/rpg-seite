@@ -35,6 +35,7 @@ const TOC = [
   ["uebersicht", "Welches Talent braucht welche Attribute?"],
   ["kuerzel", "Tastenkürzel und Schreibhilfen"],
   ["mehrere-figuren", "Mehrere Figuren in einer Nachricht"],
+  ["welten", "Welten entdecken, Übungswelt und Rechte"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -393,6 +394,22 @@ export default function HelpPage() {
           <li>Nach dem Senden sieht die Nachricht aus wie mehrere Nachrichten: jede Figur mit Profilbild, Namen und eigenem Text, durch eine Linie getrennt. Ein Klick auf Bild oder Namen öffnet den ChaBo.</li>
           <li>Oben an der Nachricht steht die erste Figur. Danach ist keine deiner eigenen Figuren als Nächstes dran.</li>
           <li>Das funktioniert nur mit deinen eigenen Figuren und nicht als Erzähler:in. Beim Bearbeiten bleiben die Abschnitte erhalten.</li>
+        </ul>
+      </Section>
+      <Section id="welten" title="15. Welten entdecken, Übungswelt und Rechte">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Übungswelt:</strong> Der Windlichthafen ist eine Welt zum Ausprobieren. Du kannst dort einen Charakter anlegen, in Szenen schreiben, würfeln und Wiki-Seiten bauen. Alles, was Übende anlegen, wird nachts aufgeräumt. Die Hafenbewohner, Beispielszenen und Wiki-Seiten bleiben.
+          </li>
+          <li>
+            <strong>Welten entdecken:</strong> Unter „Welten“ → „Welten entdecken“ siehst du die öffentlichen Welten mit Mitgliederzahl und letzter Aktivität. Steht dort „Erkunden“, kannst du Willkommenstext, Wiki, Figuren und manchmal auch Szenen ansehen, bevor du beitrittst. Was sichtbar ist, bestimmen die Admins der Welt.
+          </li>
+          <li>
+            <strong>Beitritt:</strong> Je Welt gibt es drei Arten. Offene Welten betrittst du mit einem Klick. Bei „Auf Anfrage“ schickst du eine Nachricht an die Admins und wirst benachrichtigt, sobald sie entscheiden; über „Admin anschreiben“ erreichst du sie im privaten Chat. „Nur auf Einladung“ geht nur mit Einladungslink oder von Freund:innen.
+          </li>
+          <li>
+            <strong>Rechte in der Welt:</strong> Besitzer:in und ernannte Admins dürfen immer alles. Für alle anderen stellen die Admins unter „Welt bearbeiten“ ein, wer Wiki-Seiten anlegen oder bearbeiten, Ordner, Karten und Seitenarten ändern, Szenen starten und Handlungsstränge anlegen darf. Neue Welten starten streng: Mitglieder bearbeiten nur ihre eigenen Wiki-Seiten und ändern keine Ordner oder Karten.
+          </li>
         </ul>
       </Section>
     </div>
