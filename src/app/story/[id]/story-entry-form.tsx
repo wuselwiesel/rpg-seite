@@ -4,6 +4,7 @@ import { useActionState, useCallback, useEffect, useRef, useState } from "react"
 import { createStoryEntry } from "../actions";
 import { Layers } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { hasContent } from "@/lib/has-content";
 import { BundleBuilder, type BundleSegment } from "./bundle-builder";
 import { useDraft } from "@/lib/use-draft";
 import { ACTION_FAILED_EVENT } from "@/components/update-notice";
@@ -271,7 +272,7 @@ export function StoryEntryForm({
         onChange={(html) => {
           latestHtml.current = html;
           update({ content: html });
-          if (html) onTyping?.();
+          if (hasContent(html)) onTyping?.();
         }}
         mentionCharacters={characters}
         onSubmitKey={() => formRef.current?.requestSubmit()}

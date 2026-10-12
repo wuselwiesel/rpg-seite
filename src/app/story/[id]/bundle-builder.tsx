@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { WriterSelect } from "@/components/writer-select";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { hasContent } from "@/lib/has-content";
 import type { Character } from "@/lib/types";
 
 export type BundleSegment = { characterId: string; html: string };
@@ -93,7 +94,7 @@ export function BundleBuilder({
               initialContent={row.html}
               onChange={(html) => {
                 commit(rowsRef.current.map((r) => (r.key === row.key ? { ...r, html } : r)));
-                if (html) onTyping?.();
+                if (hasContent(html)) onTyping?.();
               }}
               mentionCharacters={mentionCharacters}
               minHeight={70}

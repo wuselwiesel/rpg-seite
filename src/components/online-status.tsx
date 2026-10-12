@@ -5,11 +5,12 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { setPresenceMode } from "@/app/profile/actions";
 import { EmojiText } from "@/components/custom-emoji-provider";
+import { deriveLooks, WRITING_REFRESH, type PresenceLook, type TrackPayload } from "@/lib/presence-looks";
 
 export type PresenceMode = "online" | "offline";
 
 // Was andere von dir sehen: Emoji (statt des Punkts) und optional Text
-export type PresenceLook = { emoji: string | null; text: string | null; writing?: boolean };
+export type { PresenceLook };
 
 type OnlineContextValue = {
   // false, wenn niemand angemeldet ist (dann gibt es keinen Status)
@@ -36,9 +37,6 @@ const OnlineContext = createContext<OnlineContextValue>({
 });
 
 const CHANNEL = "wortwinkel-online";
-
-type TrackPayload = { at: number; emoji?: string | null; text?: string | null; writing?: boolean };
-
 // Alle angemeldeten Geräte treten einem gemeinsamen Presence-Kanal bei und melden sich dort an, solange der Status auf „online“ steht.
 // Wer „offline“ gewählt hat, schaut mit, meldet sich aber nicht an und erscheint für andere offline.
 // Emoji und Text reisen mit der Anmeldung im Kanal mit, andere lesen sie also ohne Datenbankabfrage.
@@ -64,19 +62,51 @@ export function OnlineProvider({
   const ownRef = useRef(own);
   const writingRef = useRef(false);
   const writingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Hochzählen baut den Kanal neu auf (nach Rückkehr in die App oder Netzwechsel)
+  // Hochzählen baut den Kanal neu auf (nach Rückkehr in die App, Netzwechsel oder wenn Senden scheitert)
   const [epoch, setEpoch] = useState(0);
   const lastReset = useRef(0);
+  const lastTrack = useRef(0);
+  // Was der Kanal zuletzt gemeldet hat, und wann wir einen „schreibt“-Stand zum ersten Mal gesehen haben (siehe rebuild)
+  const rawRef = useRef<Record<string, TrackPayload[]>>({});
+  const seenWriting = useRef(new Map<string, number>());
+  const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const payload = (): TrackPayload => ({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
+
+  function reconnect() {
+    const now = Date.now();
+    if (now - lastReset.current < 5000) return;
+    lastReset.current = now;
+    setEpoch((n) => n + 1);
+  }
+
+  // Meldet den eigenen Stand (online mit Emoji/Text/„schreibt“) oder nimmt ihn zurück (offline). Kommt keine Bestätigung,
+  // ist die Verbindung tot: dann den Kanal neu aufbauen, statt dass man für andere offline bleibt.
+  function publish() {
+    const channel = channelRef.current;
+    if (!channel || !subscribed.current) return;
+    if (modeRef.current === "online") {
+      lastTrack.current = Date.now();
+      void channel.track(payload()).then((result) => {
+        if (result !== "ok" && channelRef.current === channel) reconnect();
+      });
+    } else {
+      void channel.untrack();
+    }
+  }
+
+  function rebuild() {
+    if (expiryTimer.current) clearTimeout(expiryTimer.current);
+    const { looks: next, nextCheckIn } = deriveLooks(rawRef.current, seenWriting.current, Date.now());
+    setLooks(next);
+    if (nextCheckIn !== null) expiryTimer.current = setTimeout(rebuild, nextCheckIn + 50);
+  }
 
   useEffect(() => {
     modeRef.current = mode;
     ownRef.current = own;
-    if (subscribed.current && channelRef.current) {
-      if (mode === "online") void channelRef.current.track(payload());
-      else void channelRef.current.untrack();
-    }
+    publish();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, own]);
 
   useEffect(() => {
@@ -86,12 +116,10 @@ export function OnlineProvider({
     channelRef.current = channel;
     channel
       .on("presence", { event: "sync" }, () => {
-        const next = new Map<string, PresenceLook>();
-        for (const [key, entries] of Object.entries(channel.presenceState<TrackPayload>())) {
-          const latest = [...entries].sort((x, y) => (y.at ?? 0) - (x.at ?? 0))[0];
-          next.set(key, { emoji: latest?.emoji ?? null, text: latest?.text ?? null, writing: entries.some((e) => e.writing === true) });
-        }
-        setLooks(next);
+        rawRef.current = channel.presenceState<TrackPayload>() as unknown as Record<string, TrackPayload[]>;
+        rebuild();
+        // Wir stehen auf „online“, fehlen aber im Kanal (Server hat uns nach einem Abbruch vergessen): neu melden
+        if (modeRef.current === "online" && subscribed.current && !rawRef.current[userId] && Date.now() - lastTrack.current > 2000) publish();
       })
       // Stellt man den Status an einem Gerät um, ziehen die anderen Geräte desselben Accounts sofort nach
       .on("broadcast", { event: "mode" }, ({ payload }) => {
@@ -104,7 +132,7 @@ export function OnlineProvider({
         if (channelRef.current !== channel) return;
         if (status === "SUBSCRIBED") {
           subscribed.current = true;
-          if (modeRef.current === "online") void channel.track({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
+          publish();
         } else {
           subscribed.current = false;
         }
@@ -115,10 +143,7 @@ export function OnlineProvider({
     let hiddenAt: number | null = document.visibilityState === "hidden" ? Date.now() : null;
     function refresh(force: boolean) {
       if (!force && channelRef.current?.state === "joined") return;
-      const now = Date.now();
-      if (now - lastReset.current < 5000) return;
-      lastReset.current = now;
-      setEpoch((n) => n + 1);
+      reconnect();
     }
     function onVisibility() {
       if (document.visibilityState === "hidden") {
@@ -138,10 +163,12 @@ export function OnlineProvider({
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("online", onOnline);
       window.removeEventListener("pageshow", onPageShow);
+      if (expiryTimer.current) clearTimeout(expiryTimer.current);
       subscribed.current = false;
       channelRef.current = null;
       void supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, epoch]);
 
   function setMode(next: PresenceMode) {
@@ -155,16 +182,17 @@ export function OnlineProvider({
     void channelRef.current?.send({ type: "broadcast", event: "look", payload: { userId, ...next } });
   }
 
-  // Wird bei jeder Eingabe aufgerufen: meldet „schreibt“ und nimmt es nach 5 s ohne neue Eingabe zurück
+  // Wird bei jeder Eingabe aufgerufen: meldet „schreibt“ (und alle paar Sekunden neu, solange man tippt)
+  // und nimmt es nach 5 s ohne neue Eingabe zurück
   function setWriting(writing: boolean) {
     if (writingTimer.current) clearTimeout(writingTimer.current);
     const changed = writingRef.current !== writing;
     writingRef.current = writing;
-    if (changed && modeRef.current === "online" && subscribed.current && channelRef.current) void channelRef.current.track(payload());
+    if (changed || (writing && Date.now() - lastTrack.current > WRITING_REFRESH)) publish();
     if (writing) {
       writingTimer.current = setTimeout(() => {
         writingRef.current = false;
-        if (modeRef.current === "online" && subscribed.current && channelRef.current) void channelRef.current.track(payload());
+        publish();
       }, 5000);
     }
   }

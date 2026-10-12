@@ -150,7 +150,7 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
               </span>
             )}
           </span>
-          {online && look?.writing ? (
+          {online && look?.writing && !self ? (
             <span className="flex items-center gap-1.5 text-xs text-muted" role="status">
               <span className="flex gap-0.5">
                 <span className="typing-dot" />
