@@ -2,14 +2,13 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Moon } from "lucide-react";
 import { SymbolPicker } from "@/components/symbol-picker";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import { OnlineToggle, useOnline } from "@/components/online-status";
 import { setPresenceStatus } from "@/app/profile/actions";
-import { PRESENCE_EMOJI_MAX, PRESENCE_EMOJI_PRESETS, PRESENCE_TEXT_MAX, cleanPresenceEmoji } from "@/lib/presence-emoji";
+import { PRESENCE_EMOJI_MAX, PRESENCE_TEXT_MAX, cleanPresenceEmoji } from "@/lib/presence-emoji";
 
 export type OnlineMember = { id: string; name: string; avatarUrl: string | null };
 
@@ -26,7 +25,6 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
   const [text, setText] = useState(own.text ?? "");
   const [error, setError] = useState<string | null>(null);
   const [symbols, setSymbols] = useState(false);
-  const [target, setTarget] = useState<"icon" | "text">("icon");
   const [pending, startTransition] = useTransition();
   const invalid = emoji.trim() !== "" && !cleanPresenceEmoji(emoji);
 
@@ -78,55 +76,26 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
           placeholder="Was machst du gerade?"
           className="h-9 min-w-0 flex-1 rounded-md border border-line bg-app px-2.5 text-sm outline-none focus:border-accent"
         />
-        <CustomEmojiPicker direction="up" label="Emoji in den Text einfügen" onPick={(token) => setText((t) => `${t}${token}`.slice(0, PRESENCE_TEXT_MAX))} className="shrink-0" />
-      </div>
-      <div className="flex flex-wrap gap-1" role="group" aria-label="Emoji wählen">
-        {PRESENCE_EMOJI_PRESETS.map((e) => (
-          <button key={e} type="button" onClick={() => setEmoji(e)} aria-pressed={emoji === e} aria-label={`Emoji ${e}`} className={`flex h-8 w-8 items-center justify-center rounded-md text-base transition ${emoji === e ? "bg-accent/15 ring-2 ring-accent" : "bg-surface-2 hover:bg-surface-3"}`}>
-            {e}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={() => setSymbols((v) => !v)}
           aria-expanded={symbols}
-          className={`w-fit rounded-md px-2.5 py-1 text-xs transition ${symbols ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+          aria-label="Symbole"
+          title="Symbole"
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line text-base transition ${symbols ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
         >
-          ✦ Symbole
+          ✦
         </button>
-        {symbols && (
-          <>
-            <div role="radiogroup" aria-label="Symbol setzen als" className="flex gap-1">
-              {(
-                [
-                  ["icon", "Statussymbol"],
-                  ["text", "In den Text"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="radio"
-                  aria-checked={target === id}
-                  onClick={() => setTarget(id)}
-                  className={`rounded-full px-2.5 py-0.5 text-xs transition ${target === id ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <SymbolPicker
-              onPick={(symbol) =>
-                // Als Statussymbol nur kurze Zeichen; Zierleisten und Trenner gehören in den Text
-                target === "icon" && Array.from(symbol).length <= 3 ? setEmoji(symbol) : setText((t) => `${t}${symbol}`.slice(0, PRESENCE_TEXT_MAX))
-              }
-              onClose={() => setSymbols(false)}
-            />
-          </>
-        )}
       </div>
+      {symbols && (
+        <SymbolPicker
+          onPick={(symbol) =>
+            // Kurze Zeichen als Statussymbol, Zierleisten und Trenner in den Text
+            Array.from(symbol).length <= 3 ? setEmoji(symbol) : setText((t) => `${t}${symbol}`.slice(0, PRESENCE_TEXT_MAX))
+          }
+          onClose={() => setSymbols(false)}
+        />
+      )}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex items-center gap-1.5">
         <button type="button" disabled={pending || invalid} onClick={() => save(emoji, text)} className="rounded-md bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
@@ -189,11 +158,8 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
               schreibt gerade
             </span>
           ) : online && look?.text ? (
-            <span className="flex items-center gap-1 truncate text-xs text-muted">
-              <Moon className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
-              <span className="truncate">
-                <EmojiText text={look.text} />
-              </span>
+            <span className="block truncate text-xs text-muted">
+              <EmojiText text={look.text} />
             </span>
           ) : null}
         </span>

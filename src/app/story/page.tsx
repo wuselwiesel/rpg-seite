@@ -10,8 +10,6 @@ import { RecapToggle } from "@/components/recap-toggle";
 import { recapToHtml } from "@/lib/recap-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { OnlineMembers } from "@/components/online-members";
-import { getWorldMembers } from "@/lib/world-members";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import type { StoryArc, StoryPost } from "@/lib/types";
@@ -47,7 +45,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   if (!activeWorld) redirect("/worlds");
 
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
-  const worldMembers = await getWorldMembers(activeWorld.id);
   if (!activeCharacter) redirect("/characters/new");
 
   let storyQuery = supabase
@@ -149,7 +146,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
           <h1 className="font-serif text-3xl text-fg">Story</h1>
           <p className="truncate text-sm text-muted">{activeWorld.name}</p>
         </div>
-        <OnlineMembers members={worldMembers} selfId={user.id} className="shrink-0" />
         <div className="flex shrink-0 rounded-full border border-line bg-surface p-0.5" role="group" aria-label="Ansicht">
           <Link
             href={viewHref("karten")}
