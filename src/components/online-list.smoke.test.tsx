@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 const state = { enabled: true, onlineIds: new Set<string>(), looks: new Map<string, { emoji: string | null; text: string | null; writing?: boolean }>(), own: { emoji: null, text: null }, setLook: () => {} };
 vi.mock("@/components/online-status", () => ({ useOnline: () => state, OnlineToggle: () => <div>toggle</div> }));
 vi.mock("@/app/profile/actions", () => ({ setPresenceStatus: vi.fn() }));
+vi.mock("@/components/name-badge", () => ({ NameBadge: () => null }));
 
 import { MemberList } from "./online-list";
 import { SidebarOnline } from "./sidebar-online";

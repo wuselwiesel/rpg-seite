@@ -1,3 +1,4 @@
+import { PdfEmbeds } from "@/components/pdf-embeds";
 import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
@@ -220,7 +221,10 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
             </Link>
           </div>
         ) : (
-          <EmojiHtml className={`post-content wiki-prose min-w-0 ${dropCap ? "wiki-dropcap" : ""}`} html={html} />
+          <>
+            <EmojiHtml className={`post-content wiki-prose min-w-0 ${dropCap ? "wiki-dropcap" : ""}`} html={html} />
+            <PdfEmbeds />
+          </>
         )}
 
         {hasSide && (

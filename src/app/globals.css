@@ -1164,6 +1164,14 @@ a.wiki-missing,
 }
 .post-content [data-pdf] a:hover { border-color: var(--accent); }
 .ProseMirror-selectednode[data-pdf] a { border-color: var(--accent); }
+/* Eingebettete PDF-Seiten (Wiki-Seite): die Karte mit dem Link weicht der Anzeige */
+.post-content [data-pdf][data-embedded] > a { display: none; }
+.pdf-embed { border: 1px solid var(--line); border-radius: 0.6rem; background: var(--surface-2); overflow: hidden; }
+.pdf-embed-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75em; padding: 0.45em 0.8em; background: var(--surface); border-bottom: 1px solid var(--line); font-size: 0.85em; color: var(--fg-soft); }
+.pdf-embed-head a { display: flex; color: var(--muted); }
+.pdf-embed-head a:hover { color: var(--accent); }
+.pdf-embed-pages { display: flex; flex-direction: column; gap: 0.5rem; max-height: 80vh; overflow-y: auto; padding: 0.5rem; }
+.pdf-embed-page { background: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 0.15); flex-shrink: 0; }
 
 /* Textbausteine im Wiki: Hinweis-Kasten, Spoiler, Tabelle (Editor und Anzeige) */
 .post-content [data-callout] {

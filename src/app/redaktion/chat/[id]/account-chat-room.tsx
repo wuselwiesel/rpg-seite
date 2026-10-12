@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, ImagePlus, Pencil, Pin, PinOff, Search, EyeOff, SendHorizontal, SmilePlus, Trash2, UsersRound, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { NameBadge } from "@/components/name-badge";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { setAccountChatMuted } from "../actions";
 import { useAccountChat, type AccountMessage, type AccountReaction } from "@/lib/use-account-chat";
@@ -239,7 +240,10 @@ export function AccountChatRoom({
                 <OnlineDot userId={partnerProfileId} overlay />
               </span>
               <span className="flex min-w-0 flex-col">
-                <h1 className="truncate font-serif text-xl leading-tight text-fg">{title}</h1>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <h1 className="truncate font-serif text-xl leading-tight text-fg">{title}</h1>
+                  <NameBadge userId={partnerProfileId} symbolOnly />
+                </span>
                 <OnlineBadge userId={partnerProfileId} />
               </span>
             </Link>
@@ -411,7 +415,7 @@ export function AccountChatRoom({
                   </div>
                 ) : (
                   <>
-                  {runStart && <p className="mb-0.5 ml-9 mt-1 text-xs font-medium text-muted">{sender?.name ?? "…"}</p>}
+                  {runStart && <p className="mb-0.5 ml-9 mt-1 flex items-center gap-1 text-xs font-medium text-muted">{sender?.name ?? "…"}<NameBadge userId={m.sender_id} symbolOnly /></p>}
                   <div className={`group flex items-end gap-1.5 ${mine ? "flex-row-reverse" : ""}`}>
                     {!isDirect && !mine && (
                       <span className="w-7 shrink-0 self-end">

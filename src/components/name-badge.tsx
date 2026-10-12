@@ -53,7 +53,7 @@ function subscribePrefs(callback: () => void) {
 
 // Zeichen und Haupt-Badge neben einem Namen (Beitrag, Kommentar). Lädt gesammelt nach. Das gewählte Zeichen erscheint
 // immer, das Haupt-Badge nur, wenn die Anzeige in den Einstellungen nicht abgeschaltet ist.
-export function NameBadge({ characterId, userId }: { characterId?: string | null; userId?: string | null }) {
+export function NameBadge({ characterId, userId, symbolOnly = false }: { characterId?: string | null; userId?: string | null; symbolOnly?: boolean }) {
   const badgesEnabled = useSyncExternalStore(subscribePrefs, () => badgePrefEnabled(BADGE_NAMES_KEY), () => false);
   const [, rerender] = useState(0);
 
@@ -72,7 +72,8 @@ export function NameBadge({ characterId, userId }: { characterId?: string | null
 
   const decor = characterId ? cache.characters.get(characterId) : userId ? cache.users.get(userId) : null;
   if (!decor) return null;
-  const badge = badgesEnabled ? decor.badge : null;
+  // symbolOnly: nur das gewählte Zeichen (z. B. in Zeilen, die selbst ein Link sind)
+  const badge = badgesEnabled && !symbolOnly ? decor.badge : null;
   if (!badge && !decor.symbol) return null;
   // Klick auf das Badge führt in die Badge-Sammlung der Person.
   const base = characterId ? `/badges/sammlung/${characterId}` : `/badges/konto/${userId}`;

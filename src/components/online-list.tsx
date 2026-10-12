@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { SymbolPicker } from "@/components/symbol-picker";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { NameBadge } from "@/components/name-badge";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import { OnlineToggle, useOnline } from "@/components/online-status";
@@ -142,6 +143,7 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5 text-sm text-fg">
             <span className="truncate">{m.name}</span>
+            <NameBadge userId={m.id} symbolOnly />
             {look?.emoji && online && (
               <span aria-hidden className="shrink-0 text-xs leading-none">
                 <EmojiText text={look.emoji} />
