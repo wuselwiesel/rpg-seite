@@ -43,6 +43,7 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
         <WelcomeEditor worldId={world.id} initial={world.welcome_html ?? ""} />
       </section>
 
+      {world.dice_enabled !== false && (
       <section className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-xl text-fg">Talente</h2>
         <TalentEditor
@@ -50,6 +51,7 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
           initial={(world as unknown as { talent_config?: unknown }).talent_config ? parseTalentConfig((world as unknown as { talent_config?: unknown }).talent_config) : DEFAULT_TALENTS}
         />
       </section>
+      )}
 
       {isOwner && (
         <div className="mt-8 border-t border-line pt-6">

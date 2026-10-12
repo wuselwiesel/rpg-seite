@@ -1071,6 +1071,8 @@ export async function createDiceRoll(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet.", luckRemaining: null };
+  const { data: diceWorld } = await supabase.from("worlds").select("dice_enabled").eq("id", worldId).maybeSingle<{ dice_enabled: boolean | null }>();
+  if (diceWorld?.dice_enabled === false) return { error: "Würfeln ist in dieser Welt ausgeschaltet.", luckRemaining: null };
 
   const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
   if (!characterId) return { error: "Du brauchst zuerst einen Charakter in dieser Welt.", luckRemaining: null };
@@ -1112,6 +1114,8 @@ export async function rerollWithLuck(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet.", luckRemaining: null };
+  const { data: diceWorld } = await supabase.from("worlds").select("dice_enabled").eq("id", worldId).maybeSingle<{ dice_enabled: boolean | null }>();
+  if (diceWorld?.dice_enabled === false) return { error: "Würfeln ist in dieser Welt ausgeschaltet.", luckRemaining: null };
 
   const characterId = await resolveWriter(user.id, worldId, rollParams.characterId);
   if (!characterId) return { error: "Du brauchst zuerst einen Charakter in dieser Welt.", luckRemaining: null };

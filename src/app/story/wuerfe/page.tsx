@@ -58,6 +58,8 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
   if (!user) redirect("/login");
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
+  // Ohne Würfeln gibt es keinen Würfelverlauf
+  if (world.dice_enabled === false) redirect("/story");
 
   // Spaltenliste als einfacher String, sonst wird die Typ-Auswertung der Verknüpfungen zu tief
   const columns: string =

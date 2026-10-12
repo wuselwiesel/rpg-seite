@@ -16,6 +16,8 @@ export type World = {
   welcome_html?: string | null;
   talent_config?: unknown;
   wiki_home?: unknown;
+  // Würfeln eingeschaltet (Standard) oder ausgeschaltet
+  dice_enabled?: boolean;
 };
 
 export type Friendship = {

@@ -69,6 +69,8 @@ import { getOwnPresence } from "@/lib/online-status-server";
 import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
 import { ModeProvider } from "@/components/mode-context";
+import { DiceProvider } from "@/components/dice-context";
+import { getActiveWorld } from "@/lib/worlds";
 import { MODE_COOKIE, parseRememberedMode } from "@/lib/app-mode";
 import { cookies } from "next/headers";
 import { ChatBubbleLoader } from "@/components/chat-bubble-loader";
@@ -281,6 +283,7 @@ document.addEventListener('gesturestart', function (e) {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [emojiMap, accountFont, ownPresence, cookieStore] = await Promise.all([getEmojiMap(), getAccountDefaultFont(), getOwnPresence(), cookies()]);
   const rememberedMode = parseRememberedMode(cookieStore.get(MODE_COOKIE)?.value);
+  const diceEnabled = ownPresence?.userId ? (await getActiveWorld(ownPresence.userId))?.dice_enabled !== false : true;
   return (
     <html
       lang="de"
@@ -308,9 +311,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <AppTour />
         <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"} initialEmoji={ownPresence?.emoji ?? null} initialText={ownPresence?.text ?? null}>
           <CustomEmojiProvider map={emojiMap}>
+            <DiceProvider enabled={diceEnabled}>
             <AppFrame sidebar={<Sidebar />}>
               <MobileMain>{children}</MobileMain>
             </AppFrame>
+            </DiceProvider>
             <ChatBubbleLoader />
             <SpoilerReveal />
             <MentionLinks />

@@ -12,6 +12,7 @@ import { ChaboSwitcher } from "@/components/chabo/chabo-switcher";
 import { fetchRandomLists } from "@/lib/random-lists";
 import { Chabo } from "@/components/chabo/chabo";
 import { PdfButton } from "@/components/pdf-button";
+import { getWorldDiceEnabled } from "@/lib/world-dice";
 
 export const metadata = { title: "Charakterbogen" };
 
@@ -59,7 +60,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
           <ChaboSwitcher currentId={id} characters={ownChars.map((c) => ({ id: c.id, name: c.name }))} npcs={switcherNpcs.map((c) => ({ id: c.id, name: c.name }))} />
         </div>
       </div>
-      <Chabo key={id} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} randomLists={randomLists} />
+      <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} randomLists={randomLists} />
       <CharacterGallery characterId={id} canEdit={isOwn} />
       <CharacterScenesTimeline characterId={id} isOwn={isOwn} />
     </div>

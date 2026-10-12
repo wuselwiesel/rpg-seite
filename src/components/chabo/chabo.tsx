@@ -8,6 +8,7 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { MentionInput, MentionText } from "./mention-input";
 import { RollBar } from "./roll-bar";
+import { useDiceEnabled } from "@/components/dice-context";
 import { rollAttributes, rollTalents, type AttrStyle, type TalentStyle } from "@/lib/sheet-random";
 import { fieldKind, rollAllFields, rollRow, worldNames, type CustomPools } from "@/lib/random-pools";
 import { stripMentionAt } from "@/lib/sheet-mentions";
@@ -156,6 +157,7 @@ export function Chabo({
   mentionCharacters = [],
   randomLists,
   variant = "page",
+  diceEnabled,
 }: {
   characterId: string;
   characterName: string;
@@ -169,7 +171,11 @@ export function Chabo({
   randomLists?: Partial<CustomPools>;
   // panel: kompakte Ansicht, z. B. im seitlichen Fenster einer Szene
   variant?: "page" | "panel";
+  // Würfeln der Welt eingeschaltet? Aus: kein Attribute-/Talente-Teil, nur der Steckbrief (ohne Angabe gilt die aktive Welt)
+  diceEnabled?: boolean;
 }) {
+  const worldDice = useDiceEnabled();
+  const dice = diceEnabled ?? worldDice;
   const canEdit = editable && variant === "page";
   // Geheimes zeigt die Ansicht nur der Besitzer:in (fremde Bögen enthalten es gar nicht erst, das hier ist zusätzliche Absicherung)
   const seen = <T extends { secret?: boolean }>(list: T[]) => (editable ? list : list.filter((x) => !x.secret));
@@ -331,7 +337,7 @@ export function Chabo({
               <Title className="font-serif text-3xl leading-tight text-fg @xl:text-4xl">{characterName}</Title>
               <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
                 <span>Charakterbogen</span>
-                {data.race !== "none" && raceLabel && <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-fg-soft">{raceLabel}</span>}
+                {dice && data.race !== "none" && raceLabel && <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-fg-soft">{raceLabel}</span>}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -361,7 +367,7 @@ export function Chabo({
 
           {editing && (
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              <label className="flex items-center gap-2 text-fg-soft">
+              {dice && <label className="flex items-center gap-2 text-fg-soft">
                 Besondere Natur
                 <select value={data.race} onChange={(e) => commit(applyRace(data, e.target.value as Race))} className="rounded-lg border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent">
                   {RACES.map((r) => (
@@ -370,7 +376,7 @@ export function Chabo({
                     </option>
                   ))}
                 </select>
-              </label>
+              </label>}
               {legacyUrl && (
                 <button type="button" onClick={importLegacy} disabled={importing} className="rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-fg-soft transition hover:text-fg disabled:opacity-50">
                   {importing ? "Übernimmt …" : "Aus altem Charakterbogen übernehmen"}
@@ -494,7 +500,7 @@ export function Chabo({
         </section>
       )}
 
-      <section aria-label="Attribute" className={card}>
+      {dice && <section aria-label="Attribute" className={card}>
         {editing && <StickyBudget used={bud.basisUsed} max={BASIS_BUDGET} label="Attributpunkte" />}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="font-serif text-xl text-fg">Attribute</h2>
@@ -592,9 +598,9 @@ export function Chabo({
             {errors.budget.join(". ")}
           </p>
         )}
-      </section>
+      </section>}
 
-      <section aria-label="Talente" className={card}>
+      {dice && <section aria-label="Talente" className={card}>
         {editing && <StickyBudget used={bud.talentUsed} max={TALENT_BONUS_BUDGET} label="Talentpunkte" />}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="font-serif text-xl text-fg">Talente</h2>
@@ -692,7 +698,7 @@ export function Chabo({
             })}
           </ul>
         </div>
-      </section>
+      </section>}
 
       <section aria-label="Notizen" className={card}>
         <h2 className="font-serif text-xl text-fg">Notizen</h2>

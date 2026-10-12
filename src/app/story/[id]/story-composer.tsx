@@ -29,6 +29,7 @@ export function StoryComposer({
   userId,
   worldMembers,
   startInChat = false,
+  diceEnabled = true,
 }: {
   storyPostId: string;
   worldId: string;
@@ -46,6 +47,8 @@ export function StoryComposer({
   // Mitglieder der Welt (für „… ist online“ im Schreibbereich)
   worldMembers: { id: string; name: string; avatarUrl: string | null }[];
   startInChat?: boolean;
+  // Würfeln der Welt eingeschaltet? Aus: kein Reiter „Würfeln“
+  diceEnabled?: boolean;
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
 
@@ -219,15 +222,17 @@ export function StoryComposer({
           >
             Schreiben
           </button>
-          <button
-            type="button"
-            onClick={() => setMode("roll")}
-            className={`rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
-              mode === "roll" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
-            }`}
-          >
-            Würfeln
-          </button>
+          {diceEnabled && (
+            <button
+              type="button"
+              onClick={() => setMode("roll")}
+              className={`rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
+                mode === "roll" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
+              }`}
+            >
+              Würfeln
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setMode("chat")}

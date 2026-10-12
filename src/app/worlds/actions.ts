@@ -125,6 +125,7 @@ export async function updateWorld(
         name,
         description: description || null,
         cover_image_url: coverImageUrl || null,
+        dice_enabled: formData.get("dice_enabled") === "on",
       },
       { count: "exact" },
     )

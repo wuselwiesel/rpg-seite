@@ -161,7 +161,7 @@ export default async function StoryPostDetailPage({
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
   const [{ data: world }, { data: bookmark }] = await Promise.all([
-    supabase.from("worlds").select("created_by").eq("id", storyPost.world_id).maybeSingle(),
+    supabase.from("worlds").select("created_by, dice_enabled").eq("id", storyPost.world_id).maybeSingle<{ created_by: string; dice_enabled: boolean | null }>(),
     supabase
       .from("story_bookmarks")
       .select("id")
@@ -544,6 +544,7 @@ export default async function StoryPostDetailPage({
             userId={user.id}
             worldMembers={worldMembers}
             startInChat={chatParam === "1"}
+            diceEnabled={world?.dice_enabled !== false}
           />
         </div>
       )}

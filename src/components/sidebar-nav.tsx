@@ -1,5 +1,6 @@
 "use client";
 
+import { useDiceEnabled } from "./dice-context";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
@@ -23,6 +24,7 @@ export function SidebarNav({
 }) {
   const pathname = usePathname();
   const mode = useAppMode();
+  const diceEnabled = useDiceEnabled();
   const inWiki = pathname?.startsWith("/wiki") || pathname?.startsWith("/characters/relationships");
 
   if (mode === "redaktion") {
@@ -64,9 +66,11 @@ export function SidebarNav({
           <NavLink href="/wiki" icon={<Library className={ICON} strokeWidth={2} />} also={["/characters/relationships"]}>
             Wiki
           </NavLink>
-          <NavLink href="/story/wuerfe" icon={<Dices className={ICON} strokeWidth={2} />}>
-            Würfelverlauf
-          </NavLink>
+          {diceEnabled && (
+            <NavLink href="/story/wuerfe" icon={<Dices className={ICON} strokeWidth={2} />}>
+              Würfelverlauf
+            </NavLink>
+          )}
           {activeCharacter && (
             <NavLink href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
               ChaBo

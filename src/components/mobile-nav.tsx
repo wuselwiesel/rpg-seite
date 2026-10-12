@@ -20,6 +20,7 @@ import type { OnlineMember } from "./online-list";
 import { useAppMode } from "@/components/mode-context";
 import { startTour } from "@/lib/tour";
 import { isImmersiveChatPath } from "@/lib/immersive-routes";
+import { useDiceEnabled } from "./dice-context";
 import type { AppNotification } from "@/lib/notifications";
 import type { Character, Profile, World } from "@/lib/types";
 
@@ -61,6 +62,7 @@ export function MobileNav({
   worldMembers: OnlineMember[];
 }) {
   const pathname = usePathname();
+  const diceEnabled = useDiceEnabled();
   // Das Menü gehört zu der Seite, auf der man es geöffnet hat: wechselt die Seite (auch über Links im Menü, z. B. „Welten verwalten“), geht es zu
   const [openAt, setOpenAt] = useState<string | null>(null);
   const moreOpen = openAt !== null && openAt === pathname;
@@ -234,14 +236,16 @@ export function MobileNav({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Link
-            href="/story/wuerfe"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Dices className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Würfelverlauf
-          </Link>
+          {diceEnabled && (
+            <Link
+              href="/story/wuerfe"
+              onClick={() => setMoreOpen(false)}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <Dices className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              Würfelverlauf
+            </Link>
+          )}
           {activeCharacter && (
             <Link
               href={`/characters/${activeCharacter.id}/chabo`}
