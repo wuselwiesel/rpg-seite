@@ -132,7 +132,7 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
           <header className={`relative overflow-hidden rounded-2xl border border-line bg-surface-2 ${center}`}>
             {b.image && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.image} alt="" className={`${ratio} w-full object-cover`} />
+              <img loading="lazy" decoding="async" src={b.image} alt="" className={`${ratio} w-full object-cover`} />
             )}
             <div className={b.image ? `absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent ${pad}` : pad}>
               <h1 className={`font-serif text-4xl leading-tight @xl:text-6xl ${b.image ? "text-white" : "text-fg"}`}>{title}</h1>

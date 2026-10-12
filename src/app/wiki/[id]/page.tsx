@@ -132,11 +132,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           {page.icon_url ? (
             // Icon: durchsichtig, ohne Rahmen und Zuschnitt
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={page.icon_url} alt={page.title} className="h-24 w-24 shrink-0 object-contain @xl:h-32 @xl:w-32 @4xl:h-40 @4xl:w-40" />
+            <img loading="lazy" decoding="async" src={page.icon_url} alt={page.title} className="h-24 w-24 shrink-0 object-contain @xl:h-32 @xl:w-32 @4xl:h-40 @4xl:w-40" />
           ) : page.cover_image_url ? (
             // Titelbild in normalem Format neben dem Namen (Person: Hochformat, sonst 4:3), nie als breiter Streifen.
             // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <img loading="lazy" decoding="async"
               src={page.cover_image_url}
               alt={page.title}
               className={`${portrait ? "aspect-[4/5]" : "aspect-[4/3]"} w-28 shrink-0 rounded-2xl bg-surface-2 object-cover shadow-sm @xl:w-40 @4xl:w-52`}

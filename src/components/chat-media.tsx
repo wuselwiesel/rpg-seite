@@ -10,7 +10,7 @@ export function ChatMedia({ url, size = "lg", className = "rounded-xl" }: { url:
   return (
     <ZoomableImage src={url} alt="Gesendetes Bild" className={className}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="Gesendetes Bild" className={`${box} ${className} object-contain`} />
+      <img loading="lazy" decoding="async" src={url} alt="Gesendetes Bild" className={`${box} ${className} object-contain`} />
     </ZoomableImage>
   );
 }
@@ -19,5 +19,5 @@ export function ChatMedia({ url, size = "lg", className = "rounded-xl" }: { url:
 export function AttachmentPreview({ url, className = "max-h-40" }: { url: string; className?: string }) {
   if (isVideoUrl(url)) return <video src={url} muted playsInline preload="metadata" className={`${className} max-w-full rounded-xl bg-black object-contain`} />;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt="Vorschau" className={`${className} max-w-full rounded-xl object-contain`} />;
+  return <img loading="lazy" decoding="async" src={url} alt="Vorschau" className={`${className} max-w-full rounded-xl object-contain`} />;
 }

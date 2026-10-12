@@ -182,7 +182,7 @@ export default async function CharacterProfilePage({
         <div className="h-32 overflow-hidden bg-gradient-to-br from-accent/40 to-accent-strong/40 sm:h-52 sm:rounded-2xl">
           {character.banner_url && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={character.banner_url} alt="" className="h-full w-full object-cover" />
+            <img loading="lazy" decoding="async" src={character.banner_url} alt="" className="h-full w-full object-cover" />
           )}
         </div>
 
@@ -195,7 +195,7 @@ export default async function CharacterProfilePage({
                   <div className="h-[88px] w-[88px] overflow-hidden rounded-full bg-surface-2 sm:h-[128px] sm:w-[128px]">
                     {character.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={character.avatar_url} alt={character.name} className="h-full w-full object-cover" />
+                      <img loading="lazy" decoding="async" src={character.avatar_url} alt={character.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-3xl font-semibold sm:text-5xl">
                         {character.name.charAt(0).toUpperCase()}
@@ -379,7 +379,7 @@ export default async function CharacterProfilePage({
                         <video src={`${cover.video_url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
                       ) : cover.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cover.image_url} alt="" className="h-full w-full object-cover" />
+                        <img loading="lazy" decoding="async" src={cover.image_url} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <span
                           className="block h-full w-full"
@@ -505,7 +505,7 @@ export default async function CharacterProfilePage({
                     <PostMedia url={post.media_url} type="video" alt="" thumb className="h-full w-full object-cover" />
                   ) : image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={post.title || "Beitrag"} className="h-full w-full object-cover" />
+                    <img loading="lazy" decoding="async" src={image} alt={post.title || "Beitrag"} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full flex-col justify-center gap-1 overflow-hidden bg-surface-3 p-2 sm:p-4">
                       {post.title ? (

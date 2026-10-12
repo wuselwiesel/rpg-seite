@@ -14,7 +14,7 @@ export function CharacterAvatar({
     >
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatarUrl} alt={name} draggable={false} className="h-full w-full object-cover" />
+        <img loading="lazy" decoding="async" src={avatarUrl} alt={name} draggable={false} className="h-full w-full object-cover" />
       ) : (
         name.charAt(0).toUpperCase()
       )}

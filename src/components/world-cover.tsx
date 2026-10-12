@@ -17,7 +17,7 @@ export function WorldCover({
     >
       {coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={coverUrl} alt={name} className={`h-full w-full ${icon ? "object-contain" : "object-cover"}`} />
+        <img loading="lazy" decoding="async" src={coverUrl} alt={name} className={`h-full w-full ${icon ? "object-contain" : "object-cover"}`} />
       ) : (
         name.charAt(0).toUpperCase()
       )}

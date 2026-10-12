@@ -39,7 +39,7 @@ export function WikiGallery({ urls, title }: { urls: string[]; title: string }) 
       {index !== null && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true" aria-label="Bild ansehen" onClick={() => setIndex(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={urls[index]} alt={`${title}, Bild ${index + 1}`} className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          <img loading="lazy" decoding="async" src={urls[index]} alt={`${title}, Bild ${index + 1}`} className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
           <button type="button" onClick={() => setIndex(null)} aria-label="Schließen" className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white">
             <X className="h-5 w-5" strokeWidth={2} />
           </button>

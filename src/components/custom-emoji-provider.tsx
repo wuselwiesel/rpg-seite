@@ -34,7 +34,7 @@ export function EmojiText({ text, chat = false, alone = true }: { text: string; 
           <span key={i}>{p}</span>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={i} src={p.url} alt={`:${p.name}:`} title={`:${p.name}:`} className={cls} draggable={false} />
+          <img loading="lazy" decoding="async" key={i} src={p.url} alt={`:${p.name}:`} title={`:${p.name}:`} className={cls} draggable={false} />
         ),
       )}
     </>

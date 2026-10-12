@@ -56,7 +56,7 @@ function StoryReplyPreview({ story, onDark }: { story: NonNullable<Message["stor
       >
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumb} alt="" className="h-full w-full object-cover" />
+          <img loading="lazy" decoding="async" src={thumb} alt="" className="h-full w-full object-cover" />
         ) : story.video_url ? (
           <video src={`${story.video_url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
         ) : null}
@@ -221,7 +221,7 @@ export function MessageBubble({
                 ) : (
                   <a href={message.image_url} target="_blank" rel="noreferrer" className="mb-1 block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={message.image_url} alt="Gesendetes Bild oder GIF" className="max-h-72 max-w-full rounded-md object-contain" />
+                    <img loading="lazy" decoding="async" src={message.image_url} alt="Gesendetes Bild oder GIF" className="max-h-72 max-w-full rounded-md object-contain" />
                   </a>
                 )
               )}

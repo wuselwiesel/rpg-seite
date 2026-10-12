@@ -44,7 +44,7 @@ export function sanitizePostHtmlCore(html: string): string {
     ],
     allowedAttributes: {
       a: ["href", "target", "rel"],
-      img: ["src", "alt"],
+      img: ["src", "alt", "loading", "decoding"],
       span: ["data-type", "data-id", "class", "style"],
       div: ["data-callout", "data-type", "data-id", "data-name", "data-pdf"],
       details: ["open"],
@@ -53,6 +53,8 @@ export function sanitizePostHtmlCore(html: string): string {
     },
     allowedSchemes: ["http", "https", "mailto"],
     transformTags: {
+      // Bilder in Texten erst laden, wenn sie in die Nähe kommen (lange Szenen und Seiten)
+      img: (tagName, attribs) => ({ tagName, attribs: { ...attribs, loading: "lazy", decoding: "async" } }),
       // Nur die bekannten Hinweis-Arten und der Spoiler-Inhalt behalten ihre Kennzeichnung; jedes andere div wird schlicht.
       div: (tagName, attribs) => {
         const out: Record<string, string> = {};
