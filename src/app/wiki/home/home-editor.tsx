@@ -189,7 +189,7 @@ export function HomeEditor({ worldId, initial, hasHome, options }: { worldId: st
                   }}
                   className={`group/blk rounded-2xl border bg-surface transition ${overIndex === i && dragIndex !== null && dragIndex !== i ? "border-accent" : "border-line"} ${b.hidden ? "opacity-60" : ""} ${dragIndex === i ? "opacity-40" : ""}`}
                 >
-                  <div className="flex items-center gap-1 p-2">
+                  <div className="relative flex items-center gap-1 p-2">
                     <span
                       draggable
                       onDragStart={(e) => {
@@ -219,7 +219,7 @@ export function HomeEditor({ worldId, initial, hasHome, options }: { worldId: st
                       </span>
                       <ChevronDown className={`h-4 w-4 shrink-0 text-muted transition ${expanded ? "rotate-180" : ""}`} strokeWidth={2} />
                     </button>
-                    <div className={`flex shrink-0 items-center ${REVEAL}`}>
+                    <div className={`absolute right-2 top-1/2 flex -translate-y-1/2 items-center rounded-full border border-line bg-surface px-1 shadow-sm ${REVEAL}`}>
                       <button type="button" aria-label="Nach oben" title="Nach oben" disabled={i === 0} onClick={() => reorder(i, i - 1)} className={iconBtn}>
                         <ArrowUp className="h-4 w-4" strokeWidth={2} />
                       </button>
