@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { useOnline } from "@/components/online-status";
+import { MemberList } from "@/components/online-list";
 
-type Member = { id: string; name: string; avatarUrl: string | null };
+type Member = { id: string; name: string; avatarUrl: string | null; role?: "owner" | "admin" | "member" };
 
 const SHOWN = 4;
 
@@ -68,7 +69,7 @@ export function OnlineMembers({ members, selfId, className = "" }: { members: Me
   );
 }
 
-// Punkt für den Schreibbereich: grün, wenn jemand aus der Welt online ist, sonst grau. Ein Klick zeigt, wer online (und wer offline) ist.
+// Punkt für den Schreibbereich: grün, wenn jemand aus der Welt online ist, sonst grau. Ein Klick zeigt die Mitgliederliste.
 export function OnlineLine({ members, selfId, className = "" }: { members: Member[]; selfId: string; className?: string }) {
   const { enabled, onlineIds } = useOnline();
   const [open, setOpen] = useState(false);
@@ -92,7 +93,6 @@ export function OnlineLine({ members, selfId, className = "" }: { members: Membe
   const others = members.filter((m) => m.id !== selfId);
   if (others.length === 0) return null;
   const online = others.filter((m) => onlineIds.has(m.id));
-  const offline = others.filter((m) => !onlineIds.has(m.id));
   const label = online.length > 0 ? `Online: ${online.map((m) => m.name).join(", ")}` : "Niemand online";
 
   return (
@@ -108,20 +108,9 @@ export function OnlineLine({ members, selfId, className = "" }: { members: Membe
         <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${online.length > 0 ? "bg-emerald-500" : "bg-fg/30"}`} />
       </button>
       {open && (
-        <ul className="absolute bottom-full right-0 z-20 mb-1 max-h-64 min-w-40 max-w-64 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-lg">
-          {online.map((m) => (
-            <li key={m.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-fg">
-              <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-              <span className="truncate">{m.name}</span>
-            </li>
-          ))}
-          {offline.map((m) => (
-            <li key={m.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted">
-              <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-fg/30" />
-              <span className="truncate">{m.name}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="absolute bottom-full right-0 z-20 mb-1 max-h-72 w-60 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-lg">
+          <MemberList members={members} selfId={selfId} />
+        </div>
       )}
     </div>
   );

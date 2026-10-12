@@ -4,33 +4,45 @@ import { renderToString } from "react-dom/server";
 const state = { enabled: true, onlineIds: new Set<string>(), looks: new Map<string, { emoji: string | null; text: string | null; writing?: boolean }>() };
 vi.mock("@/components/online-status", () => ({ useOnline: () => state }));
 
-import { OnlineList } from "./online-list";
+import { MemberList } from "./online-list";
 import { SidebarOnline } from "./sidebar-online";
 
-const members = ["a", "b", "c", "d", "e", "f", "g", "h"].map((id) => ({ id, name: `Person ${id}`, avatarUrl: null }));
+const members = [
+  { id: "a", name: "Hörnchen", avatarUrl: null, role: "owner" as const },
+  { id: "b", name: "Kirschplunder", avatarUrl: null, role: "admin" as const },
+  { id: "c", name: "Luna", avatarUrl: null, role: "member" as const },
+  { id: "me", name: "Ich", avatarUrl: null, role: "member" as const },
+];
+const text = (html: string) => html.replace(/<!-- -->/g, "");
 
-describe("Online-Liste", () => {
-  it("zeigt, wer online ist, ohne dich selbst; mit Status und Schreib-Anzeige", () => {
-    state.onlineIds = new Set(["a", "b", "me"]);
-    state.looks = new Map([["a", { emoji: "🌙", text: "Nachtschicht", writing: true }]]);
-    const html = renderToString(<OnlineList members={[...members, { id: "me", name: "Ich", avatarUrl: null }]} selfId="me" />);
-    expect(html).toContain("Person a");
-    expect(html).toContain("Person b");
-    expect(html).not.toContain("Ich<");
+describe("Mitgliederliste", () => {
+  it("gruppiert in Online und Offline, mit Status und Schreib-Anzeige", () => {
+    state.onlineIds = new Set(["a", "b"]);
+    state.looks = new Map([["a", { emoji: null, text: null, writing: true }], ["b", { emoji: "🌙", text: "Nachtschicht" }]]);
+    const html = text(renderToString(<MemberList members={members} selfId="me" />));
+    expect(html).toContain("Online — 2");
+    expect(html).toContain("Offline — 2");
+    expect(html).toContain("Hörnchen");
     expect(html).toContain("Nachtschicht");
     expect(html).toContain("schreibt gerade");
-    expect(html).toContain("/redaktion/chat/mit/a");
-    expect(html).not.toContain("Person c");
+    expect(html).toContain("(du)");
   });
-  it("ab 7 Personen: „+ n weitere“", () => {
-    state.onlineIds = new Set(members.map((m) => m.id));
-    state.looks = new Map();
-    const html = renderToString(<OnlineList members={members} selfId="me" />);
-    expect(html.replace(/<!-- -->/g, "")).toContain("+ 2 weitere");
-  });
-  it("niemand online: leiser Hinweis, Seitenleiste bleibt", () => {
+  it("niemand online: keine Online-Gruppe und kein „Niemand online“", () => {
     state.onlineIds = new Set();
-    expect(renderToString(<OnlineList members={members} selfId="me" />)).toContain("Niemand online");
-    expect(renderToString(<SidebarOnline members={members} selfId="me" />)).toContain("Online");
+    state.looks = new Map();
+    const html = text(renderToString(<MemberList members={members} selfId="me" />));
+    expect(html).not.toContain("Online —");
+    expect(html).not.toContain("Niemand online");
+    expect(html).toContain("Offline — 4");
+  });
+  it("nach Rolle gruppiert", () => {
+    state.onlineIds = new Set(["c"]);
+    const html = text(renderToString(<MemberList members={members} selfId="me" mode="role" />));
+    expect(html).toContain("Besitzer:in — 1");
+    expect(html).toContain("Admin — 1");
+    expect(html).toContain("Mitglied — 2");
+  });
+  it("Seitenleiste zeigt die Gesamtzahl", () => {
+    expect(text(renderToString(<SidebarOnline members={members} selfId="me" />))).toContain("Mitglieder — 4");
   });
 });
