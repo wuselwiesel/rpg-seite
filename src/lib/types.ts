@@ -25,6 +25,8 @@ export type World = {
   join_mode?: "open" | "request" | "invite";
   // Erkunden vor dem Beitritt: aus, Info (Willkommen, Wiki, Figuren) oder alles (auch Szenen)
   preview?: "none" | "info" | "full";
+  // Rechte-Tabelle (siehe lib/world-permissions.ts); fehlende Schlüssel gelten als „alle Mitglieder“
+  permissions?: Record<string, string> | null;
 };
 
 export type Friendship = {

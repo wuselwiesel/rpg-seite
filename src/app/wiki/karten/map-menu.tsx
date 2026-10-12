@@ -6,6 +6,7 @@ import { ImagePlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MAP_MAX_BYTES, prepareMapImage } from "@/lib/map-image";
 import { deleteWikiMap, updateWikiMap } from "./actions";
+import { useWorldRights } from "@/components/rights-context";
 
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
@@ -13,6 +14,7 @@ type MapInfo = { id: string; title: string; description: string | null; image_ur
 
 // Karte bearbeiten (Name, Beschreibung, Bild austauschen) und löschen. card: ⋯ in der Ecke einer Kartenkachel; header: zwei Knöpfe auf der Kartenseite.
 export function MapMenu({ map, canDelete, variant }: { map: MapInfo; canDelete: boolean; variant: "card" | "header" }) {
+  const rights = useWorldRights();
   const [dialog, setDialog] = useState<"edit" | "delete" | null>(null);
   const [menu, setMenu] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -30,14 +32,17 @@ export function MapMenu({ map, canDelete, variant }: { map: MapInfo; canDelete: 
   }, [menu]);
 
   const item = "block w-full px-3.5 py-2 text-left text-sm text-fg transition hover:bg-surface-2";
+  if (!rights.wikiStructure && !canDelete) return null;
   return (
     <>
       {variant === "header" ? (
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => setDialog("edit")} className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:text-fg">
-            <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-            Bearbeiten
-          </button>
+          {rights.wikiStructure && (
+            <button type="button" onClick={() => setDialog("edit")} className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:text-fg">
+              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+              Bearbeiten
+            </button>
+          )}
           {canDelete && (
             <button type="button" onClick={() => setDialog("delete")} title="Karte löschen" aria-label="Karte löschen" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-red-500">
               <Trash2 className="h-4 w-4" strokeWidth={2} />
@@ -58,9 +63,11 @@ export function MapMenu({ map, canDelete, variant }: { map: MapInfo; canDelete: 
           </button>
           {menu && (
             <div role="menu" className="absolute right-0 top-full mt-1 w-40 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
-              <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); setDialog("edit"); }}>
-                Bearbeiten
-              </button>
+              {rights.wikiStructure && (
+                <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); setDialog("edit"); }}>
+                  Bearbeiten
+                </button>
+              )}
               {canDelete && (
                 <button role="menuitem" type="button" className={`${item} text-red-600 dark:text-red-400`} onClick={() => { setMenu(false); setDialog("delete"); }}>
                   Löschen

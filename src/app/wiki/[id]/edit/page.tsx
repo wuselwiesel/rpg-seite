@@ -1,5 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getWorldRights } from "@/lib/world-rights";
+import { canEditWikiPage } from "@/lib/world-permissions";
 import { getWikiFolders, getWikiPageRows } from "@/lib/wiki-data";
 import { buildWikiTree, folderOptions, pageOptions, pageSubtreeIds } from "@/lib/wiki-tree";
 import type { WikiPage } from "@/lib/types";
@@ -17,6 +19,7 @@ export default async function EditWikiPagePage({ params }: PageProps<"/wiki/[id]
 
   const { data: page } = await supabase.from("wiki_pages").select("*").eq("id", id).maybeSingle<WikiPage>();
   if (!page) notFound();
+  if (!canEditWikiPage(await getWorldRights(page.world_id, user.id), page.created_by, user.id)) redirect(`/wiki/${page.id}`);
 
   const [folders, pages, characters] = await Promise.all([getWikiFolders(page.world_id), getWikiPageRows(page.world_id), getWorldCharacterTerms(page.world_id)]);
   const tree = buildWikiTree(folders, pages);

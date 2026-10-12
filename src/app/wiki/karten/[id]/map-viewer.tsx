@@ -15,6 +15,7 @@ import {
   type WikiMapPin,
 } from "@/lib/wiki-map";
 import { addMapPin, deletePin, movePin, updatePin } from "../actions";
+import { useWorldRights } from "@/components/rights-context";
 
 type Option = { id: string; title: string };
 type Draft = { id?: string; x: number; y: number; label: string; icon: string; pageId: string; targetMapId: string };
@@ -43,6 +44,7 @@ export function MapViewer({
   const [ratio, setRatio] = useState(16 / 10);
   const [view, setView] = useState<View>({ scale: 1, tx: 0, ty: 0 });
   const [pins, setPins] = useState<WikiMapPin[]>(initialPins);
+  const rights = useWorldRights();
   const [editing, setEditing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(initialPinId ?? null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -248,6 +250,7 @@ export function MapViewer({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        {rights.wikiStructure ? (
         <button
           type="button"
           onClick={toggleEditing}
@@ -257,6 +260,9 @@ export function MapViewer({
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
           {editing ? "Fertig" : "Pins bearbeiten"}
         </button>
+        ) : (
+          <span />
+        )}
         <div className="flex gap-1.5" role="group" aria-label="Zoom">
           <button type="button" className={btn} onClick={() => zoomBy(1.5)} aria-label="Vergrößern" disabled={view.scale >= 8}>
             <Plus className="h-4 w-4" strokeWidth={2} />

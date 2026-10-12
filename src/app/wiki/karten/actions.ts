@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { cleanMapTitle, cleanPinInput, clamp, type PinInput, type WikiMapPin } from "@/lib/wiki-map";
+import { permissionError } from "@/lib/world-permissions";
 
 type Result<T = object> = { ok: false; error: string } | ({ ok: true } & T);
 
@@ -38,7 +39,7 @@ export async function createWikiMap(input: { title: string; description?: string
     .insert({ world_id: world.id, title, description, image_url: imageUrl, created_by: user.id })
     .select("id")
     .single();
-  if (error || !data) return { ok: false, error: error?.message ?? "Karte konnte nicht angelegt werden." };
+  if (error || !data) return { ok: false, error: error ? permissionError(error) : "Karte konnte nicht angelegt werden." };
   done();
   return { ok: true, id: data.id as string };
 }
@@ -84,7 +85,7 @@ export async function addMapPin(mapId: string, x: number, y: number, raw: Parame
     .insert({ map_id: mapId, x: pct(x), y: pct(y), label: input.label, icon: input.icon, page_id: input.pageId, target_map_id: input.targetMapId, created_by: user.id })
     .select(PIN_COLUMNS)
     .single<WikiMapPin>();
-  if (error || !data) return { ok: false, error: error?.message ?? "Pin konnte nicht gesetzt werden." };
+  if (error || !data) return { ok: false, error: error ? permissionError(error) : "Pin konnte nicht gesetzt werden." };
   done();
   return { ok: true, pin: { ...data, x: Number(data.x), y: Number(data.y) } };
 }

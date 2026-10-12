@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorldRights } from "@/components/rights-context";
+
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
@@ -69,6 +71,7 @@ const WIKI_TOOLS = [
 ] as const;
 
 export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, children }: Props) {
+  const rights = useWorldRights();
   const pathname = usePathname();
   const router = useRouter();
   const cur = currentFromPath(pathname);
@@ -164,7 +167,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
     ? pages.filter((p) => `${p.title} ${p.lead ?? ""}`.toLowerCase().includes(q)).slice(0, 12)
     : [];
 
-  const canDelete = (f: TreeFolder) => f.created_by === userId || isWorldOwner;
+  const canDelete = (f: TreeFolder) => rights.isAdmin || isWorldOwner || (f.created_by === userId && rights.wikiStructure);
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-20 print:max-w-none print:p-0">
@@ -240,15 +243,17 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                   className="w-full rounded-xl border border-line bg-surface py-2 pl-9 pr-3 text-sm text-fg outline-none placeholder:text-muted focus:border-accent"
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => setDialog({ kind: "new", parent: null })}
-                title="Neuer Ordner"
-                aria-label="Neuen Ordner anlegen"
-                className="flex w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-              >
-                <FolderPlus className="h-4 w-4" strokeWidth={2} />
-              </button>
+              {rights.wikiStructure && (
+                <button
+                  type="button"
+                  onClick={() => setDialog({ kind: "new", parent: null })}
+                  title="Neuer Ordner"
+                  aria-label="Neuen Ordner anlegen"
+                  className="flex w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+                >
+                  <FolderPlus className="h-4 w-4" strokeWidth={2} />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setNavHidden(true)}
@@ -296,9 +301,11 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                 {hits.length === 0 && (
                   <li className="px-2 py-2 text-sm text-muted">
                     Nichts gefunden.{" "}
-                    <Link href={`/wiki/new?title=${encodeURIComponent(query.trim())}`} className="text-accent hover:underline">
-                      „{query.trim()}“ anlegen
-                    </Link>
+                    {rights.wikiCreate && (
+                      <Link href={`/wiki/new?title=${encodeURIComponent(query.trim())}`} className="text-accent hover:underline">
+                        „{query.trim()}“ anlegen
+                      </Link>
+                    )}
                   </li>
                 )}
                 {hits.map((p) => (
@@ -495,6 +502,7 @@ function FolderNode({
   onDialog: (d: FolderDialogState) => void;
 }) {
   const { isOpen, toggle, cur, onNavigate, dnd } = common;
+  const rights = useWorldRights();
   const { setRef: setRowRef, listeners: rowListeners, dragging, over } = useRowDnd({ kind: "folder", id: folder.id }, dnd);
   const hasContent = folder.children.length + folder.pages.length > 0;
   const open = isOpen(folder.id) && hasContent;
@@ -577,18 +585,24 @@ function FolderNode({
         </button>
         {menu && (
           <div role="menu" style={menuPos ?? undefined} className="fixed z-50 w-52 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
-            <Link role="menuitem" href={`/wiki/new?folder=${folder.id}`} onClick={() => { setMenu(false); onNavigate(); }} className={item}>
-              Artikel hier anlegen
-            </Link>
-            <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "new", parent: folder }); }}>
-              Unterordner anlegen
-            </button>
-            <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "rename", folder }); }}>
-              Bearbeiten
-            </button>
-            <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "move", folder }); }}>
-              Verschieben
-            </button>
+            {rights.wikiCreate && (
+              <Link role="menuitem" href={`/wiki/new?folder=${folder.id}`} onClick={() => { setMenu(false); onNavigate(); }} className={item}>
+                Artikel hier anlegen
+              </Link>
+            )}
+            {rights.wikiStructure && (
+              <>
+                <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "new", parent: folder }); }}>
+                  Unterordner anlegen
+                </button>
+                <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "rename", folder }); }}>
+                  Bearbeiten
+                </button>
+                <button role="menuitem" type="button" className={item} onClick={() => { setMenu(false); onDialog({ kind: "move", folder }); }}>
+                  Verschieben
+                </button>
+              </>
+            )}
             {canDelete(folder) && (
               <button role="menuitem" type="button" className={`${item} text-red-600 dark:text-red-400`} onClick={() => { setMenu(false); onDialog({ kind: "delete", folder }); }}>
                 Löschen

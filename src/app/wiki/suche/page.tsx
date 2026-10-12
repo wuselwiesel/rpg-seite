@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWorldRights } from "@/lib/world-rights";
 import { getWikiFolders, getWikiLinkPages, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { buildWikiTree, folderOptions, folderPath } from "@/lib/wiki-tree";
 import { searchWiki, type SearchEntry } from "@/lib/wiki-search";
@@ -27,6 +28,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const world = await getActiveWorld(user.id);
+  const canCreate = world ? (await getWorldRights(world.id, user.id)).wikiCreate : false;
   if (!world) redirect("/worlds");
 
   const [folders, rows, linkPages, types] = await Promise.all([
@@ -122,7 +124,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
       {!filtering ? null : hits.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line p-6 text-fg-soft">
           Nichts gefunden.{" "}
-          {q && (
+          {q && canCreate && (
             <Link href={`/wiki/new?title=${encodeURIComponent(q)}`} className="text-accent underline underline-offset-2">
               Seite „{q}“ anlegen
             </Link>

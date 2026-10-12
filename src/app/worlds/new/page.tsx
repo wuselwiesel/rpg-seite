@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createWorld } from "../actions";
+import { PermissionFields } from "@/components/permission-fields";
+import { strictPermissions } from "@/lib/world-permissions";
 
 export default function NewWorldPage() {
   const [error, formAction, pending] = useActionState(createWorld, null);
@@ -83,6 +85,8 @@ export default function NewWorldPage() {
           />
           Öffentlich
         </label>
+
+        <PermissionFields value={strictPermissions()} />
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

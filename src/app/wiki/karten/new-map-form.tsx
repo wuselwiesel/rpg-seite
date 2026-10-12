@@ -6,10 +6,12 @@ import { ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MAP_MAX_BYTES, prepareMapImage } from "@/lib/map-image";
 import { createWikiMap } from "./actions";
+import { useWorldRights } from "@/components/rights-context";
 
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
 export function NewMapForm() {
+  const rights = useWorldRights();
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -57,6 +59,7 @@ export function NewMapForm() {
     }
   }
 
+  if (!rights.wikiStructure) return null;
   return (
     <form onSubmit={submit} className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 @xl:p-6">
       <h2 className="font-serif text-2xl text-fg">Neue Karte</h2>

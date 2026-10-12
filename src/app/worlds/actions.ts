@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { permissionsFromForm, strictPermissions, parsePermissions } from "@/lib/world-permissions";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
@@ -32,7 +33,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
 
   const { data: world, error } = await supabase
     .from("worlds")
-    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", join_mode: parseJoinMode(formData.get("join_mode")), preview: parsePreview(formData.get("preview")) })
+    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", join_mode: parseJoinMode(formData.get("join_mode")), preview: parsePreview(formData.get("preview")), permissions: permissionsFromForm(formData, strictPermissions()) })
     .select("id")
     .single();
 
@@ -144,6 +145,7 @@ export async function updateWorld(
         is_public: formData.get("is_public") === "on",
         join_mode: parseJoinMode(formData.get("join_mode")),
         preview: parsePreview(formData.get("preview")),
+        permissions: permissionsFromForm(formData, parsePermissions({})),
       },
       { count: "exact" },
     )

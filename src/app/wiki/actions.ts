@@ -12,6 +12,7 @@ import { getWikiTypes } from "@/lib/wiki-data";
 import { parseTags } from "@/lib/wiki-tags";
 import { cleanDateLabel, columnsFromDates, parsePageDates, type EventColumns } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
+import { permissionError } from "@/lib/world-permissions";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -143,7 +144,7 @@ export async function createWikiPage(_prevState: string | null, formData: FormDa
     .insert({ ...parsed.input, world_id: world.id, category: "sonstiges", created_by: user.id })
     .select("id")
     .single();
-  if (error || !data) return error?.message ?? "Seite konnte nicht erstellt werden.";
+  if (error || !data) return error ? permissionError(error) : "Seite konnte nicht erstellt werden.";
 
   revalidatePath("/wiki", "layout");
   redirect(`/wiki/${data.id}`);
@@ -182,7 +183,7 @@ export async function createTimelineEvent(_prev: string | null, formData: FormDa
   const { error } = await supabase
     .from("wiki_pages")
     .insert({ ...parsed.input, ...(source ?? {}), world_id: world.id, category: "sonstiges", created_by: user.id });
-  if (error) return error.message;
+  if (error) return permissionError(error);
 
   revalidatePath("/wiki", "layout");
   if (source) revalidatePath(`/story/${source.source_story_id}`);

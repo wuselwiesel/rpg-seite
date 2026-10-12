@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWorldRights } from "@/lib/world-rights";
 import { getWikiFolders, getWikiPageRows } from "@/lib/wiki-data";
 import { buildWikiTree, folderOptions, pageOptions } from "@/lib/wiki-tree";
 import { getWorldCharacterTerms } from "@/lib/wiki-characters";
@@ -18,6 +19,7 @@ export default async function NewWikiPagePage({ searchParams }: PageProps<"/wiki
   if (!user) redirect("/login");
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
+  if (!(await getWorldRights(world.id, user.id)).wikiCreate) redirect("/wiki");
 
   const [folders, pages, characters] = await Promise.all([getWikiFolders(world.id), getWikiPageRows(world.id), getWorldCharacterTerms(world.id)]);
   const tree = buildWikiTree(folders, pages);

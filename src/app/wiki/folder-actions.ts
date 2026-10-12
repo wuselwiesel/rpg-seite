@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { parseFolderColor, parseFolderIcon } from "@/lib/wiki-folder-style";
+import { permissionError } from "@/lib/world-permissions";
 
 const MAX_NAME = 60;
 
@@ -29,7 +30,7 @@ export async function createWikiFolder(parentId: string | null, rawName: string,
   const { error } = await supabase
     .from("wiki_folders")
     .insert({ world_id: world.id, parent_id: parentId, name, created_by: user.id, icon: parseFolderIcon(rawIcon), color: parseFolderColor(rawColor) });
-  if (error) return error.message;
+  if (error) return permissionError(error);
   return done();
 }
 

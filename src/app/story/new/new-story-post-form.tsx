@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Feather } from "lucide-react";
 import { CastPicker } from "@/components/cast-picker";
 import { createStoryPost } from "../actions";
+import { useWorldRights } from "@/components/rights-context";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { WriterSelect } from "@/components/writer-select";
 import { useDraft } from "@/lib/use-draft";
@@ -32,6 +33,7 @@ export function NewStoryPostForm({
 }) {
   const [writerId, setWriterId] = useState(activeCharacterId ?? ownCharacters[0]?.id ?? "");
   const otherCharacters = allCharacters.filter((c) => c.id !== writerId);
+  const rights = useWorldRights();
   const [error, formAction, pending] = useActionState(createStoryPost, null);
   const [arcChoices, setArcChoices] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -159,14 +161,16 @@ export function NewStoryPostForm({
         {arcChoices.map((id) => (
           <input key={id} type="hidden" name="arc_id" value={id} />
         ))}
-        <input
-          type="text"
-          name="new_arc_name"
-          maxLength={80}
-          placeholder="Neuer Handlungsstrang, z. B. Der Sturm-Arc"
-          aria-label="Name eines neuen Handlungsstrangs"
-          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-        />
+        {rights.arcCreate && (
+          <input
+            type="text"
+            name="new_arc_name"
+            maxLength={80}
+            placeholder="Neuer Handlungsstrang, z. B. Der Sturm-Arc"
+            aria-label="Name eines neuen Handlungsstrangs"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+          />
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">

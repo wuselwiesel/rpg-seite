@@ -6,6 +6,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { getWikiTypes } from "@/lib/wiki-data";
 import { STANDARD_TYPE_ICONS, newTypeId } from "@/lib/wiki-types";
 import { parseFolderColor, parseFolderIcon } from "@/lib/wiki-folder-style";
+import { permissionError } from "@/lib/world-permissions";
 
 function lines(raw: FormDataEntryValue | null, max = 20): string[] {
   return Array.from(
@@ -64,7 +65,7 @@ export async function createWikiType(_prev: string | null, formData: FormData): 
   const { error } = await ctx.supabase
     .from("wiki_types")
     .insert({ ...parsed.values, world_id: ctx.world.id, id, sort_order: existing.length + 1, created_by: ctx.user.id });
-  if (error) return error.message;
+  if (error) return permissionError(error);
   return done();
 }
 

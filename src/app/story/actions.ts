@@ -21,6 +21,7 @@ import { isRateLimited } from "@/lib/rate-limit";
 import { resolveCondition } from "@/lib/dice-conditions";
 import { columnsFromDates, parsePageDates } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
+import { permissionError } from "@/lib/world-permissions";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -155,7 +156,7 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
         .insert({ world_id: activeWorld.id, name: newArcName, created_by: user.id })
         .select("id")
         .single();
-      if (arcError || !arc) return arcError?.message ?? "Handlungsstrang konnte nicht erstellt werden.";
+      if (arcError || !arc) return arcError ? permissionError(arcError) : "Handlungsstrang konnte nicht erstellt werden.";
       arcIds.push(arc.id);
     }
   }
@@ -197,7 +198,7 @@ export async function createStoryPost(_prevState: string | null, formData: FormD
     .select("id")
     .single();
 
-  if (error || !data) return error?.message ?? "Szene konnte nicht erstellt werden.";
+  if (error || !data) return error ? permissionError(error) : "Szene konnte nicht erstellt werden.";
 
   if (arcIds.length > 0) await supabase.rpc("set_scene_arcs", { p_story_post_id: data.id, p_arc_ids: arcIds });
 
@@ -1253,7 +1254,7 @@ export async function setSceneArcs(storyPostId: string, arcIds: string[], newArc
       if (!next.includes(found.id)) next.push(found.id);
     } else {
       const { data: created, error } = await supabase.from("story_arcs").insert({ world_id: post.world_id, name, created_by: user.id }).select("id").single<{ id: string }>();
-      if (error || !created) return error?.message ?? "Handlungsstrang konnte nicht erstellt werden.";
+      if (error || !created) return error ? permissionError(error) : "Handlungsstrang konnte nicht erstellt werden.";
       next.push(created.id);
     }
   }

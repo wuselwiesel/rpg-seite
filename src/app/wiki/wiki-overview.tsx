@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CalendarDays, Clock, LayoutTemplate, Map as MapIcon, Network, Plus, Search, Shuffle, Star, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWorldRights } from "@/lib/world-rights";
 import { getWikiMaps } from "@/lib/wiki-map-data";
 import { getWorldCharacterTerms } from "@/lib/wiki-characters";
 import { getWikiFavoriteIds, getWikiFolders, getWikiLinkPages, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
@@ -49,6 +50,7 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
   if (!user) redirect("/login");
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
+  const rights = await getWorldRights(world.id, user.id);
 
   const [folders, pageRows, linkPages, favoriteIds, maps, characters, wikiTypes] = await Promise.all([
     getWikiFolders(world.id),
@@ -71,11 +73,13 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
 
   const actions = (
     <div className="flex flex-wrap gap-2">
-      <Link href="/wiki/new" className={primary}>
-        <Plus className="h-4 w-4" strokeWidth={2.25} />
-        Neuer Artikel
-      </Link>
-      <NewFolderButton tree={tree.folders} allFolders={folders} />
+      {rights.wikiCreate && (
+        <Link href="/wiki/new" className={primary}>
+          <Plus className="h-4 w-4" strokeWidth={2.25} />
+          Neuer Artikel
+        </Link>
+      )}
+      {rights.wikiStructure && <NewFolderButton tree={tree.folders} allFolders={folders} />}
       {canEditHome && (
         <Link href="/wiki?bearbeiten=1" className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm text-fg-soft transition hover:border-accent hover:text-accent">
           <LayoutTemplate className="h-4 w-4" strokeWidth={2} />
@@ -301,18 +305,25 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
           <summary className="w-fit cursor-pointer list-none rounded-lg px-2 py-1 transition hover:bg-surface-2 hover:text-fg [&::-webkit-details-marker]:hidden">
             {plural(missing.length, "fehlender Artikel", "fehlende Artikel")} anzeigen
           </summary>
-          <p className="mt-2 px-2">Mit [[…]] verlinkt, aber noch ohne eigene Seite. Ein Klick legt sie an.</p>
+          <p className="mt-2 px-2">Mit [[…]] verlinkt, aber noch ohne eigene Seite.{rights.wikiCreate ? " Ein Klick legt sie an." : ""}</p>
           <ul className="mt-3 flex flex-wrap gap-2 px-2">
             {missing.map((m) => (
               <li key={m.title}>
-                <Link
-                  href={`/wiki/new?title=${encodeURIComponent(m.title)}`}
-                  title={`Artikel „${m.title}“ anlegen`}
-                  className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-2.5 transition hover:bg-surface-3"
-                >
-                  <span className="wiki-missing-text font-medium">{m.title}</span>
-                  <span className="text-xs text-muted">{m.count}×</span>
-                </Link>
+                {rights.wikiCreate ? (
+                  <Link
+                    href={`/wiki/new?title=${encodeURIComponent(m.title)}`}
+                    title={`Artikel „${m.title}“ anlegen`}
+                    className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-2.5 transition hover:bg-surface-3"
+                  >
+                    <span className="wiki-missing-text font-medium">{m.title}</span>
+                    <span className="text-xs text-muted">{m.count}×</span>
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pl-3 pr-2.5">
+                    <span className="wiki-missing-text font-medium">{m.title}</span>
+                    <span className="text-xs text-muted">{m.count}×</span>
+                  </span>
+                )}
               </li>
             ))}
           </ul>

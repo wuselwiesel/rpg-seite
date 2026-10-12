@@ -4,6 +4,8 @@ import { useActionState } from "react";
 import { updateWorld } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
 import type { World } from "@/lib/types";
+import { PermissionFields } from "@/components/permission-fields";
+import { parsePermissions } from "@/lib/world-permissions";
 
 export function EditWorldForm({ world }: { world: World }) {
   const action = updateWorld.bind(null, world.id);
@@ -84,6 +86,8 @@ export function EditWorldForm({ world }: { world: World }) {
         />
         Würfeln
       </label>
+
+      <PermissionFields value={parsePermissions(world.permissions)} />
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

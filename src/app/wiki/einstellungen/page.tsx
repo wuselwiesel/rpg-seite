@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWorldRights } from "@/lib/world-rights";
 import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { TypesManager } from "./types-manager";
@@ -14,6 +15,7 @@ export default async function WikiSettingsPage() {
   if (!user) redirect("/login");
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
+  if (!(await getWorldRights(world.id, user.id)).wikiStructure) redirect("/wiki");
 
   const [types, pages] = await Promise.all([getWikiTypes(world.id), getWikiPageRows(world.id)]);
   const rows = types.map((type) => ({

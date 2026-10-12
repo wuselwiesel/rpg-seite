@@ -21,6 +21,7 @@ import { useAppMode } from "@/components/mode-context";
 import { startTour } from "@/lib/tour";
 import { isImmersiveChatPath } from "@/lib/immersive-routes";
 import { useDiceEnabled } from "./dice-context";
+import { useWorldRights } from "./rights-context";
 import type { AppNotification } from "@/lib/notifications";
 import type { Character, Profile, World } from "@/lib/types";
 
@@ -63,6 +64,7 @@ export function MobileNav({
 }) {
   const pathname = usePathname();
   const diceEnabled = useDiceEnabled();
+  const rights = useWorldRights();
   // Das Menü gehört zu der Seite, auf der man es geöffnet hat: wechselt die Seite (auch über Links im Menü, z. B. „Welten verwalten“), geht es zu
   const [openAt, setOpenAt] = useState<string | null>(null);
   const moreOpen = openAt !== null && openAt === pathname;
@@ -139,9 +141,9 @@ export function MobileNav({
             <MobileTabLink href="/story" icon={<BookOpen className="h-5 w-5" strokeWidth={2} />} label="Story" />
             <MobileTabLink href="/wiki" icon={<Library className="h-5 w-5" strokeWidth={2} />} label="Wiki" />
             {pathname?.startsWith("/wiki") ? (
-              <MobileCreateTab href="/wiki/new" label="Neuer Wiki-Eintrag" />
+              rights.wikiCreate && <MobileCreateTab href="/wiki/new" label="Neuer Wiki-Eintrag" />
             ) : (
-              <MobileCreateTab href="/story/new" label="Neue Story" />
+              rights.storyCreate && <MobileCreateTab href="/story/new" label="Neue Story" />
             )}
             {activeCharacter && (
               <MobileTabLink

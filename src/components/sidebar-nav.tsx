@@ -1,6 +1,7 @@
 "use client";
 
 import { useDiceEnabled } from "./dice-context";
+import { useWorldRights } from "./rights-context";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
@@ -25,6 +26,7 @@ export function SidebarNav({
   const pathname = usePathname();
   const mode = useAppMode();
   const diceEnabled = useDiceEnabled();
+  const rights = useWorldRights();
   const inWiki = pathname?.startsWith("/wiki") || pathname?.startsWith("/characters/relationships");
 
   if (mode === "redaktion") {
@@ -77,14 +79,16 @@ export function SidebarNav({
             </NavLink>
           )}
         </nav>
-        <Link
-          href={inWiki ? "/wiki/new" : "/story/new"}
-          data-tour="compose"
-          className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
-        >
-          <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
-          {inWiki ? "Neuer Wiki-Eintrag" : "Neue Story"}
-        </Link>
+        {(inWiki ? rights.wikiCreate : rights.storyCreate) && (
+          <Link
+            href={inWiki ? "/wiki/new" : "/story/new"}
+            data-tour="compose"
+            className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
+          >
+            <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
+            {inWiki ? "Neuer Wiki-Eintrag" : "Neue Story"}
+          </Link>
+        )}
       </>
     );
   }

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters, getOwnCharacters, getOwnNpcs, getWorldCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWorldRights } from "@/lib/world-rights";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import type { StoryArc } from "@/lib/types";
 import { NewStoryPostForm } from "./new-story-post-form";
@@ -16,6 +17,7 @@ export default async function NewStoryPostPage() {
 
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) redirect("/worlds");
+  if (!(await getWorldRights(activeWorld.id, user.id)).storyCreate) redirect("/story");
 
   const [{ data: arcs }, activeCharacter, mentionableCharacters, { data: locationRows }] = await Promise.all([
     supabase

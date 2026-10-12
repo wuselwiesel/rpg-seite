@@ -4,6 +4,7 @@ import { FolderGlyph } from "@/components/folder-glyph";
 import { folderColorHex } from "@/lib/wiki-folder-style";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWorldRights } from "@/lib/world-rights";
 import { getWikiFolders, getWikiPageRows } from "@/lib/wiki-data";
 import { buildWikiTree, findFolder, folderPath } from "@/lib/wiki-tree";
 import { FolderActionsBar } from "../../folder-actions-bar";
@@ -27,7 +28,8 @@ export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner
 
   const trail = folderPath(folders, folder.parent_id);
   const hex = folderColorHex(folder.color);
-  const canDelete = folder.created_by === user.id || world.created_by === user.id;
+  const rights = await getWorldRights(world.id, user.id);
+  const canDelete = rights.isAdmin || (folder.created_by === user.id && rights.wikiStructure);
   const counts = [
     `${folder.total} ${folder.total === 1 ? "Artikel" : "Artikel"}`,
     folder.children.length > 0 ? `${folder.children.length} ${folder.children.length === 1 ? "Unterordner" : "Unterordner"}` : null,

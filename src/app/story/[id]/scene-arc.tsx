@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Pencil, Plus } from "lucide-react";
 import { setSceneArcs } from "../actions";
+import { useWorldRights } from "@/components/rights-context";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-base text-fg outline-none focus:border-accent sm:text-sm";
 
@@ -24,6 +25,7 @@ export function SceneArc({
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [chosen, setChosen] = useState<string[]>(sceneArcs.map((a) => a.id));
+  const rights = useWorldRights();
   const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -65,7 +67,7 @@ export function SceneArc({
             );
           })}
         </div>
-        <input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={80} placeholder="Neuer Handlungsstrang, z. B. Der Sturm-Arc" aria-label="Name eines neuen Handlungsstrangs" className={field} />
+        {rights.arcCreate && <input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={80} placeholder="Neuer Handlungsstrang, z. B. Der Sturm-Arc" aria-label="Name eines neuen Handlungsstrangs" className={field} />}
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex gap-2">
           <button

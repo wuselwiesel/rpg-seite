@@ -70,6 +70,9 @@ import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
 import { ModeProvider } from "@/components/mode-context";
 import { DiceProvider } from "@/components/dice-context";
+import { RightsProvider } from "@/components/rights-context";
+import { getWorldRights } from "@/lib/world-rights";
+import { FULL_RIGHTS } from "@/lib/world-permissions";
 import { getActiveWorld } from "@/lib/worlds";
 import { MODE_COOKIE, parseRememberedMode } from "@/lib/app-mode";
 import { cookies } from "next/headers";
@@ -283,7 +286,9 @@ document.addEventListener('gesturestart', function (e) {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [emojiMap, accountFont, ownPresence, cookieStore] = await Promise.all([getEmojiMap(), getAccountDefaultFont(), getOwnPresence(), cookies()]);
   const rememberedMode = parseRememberedMode(cookieStore.get(MODE_COOKIE)?.value);
-  const diceEnabled = ownPresence?.userId ? (await getActiveWorld(ownPresence.userId))?.dice_enabled !== false : true;
+  const activeWorld = ownPresence?.userId ? await getActiveWorld(ownPresence.userId) : null;
+  const diceEnabled = activeWorld ? activeWorld.dice_enabled !== false : true;
+  const rights = activeWorld && ownPresence?.userId ? await getWorldRights(activeWorld.id, ownPresence.userId) : FULL_RIGHTS;
   return (
     <html
       lang="de"
@@ -312,9 +317,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"} initialEmoji={ownPresence?.emoji ?? null} initialText={ownPresence?.text ?? null}>
           <CustomEmojiProvider map={emojiMap}>
             <DiceProvider enabled={diceEnabled}>
+            <RightsProvider rights={rights}>
             <AppFrame sidebar={<Sidebar />}>
               <MobileMain>{children}</MobileMain>
             </AppFrame>
+            </RightsProvider>
             </DiceProvider>
             <ChatBubbleLoader />
             <SpoilerReveal />

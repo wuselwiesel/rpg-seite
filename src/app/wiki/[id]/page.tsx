@@ -6,7 +6,8 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Clock, MapPin, Network, Pencil, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveWorld } from "@/lib/worlds";
+import { getWorldRights } from "@/lib/world-rights";
+import { canEditWikiPage } from "@/lib/world-permissions";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
 import { escapeHtml, linkCharacterMentions } from "@/lib/character-links";
@@ -42,12 +43,9 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   const { data: page } = await supabase.from("wiki_pages").select("*").eq("id", id).maybeSingle<WikiPage>();
   if (!page) notFound();
 
-  const world = await getActiveWorld(user.id);
-  const worldOwnerId =
-    world?.id === page.world_id
-      ? world.created_by
-      : (await supabase.from("worlds").select("created_by").eq("id", page.world_id).maybeSingle()).data?.created_by;
-  const canDelete = page.created_by === user.id || worldOwnerId === user.id;
+  const rights = await getWorldRights(page.world_id, user.id);
+  const canEdit = canEditWikiPage(rights, page.created_by, user.id);
+  const canDelete = rights.isAdmin || (page.created_by === user.id && canEdit);
 
   const [wikiTerms, folders, pageRows, linkPages, favoriteIds, onMaps, characters, calendar, wikiTypeRows] = await Promise.all([
     getWikiTerms(page.world_id),
@@ -202,13 +200,15 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
               <Network className="h-3.5 w-3.5" strokeWidth={2} />
               Graph
             </Link>
-            <Link
-              href={`/wiki/${page.id}/edit`}
-              className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:text-fg"
-            >
-              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-              Bearbeiten
-            </Link>
+            {canEdit && (
+              <Link
+                href={`/wiki/${page.id}/edit`}
+                className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:text-fg"
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                Bearbeiten
+              </Link>
+            )}
             {canDelete && <DeleteWikiPageButton wikiPageId={page.id} hasSubpages={(node?.children.length ?? 0) > 0} backTo={page.folder_id ? `/wiki/ordner/${page.folder_id}` : "/wiki"} />}
           </div>
         </div>
@@ -218,9 +218,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         {isEmpty ? (
           <div className="rounded-2xl border border-dashed border-line p-8 text-center text-muted">
             Dieser Artikel hat noch keinen Text.{" "}
-            <Link href={`/wiki/${page.id}/edit`} className="text-accent underline underline-offset-2">
-              Text ergänzen
-            </Link>
+            {canEdit && (
+              <Link href={`/wiki/${page.id}/edit`} className="text-accent underline underline-offset-2">
+                Text ergänzen
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -280,10 +282,12 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         <section aria-labelledby="unterseiten">
           <h2 id="unterseiten" className={sectionHead}>
             Unterseiten <span className="text-base text-muted">{node.children.length}</span>
-            <Link href={`/wiki/new?parent=${page.id}`} className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 font-sans text-sm text-muted transition hover:bg-surface-2 hover:text-fg">
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-              Neue Unterseite
-            </Link>
+            {rights.wikiCreate && (
+              <Link href={`/wiki/new?parent=${page.id}`} className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 font-sans text-sm text-muted transition hover:bg-surface-2 hover:text-fg">
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+                Neue Unterseite
+              </Link>
+            )}
           </h2>
           <ul className="grid gap-3 @3xl:grid-cols-2">
             {node.children.map((c) => (
