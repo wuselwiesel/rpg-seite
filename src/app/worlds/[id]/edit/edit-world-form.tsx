@@ -45,6 +45,15 @@ export function EditWorldForm({ world }: { world: World }) {
       <label className="flex items-center gap-3 text-sm text-fg">
         <input
           type="checkbox"
+          name="is_public"
+          defaultChecked={world.is_public === true}
+          className="h-4 w-4 accent-[var(--accent-strong)]"
+        />
+        Öffentlich
+      </label>
+      <label className="flex items-center gap-3 text-sm text-fg">
+        <input
+          type="checkbox"
           name="dice_enabled"
           defaultChecked={world.dice_enabled !== false}
           className="h-4 w-4 accent-[var(--accent-strong)]"

@@ -48,6 +48,11 @@ export default function NewWorldPage() {
           />
         </label>
 
+        <label className="flex items-center gap-3 text-sm text-fg">
+          <input type="checkbox" name="is_public" className="h-4 w-4 accent-[var(--accent-strong)]" />
+          Öffentlich
+        </label>
+
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button

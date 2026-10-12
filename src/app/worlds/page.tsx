@@ -23,7 +23,7 @@ export default async function WorldsPage() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Link
-            href="/search?tab=worlds"
+            href="/worlds/entdecken"
             className="rounded-md border border-line px-4 py-2 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
           >
             Welten entdecken

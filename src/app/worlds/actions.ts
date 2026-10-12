@@ -22,7 +22,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
 
   const { data: world, error } = await supabase
     .from("worlds")
-    .insert({ name, description: description || null, created_by: user.id })
+    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on" })
     .select("id")
     .single();
 
@@ -126,6 +126,7 @@ export async function updateWorld(
         description: description || null,
         cover_image_url: coverImageUrl || null,
         dice_enabled: formData.get("dice_enabled") === "on",
+        is_public: formData.get("is_public") === "on",
       },
       { count: "exact" },
     )

@@ -110,14 +110,17 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
             .select("*, creator:created_by(username, nickname)")
             .ilike("name", `%${q}%`)
             .order("name")
-            .limit(20)
+            .limit(60)
             .returns<WorldWithCreator[]>()
         : Promise.resolve({ data: [] as WorldWithCreator[] }),
     ]);
 
     for (const m of memberships ?? []) memberWorldIds.add(m.world_id);
     for (const f of follows ?? []) followedWorldIds.add(f.world_id);
-    worldResults = worlds ?? [];
+    // Private Welten erscheinen nur für ihre Mitglieder und die Besitzer:in (sonst nur über den Einladungslink)
+    worldResults = (worlds ?? [])
+      .filter((w) => (w as { is_public?: boolean }).is_public || (w as { is_demo?: boolean }).is_demo || memberWorldIds.has(w.id) || w.created_by === user.id)
+      .slice(0, 20);
   }
 
   // Beliebte Hashtags der letzten Beiträge (nur ohne Suchbegriff).

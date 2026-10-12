@@ -18,6 +18,9 @@ export type World = {
   wiki_home?: unknown;
   // Würfeln eingeschaltet (Standard) oder ausgeschaltet
   dice_enabled?: boolean;
+  // Öffentlich: erscheint in „Welten entdecken“ und der Suche; Übungswelt: gemeinsam genutzte Beispielwelt
+  is_public?: boolean;
+  is_demo?: boolean;
 };
 
 export type Friendship = {
