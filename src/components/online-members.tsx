@@ -103,12 +103,12 @@ export function OnlineLine({ members, selfId, className = "" }: { members: Membe
         aria-expanded={open}
         aria-label={label}
         title={label}
-        className="flex h-6 w-6 items-center justify-center rounded-full transition hover:bg-surface-2"
+        className="flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-surface-2"
       >
         <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${online.length > 0 ? "bg-emerald-500" : "bg-fg/30"}`} />
       </button>
       {open && (
-        <ul className="absolute bottom-full left-0 z-20 mb-1 max-h-64 min-w-40 max-w-64 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-lg">
+        <ul className="absolute bottom-full right-0 z-20 mb-1 max-h-64 min-w-40 max-w-64 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-lg">
           {online.map((m) => (
             <li key={m.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-fg">
               <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />

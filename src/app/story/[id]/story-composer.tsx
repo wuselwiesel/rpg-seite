@@ -242,6 +242,7 @@ export function StoryComposer({
           </button>
         </div>
         <div className="flex items-center gap-0.5">
+          <OnlineLine members={worldMembers} selfId={userId} />
           {mode === "roll" && (
             <Link href="/hilfe#wuerfeln" title="Hilfe zum Würfeln" aria-label="Hilfe zum Würfeln" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
               <CircleHelp className="h-4 w-4" strokeWidth={2} />
@@ -301,8 +302,6 @@ export function StoryComposer({
       {mode === "write" && showChapter && (
         <NextSceneForm storyPostId={storyPostId} writerId={writerId} calendar={calendar} locations={locations} location={sceneLocation} onDone={() => setShowChapter(false)} />
       )}
-
-      <OnlineLine members={worldMembers} selfId={userId} className="-mt-1" />
 
       {mode !== "chat" && Object.keys(typing).length > 0 && (
         <div className="-mt-1 flex items-center gap-2 text-xs text-muted" role="status">
