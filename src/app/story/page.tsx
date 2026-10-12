@@ -26,6 +26,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
   const arc = typeof params.arc === "string" ? params.arc.trim() : "";
   const ort = typeof params.ort === "string" ? params.ort.trim() : "";
+  // Suche nur in den Szenen (Titel, Anfangstext) oder zusätzlich in den Nachrichten darin
+  const searchAll = params.suche_in === "alles";
   const onlyMyTurn = params.dran === "1";
   const showArchived = params.archived === "1";
   const bookmarkedOnly = params.bookmarked === "1";
@@ -60,7 +62,20 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
   if (q) {
     const escaped = escapePostgrestValue(q);
-    storyQuery = storyQuery.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
+    let inMessages = "";
+    if (searchAll) {
+      // Szenen, in deren Nachrichten der Text vorkommt (neueste Treffer zuerst, begrenzt, damit die Anfrage kurz bleibt)
+      const { data: hits } = await supabase
+        .from("story_entries")
+        .select("story_post_id, story_posts!inner(world_id)")
+        .eq("story_posts.world_id", activeWorld.id)
+        .ilike("content", `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`)
+        .order("created_at", { ascending: false })
+        .limit(300);
+      const ids = Array.from(new Set((hits ?? []).map((h) => h.story_post_id as string))).slice(0, 150);
+      if (ids.length > 0) inMessages = `,id.in.(${ids.join(",")})`;
+    }
+    storyQuery = storyQuery.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%${inMessages}`);
   }
   if (tag) storyQuery = storyQuery.contains("tags", [tag]);
   if (arc) {
@@ -238,7 +253,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         </p>
       )}
 
-      <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} label="Suche & Zeitraum" tight />
+      <SearchFilterBar basePath="/story" q={q} from={from} to={to} tag={tag} label="Suche & Zeitraum" tight scope={searchAll ? "alles" : "szenen"} />
 
       <div className="flex flex-wrap gap-2">
         {(myTurnCount ?? 0) > 0 && (

@@ -14,6 +14,7 @@ export function SearchFilterBar({
   iconOnly = false,
   label = "Filter",
   tight = false,
+  scope,
 }: {
   basePath: string;
   q: string;
@@ -25,6 +26,8 @@ export function SearchFilterBar({
   label?: string;
   // Ohne Außenabstand (z. B. innerhalb eines Filter-Blocks).
   tight?: boolean;
+  // Nur wenn gesetzt: Auswahl, ob die Suche auch in den Nachrichten der Szenen läuft ("alles") oder nur in den Szenen ("szenen").
+  scope?: "szenen" | "alles";
 }) {
   const [open, setOpen] = useState(false);
   const activeCount = [Boolean(q), Boolean(tag), Boolean(from || to)].filter(Boolean).length;
@@ -34,6 +37,7 @@ export function SearchFilterBar({
     const params = new URLSearchParams();
     if (q && omit !== "q") params.set("q", q);
     if (tag && omit !== "tag") params.set("tag", tag);
+    if (scope === "alles" && omit !== "q") params.set("suche_in", "alles");
     if (omit !== "date") {
       if (from) params.set("from", from);
       if (to) params.set("to", to);
@@ -74,6 +78,7 @@ export function SearchFilterBar({
         {q && (
           <span className="flex items-center gap-1.5 rounded-full bg-surface-2 py-1.5 pl-3 pr-1.5 text-xs text-fg-soft">
             &ldquo;{q}&rdquo;
+            {scope === "alles" && <span className="text-muted">· mit Nachrichten</span>}
             <Link href={hrefWithout("q")} aria-label="Textsuche entfernen" className="rounded-full p-0.5 hover:text-accent">
               <X className="h-3 w-3" strokeWidth={2} />
             </Link>
@@ -117,6 +122,19 @@ export function SearchFilterBar({
               className="rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
             />
           </label>
+          {scope && (
+            <label className="flex flex-col gap-1 text-xs text-muted">
+              Suchen in
+              <select
+                name="suche_in"
+                defaultValue={scope}
+                className="rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
+              >
+                <option value="szenen">Szenen</option>
+                <option value="alles">Szenen und Nachrichten</option>
+              </select>
+            </label>
+          )}
           <label className="flex flex-col gap-1 text-xs text-muted">
             Von
             <input
