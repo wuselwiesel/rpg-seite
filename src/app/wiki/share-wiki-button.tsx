@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { Check, Link2, MessageCircle, Send, Share2 } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { listShareChats, sendWikiPageToChat, type ShareChat } from "@/app/redaktion/chat/share-actions";
@@ -17,6 +17,18 @@ export function ShareWikiButton({ pageId, title }: { pageId: string; title: stri
   const [canShare, setCanShare] = useState(false);
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Am Handy sitzt der Knopf nicht immer am rechten Rand: das Menü bleibt im sichtbaren Bereich.
+  useLayoutEffect(() => {
+    const el = menuRef.current;
+    if (!open || !el) return;
+    el.style.translate = "0 0";
+    const r = el.getBoundingClientRect();
+    const margin = 8;
+    const dx = r.left < margin ? margin - r.left : r.right > window.innerWidth - margin ? window.innerWidth - margin - r.right : 0;
+    el.style.translate = `${dx}px 0`;
+  }, [open, view, chats]);
 
   useEffect(() => {
     Promise.resolve().then(() => setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"));
@@ -100,7 +112,7 @@ export function ShareWikiButton({ pageId, title }: { pageId: string; title: stri
         Teilen
       </button>
       {open && (
-        <div className="menu-pop absolute right-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface p-1.5 shadow-lg">
+        <div ref={menuRef} className="menu-pop absolute right-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface p-1.5 shadow-lg">
           {view === "menu" ? (
             <>
               <button type="button" onClick={openChats} className={item}>
