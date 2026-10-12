@@ -37,7 +37,9 @@ describe("Mitgliederliste", () => {
     expect(html).not.toContain("Niemand online");
     expect(html).toContain("Offline — 4");
   });
-  it("Seitenleiste zeigt die Gesamtzahl", () => {
-    expect(text(renderToString(<SidebarOnline members={members} selfId="me" />))).toContain("Mitglieder — 4");
+  it("Seitenleiste hat keine auffällige Überschrift", () => {
+    const html = text(renderToString(<SidebarOnline members={members} selfId="me" />));
+    expect(html).not.toContain("Mitglieder —");
+    expect(html).toContain("Offline — 4");
   });
 });

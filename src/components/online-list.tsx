@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Moon } from "lucide-react";
+import { SymbolPicker } from "@/components/symbol-picker";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { EmojiText } from "@/components/custom-emoji-provider";
@@ -24,6 +25,8 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
   const [emoji, setEmoji] = useState(own.emoji ?? "");
   const [text, setText] = useState(own.text ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [symbols, setSymbols] = useState(false);
+  const [target, setTarget] = useState<"icon" | "text">("icon");
   const [pending, startTransition] = useTransition();
   const invalid = emoji.trim() !== "" && !cleanPresenceEmoji(emoji);
 
@@ -83,6 +86,46 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
             {e}
           </button>
         ))}
+      </div>
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => setSymbols((v) => !v)}
+          aria-expanded={symbols}
+          className={`w-fit rounded-md px-2.5 py-1 text-xs transition ${symbols ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+        >
+          ✦ Symbole
+        </button>
+        {symbols && (
+          <>
+            <div role="radiogroup" aria-label="Symbol setzen als" className="flex gap-1">
+              {(
+                [
+                  ["icon", "Statussymbol"],
+                  ["text", "In den Text"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={target === id}
+                  onClick={() => setTarget(id)}
+                  className={`rounded-full px-2.5 py-0.5 text-xs transition ${target === id ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <SymbolPicker
+              onPick={(symbol) =>
+                // Als Statussymbol nur kurze Zeichen; Zierleisten und Trenner gehören in den Text
+                target === "icon" && Array.from(symbol).length <= 3 ? setEmoji(symbol) : setText((t) => `${t}${symbol}`.slice(0, PRESENCE_TEXT_MAX))
+              }
+              onClose={() => setSymbols(false)}
+            />
+          </>
+        )}
       </div>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex items-center gap-1.5">

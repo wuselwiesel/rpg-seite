@@ -8,12 +8,15 @@ const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional
 // Ein eigenes Emoji der Welt (:name:), wie es der Emoji-Katalog im Texteditor einfügt
 const CUSTOM_TOKEN = /^:[a-z0-9_]{2,32}:$/;
 
-// Gültiges Emoji (Unicode oder eigenes :name:) oder null (leer / kein Emoji / zu lang)
+// Zeichen und Zierat aus der Symbol-Auswahl des Texteditors (✦ ★ ♥ → ⚔ …): nur Symbole/Satzzeichen, keine Buchstaben oder Ziffern
+const SYMBOLS_ONLY = /^[\p{S}\p{P}\p{M}\s‍️]+$/u;
+
+// Gültiges Statussymbol (Emoji, eigenes :name: oder Symbol) oder null (leer / Buchstaben / zu lang)
 export function cleanPresenceEmoji(raw: unknown): string | null {
   const v = typeof raw === "string" ? raw.trim() : "";
   if (!v || v.length > PRESENCE_EMOJI_MAX) return null;
   if (CUSTOM_TOKEN.test(v)) return v;
-  return EMOJI_ONLY.test(v) ? v : null;
+  return EMOJI_ONLY.test(v) || SYMBOLS_ONLY.test(v) ? v : null;
 }
 
 export function cleanPresenceText(raw: unknown): string | null {

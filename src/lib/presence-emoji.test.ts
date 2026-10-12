@@ -7,6 +7,9 @@ describe("cleanPresenceEmoji", () => {
     expect(cleanPresenceEmoji(" 👩‍💻 ")).toBe("👩‍💻");
     expect(cleanPresenceEmoji("🇮🇪")).toBe("🇮🇪");
   });
+  it("nimmt Symbole aus der Symbol-Auswahl an", () => {
+    for (const v of ["✦", "★", "♥", "⚔", "→", "❦", "✦ ✦ ✦", "──── ✦ ────"]) expect(cleanPresenceEmoji(v)).toBe(v);
+  });
   it("nimmt eigene Emojis der Welt (:name:) an", () => {
     expect(cleanPresenceEmoji(":kaffee_tasse:")).toBe(":kaffee_tasse:");
     expect(cleanPresenceEmoji(" :ok: ")).toBe(":ok:");
