@@ -36,7 +36,7 @@ export function SidebarOnline({ members, selfId }: { members: OnlineMember[]; se
   }
 
   return (
-    <section aria-label="Mitglieder" className="mt-2 flex max-h-[40%] min-h-0 shrink-0 flex-col border-t border-line pt-1">
+    <section aria-label="Mitglieder" className="mt-2 flex max-h-[30%] min-h-0 shrink-0 flex-col border-t border-line pt-1">
       <button
         type="button"
         onClick={toggle}

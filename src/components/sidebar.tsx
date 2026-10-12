@@ -128,7 +128,7 @@ export async function Sidebar() {
       <div className="mb-3">
         <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
       </div>
-      <div className="-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1">
+      <div className="-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 pb-3 [mask-image:linear-gradient(to_bottom,black_calc(100%-14px),transparent)]">
       <div className="mb-4">
         <ModeSwitch />
       </div>
