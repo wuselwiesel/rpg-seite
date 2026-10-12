@@ -142,6 +142,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
                 role={member.role}
                 canRemove={isOwner || member.role === "member"}
                 canPromote={isOwner}
+                canTransfer={isOwner}
               />
             )}
           </li>
@@ -158,7 +159,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         </>
       )}
 
-      {isMember && !isOwner && <LeaveWorldButton worldId={world.id} />}
+      {isMember && !isOwner && <LeaveWorldButton worldId={world.id} worldName={world.name} />}
     </div>
   );
 }

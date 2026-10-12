@@ -297,14 +297,33 @@ export async function setWorldMemberRole(worldId: string, userId: string, role: 
   return null;
 }
 
-export async function leaveWorld(worldId: string) {
+// Besitz einer Welt an ein Mitglied übertragen (nur die Besitzer:in); die bisherige Besitzer:in wird Admin.
+export async function transferWorldOwnership(worldId: string, userId: string): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("transfer_world_ownership", { p_world: worldId, p_new_owner: userId });
+  if (error) return error.message;
+  revalidatePath(`/worlds/${worldId}`);
+  revalidatePath("/", "layout");
+  return null;
+}
 
-  await supabase.from("world_members").delete().eq("world_id", worldId).eq("user_id", user.id);
+export async function leaveWorld(worldId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  // Die Besitzer:in kann nicht einfach gehen: erst Besitz übertragen oder die Welt löschen
+  const { data: world } = await supabase.from("worlds").select("created_by").eq("id", worldId).maybeSingle<{ created_by: string }>();
+  if (world?.created_by === user.id) return "Als Besitzer:in überträgst du erst den Besitz an ein anderes Mitglied oder löschst die Welt.";
+
+  const { error } = await supabase.from("world_members").delete().eq("world_id", worldId).eq("user_id", user.id);
+  if (error) return error.message;
 
   const cookieStore = await cookies();
   if (cookieStore.get(ACTIVE_WORLD_COOKIE)?.value === worldId) {

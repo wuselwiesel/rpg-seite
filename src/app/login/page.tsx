@@ -9,12 +9,13 @@ export default function LoginPage() {
   const [error, formAction, pending] = useActionState(login, null);
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "";
+  const deleted = searchParams.get("konto") === "geloescht";
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-sm flex-col justify-center px-4">
       <h1 className="mb-1 font-serif text-3xl text-fg">Anmelden</h1>
       <p className="mb-6 text-sm text-muted">
-        Willkommen zurück!
+        {deleted ? "Dein Konto wurde gelöscht." : "Willkommen zurück!"}
       </p>
 
       <form action={formAction} className="flex flex-col gap-4">

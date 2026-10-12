@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserWorlds } from "@/lib/worlds";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "./enter-world-button";
+import { LeaveWorldButton } from "./[id]/leave-world-button";
 
 export default async function WorldsPage() {
   const supabase = await createClient();
@@ -50,7 +51,7 @@ export default async function WorldsPage() {
         {worlds.map((world) => (
           <li
             key={world.id}
-            className="flex items-center justify-between gap-4 rounded-lg border border-line bg-surface p-4"
+            className="group flex items-center justify-between gap-2 rounded-lg border border-line bg-surface p-4 sm:gap-4"
           >
             <Link href={`/worlds/${world.id}`} className="flex min-w-0 flex-1 items-center gap-4">
               <WorldCover
@@ -65,6 +66,7 @@ export default async function WorldsPage() {
                 )}
               </div>
             </Link>
+            {world.created_by !== user.id && <LeaveWorldButton worldId={world.id} worldName={world.name} variant="icon" />}
             <EnterWorldButton worldId={world.id} />
           </li>
         ))}

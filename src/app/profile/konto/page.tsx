@@ -4,6 +4,7 @@ import { SettingsHeader } from "@/components/settings-back";
 import type { Profile } from "@/lib/types";
 import { ProfileForm } from "../profile-form";
 import { PasswordForm } from "./password-form";
+import { DeleteAccountSection } from "./delete-account-section";
 
 export default async function AccountSettingsPage({ searchParams }: PageProps<"/profile/konto">) {
   const params = await searchParams;
@@ -15,6 +16,9 @@ export default async function AccountSettingsPage({ searchParams }: PageProps<"/
 
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single<Profile>();
   if (!profile) redirect("/login");
+
+  const { data: blockerRows } = await supabase.rpc("account_deletion_blockers");
+  const blockers = (blockerRows ?? []) as { world_id: string; name: string; member_count: number }[];
 
   return (
     <>
@@ -37,6 +41,10 @@ export default async function AccountSettingsPage({ searchParams }: PageProps<"/
         >
           Daten herunterladen
         </a>
+      </section>
+      <section className="mt-10 border-t border-line pt-6">
+        <h2 className="mb-3 font-serif text-xl text-fg">Konto löschen</h2>
+        <DeleteAccountSection username={profile.username} blockers={blockers} />
       </section>
     </>
   );
