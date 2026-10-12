@@ -40,6 +40,7 @@ describe("Mitgliederliste", () => {
   it("Seitenleiste hat keine auffällige Überschrift", () => {
     const html = text(renderToString(<SidebarOnline members={members} selfId="me" />));
     expect(html).not.toContain("Mitglieder —");
+    expect(html).toContain("Mitgliederliste zuklappen");
     expect(html).toContain("Offline — 4");
   });
 });
