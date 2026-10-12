@@ -10,6 +10,8 @@ export type NotificationPrefs = {
   digest_enabled: boolean;
   digest_only: boolean;
   muted_world_ids: string[];
+  // Welten ohne sofortigen Push (nur Zusammenfassung)
+  digest_world_ids?: string[];
   muted_character_ids: string[];
   muted_notification_types: string[];
 };
@@ -62,7 +64,8 @@ export async function shouldSuppressPush(
   if (prefs.digest_only) return true;
   if (inQuietHours(prefs)) return true;
   if (target.type && prefs.muted_notification_types.includes(target.type)) return true;
-  if (prefs.muted_world_ids.length === 0 && prefs.muted_character_ids.length === 0) return false;
+  const digestWorlds = prefs.digest_world_ids ?? [];
+  if (prefs.muted_world_ids.length === 0 && prefs.muted_character_ids.length === 0 && digestWorlds.length === 0) return false;
 
   let characters: { id: string; world_id: string }[] = [];
   if (target.recipientCharacterId) {
@@ -74,6 +77,8 @@ export async function shouldSuppressPush(
     characters = c ?? [];
   }
   if (characters.length === 0) return false;
-  // Stumm nur, wenn alle betroffenen Charaktere stumm sind (Charakter selbst oder seine Welt).
-  return characters.every((c) => prefs.muted_character_ids.includes(c.id) || prefs.muted_world_ids.includes(c.world_id));
+  // Stumm nur, wenn alle betroffenen Charaktere stumm sind (Charakter selbst oder seine Welt; auch „nur Zusammenfassung“).
+  return characters.every(
+    (c) => prefs.muted_character_ids.includes(c.id) || prefs.muted_world_ids.includes(c.world_id) || digestWorlds.includes(c.world_id),
+  );
 }

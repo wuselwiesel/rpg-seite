@@ -11,6 +11,7 @@ import { NpcBadge } from "@/components/npc-badge";
 import { ChaboSwitcher } from "@/components/chabo/chabo-switcher";
 import { fetchRandomLists } from "@/lib/random-lists";
 import { Chabo } from "@/components/chabo/chabo";
+import { PdfButton } from "@/components/pdf-button";
 
 export const metadata = { title: "Charakterbogen" };
 
@@ -53,6 +54,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
           Zum Profil
         </Link>
         <div className="flex items-center gap-2">
+          <PdfButton />
           {character.is_npc && <NpcBadge />}
           <ChaboSwitcher currentId={id} characters={ownChars.map((c) => ({ id: c.id, name: c.name }))} npcs={switcherNpcs.map((c) => ({ id: c.id, name: c.name }))} />
         </div>

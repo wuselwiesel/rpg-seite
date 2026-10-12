@@ -14,6 +14,7 @@ export type PrefsValue = {
   digest_enabled: boolean;
   digest_only: boolean;
   muted_world_ids: string[];
+  digest_world_ids: string[];
   muted_character_ids: string[];
   muted_notification_types: string[];
 };
@@ -98,7 +99,7 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
 
-  const toggleIn = (key: "muted_world_ids" | "muted_character_ids" | "muted_notification_types", id: string) =>
+  const toggleIn = (key: "muted_world_ids" | "digest_world_ids" | "muted_character_ids" | "muted_notification_types", id: string) =>
     setPrefs((p) => ({ ...p, [key]: p[key].includes(id) ? p[key].filter((x) => x !== id) : [...p[key], id] }));
 
   // Eine Gruppe (z.B. "Gefällt mir") ist an, solange keiner ihrer rohen Typen stummgeschaltet ist.
@@ -125,6 +126,7 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
         digestEnabled: prefs.digest_enabled,
         digestOnly: prefs.digest_only,
         mutedWorldIds: prefs.muted_world_ids,
+        digestWorldIds: prefs.digest_world_ids,
         mutedCharacterIds: prefs.muted_character_ids,
         mutedNotificationTypes: prefs.muted_notification_types,
       });
@@ -209,6 +211,18 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
                 />
                 {w.name} (ganze Welt)
               </label>
+              {prefs.digest_enabled && (
+                <label className="mt-2 flex items-center gap-3 pl-0 text-sm text-fg">
+                  <input
+                    type="checkbox"
+                    checked={prefs.digest_world_ids.includes(w.id)}
+                    disabled={prefs.muted_world_ids.includes(w.id)}
+                    onChange={() => toggleIn("digest_world_ids", w.id)}
+                    className="h-4 w-4 accent-[var(--accent-strong)]"
+                  />
+                  Nur in der Zusammenfassung
+                </label>
+              )}
               <div className="mt-2 pl-7">
                 <CharacterMuteSearch
                   characters={w.characters}

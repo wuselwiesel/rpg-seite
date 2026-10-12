@@ -55,6 +55,7 @@ export async function saveNotificationPrefs(input: {
   digestEnabled: boolean;
   digestOnly: boolean;
   mutedWorldIds: string[];
+  digestWorldIds?: string[];
   mutedCharacterIds: string[];
   mutedNotificationTypes: string[];
 }): Promise<string | null> {
@@ -82,6 +83,7 @@ export async function saveNotificationPrefs(input: {
     digest_enabled: input.digestEnabled,
     digest_only: input.digestEnabled && input.digestOnly,
     muted_world_ids: input.mutedWorldIds.filter((id) => uuid.test(id)),
+    digest_world_ids: input.digestEnabled ? (input.digestWorldIds ?? []).filter((id) => uuid.test(id)) : [],
     muted_character_ids: input.mutedCharacterIds.filter((id) => uuid.test(id)),
     muted_notification_types: input.mutedNotificationTypes.filter((t) => VALID_NOTIFICATION_TYPES.has(t)),
     updated_at: new Date().toISOString(),

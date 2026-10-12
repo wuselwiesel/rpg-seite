@@ -252,6 +252,12 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
           </Link>
         )}
         <Link
+          href="/story/dran"
+          className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-fg"
+        >
+          Wer ist dran
+        </Link>
+        <Link
           href={bookmarkedOnly ? "/story" : "/story?bookmarked=1"}
           className={`rounded-full px-3 py-1 text-xs font-medium transition ${
             bookmarkedOnly ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"

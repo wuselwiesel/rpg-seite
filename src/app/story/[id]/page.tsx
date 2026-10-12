@@ -27,6 +27,7 @@ import { ScrollToLast } from "./scroll-to-last";
 import { ScrollToEntry } from "./scroll-to-entry";
 import { JumpToLast } from "./jump-to-last";
 import { SceneSearch } from "./scene-search";
+import { SceneNote } from "./scene-note";
 import { ChapterJump } from "./chapter-jump";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
@@ -171,6 +172,10 @@ export default async function StoryPostDetailPage({
   const { data: myWorldRole } = await supabase.from("world_members").select("role").eq("world_id", storyPost.world_id).eq("user_id", user.id).maybeSingle();
   // Besitzer:in oder Admin der Welt (Moderation: anpinnen, abschließen, archivieren)
   const isWorldOwner = world?.created_by === user.id || myWorldRole?.role === "admin";
+  // Notiz der Spielleitung (die Datenbank liefert sie nur Besitzer:in und Admins)
+  const { data: sceneNote } = isWorldOwner
+    ? await supabase.from("scene_notes").select("body").eq("story_post_id", id).maybeSingle<{ body: string }>()
+    : { data: null };
   const isAuthor = myCharacterIds.has(storyPost.character_id);
 
   // Musikliste der Szene (jede:r Mitspielende darf Titel hinzufügen; entfernen: wer ihn hinzugefügt hat, die Autor:in, Admins)
@@ -382,6 +387,8 @@ export default async function StoryPostDetailPage({
           isMine={turnIsMine}
         />
       )}
+
+      {isWorldOwner && <SceneNote storyPostId={storyPost.id} initial={sceneNote?.body ?? ""} />}
 
       <SceneSummary
         storyPostId={storyPost.id}
