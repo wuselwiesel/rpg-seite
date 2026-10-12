@@ -40,6 +40,7 @@ export default async function NotificationSettingsPage() {
             digest_world_ids: prefsRow?.digest_world_ids ?? [],
             muted_character_ids: prefsRow?.muted_character_ids ?? [],
             muted_notification_types: prefsRow?.muted_notification_types ?? [],
+            only_active_world: prefsRow?.only_active_world ?? false,
           }}
           worlds={Array.from(worldMap.values())}
         />

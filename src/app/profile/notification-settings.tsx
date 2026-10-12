@@ -17,6 +17,7 @@ export type PrefsValue = {
   digest_world_ids: string[];
   muted_character_ids: string[];
   muted_notification_types: string[];
+  only_active_world: boolean;
 };
 
 const time = "rounded-md border border-line bg-surface px-2 py-1.5 text-base text-fg outline-none focus:border-accent";
@@ -129,6 +130,7 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
         digestWorldIds: prefs.digest_world_ids,
         mutedCharacterIds: prefs.muted_character_ids,
         mutedNotificationTypes: prefs.muted_notification_types,
+        onlyActiveWorld: prefs.only_active_world,
       });
       setMessage(err ?? "Gespeichert.");
     });
@@ -179,6 +181,18 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
           </label>
         )}
       </div>
+
+      {worlds.length > 1 && (
+        <label className="flex items-center gap-3 text-sm text-fg">
+          <input
+            type="checkbox"
+            checked={prefs.only_active_world}
+            onChange={(e) => setPrefs({ ...prefs, only_active_world: e.target.checked })}
+            className="h-4 w-4 accent-[var(--accent-strong)]"
+          />
+          In der Glocke nur die aktuelle Welt zeigen
+        </label>
+      )}
 
       <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-fg">Benachrichtigungen personalisieren</p>

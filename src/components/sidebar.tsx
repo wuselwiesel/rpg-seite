@@ -7,6 +7,7 @@ import { getUnreadCounts } from "@/lib/chat-reads";
 import { getWorldMembers } from "@/lib/world-members";
 import { SidebarOnline } from "./sidebar-online";
 import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
+import { getOnlyActiveWorld } from "@/lib/notification-prefs";
 import type { Profile } from "@/lib/types";
 import { CharacterSwitcher } from "./character-switcher";
 import { CharacterAvatar } from "./character-avatar";
@@ -36,9 +37,11 @@ export async function Sidebar() {
 
   const activeWorld = await getActiveWorld(user.id);
 
+  // Einstellung „nur diese Welt“: dann zeigt die Glocke nur Benachrichtigungen der aktiven Welt
+  const worldFilter = activeWorld && (await getOnlyActiveWorld(user.id)) ? activeWorld.id : null;
   const [initialNotifications, initialUnreadCount] = await Promise.all([
-    getRecentNotifications(user.id),
-    getUnreadNotificationCount(user.id),
+    getRecentNotifications(user.id, worldFilter),
+    getUnreadNotificationCount(user.id, worldFilter),
   ]);
 
   if (!activeWorld) {
@@ -51,7 +54,10 @@ export async function Sidebar() {
             </Link>
             <div className="flex items-center gap-1">
               <NotificationBell
+                key="no-world"
                 userId={user.id}
+                activeWorldId={null}
+                worldFilter={null}
                 initialNotifications={initialNotifications}
                 initialUnreadCount={initialUnreadCount}
               />
@@ -77,7 +83,10 @@ export async function Sidebar() {
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell
+              key="no-world"
               userId={user.id}
+              activeWorldId={null}
+              worldFilter={null}
               initialNotifications={initialNotifications}
               initialUnreadCount={initialUnreadCount}
             />
@@ -117,7 +126,10 @@ export async function Sidebar() {
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell
+              key={`${activeWorld.id}-${worldFilter}`}
               userId={user.id}
+              activeWorldId={activeWorld.id}
+              worldFilter={worldFilter}
               initialNotifications={initialNotifications}
               initialUnreadCount={initialUnreadCount}
             />
@@ -180,6 +192,7 @@ export async function Sidebar() {
       userId={user.id}
       initialNotifications={initialNotifications}
       initialUnreadCount={initialUnreadCount}
+      worldFilter={worldFilter}
       myCharacterIds={myCharacterIds}
       unreadCounts={unreadCounts}
       worldMembers={worldMembers}

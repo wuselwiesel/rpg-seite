@@ -58,6 +58,7 @@ export async function saveNotificationPrefs(input: {
   digestWorldIds?: string[];
   mutedCharacterIds: string[];
   mutedNotificationTypes: string[];
+  onlyActiveWorld?: boolean;
 }): Promise<string | null> {
   const time = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!time.test(input.dndStart) || !time.test(input.dndEnd)) return "Bitte gültige Uhrzeiten angeben.";
@@ -86,6 +87,7 @@ export async function saveNotificationPrefs(input: {
     digest_world_ids: input.digestEnabled ? (input.digestWorldIds ?? []).filter((id) => uuid.test(id)) : [],
     muted_character_ids: input.mutedCharacterIds.filter((id) => uuid.test(id)),
     muted_notification_types: input.mutedNotificationTypes.filter((t) => VALID_NOTIFICATION_TYPES.has(t)),
+    only_active_world: input.onlyActiveWorld === true,
     updated_at: new Date().toISOString(),
   });
   if (error) return error.message;

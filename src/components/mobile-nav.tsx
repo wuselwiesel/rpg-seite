@@ -45,6 +45,7 @@ export function MobileNav({
   userId,
   initialNotifications,
   initialUnreadCount,
+  worldFilter,
   myCharacterIds,
   unreadCounts,
   worldMembers,
@@ -58,6 +59,7 @@ export function MobileNav({
   userId: string;
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
+  worldFilter: string | null;
   myCharacterIds: string[];
   unreadCounts: Record<string, number>;
   worldMembers: OnlineMember[];
@@ -92,7 +94,10 @@ export function MobileNav({
         <div className="flex shrink-0 items-center gap-1">
           <MobileOnline members={worldMembers} selfId={userId} />
           <NotificationBell
+            key={`${activeWorld.id}-${worldFilter}`}
             userId={userId}
+            activeWorldId={activeWorld.id}
+            worldFilter={worldFilter}
             initialNotifications={initialNotifications}
             initialUnreadCount={initialUnreadCount}
           />

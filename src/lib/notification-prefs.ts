@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type NotificationPrefs = {
@@ -14,7 +15,15 @@ export type NotificationPrefs = {
   digest_world_ids?: string[];
   muted_character_ids: string[];
   muted_notification_types: string[];
+  // Glocke zeigt nur Benachrichtigungen der aktuellen Welt (und weltübergreifende)
+  only_active_world?: boolean;
 };
+
+export const getOnlyActiveWorld = cache(async (userId: string): Promise<boolean> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("notification_prefs").select("only_active_world").eq("user_id", userId).maybeSingle<{ only_active_world: boolean }>();
+  return data?.only_active_world === true;
+});
 
 export const DEFAULT_PREFS: Omit<NotificationPrefs, "user_id"> = {
   dnd_enabled: false,

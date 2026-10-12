@@ -62,6 +62,28 @@ export async function setActiveWorld(worldId: string, backTo?: string) {
   redirect(backTo === "/wiki" ? "/wiki" : "/");
 }
 
+// Öffnet eine Seite in der Welt, zu der sie gehört (z. B. aus einer Benachrichtigung): wechselt dorthin, lädt Seitenleiste und
+// Charakter neu und leitet weiter. Ohne Mitgliedschaft wird nur weitergeleitet.
+export async function openInWorld(worldId: string, path: string) {
+  const target = path.startsWith("/") && !path.startsWith("//") ? path : "/";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(target)}`);
+
+  const { data: membership } = await supabase.from("world_members").select("world_id").eq("world_id", worldId).eq("user_id", user.id).maybeSingle();
+  if (membership) {
+    const cookieStore = await cookies();
+    if (cookieStore.get(ACTIVE_WORLD_COOKIE)?.value !== worldId) {
+      cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
+      cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+    }
+    revalidatePath("/", "layout");
+  }
+  redirect(target);
+}
+
 export async function joinWorld(worldId: string): Promise<string | null> {
   const supabase = await createClient();
   const {

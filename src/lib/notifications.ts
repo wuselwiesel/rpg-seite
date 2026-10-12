@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { parseMentions } from "@/lib/mentions";
 import { sendPushToUser } from "@/lib/push";
+import { parseWorldLink, worldSwitchHref } from "@/lib/link-world";
 
 // Typen, deren Meldungen zum selben Ziel gebündelt werden (siehe migration_bundle_notifications.sql).
 const BUNDLED_TYPES = new Set(["like", "story_like", "comment", "redaktion_comment", "redaktion_reaction"]);
@@ -39,7 +40,8 @@ export async function createNotification(
     title: params.actorName,
     // „für <Charakter>“ steht hinten: ein Namenspräfix würde wie der Absender aussehen
     body: params.recipientName ? `${params.message} (für ${params.recipientName})` : params.message,
-    url: params.link,
+    // Szenen und Beiträge können in einer anderen Welt liegen: erst dorthin wechseln
+    url: ["story", "posts"].includes(parseWorldLink(params.link)?.kind ?? "") ? worldSwitchHref(null, params.link) : params.link,
     // Gleiche Art + Ziel ersetzt die vorige Push-Meldung, statt sich zu stapeln.
     tag: BUNDLED_TYPES.has(params.type) ? `${params.type}:${params.link}` : undefined,
   }, { recipientName: params.recipientName, type: params.type });
@@ -53,31 +55,28 @@ export type AppNotification = {
   link: string;
   message: string;
   recipient_name?: string | null;
+  // Welt, zu der die Benachrichtigung gehört (null = weltübergreifend, z. B. Freundschaften)
+  world_id?: string | null;
   actor_count?: number;
   read_at: string | null;
   created_at: string;
 };
 
-export async function getRecentNotifications(userId: string): Promise<AppNotification[]> {
+// worldId gesetzt: nur Benachrichtigungen dieser Welt und weltübergreifende (ohne Welt).
+export async function getRecentNotifications(userId: string, worldId: string | null = null): Promise<AppNotification[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(20)
-    .returns<AppNotification[]>();
+  let query = supabase.from("notifications").select("*").eq("user_id", userId);
+  if (worldId) query = query.or(`world_id.is.null,world_id.eq.${worldId}`);
+  const { data } = await query.order("created_at", { ascending: false }).limit(20).returns<AppNotification[]>();
 
   return data ?? [];
 }
 
-export async function getUnreadNotificationCount(userId: string): Promise<number> {
+export async function getUnreadNotificationCount(userId: string, worldId: string | null = null): Promise<number> {
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .is("read_at", null);
+  let query = supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", userId).is("read_at", null);
+  if (worldId) query = query.or(`world_id.is.null,world_id.eq.${worldId}`);
+  const { count } = await query;
 
   return count ?? 0;
 }

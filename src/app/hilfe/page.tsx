@@ -432,6 +432,20 @@ export default function HelpPage() {
           </li>
         </ul>
       </Section>
+
+      <Section id="benachrichtigungen" title="17. Benachrichtigungen aus mehreren Welten">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Nur diese Welt:</strong> Unter „Profil“ → „Benachrichtigungen“ gibt es „In der Glocke nur die aktuelle Welt zeigen“ (sichtbar, sobald du in mehr als einer Welt Figuren hast). Dann siehst du in der Glocke nur, was zur aktiven Welt gehört, dazu Weltübergreifendes wie Freundschaften und Abzeichen. Meldungen anderer Welten bleiben ungelesen, bis du dorthin wechselst.
+          </li>
+          <li>
+            <strong>Anderen Welt öffnen:</strong> Tippst du auf eine Benachrichtigung aus einer anderen Welt, wechselt die App in diese Welt und öffnet die Szene oder den Beitrag dort; Seitenleiste und Figur passen dann zur Welt. Das gilt auch für Push-Nachrichten und für Links zu Szenen.
+          </li>
+          <li>
+            <strong>Push stummschalten:</strong> Einzelne Welten oder Figuren stellst du unter „Stumm schalten“ ab; die Glocke zeigt sie trotzdem, solange der Schalter oben aus ist.
+          </li>
+        </ul>
+      </Section>
     </div>
   );
 }

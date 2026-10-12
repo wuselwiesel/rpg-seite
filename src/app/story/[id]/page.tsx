@@ -38,6 +38,8 @@ import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
 import { SceneMarkFlag } from "./scene-mark-flag";
 import { getWorldMembers } from "@/lib/world-members";
+import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
+import { WorldSwitchRedirect } from "@/components/world-switch-redirect";
 
 const ENTRY_WINDOW = 80;
 
@@ -63,6 +65,17 @@ export default async function StoryPostDetailPage({
     .maybeSingle<StoryPost>();
 
   if (!storyPost) notFound();
+
+  // Szene aus einer anderen Welt (z. B. über eine Benachrichtigung): erst in diese Welt wechseln, damit Seitenleiste und Charakter passen.
+  const [userWorlds, currentWorld] = await Promise.all([getUserWorlds(user.id), getActiveWorld(user.id)]);
+  if (currentWorld?.id !== storyPost.world_id && userWorlds.some((w) => w.id === storyPost.world_id)) {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(await searchParams)) {
+      for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key, v);
+    }
+    const here = `/story/${id}${query.size > 0 ? `?${query.toString()}` : ""}`;
+    return <WorldSwitchRedirect worldId={storyPost.world_id} path={here} />;
+  }
 
   const activeCharacter = await getActiveCharacter(user.id, storyPost.world_id);
   const worldMembers = await getWorldMembers(storyPost.world_id);

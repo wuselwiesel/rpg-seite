@@ -64,6 +64,9 @@ export function OnlineProvider({
   const ownRef = useRef(own);
   const writingRef = useRef(false);
   const writingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Hochzählen baut den Kanal neu auf (nach Rückkehr in die App oder Netzwechsel)
+  const [epoch, setEpoch] = useState(0);
+  const lastReset = useRef(0);
 
   const payload = (): TrackPayload => ({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
 
@@ -98,17 +101,48 @@ export function OnlineProvider({
         if (payload?.userId === userId) setOwn({ emoji: payload.emoji ?? null, text: payload.text ?? null });
       })
       .subscribe((status) => {
+        if (channelRef.current !== channel) return;
         if (status === "SUBSCRIBED") {
           subscribed.current = true;
           if (modeRef.current === "online") void channel.track({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
+        } else {
+          subscribed.current = false;
         }
       });
+
+    // Handy gesperrt oder Tab im Hintergrund: die Verbindung ist oft schon tot, ohne dass die App es merkt, und meldet sich erst
+    // nach Minuten wieder an. Deshalb beim Zurückkommen (und bei Netzwechsel) den Kanal prüfen und bei Bedarf neu aufbauen.
+    let hiddenAt: number | null = document.visibilityState === "hidden" ? Date.now() : null;
+    function refresh(force: boolean) {
+      if (!force && channelRef.current?.state === "joined") return;
+      const now = Date.now();
+      if (now - lastReset.current < 5000) return;
+      lastReset.current = now;
+      setEpoch((n) => n + 1);
+    }
+    function onVisibility() {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        return;
+      }
+      const away = hiddenAt ? Date.now() - hiddenAt : 0;
+      hiddenAt = null;
+      refresh(away > 15000);
+    }
+    const onOnline = () => refresh(true);
+    const onPageShow = (e: PageTransitionEvent) => refresh(e.persisted);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("pageshow", onPageShow);
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("pageshow", onPageShow);
       subscribed.current = false;
       channelRef.current = null;
       void supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, epoch]);
 
   function setMode(next: PresenceMode) {
     setModeState(next);

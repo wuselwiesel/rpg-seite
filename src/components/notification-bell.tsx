@@ -7,6 +7,8 @@ import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus, Dices, Hou
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import type { AppNotification } from "@/lib/notifications";
+import { worldSwitchHref } from "@/lib/link-world";
+import { openInWorld } from "@/app/worlds/actions";
 
 function iconForType(type: string) {
   if (type === "chat_message") return <MessageCircle className="h-4 w-4" strokeWidth={2} />;
@@ -21,10 +23,16 @@ function iconForType(type: string) {
 
 export function NotificationBell({
   userId,
+  activeWorldId = null,
+  worldFilter = null,
   initialNotifications,
   initialUnreadCount,
 }: {
   userId: string;
+  // Aktive Welt: Benachrichtigungen aus anderen Welten wechseln beim Öffnen dorthin
+  activeWorldId?: string | null;
+  // Gesetzt: nur Benachrichtigungen dieser Welt und weltübergreifende zeigen
+  worldFilter?: string | null;
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
 }) {
@@ -44,6 +52,7 @@ export function NotificationBell({
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         (payload) => {
           const row = payload.new as AppNotification;
+          if (worldFilter && row.world_id && row.world_id !== worldFilter) return;
           setNotifications((prev) => (prev.some((n) => n.id === row.id) ? prev : [row, ...prev].slice(0, 20)));
           setUnreadCount((prev) => prev + 1);
         },
@@ -63,13 +72,9 @@ export function NotificationBell({
     // des Tabs), sodass neue Benachrichtigungen sonst erst nach einem manuellen
     // Reload auftauchen würden.
     const pollForNew = async () => {
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(20)
-        .returns<AppNotification[]>();
+      let query = supabase.from("notifications").select("*").eq("user_id", userId);
+      if (worldFilter) query = query.or(`world_id.is.null,world_id.eq.${worldFilter}`);
+      const { data } = await query.order("created_at", { ascending: false }).limit(20).returns<AppNotification[]>();
       if (!data) return;
       setNotifications((prev) => {
         const knownIds = new Set(prev.map((n) => n.id));
@@ -86,7 +91,7 @@ export function NotificationBell({
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [userId, instanceId]);
+  }, [userId, instanceId, worldFilter]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -105,12 +110,14 @@ export function NotificationBell({
       setUnreadCount(0);
       setNotifications((prev) => prev.map((n) => (n.read_at ? n : { ...n, read_at: new Date().toISOString() })));
       const supabase = createClient();
-      supabase
+      let markRead = supabase
         .from("notifications")
         .update({ read_at: new Date().toISOString() })
         .eq("user_id", userId)
-        .is("read_at", null)
-        .then();
+        .is("read_at", null);
+      // Nur was die Glocke zeigt: ausgeblendete Welten bleiben ungelesen
+      if (worldFilter) markRead = markRead.or(`world_id.is.null,world_id.eq.${worldFilter}`);
+      markRead.then();
     }
   }
 
@@ -142,11 +149,20 @@ export function NotificationBell({
             {notifications.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-muted">Noch keine Benachrichtigungen.</p>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n) => {
+                const otherWorld = n.world_id && n.world_id !== activeWorldId ? n.world_id : null;
+                return (
                 <Link
                   key={n.id}
-                  href={n.link}
-                  onClick={() => setOpen(false)}
+                  href={otherWorld ? worldSwitchHref(otherWorld, n.link) : n.link}
+                  onClick={(e) => {
+                    setOpen(false);
+                    // Andere Welt: über die Aktion wechseln, damit Seitenleiste und Charakter mitwechseln
+                    if (otherWorld && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                      e.preventDefault();
+                      void openInWorld(otherWorld, n.link);
+                    }
+                  }}
                   className={`flex gap-3 border-b border-line px-4 py-3 text-sm transition last:border-b-0 hover:bg-surface-2 ${
                     !n.read_at ? "bg-surface-2/60" : ""
                   }`}
@@ -165,7 +181,8 @@ export function NotificationBell({
                     <span className="mt-0.5 block text-xs text-muted">{formatDateTime(n.created_at)}</span>
                   </span>
                 </Link>
-              ))
+                );
+              })
             )}
           </div>
         </div>
