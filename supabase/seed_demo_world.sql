@@ -68,6 +68,10 @@ values ('de000000-0000-4000-8000-020000000006', 'de000000-0000-4000-8000-0100000
 on conflict (id) do nothing;
 
 insert into public.posts (id, character_id, title, content, tags, media_url, media_type, pinned, bonus_likes)
+values ('de000000-0000-4000-8000-020000000009', 'de000000-0000-4000-8000-010000000006', '', '<p>Heute früh am Ende der Mole: ein Hirsch im Nebel. Oder ein Schatten mit Geweih. Ich zeichne ihn, bevor er sich überlegt, was er ist.</p>', ARRAY['sichtung','karten']::text[], '/demo/hirsch.jpg', 'image', false, 8)
+on conflict (id) do nothing;
+
+insert into public.posts (id, character_id, title, content, tags, media_url, media_type, pinned, bonus_likes)
 values ('de000000-0000-4000-8000-020000000008', 'de000000-0000-4000-8000-010000000003', '', '<p>Wer hat meine zweite Teekanne gesehen? Sie ist blau und hat eine Delle.</p>', ARRAY['teestube']::text[], null, null, false, 4)
 on conflict (id) do nothing;
 
@@ -218,6 +222,14 @@ on conflict (id) do nothing;
 
 insert into public.wiki_pages (id, world_id, category, title, content, created_by, aliases, cover_image_url, folder_id, lead, fields, page_type, tags)
 values ('de000000-0000-4000-8000-070000000008', 'de000000-0000-4000-8000-000000000002', 'sonstiges', 'Das Sommerfest', '<h2>Was geschah?</h2><p>Girlanden, drei Kuchen, eine Konfettikanone und ein Logbuch, in dem nichts stand. Nachzulesen in der Szene „Das Sommerfest am Pier“.</p>', 'de000000-0000-4000-8000-000000000001', '{}'::text[], 'https://vdflmmdmezaersrssdci.supabase.co/storage/v1/object/public/post-media/testdata/schattenmoor-banner9.jpg', 'de000000-0000-4000-8000-060000000003', 'Mittsommer am großen Pier.', '[{"icon": "", "title": "Ort", "text": "Der große Pier"}, {"icon": "", "title": "Beteiligte", "text": "Alle"}]'::jsonb, 'ereignis', ARRAY['fest']::text[])
+on conflict (id) do nothing;
+
+insert into public.wiki_pages (id, world_id, category, title, content, created_by, aliases, cover_image_url, folder_id, lead, fields, page_type, tags)
+values ('de000000-0000-4000-8000-070000000009', 'de000000-0000-4000-8000-000000000002', 'sonstiges', 'Der Nebelhund', '<h2>Aussehen</h2><p>Der Nebelhund ist hoch gewachsen, blass und fast ohne Fell, mit langen Schlappohren und einem Rückenkamm wie ein Segel. Er sitzt gern stundenlang still am Ende eines Stegs.</p><h2>Lebensweise</h2><p>Man sieht ihn vor allem bei Nebel. Er gilt als harmlos, solange man ihm nicht den Weg zur [[Teestube Zum Löffelchen]] versperrt; Kuchenreste mag er sehr.</p>', 'de000000-0000-4000-8000-000000000001', '{}'::text[], '/demo/nebelhund.jpg', 'de000000-0000-4000-8000-060000000003', 'Weiß, lang und sehr leise – er wohnt unter den Stegen.', '[{"icon": "", "title": "Art", "text": "Hafenwesen"}, {"icon": "", "title": "Schwäche", "text": "Kuchen"}]'::jsonb, 'spezies', ARRAY['wesen']::text[])
+on conflict (id) do nothing;
+
+insert into public.wiki_pages (id, world_id, category, title, content, created_by, aliases, cover_image_url, folder_id, lead, fields, page_type, tags)
+values ('de000000-0000-4000-8000-07000000000a', 'de000000-0000-4000-8000-000000000002', 'sonstiges', 'Der Hirsch der Nordmole', '<h2>Die Erzählung</h2><p>Wer früh morgens am Ende der [[Die Nordmole|Nordmole]] steht, sieht manchmal einen Hirsch im Dunst. [[Ilvy Möwenstein|Ilvy]] hat ihn dreimal gezeichnet und jedes Mal an einer anderen Stelle eingetragen.</p>', 'de000000-0000-4000-8000-000000000001', '{}'::text[], '/demo/hirsch.jpg', 'de000000-0000-4000-8000-060000000003', 'Ein Schatten mit Geweih, den nur der Nebel kennt.', '[{"icon": "", "title": "Herkunft", "text": "Unbekannt"}, {"icon": "", "title": "Wahrheitsgehalt", "text": "Ungeklärt"}]'::jsonb, 'mythos', ARRAY['mythos']::text[])
 on conflict (id) do nothing;
 
 insert into public.character_relationships (id, world_id, character_a_id, character_b_id, type, label, created_by, category, color)
