@@ -46,7 +46,7 @@ export function sanitizePostHtmlCore(html: string): string {
       a: ["href", "target", "rel"],
       img: ["src", "alt"],
       span: ["data-type", "data-id", "class", "style"],
-      div: ["data-callout", "data-type", "data-id", "data-name"],
+      div: ["data-callout", "data-type", "data-id", "data-name", "data-pdf"],
       details: ["open"],
       th: ["colspan", "rowspan"],
       td: ["colspan", "rowspan"],
@@ -56,7 +56,8 @@ export function sanitizePostHtmlCore(html: string): string {
       // Nur die bekannten Hinweis-Arten und der Spoiler-Inhalt behalten ihre Kennzeichnung; jedes andere div wird schlicht.
       div: (tagName, attribs) => {
         const out: Record<string, string> = {};
-        if (attribs["data-callout"] && (CALLOUT_KINDS as readonly string[]).includes(attribs["data-callout"])) out["data-callout"] = attribs["data-callout"];
+        if (attribs["data-pdf"] !== undefined) out["data-pdf"] = "";
+        else if (attribs["data-callout"] && (CALLOUT_KINDS as readonly string[]).includes(attribs["data-callout"])) out["data-callout"] = attribs["data-callout"];
         else if (attribs["data-type"] === "detailsContent") out["data-type"] = "detailsContent";
         // Abschnitt einer gebündelten Nachricht (mehrere Figuren): nur mit gültiger Figuren-ID
         else if (attribs["data-type"] === "segment" && /^[0-9a-f-]{36}$/i.test(attribs["data-id"] ?? "")) {

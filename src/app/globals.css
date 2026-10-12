@@ -1133,6 +1133,38 @@ a.wiki-missing,
   color: var(--accent);
 }
 
+/* PDF-Datei als Karte (Editor und Anzeige) */
+.post-content [data-pdf] {
+  margin: 1em 0;
+}
+.post-content [data-pdf] a {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.55em 0.9em;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--fg);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.post-content [data-pdf] a::before {
+  content: "PDF";
+  flex-shrink: 0;
+  padding: 0.1em 0.4em;
+  border-radius: 0.3rem;
+  background: var(--accent);
+  color: var(--on-accent-strong, #fff);
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.post-content [data-pdf] a:hover { border-color: var(--accent); }
+.ProseMirror-selectednode[data-pdf] a { border-color: var(--accent); }
+
 /* Textbausteine im Wiki: Hinweis-Kasten, Spoiler, Tabelle (Editor und Anzeige) */
 .post-content [data-callout] {
   --callout: var(--accent);

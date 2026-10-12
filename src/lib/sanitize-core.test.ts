@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { sanitizePostHtmlCore as clean } from "./sanitize-core";
 
 describe("Textbausteine bleiben erhalten", () => {
+  it("behält PDF-Karten", () => {
+    const html = '<div data-pdf><a href="https://x.supabase.co/a.pdf" target="_blank" rel="noopener noreferrer">Regeln.pdf</a></div>';
+    expect(clean(html)).toBe(html);
+  });
+
   it("Hinweis-Kasten mit bekannter Art", () => {
     expect(clean('<div data-callout="achtung"><p>Vorsicht</p></div>')).toBe('<div data-callout="achtung"><p>Vorsicht</p></div>');
   });

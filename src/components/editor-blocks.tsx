@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { CALLOUT_KINDS, type CalloutKind } from "@/lib/callout-kinds";
+import { createClient } from "@/lib/supabase/client";
+import { MAX_MEDIA_BYTES } from "@/lib/upload-media";
 
 const KIND_LABEL: Record<CalloutKind, string> = { info: "Info", tipp: "Tipp", achtung: "Achtung", gefahr: "Gefahr" };
 
@@ -13,10 +15,30 @@ const on = "bg-accent-strong text-on-accent-strong";
 // Textbausteine für Wiki-Seiten: Hinweis-Kasten, Spoiler, Tabelle (mit Werkzeugen, solange der Cursor in einer Tabelle steht).
 export function BlockTools({ editor }: { editor: Editor }) {
   const [calloutOpen, setCalloutOpen] = useState(false);
+  const pdfInput = useRef<HTMLInputElement>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const inTable = editor.isActive("table");
   const inCallout = editor.isActive("callout");
   const inSpoiler = editor.isActive("details");
   const run = (fn: (c: ReturnType<Editor["chain"]>) => ReturnType<Editor["chain"]>) => fn(editor.chain().focus()).run();
+
+  async function uploadPdf(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) return setPdfError("Nur PDF-Dateien.");
+    if (file.size > MAX_MEDIA_BYTES) return setPdfError("Datei ist zu groß (max. 50 MB).");
+    setPdfBusy(true);
+    setPdfError(null);
+    const supabase = createClient();
+    const path = `wiki-pdf/${crypto.randomUUID()}.pdf`;
+    const { error } = await supabase.storage.from("post-media").upload(path, file, { contentType: "application/pdf" });
+    setPdfBusy(false);
+    if (error) return setPdfError(error.message);
+    const url = supabase.storage.from("post-media").getPublicUrl(path).data.publicUrl;
+    run((c) => c.setPdfFile({ url, name: file.name.slice(0, 120) }));
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Textbausteine">
@@ -84,6 +106,23 @@ export function BlockTools({ editor }: { editor: Editor }) {
       >
         ▦ Tabelle
       </button>
+
+      <button
+        type="button"
+        title="PDF hochladen"
+        aria-label="PDF hochladen"
+        disabled={pdfBusy}
+        onClick={() => pdfInput.current?.click()}
+        className={`${btn} ${idle}`}
+      >
+        {pdfBusy ? "…" : "📄 PDF"}
+      </button>
+      <input ref={pdfInput} type="file" accept="application/pdf,.pdf" className="hidden" onChange={uploadPdf} />
+      {pdfError && (
+        <span role="alert" className="text-xs text-red-600 dark:text-red-400">
+          {pdfError}
+        </span>
+      )}
 
       {inTable && (
         <>

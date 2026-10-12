@@ -21,6 +21,7 @@ import { wikiMentionExtension } from "@/lib/wiki-mention-suggestion";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
 import { Callout } from "@/lib/tiptap-callout";
+import { PdfFile } from "@/lib/tiptap-pdf";
 import { Spoiler } from "@/lib/tiptap-spoiler";
 import { BlockTools } from "@/components/editor-blocks";
 import { SymbolPicker } from "./symbol-picker";
@@ -580,7 +581,7 @@ export function RichTextEditor({
       Placeholder.configure({ placeholder: placeholder ?? "Schreib deine Geschichte..." }),
       ...(allowFontSelection ? [TextStyle, FontFamily] : []),
       ...(allowBlocks
-        ? [Callout, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
+        ? [Callout, PdfFile, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
         : []),
       ...(mentionCharacters
         ? [
