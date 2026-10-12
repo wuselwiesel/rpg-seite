@@ -1,5 +1,6 @@
 import { MENTION_REGEX } from "@/lib/mentions";
 import { isVideoUrl } from "@/lib/chat-media-url";
+import { parseWikiShare } from "@/lib/wiki-share";
 
 type PreviewMessage = {
   content: string;
@@ -10,6 +11,8 @@ type PreviewMessage = {
 
 // Kurzer Vorschautext für die Chatliste: Erwähnungen als @Name, Anhänge als Stichwort.
 export function messagePreview(m: PreviewMessage): string {
+  const shared = parseWikiShare(m.content);
+  if (shared) return `📖 ${shared.title}`;
   const text = m.content.replace(MENTION_REGEX, "@$1").replace(/\s+/g, " ").trim();
   if (text) return text;
   if (isVideoUrl(m.image_url)) return "Video";

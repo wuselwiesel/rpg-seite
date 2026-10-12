@@ -1,4 +1,5 @@
 import { PdfEmbeds } from "@/components/pdf-embeds";
+import { ShareWikiButton } from "../share-wiki-button";
 import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
@@ -192,6 +193,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           <p className="text-xs text-muted">Zuletzt bearbeitet am {formatDateTime(page.updated_at)}</p>
           <div className="flex flex-wrap items-center gap-1">
             <FavoriteButton wikiPageId={page.id} initial={favoriteIds.includes(page.id)} />
+            <ShareWikiButton pageId={page.id} title={page.title} />
             <Link
               href={`/wiki/graph?fokus=${page.id}`}
               title="Verbindungen dieser Seite im Graph ansehen"

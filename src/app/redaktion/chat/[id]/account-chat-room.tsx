@@ -5,7 +5,7 @@ import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
-import { BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, ImagePlus, Pencil, Pin, PinOff, Search, EyeOff, SendHorizontal, SmilePlus, Trash2, UsersRound, X } from "lucide-react";
+import { BookOpen, BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, ImagePlus, Pencil, Pin, PinOff, Search, EyeOff, SendHorizontal, SmilePlus, Trash2, UsersRound, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NameBadge } from "@/components/name-badge";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
@@ -18,6 +18,7 @@ import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
 import { keepScrollAnchor } from "@/lib/keep-scroll";
+import { parseWikiShare } from "@/lib/wiki-share";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
 import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
@@ -450,7 +451,15 @@ export function AccountChatRoom({
                       )}
                       {m.content && (
                         <div className={m.image_url ? "px-2.5 pb-1 pt-1.5" : ""}>
-                          {usernames.size > 0 && m.content.includes("@") ? (
+                          {parseWikiShare(m.content) ? (
+                            <Link
+                              href={`/wiki/${parseWikiShare(m.content)!.pageId}`}
+                              className="flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-sm font-medium dark:bg-white/10"
+                            >
+                              <BookOpen className="h-4 w-4 shrink-0" strokeWidth={2} />
+                              <span className="min-w-0 truncate">{parseWikiShare(m.content)!.title}</span>
+                            </Link>
+                          ) : usernames.size > 0 && m.content.includes("@") ? (
                             splitMentions(m.content, usernames).map((part, idx) =>
                               part.mention ? (
                                 <span key={idx} className="font-semibold underline decoration-dotted underline-offset-2">{part.text}</span>
