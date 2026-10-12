@@ -7,14 +7,20 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { ProfileThemeFields } from "@/components/profile-theme-fields";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import type { Character } from "@/lib/types";
+import { activeLists, type ChoiceList } from "@/lib/choice-lists";
+import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
 
 export function EditCharacterForm({
   character,
   mentionableCharacters,
+  choiceLists = [],
 }: {
   character: Character;
   mentionableCharacters: Character[];
+  choiceLists?: ChoiceList[];
 }) {
+  const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
+  const choices = (character.choices ?? {}) as Record<string, string>;
   const action = updateCharacter.bind(null, character.id);
   const [error, formAction, pending] = useActionState(action, null);
   const [name, setName] = useState(character.name);
@@ -110,20 +116,25 @@ export function EditCharacterForm({
             <option value="divers">Divers</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm text-fg-soft">
-          Wesen
-          <select
-            name="species"
-            defaultValue={character.species ?? "mensch"}
-            className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-          >
-            <option value="mensch">Mensch</option>
-            <option value="vampir">Vampir</option>
-            <option value="werwolf">Werwolf</option>
-          </select>
-        </label>
+        {speciesList ? (
+          <ChoiceField list={speciesList} value={choices[speciesList.id]} />
+        ) : (
+          <label className="flex flex-col gap-1 text-sm text-fg-soft">
+            Wesen
+            <select
+              name="species"
+              defaultValue={character.species ?? "mensch"}
+              className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+            >
+              <option value="mensch">Mensch</option>
+              <option value="vampir">Vampir</option>
+              <option value="werwolf">Werwolf</option>
+            </select>
+          </label>
+        )}
       </div>
-      <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>
+      {!speciesList && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
+      <ChoiceFields lists={choiceLists} values={choices} />
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Beziehungsstatus (optional)

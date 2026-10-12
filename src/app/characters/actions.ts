@@ -13,6 +13,8 @@ import { hasErrors, normalizeSheet, validateSheet, withDerived, type SheetData }
 import { getCharacterAccess } from "@/lib/npc-data";
 import { parseTalentConfig } from "@/lib/talents";
 import { createNotification } from "@/lib/notifications";
+import { getWorldChoiceLists } from "@/lib/choice-lists-data";
+import { activeLists, parseChoices, speciesFromLabel } from "@/lib/choice-lists";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
 const GENDERS = ["maennlich", "weiblich", "divers"] as const;
@@ -59,7 +61,6 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
   const quote = String(formData.get("quote") ?? "").trim().slice(0, 200);
   const gender = parseGender(formData.get("gender"));
-  const species = parseSpecies(formData.get("species"));
   const isNpc = formData.get("is_npc") === "on";
 
   if (name.length < 1) {
@@ -93,6 +94,12 @@ export async function createCharacter(_prevState: string | null, formData: FormD
     return "Keine aktive Welt ausgewählt.";
   }
 
+  // Auswahllisten der Welt: gewählte Werte; ersetzt die Liste „Wesen“ die feste Auswahl, folgt die Natur ihrem Wert
+  const choiceLists = await getWorldChoiceLists(activeWorld.id);
+  const choices = parseChoices((k) => (formData.has(k) ? String(formData.get(k)) : null), choiceLists);
+  const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
+  const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
+
   // Die Talentliste der Welt gilt auch für den gewürfelten Bogen
   let sheet: SheetData | null = null;
   if (sheetParsed) {
@@ -116,6 +123,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       quote: quote || null,
       gender,
       species,
+      choices,
       avatar_url: avatarUrl || null,
       ...(sheetUrl ? { sheet_url: sheetUrl } : {}),
       is_npc: isNpc,
@@ -160,7 +168,6 @@ export async function updateCharacter(
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
   const quote = String(formData.get("quote") ?? "").trim().slice(0, 200);
   const gender = parseGender(formData.get("gender"));
-  const species = parseSpecies(formData.get("species"));
   const relationshipStatus = parseRelationshipStatus(formData.get("relationship_status"));
   const partnerCharacterId = String(formData.get("partner_character_id") ?? "").trim() || null;
   const bestFriendCharacterId = String(formData.get("best_friend_character_id") ?? "").trim() || null;
@@ -190,9 +197,25 @@ export async function updateCharacter(
   if (!user) return "Nicht angemeldet.";
 
   // Wer darf bearbeiten? Besitzer:in, bei NPCs auch die Welt-Besitzerin (die Datenbank erzwingt dasselbe).
-  const { data: own } = await supabase.from("characters").select("world_id, owner_id, is_npc").eq("id", characterId).maybeSingle<{ world_id: string; owner_id: string; is_npc: boolean }>();
+  const { data: own } = await supabase
+    .from("characters")
+    .select("world_id, owner_id, is_npc, choices")
+    .eq("id", characterId)
+    .maybeSingle<{ world_id: string; owner_id: string; is_npc: boolean; choices: Record<string, string> | null }>();
   if (!own) return "Charakter nicht gefunden.";
   if (!(await getCharacterAccess(own, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter bearbeiten.";
+
+  // Auswahllisten: aktive Listen übernehmen den Formularwert (leer = löschen), stillgelegte behalten ihren Wert
+  const choiceLists = await getWorldChoiceLists(own.world_id);
+  const submitted = parseChoices((k) => (formData.has(k) ? String(formData.get(k)) : null), choiceLists);
+  const choices: Record<string, string> = { ...(own.choices ?? {}) };
+  for (const list of activeLists(choiceLists)) {
+    if (!formData.has(`choice_${list.id}`)) continue;
+    if (submitted[list.id]) choices[list.id] = submitted[list.id];
+    else delete choices[list.id];
+  }
+  const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
+  const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
 
   // Partner:in / beste:r Freund:in müssen echte, für die Person erreichbare Charaktere sein
   // (Welt-Mitglied), sonst still auf "keine Angabe" zurückfallen statt einen Fehler zu werfen.
@@ -222,6 +245,7 @@ export async function updateCharacter(
       ...(formData.has("quote") ? { quote: quote || null } : {}),
       gender,
       species,
+      choices,
       relationship_status: relationshipStatus,
       partner_character_id: relationshipStatus && relationshipStatus !== "single" ? validPartnerId : null,
       best_friend_character_id: validBestFriendId,

@@ -408,6 +408,9 @@ export default function HelpPage() {
             <strong>Beitritt:</strong> Je Welt gibt es drei Arten. Offene Welten betrittst du mit einem Klick. Bei „Auf Anfrage“ schickst du eine Nachricht an die Admins und wirst benachrichtigt, sobald sie entscheiden; über „Admin anschreiben“ erreichst du sie im privaten Chat. „Nur auf Einladung“ geht nur mit Einladungslink oder von Freund:innen.
           </li>
           <li>
+            <strong>Auswahllisten:</strong> Admins legen auf der Weltseite unter „Auswahllisten“ Listen wie Wesen, Haus oder Beruf an und tragen die Einträge ein. Je Liste ist einstellbar, ob beim Anlegen und Bearbeiten eines Charakters ein Dropdown oder ein freies Textfeld erscheint. Die Liste „Wesen“ gibt es in jeder Welt: Hat sie Einträge, ersetzt sie die feste Auswahl Mensch / Vampir / Werwolf; heißt der gewählte Eintrag Vampir oder Werwolf, gelten dessen Würfelregeln weiter. Die gewählten Werte stehen im Profil.
+          </li>
+          <li>
             <strong>Rechte in der Welt:</strong> Besitzer:in und ernannte Admins dürfen immer alles. Für alle anderen stellen die Admins unter „Welt bearbeiten“ ein, wer Wiki-Seiten anlegen oder bearbeiten, Ordner, Karten und Seitenarten ändern, Szenen starten und Handlungsstränge anlegen darf. Neue Welten starten streng: Mitglieder bearbeiten nur ihre eigenen Wiki-Seiten und ändern keine Ordner oder Karten.
           </li>
         </ul>

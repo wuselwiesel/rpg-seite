@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWorldFirstNames } from "@/lib/npc-data";
 import { fetchRandomLists } from "@/lib/random-lists";
+import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { NewCharacterForm } from "./new-character-form";
 
 export default async function NewCharacterPage({ searchParams }: PageProps<"/characters/new">) {
@@ -15,6 +16,7 @@ export default async function NewCharacterPage({ searchParams }: PageProps<"/cha
   const world = await getActiveWorld(user.id);
   const takenNames = world ? await getWorldFirstNames(world.id) : [];
   const randomLists = world ? await fetchRandomLists(supabase, world.id) : undefined;
+  const choiceLists = world ? await getWorldChoiceLists(world.id) : [];
   const npc = Array.isArray(sp.npc) ? sp.npc[0] : sp.npc;
-  return <NewCharacterForm takenNames={takenNames} randomLists={randomLists} startAsNpc={npc === "1"} />;
+  return <NewCharacterForm takenNames={takenNames} randomLists={randomLists} startAsNpc={npc === "1"} choiceLists={choiceLists} />;
 }

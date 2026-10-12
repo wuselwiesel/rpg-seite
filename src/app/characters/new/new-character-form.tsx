@@ -8,8 +8,11 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { genderOfSheet } from "@/lib/random-pools";
 import { npcBio, npcName, rollNpcSheet, speciesOfSheet } from "@/lib/npc-random";
 import type { CustomPools } from "@/lib/random-pools";
+import { activeLists, type ChoiceList } from "@/lib/choice-lists";
+import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
 
-export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean }) {
+export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [] }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[] }) {
+  const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
   const [error, formAction, pending] = useActionState(createCharacter, null);
   const searchParams = useSearchParams();
   const isWelcome = searchParams.get("welcome") === "1";
@@ -118,21 +121,26 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }
               <option value="divers">Divers</option>
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm text-fg-soft">
-            Wesen
-            <select
-              name="species"
-              value={species}
-              onChange={(e) => setSpecies(e.target.value)}
-              className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-            >
-              <option value="mensch">Mensch</option>
-              <option value="vampir">Vampir</option>
-              <option value="werwolf">Werwolf</option>
-            </select>
-          </label>
+          {speciesList ? (
+            <ChoiceField list={speciesList} />
+          ) : (
+            <label className="flex flex-col gap-1 text-sm text-fg-soft">
+              Wesen
+              <select
+                name="species"
+                value={species}
+                onChange={(e) => setSpecies(e.target.value)}
+                className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+              >
+                <option value="mensch">Mensch</option>
+                <option value="vampir">Vampir</option>
+                <option value="werwolf">Werwolf</option>
+              </select>
+            </label>
+          )}
         </div>
-        <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>
+        {!speciesList && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
+        <ChoiceFields lists={choiceLists} />
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Haus / Familie (optional)
         <input

@@ -32,6 +32,8 @@ import { NpcBadge } from "@/components/npc-badge";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { WikiTypesProvider } from "@/components/wiki-types-context";
 import { getWikiTypes } from "@/lib/wiki-data";
+import { getWorldChoiceLists } from "@/lib/choice-lists-data";
+import { choiceEntries } from "@/lib/choice-lists";
 import type { Character, Highlight, Post, Story } from "@/lib/types";
 
 export default async function CharacterProfilePage({
@@ -103,6 +105,7 @@ export default async function CharacterProfilePage({
   if (character.owner_id === user.id) await syncCharacterBadges(character.id);
   const allBadges = await getCharacterBadges(character.id);
   const wikiAbout = await getWikiPagesAboutCharacter(character).catch(() => []);
+  const choiceList = choiceEntries(character.choices, await getWorldChoiceLists(character.world_id).catch(() => []));
   const wikiTypes = wikiAbout.length > 0 ? await getWikiTypes(character.world_id).catch(() => []) : [];
   const badges = character.owner_id === user.id ? allBadges : visibleBadges(allBadges);
   const myCharacters = activeWorld
@@ -298,6 +301,17 @@ export default async function CharacterProfilePage({
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg">
               <EmojiText text={character.bio} />
             </p>
+          )}
+
+          {choiceList.length > 0 && (
+            <dl className="mt-4 flex flex-wrap gap-2">
+              {choiceList.map((c) => (
+                <div key={c.label} className="rounded-full bg-surface-2 px-3 py-1 text-sm">
+                  <dt className="mr-1.5 inline text-xs font-medium text-muted">{c.label}</dt>
+                  <dd className="inline text-fg">{c.value}</dd>
+                </div>
+              ))}
+            </dl>
           )}
 
           {(character.custom_fields?.length ?? 0) > 0 && (

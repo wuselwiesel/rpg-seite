@@ -43,6 +43,8 @@ export type CharacterGender = "maennlich" | "weiblich" | "divers";
 export type CharacterSpecies = "mensch" | "vampir" | "werwolf";
 
 export type Character = {
+  // Werte der Auswahllisten der Welt (Listen-ID → Text), siehe lib/choice-lists.ts
+  choices?: Record<string, string> | null;
   id: string;
   // gesetzt = gelöscht: nirgends mehr auswählbar, Inhalte bleiben erhalten
   deleted_at?: string | null;
