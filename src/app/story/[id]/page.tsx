@@ -35,7 +35,6 @@ import { TurnBanner } from "./turn-banner";
 import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
 import { SceneMarkFlag } from "./scene-mark-flag";
-import { OnlineMembers } from "@/components/online-members";
 import { getWorldMembers } from "@/lib/world-members";
 
 export default async function StoryPostDetailPage({
@@ -250,7 +249,6 @@ export default async function StoryPostDetailPage({
       />
     )}
     <div className="mx-auto max-w-2xl xl:max-w-3xl px-4 py-10">
-      <OnlineMembers members={worldMembers} selfId={user.id} className="-mt-6 mb-2 flex justify-end" />
       <article className="group/scene mb-8 rounded-lg border border-line bg-surface p-6">
         <StoryPostControls
           storyPostId={storyPost.id}
