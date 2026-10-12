@@ -1,6 +1,7 @@
 "use client";
 
 import { useWorldRights } from "@/components/rights-context";
+import { canEditWikiPage } from "@/lib/world-permissions";
 
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -95,7 +96,16 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
     (target: DropTarget) => (activeItem ? planMove(folders, pages, activeItem, target) !== null : false),
     [activeItem, folders, pages],
   );
-  const dnd: DndApi = { active: activeItem, validFor };
+  // Verschieben darf, wer es bearbeiten darf: Ordner nur mit dem Recht „Struktur ändern“, Seiten nur mit Bearbeitungsrecht.
+  const canDrag = useCallback(
+    (item: DragItem) => {
+      if (item.kind === "folder") return rights.wikiStructure;
+      const page = pages.find((p) => p.id === item.id);
+      return canEditWikiPage(rights, page?.created_by ?? null, userId);
+    },
+    [rights, pages, userId],
+  );
+  const dnd: DndApi = { active: activeItem, validFor, canDrag };
 
   const targetOf = (id: unknown): DropTarget | null => {
     const raw = String(id ?? "");
@@ -434,7 +444,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
   );
 }
 
-type DndApi = { active: DragItem | null; validFor: (t: DropTarget) => boolean };
+type DndApi = { active: DragItem | null; validFor: (t: DropTarget) => boolean; canDrag: (item: DragItem) => boolean };
 
 // Ablagefläche für „oberste Ebene“ / „Ohne Ordner“, nur sichtbar, solange etwas gezogen wird.
 function RootDropZone({ dnd, kind }: { dnd: DndApi; kind: "folder" | "page" }) {
@@ -454,7 +464,7 @@ function RootDropZone({ dnd, kind }: { dnd: DndApi; kind: "folder" | "page" }) {
 
 // Zeile im Baum als Zieh-Quelle und Ablageziel zugleich.
 function useRowDnd(item: DragItem, dnd: DndApi) {
-  const drag = useDraggable({ id: `${item.kind}:${item.id}`, data: item });
+  const drag = useDraggable({ id: `${item.kind}:${item.id}`, data: item, disabled: !dnd.canDrag(item) });
   const drop = useDroppable({ id: `${item.kind}:${item.id}` });
   const { setNodeRef: setDrag } = drag;
   const { setNodeRef: setDrop } = drop;

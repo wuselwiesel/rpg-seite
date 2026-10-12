@@ -42,6 +42,12 @@ export const TOURS: Tour[] = [
         match: { attr: "world" },
       },
       {
+        title: "Welten entdecken und üben",
+        text: "Über die Weltauswahl kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt „Windlichthafen“ ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen, nachts wird alles aufgeräumt.",
+        route: "/",
+        match: { attr: "world" },
+      },
+      {
         title: "Dein Charakter",
         text: "Du schreibst immer als einer deiner Charaktere. Hier wählst du, wer gerade aktiv ist. Wechselst du, ändern sich Profil, ChaBo und Chats mit. Wie viele Charaktere du hast, bestimmst du selbst.",
         route: "/",
