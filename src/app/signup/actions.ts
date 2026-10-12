@@ -32,5 +32,5 @@ export async function signup(_prevState: string | null, formData: FormData) {
   }
 
   const next = String(formData.get("next") ?? "");
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/search?tab=worlds&welcome=1");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/willkommen");
 }

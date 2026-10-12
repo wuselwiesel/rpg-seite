@@ -70,6 +70,13 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }
             className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
           />
         </label>
+        <div className="flex flex-col gap-1 text-sm text-fg-soft">
+          Avatar (optional)
+          <AvatarUpload name="avatar_url" displayName={name || "?"} />
+        </div>
+        <details open={!isWelcome} className={isWelcome ? "rounded-lg border border-line px-3 py-2" : "contents"}>
+          {isWelcome && <summary className="cursor-pointer text-sm text-fg-soft">Mehr Angaben</summary>}
+          <div className={isWelcome ? "mt-3 flex flex-col gap-4" : "contents"}>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Nutzername (optional)
           <div className="flex items-center rounded-md border border-line bg-surface focus-within:border-accent">
@@ -86,10 +93,6 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }
             />
           </div>
         </label>
-        <div className="flex flex-col gap-1 text-sm text-fg-soft">
-          Avatar (optional)
-          <AvatarUpload name="avatar_url" displayName={name || "?"} />
-        </div>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Kurzbeschreibung (optional)
           <textarea
@@ -141,6 +144,8 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false }
         />
         <span className="text-xs text-muted">Für den Stammbaum: Charaktere mit demselben Namen werden gruppiert.</span>
         </label>
+          </div>
+        </details>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button

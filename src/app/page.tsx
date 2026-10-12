@@ -27,7 +27,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   if (!user) redirect("/login");
 
   const activeWorld = await getActiveWorld(user.id);
-  if (!activeWorld) redirect("/worlds");
+  if (!activeWorld) redirect("/willkommen");
 
   const joinedAt = await getWorldJoinedAt(user.id, activeWorld.id);
   const recentlyJoined = !!joinedAt && new Date().getTime() - new Date(joinedAt).getTime() < 48 * 60 * 60 * 1000;
