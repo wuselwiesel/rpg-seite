@@ -208,12 +208,12 @@ export function StoryComposer({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex w-fit gap-1 rounded-lg bg-surface-2 p-1">
+      <div className="flex items-center justify-between gap-1 sm:gap-2">
+        <div className="flex w-fit shrink-0 gap-0.5 rounded-lg bg-surface-2 p-1 sm:gap-1">
           <button
             type="button"
             onClick={() => setMode("write")}
-            className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition sm:px-3 ${
+            className={`rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
               mode === "write" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
@@ -222,7 +222,7 @@ export function StoryComposer({
           <button
             type="button"
             onClick={() => setMode("roll")}
-            className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition sm:px-3 ${
+            className={`rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
               mode === "roll" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
@@ -231,7 +231,7 @@ export function StoryComposer({
           <button
             type="button"
             onClick={() => setMode("chat")}
-            className={`relative rounded-md px-2.5 py-1.5 text-sm font-medium transition sm:px-3 ${
+            className={`relative rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
               mode === "chat" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
@@ -242,7 +242,8 @@ export function StoryComposer({
           </button>
         </div>
         <div className="flex items-center gap-0.5">
-          <OnlineLine members={worldMembers} selfId={userId} />
+          {/* Am Handy steht der Punkt schon in der Kopfzeile */}
+          <OnlineLine members={worldMembers} selfId={userId} className="hidden lg:block" />
           {mode === "roll" && (
             <Link href="/hilfe#wuerfeln" title="Hilfe zum Würfeln" aria-label="Hilfe zum Würfeln" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
               <CircleHelp className="h-4 w-4" strokeWidth={2} />
