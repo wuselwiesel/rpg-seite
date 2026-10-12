@@ -27,7 +27,7 @@ describe("Mitgliederliste", () => {
     expect(html).toContain("Nachtschicht");
     expect(html).toContain("schreibt gerade");
     expect(html).not.toContain("(du)");
-    expect(html).toContain("Status festlegen");
+    expect(html).not.toContain("Status festlegen");
   });
   it("niemand online: keine Online-Gruppe und kein „Niemand online“", () => {
     state.onlineIds = new Set();

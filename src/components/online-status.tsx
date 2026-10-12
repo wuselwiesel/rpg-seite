@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { setPresenceMode } from "@/app/profile/actions";
+import { EmojiText } from "@/components/custom-emoji-provider";
 
 export type PresenceMode = "online" | "offline";
 
@@ -158,7 +159,7 @@ export function useOnlineLook(userId: string | null | undefined): (PresenceLook 
 
 // Der Status selbst: grüner Punkt, oder das eigene Emoji an seiner Stelle
 function StatusMark({ emoji, size = "sm" }: { emoji: string | null; size?: "sm" | "md" }) {
-  if (emoji) return <span aria-hidden className={`inline-flex shrink-0 items-center justify-center leading-none ${size === "md" ? "text-sm" : "text-xs"}`}>{emoji}</span>;
+  if (emoji) return <span aria-hidden className={`inline-flex shrink-0 items-center justify-center leading-none ${size === "md" ? "text-sm" : "text-xs"}`}><EmojiText text={emoji} /></span>;
   return <span aria-hidden className={`shrink-0 rounded-full bg-emerald-500 ${size === "md" ? "h-3 w-3" : "h-2 w-2"}`} />;
 }
 
@@ -175,7 +176,7 @@ export function OnlineDot({ userId, overlay = false, className = "" }: { userId:
         title={label}
         className={`inline-flex shrink-0 items-center justify-center rounded-full bg-app text-[11px] leading-none ${overlay ? "absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px]" : "h-4 w-4"} ${className}`}
       >
-        {emoji}
+        <EmojiText text={emoji} />
       </span>
     );
   }
@@ -196,7 +197,7 @@ export function OnlineBadge({ userId, className = "" }: { userId: string | null 
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 ${className}`} title={text ? `Online – ${text}` : "Online"}>
       <StatusMark emoji={emoji} />
-      {text && <span className="text-fg-soft">{text}</span>}
+      {text && <span className="text-fg-soft"><EmojiText text={text} /></span>}
     </span>
   );
 }

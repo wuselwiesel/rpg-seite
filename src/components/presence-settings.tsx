@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
 import { OnlineToggle, useOnline } from "@/components/online-status";
+import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { setPresenceStatus } from "@/app/profile/actions";
 import { PRESENCE_EMOJI_MAX, PRESENCE_EMOJI_PRESETS, PRESENCE_TEXT_MAX, cleanPresenceEmoji } from "@/lib/presence-emoji";
 
@@ -64,6 +65,8 @@ export function PresenceSettings() {
       <div className="grid gap-3 sm:grid-cols-[8rem_minmax(0,1fr)]">
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Emoji
+          <span className="flex items-center gap-1.5">
+          <CustomEmojiPicker direction="down" label="Emoji wählen" onPick={(token) => setEmoji(token.trim())} className="shrink-0" />
           <input
             value={emoji}
             onChange={(e) => setEmoji(e.target.value)}
@@ -71,12 +74,16 @@ export function PresenceSettings() {
             onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
             aria-invalid={emojiInvalid}
             placeholder="🌙"
-            className={`${field} text-center text-lg aria-[invalid=true]:border-red-500`}
+            className={`${field} w-full text-center text-lg aria-[invalid=true]:border-red-500`}
           />
+          </span>
         </label>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Text (optional)
-          <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} maxLength={PRESENCE_TEXT_MAX} placeholder="z. B. schreibt gerade" className={field} />
+          <span className="flex items-center gap-1.5">
+          <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} maxLength={PRESENCE_TEXT_MAX} placeholder="z. B. schreibt gerade" className={`${field} w-full`} />
+          <CustomEmojiPicker direction="down" label="Emoji in den Text einfügen" onPick={(token) => setText((t) => `${t}${token}`.slice(0, PRESENCE_TEXT_MAX))} className="shrink-0" />
+          </span>
         </label>
       </div>
       <div className="flex items-center gap-3">

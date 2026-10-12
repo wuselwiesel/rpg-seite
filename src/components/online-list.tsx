@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Moon } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
+import { EmojiText } from "@/components/custom-emoji-provider";
 import { OnlineToggle, useOnline } from "@/components/online-status";
 import { setPresenceStatus } from "@/app/profile/actions";
 import { PRESENCE_EMOJI_MAX, PRESENCE_EMOJI_PRESETS, PRESENCE_TEXT_MAX, cleanPresenceEmoji } from "@/lib/presence-emoji";
@@ -39,6 +41,16 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
     <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-2 rounded-lg border border-line bg-surface p-2.5">
       <OnlineToggle />
       <div className="flex items-center gap-1.5">
+        <CustomEmojiPicker
+          direction="up"
+          label="Emoji für den Status wählen"
+          onPick={(token) => setEmoji(token.trim())}
+          className="shrink-0"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-md border border-line bg-app text-lg">
+            {emoji ? <EmojiText text={emoji} /> : <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-emerald-500" />}
+          </span>
+        </CustomEmojiPicker>
         <input
           value={emoji}
           onChange={(e) => setEmoji(e.target.value)}
@@ -46,7 +58,8 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
           aria-label="Status-Emoji"
           aria-invalid={invalid}
           placeholder="🌙"
-          className="h-9 w-12 shrink-0 rounded-md border border-line bg-app text-center text-lg outline-none focus:border-accent aria-[invalid=true]:border-red-500"
+          className="sr-only"
+          tabIndex={-1}
         />
         <input
           value={text}
@@ -62,6 +75,7 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
           placeholder="Was machst du gerade?"
           className="h-9 min-w-0 flex-1 rounded-md border border-line bg-app px-2.5 text-sm outline-none focus:border-accent"
         />
+        <CustomEmojiPicker direction="up" label="Emoji in den Text einfügen" onPick={(token) => setText((t) => `${t}${token}`.slice(0, PRESENCE_TEXT_MAX))} className="shrink-0" />
       </div>
       <div className="flex flex-wrap gap-1" role="group" aria-label="Emoji wählen">
         {PRESENCE_EMOJI_PRESETS.map((e) => (
@@ -116,7 +130,11 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5 text-sm text-fg">
             <span className="truncate">{m.name}</span>
-            {look?.emoji && online && <span aria-hidden className="shrink-0 text-xs leading-none">{look.emoji}</span>}
+            {look?.emoji && online && (
+              <span aria-hidden className="shrink-0 text-xs leading-none">
+                <EmojiText text={look.emoji} />
+              </span>
+            )}
           </span>
           {online && look?.writing ? (
             <span className="flex items-center gap-1.5 text-xs text-muted" role="status">
@@ -130,10 +148,10 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
           ) : online && look?.text ? (
             <span className="flex items-center gap-1 truncate text-xs text-muted">
               <Moon className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
-              <span className="truncate">{look.text}</span>
+              <span className="truncate">
+                <EmojiText text={look.text} />
+              </span>
             </span>
-          ) : self ? (
-            <span className="block truncate text-xs text-muted">Status festlegen</span>
           ) : null}
         </span>
       </button>
