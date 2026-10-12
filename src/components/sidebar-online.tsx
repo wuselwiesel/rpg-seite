@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useOnline } from "@/components/online-status";
-import { GroupToggle, MemberList, useGroupMode, type OnlineMember } from "@/components/online-list";
+import { MemberList, type OnlineMember } from "@/components/online-list";
 
 const KEY = "members:collapsed";
 
 // Seitenleiste am Laptop: Mitgliederliste der Welt, immer sichtbar (einklappbar)
 export function SidebarOnline({ members, selfId }: { members: OnlineMember[]; selfId: string }) {
   const { enabled } = useOnline();
-  const [mode, setMode] = useGroupMode();
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -39,9 +38,8 @@ export function SidebarOnline({ members, selfId }: { members: OnlineMember[]; se
           <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition ${collapsed ? "-rotate-90" : ""}`} strokeWidth={2} />
           Mitglieder — {members.length}
         </button>
-        {!collapsed && <GroupToggle mode={mode} onChange={setMode} />}
       </div>
-      {!collapsed && <MemberList members={members} selfId={selfId} mode={mode} className="min-h-0 overflow-y-auto" />}
+      {!collapsed && <MemberList members={members} selfId={selfId} className="min-h-0 overflow-y-auto" />}
     </section>
   );
 }

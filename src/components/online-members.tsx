@@ -5,7 +5,7 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { useOnline } from "@/components/online-status";
 import { MemberList } from "@/components/online-list";
 
-type Member = { id: string; name: string; avatarUrl: string | null; role?: "owner" | "admin" | "member" };
+type Member = { id: string; name: string; avatarUrl: string | null };
 
 const SHOWN = 4;
 

@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useOnline } from "@/components/online-status";
-import { GroupToggle, MemberList, useGroupMode, useOnlineMembers, type OnlineMember } from "@/components/online-list";
+import { MemberList, useOnlineMembers, type OnlineMember } from "@/components/online-list";
 
 // Handy: Punkt in der Kopfzeile (grün = jemand online, grau = niemand); Antippen öffnet die Mitgliederliste von unten
 export function MobileOnline({ members, selfId }: { members: OnlineMember[]; selfId: string }) {
   const { enabled } = useOnline();
   const online = useOnlineMembers(members, selfId);
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useGroupMode();
 
   useEffect(() => {
     if (!open) return;
@@ -37,12 +36,11 @@ export function MobileOnline({ members, selfId }: { members: OnlineMember[]; sel
           >
             <div className="mb-1 flex items-center gap-2">
               <h2 className="flex-1 text-base font-medium text-fg">Mitglieder — {members.length}</h2>
-              <GroupToggle mode={mode} onChange={setMode} />
               <button type="button" onClick={() => setOpen(false)} aria-label="Schließen" className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg">
                 <X className="h-4 w-4" strokeWidth={2} />
               </button>
             </div>
-            <MemberList members={members} selfId={selfId} mode={mode} className="min-h-0 overflow-y-auto" />
+            <MemberList members={members} selfId={selfId} className="min-h-0 overflow-y-auto" />
           </div>
         </>
       )}

@@ -1,47 +1,97 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Moon } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { useOnline } from "@/components/online-status";
+import { OnlineToggle, useOnline } from "@/components/online-status";
+import { setPresenceStatus } from "@/app/profile/actions";
+import { PRESENCE_EMOJI_MAX, PRESENCE_EMOJI_PRESETS, PRESENCE_TEXT_MAX, cleanPresenceEmoji } from "@/lib/presence-emoji";
 
-export type OnlineMember = { id: string; name: string; avatarUrl: string | null; role?: "owner" | "admin" | "member" };
-export type GroupMode = "status" | "role";
-
-const ROLE_LABEL = { owner: "Besitzer:in", admin: "Admin", member: "Mitglied" } as const;
-const ROLE_ORDER = ["owner", "admin", "member"] as const;
-const KEY = "members:group";
-
-// Gruppierung der Mitgliederliste (nach Online/Offline oder nach Rolle), wird im Browser gemerkt
-export function useGroupMode(): [GroupMode, (m: GroupMode) => void] {
-  const [mode, setMode] = useState<GroupMode>("status");
-  useEffect(() => {
-    Promise.resolve().then(() => {
-      try {
-        if (localStorage.getItem(KEY) === "role") setMode("role");
-      } catch {
-        // ohne Speicher bleibt es bei der Standardansicht
-      }
-    });
-  }, []);
-  return [
-    mode,
-    (m) => {
-      setMode(m);
-      try {
-        localStorage.setItem(KEY, m);
-      } catch {
-        // ignorieren
-      }
-    },
-  ];
-}
+export type OnlineMember = { id: string; name: string; avatarUrl: string | null };
 
 // Wer aus der Welt gerade online ist (ohne dich)
 export function useOnlineMembers(members: OnlineMember[], selfId: string) {
   const { enabled, onlineIds } = useOnline();
   return enabled ? members.filter((m) => m.id !== selfId && onlineIds.has(m.id)) : [];
+}
+
+// Eigener Status wie bei Discord: Emoji (statt des grünen Punkts) und ein kurzer Text, dazu Online/Offline
+function StatusEditor({ onDone }: { onDone: () => void }) {
+  const { own, setLook } = useOnline();
+  const [emoji, setEmoji] = useState(own.emoji ?? "");
+  const [text, setText] = useState(own.text ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const invalid = emoji.trim() !== "" && !cleanPresenceEmoji(emoji);
+
+  function save(nextEmoji: string, nextText: string) {
+    setError(null);
+    startTransition(async () => {
+      const err = await setPresenceStatus(nextEmoji, nextText);
+      if (err) return setError(err);
+      setLook({ emoji: cleanPresenceEmoji(nextEmoji), text: nextText.replace(/\s+/g, " ").trim().slice(0, PRESENCE_TEXT_MAX) || null });
+      onDone();
+    });
+  }
+
+  return (
+    <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-2 rounded-lg border border-line bg-surface p-2.5">
+      <OnlineToggle />
+      <div className="flex items-center gap-1.5">
+        <input
+          value={emoji}
+          onChange={(e) => setEmoji(e.target.value)}
+          maxLength={PRESENCE_EMOJI_MAX}
+          aria-label="Status-Emoji"
+          aria-invalid={invalid}
+          placeholder="🌙"
+          className="h-9 w-12 shrink-0 rounded-md border border-line bg-app text-center text-lg outline-none focus:border-accent aria-[invalid=true]:border-red-500"
+        />
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !invalid) {
+              e.preventDefault();
+              save(emoji, text);
+            }
+          }}
+          maxLength={PRESENCE_TEXT_MAX}
+          aria-label="Status-Text"
+          placeholder="Was machst du gerade?"
+          className="h-9 min-w-0 flex-1 rounded-md border border-line bg-app px-2.5 text-sm outline-none focus:border-accent"
+        />
+      </div>
+      <div className="flex flex-wrap gap-1" role="group" aria-label="Emoji wählen">
+        {PRESENCE_EMOJI_PRESETS.map((e) => (
+          <button key={e} type="button" onClick={() => setEmoji(e)} aria-pressed={emoji === e} aria-label={`Emoji ${e}`} className={`flex h-8 w-8 items-center justify-center rounded-md text-base transition ${emoji === e ? "bg-accent/15 ring-2 ring-accent" : "bg-surface-2 hover:bg-surface-3"}`}>
+            {e}
+          </button>
+        ))}
+      </div>
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      <div className="flex items-center gap-1.5">
+        <button type="button" disabled={pending || invalid} onClick={() => save(emoji, text)} className="rounded-md bg-accent-strong px-3 py-1.5 text-xs font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
+          {pending ? "Speichere …" : "Status speichern"}
+        </button>
+        {(own.emoji || own.text) && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              setEmoji("");
+              setText("");
+              save("", "");
+            }}
+            className="rounded-md px-2.5 py-1.5 text-xs text-muted transition hover:text-fg"
+          >
+            Status löschen
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: boolean; selfId: string; open: boolean; onToggle: () => void }) {
@@ -66,7 +116,6 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5 text-sm text-fg">
             <span className="truncate">{m.name}</span>
-            {self && <span className="shrink-0 text-xs text-muted">(du)</span>}
             {look?.emoji && online && <span aria-hidden className="shrink-0 text-xs leading-none">{look.emoji}</span>}
           </span>
           {online && look?.writing ? (
@@ -83,28 +132,24 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
               <Moon className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
               <span className="truncate">{look.text}</span>
             </span>
+          ) : self ? (
+            <span className="block truncate text-xs text-muted">Status festlegen</span>
           ) : null}
         </span>
       </button>
-      {open && (
-        <div className="mx-2 mb-1 mt-0.5 rounded-lg border border-line bg-surface p-2.5 text-sm">
-          <p className="text-xs text-muted">
-            {m.role ? ROLE_LABEL[m.role] : "Mitglied"} · {online ? "online" : "offline"}
-          </p>
-          {self ? (
-            <p className="mt-1 text-xs text-muted">Das bist du.</p>
-          ) : (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <Link href={`/redaktion/chat/mit/${m.id}`} className="rounded-md bg-accent-strong px-2.5 py-1 text-xs font-medium text-on-accent-strong transition hover:opacity-90">
-                Nachricht senden
-              </Link>
-              <Link href={`/redaktion/profil/${m.id}`} className="rounded-md border border-line px-2.5 py-1 text-xs text-fg-soft transition hover:text-fg">
-                Profil ansehen
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
+      {open &&
+        (self ? (
+          <StatusEditor onDone={onToggle} />
+        ) : (
+          <div className="mx-2 mb-1 mt-0.5 flex flex-wrap gap-1.5 rounded-lg border border-line bg-surface p-2.5">
+            <Link href={`/redaktion/chat/mit/${m.id}`} className="rounded-md bg-accent-strong px-2.5 py-1 text-xs font-medium text-on-accent-strong transition hover:opacity-90">
+              Nachricht senden
+            </Link>
+            <Link href={`/redaktion/profil/${m.id}`} className="rounded-md border border-line px-2.5 py-1 text-xs text-fg-soft transition hover:text-fg">
+              Profil ansehen
+            </Link>
+          </div>
+        ))}
     </li>
   );
 }
@@ -125,9 +170,9 @@ function Group({ title, items, isOnline, selfId, openId, setOpenId }: { title: s
   );
 }
 
-// Mitgliederliste wie bei Discord: gruppiert nach Online/Offline (oder Rolle), grüner bzw. grauer Punkt am Bild;
-// ein Klick auf ein Mitglied klappt Rolle, Status und die Knöpfe „Nachricht senden“ / „Profil ansehen“ auf.
-export function MemberList({ members, selfId, mode = "status", className = "" }: { members: OnlineMember[]; selfId: string; mode?: GroupMode; className?: string }) {
+// Mitgliederliste wie bei Discord: „Online — n“ und „Offline — m“, grüner bzw. grauer Punkt am Bild.
+// Ein Klick auf ein Mitglied klappt „Nachricht senden“ / „Profil ansehen“ auf, bei dir selbst den Status-Editor.
+export function MemberList({ members, selfId, className = "" }: { members: OnlineMember[]; selfId: string; className?: string }) {
   const { enabled, onlineIds } = useOnline();
   const [openId, setOpenId] = useState<string | null>(null);
   if (!enabled) return null;
@@ -136,34 +181,8 @@ export function MemberList({ members, selfId, mode = "status", className = "" }:
   const common = { isOnline, selfId, openId, setOpenId };
   return (
     <div className={className}>
-      {mode === "status" ? (
-        <>
-          <Group title="Online" items={members.filter(isOnline).sort(byName)} {...common} />
-          <Group title="Offline" items={members.filter((m) => !isOnline(m)).sort(byName)} {...common} />
-        </>
-      ) : (
-        ROLE_ORDER.map((r) => {
-          const items = members
-            .filter((m) => (m.role ?? "member") === r)
-            .sort((a, b) => Number(isOnline(b)) - Number(isOnline(a)) || byName(a, b));
-          return <Group key={r} title={ROLE_LABEL[r]} items={items} {...common} />;
-        })
-      )}
+      <Group title="Online" items={members.filter(isOnline).sort(byName)} {...common} />
+      <Group title="Offline" items={members.filter((m) => !isOnline(m)).sort(byName)} {...common} />
     </div>
-  );
-}
-
-// Umschalter Online/Offline ↔ Rolle (klein, für die Kopfzeile der Liste)
-export function GroupToggle({ mode, onChange }: { mode: GroupMode; onChange: (m: GroupMode) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(mode === "status" ? "role" : "status")}
-      title={mode === "status" ? "Nach Rolle gruppieren" : "Nach Online-Status gruppieren"}
-      aria-label={mode === "status" ? "Nach Rolle gruppieren" : "Nach Online-Status gruppieren"}
-      className="rounded-md px-1.5 py-0.5 text-[11px] text-muted transition hover:bg-surface-2 hover:text-fg"
-    >
-      {mode === "status" ? "Status" : "Rolle"}
-    </button>
   );
 }
