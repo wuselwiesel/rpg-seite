@@ -8,7 +8,7 @@ import { setPresenceMode } from "@/app/profile/actions";
 export type PresenceMode = "online" | "offline";
 
 // Was andere von dir sehen: Emoji (statt des Punkts) und optional Text
-export type PresenceLook = { emoji: string | null; text: string | null };
+export type PresenceLook = { emoji: string | null; text: string | null; writing?: boolean };
 
 type OnlineContextValue = {
   // false, wenn niemand angemeldet ist (dann gibt es keinen Status)
@@ -19,6 +19,8 @@ type OnlineContextValue = {
   own: PresenceLook;
   setMode: (mode: PresenceMode) => void;
   setLook: (look: PresenceLook) => void;
+  // „schreibt gerade“ für andere Geräte/Seiten (kontoweit, über den Presence-Kanal)
+  setWriting: (writing: boolean) => void;
 };
 
 const OnlineContext = createContext<OnlineContextValue>({
@@ -29,11 +31,12 @@ const OnlineContext = createContext<OnlineContextValue>({
   own: { emoji: null, text: null },
   setMode: () => {},
   setLook: () => {},
+  setWriting: () => {},
 });
 
 const CHANNEL = "wortwinkel-online";
 
-type TrackPayload = { at: number; emoji?: string | null; text?: string | null };
+type TrackPayload = { at: number; emoji?: string | null; text?: string | null; writing?: boolean };
 
 // Alle angemeldeten Geräte treten einem gemeinsamen Presence-Kanal bei und melden sich dort an, solange der Status auf „online“ steht.
 // Wer „offline“ gewählt hat, schaut mit, meldet sich aber nicht an und erscheint für andere offline.
@@ -58,8 +61,10 @@ export function OnlineProvider({
   const subscribed = useRef(false);
   const modeRef = useRef(mode);
   const ownRef = useRef(own);
+  const writingRef = useRef(false);
+  const writingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const payload = (): TrackPayload => ({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text });
+  const payload = (): TrackPayload => ({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
 
   useEffect(() => {
     modeRef.current = mode;
@@ -80,7 +85,7 @@ export function OnlineProvider({
         const next = new Map<string, PresenceLook>();
         for (const [key, entries] of Object.entries(channel.presenceState<TrackPayload>())) {
           const latest = [...entries].sort((x, y) => (y.at ?? 0) - (x.at ?? 0))[0];
-          next.set(key, { emoji: latest?.emoji ?? null, text: latest?.text ?? null });
+          next.set(key, { emoji: latest?.emoji ?? null, text: latest?.text ?? null, writing: entries.some((e) => e.writing === true) });
         }
         setLooks(next);
       })
@@ -94,7 +99,7 @@ export function OnlineProvider({
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
           subscribed.current = true;
-          if (modeRef.current === "online") void channel.track({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text });
+          if (modeRef.current === "online") void channel.track({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
         }
       });
     return () => {
@@ -115,9 +120,23 @@ export function OnlineProvider({
     void channelRef.current?.send({ type: "broadcast", event: "look", payload: { userId, ...next } });
   }
 
+  // Wird bei jeder Eingabe aufgerufen: meldet „schreibt“ und nimmt es nach 5 s ohne neue Eingabe zurück
+  function setWriting(writing: boolean) {
+    if (writingTimer.current) clearTimeout(writingTimer.current);
+    const changed = writingRef.current !== writing;
+    writingRef.current = writing;
+    if (changed && modeRef.current === "online" && subscribed.current && channelRef.current) void channelRef.current.track(payload());
+    if (writing) {
+      writingTimer.current = setTimeout(() => {
+        writingRef.current = false;
+        if (modeRef.current === "online" && subscribed.current && channelRef.current) void channelRef.current.track(payload());
+      }, 5000);
+    }
+  }
+
   const onlineIds = useMemo<ReadonlySet<string>>(() => new Set(looks.keys()), [looks]);
 
-  return <OnlineContext.Provider value={{ enabled: Boolean(userId), mode, onlineIds, looks, own, setMode, setLook }}>{children}</OnlineContext.Provider>;
+  return <OnlineContext.Provider value={{ enabled: Boolean(userId), mode, onlineIds, looks, own, setMode, setLook, setWriting }}>{children}</OnlineContext.Provider>;
 }
 
 export function useOnline() {
@@ -131,10 +150,10 @@ export function useIsOnline(userId: string | null | undefined): boolean {
 }
 
 // Online? Und wie sieht der Status aus (Emoji, Text)?
-export function useOnlineLook(userId: string | null | undefined): (PresenceLook & { online: boolean }) {
+export function useOnlineLook(userId: string | null | undefined): (PresenceLook & { online: boolean; writing: boolean }) {
   const { enabled, looks } = useOnline();
   const look = enabled && userId ? looks.get(userId) : undefined;
-  return { online: Boolean(look), emoji: look?.emoji ?? null, text: look?.text ?? null };
+  return { online: Boolean(look), emoji: look?.emoji ?? null, text: look?.text ?? null, writing: look?.writing === true };
 }
 
 // Der Status selbst: grüner Punkt, oder das eigene Emoji an seiner Stelle

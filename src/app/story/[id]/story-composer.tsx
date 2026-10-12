@@ -11,6 +11,7 @@ import { DiceRollForm } from "./dice-roll-form";
 import { NextSceneForm } from "./next-scene-form";
 import { WriterSelect } from "@/components/writer-select";
 import { OnlineLine } from "@/components/online-members";
+import { useOnline } from "@/components/online-status";
 import { ChaboDrawer } from "@/components/chabo/chabo-drawer";
 import type { Character } from "@/lib/types";
 import type { WikiCalendar } from "@/lib/wiki-calendar";
@@ -140,6 +141,7 @@ export function StoryComposer({
   const [typing, setTyping] = useState<Record<string, { name: string; until: number; kind: "write" | "roll" }>>({});
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const lastTypingSent = useRef(0);
+  const { setWriting } = useOnline();
 
   useEffect(() => {
     const supabase = createClient();
@@ -171,6 +173,8 @@ export function StoryComposer({
   }, [typing]);
 
   function announceTyping(kind: "write" | "roll") {
+    // kontoweit (Seitenleiste): „schreibt gerade“
+    setWriting(true);
     const now = Date.now();
     if (now - lastTypingSent.current < 2500) return;
     lastTypingSent.current = now;

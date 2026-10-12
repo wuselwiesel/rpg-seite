@@ -15,6 +15,8 @@ import { Wordmark } from "./wordmark";
 import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
 import { MobileModeButton } from "./mode-switch";
+import { MobileOnline } from "./mobile-online";
+import type { OnlineMember } from "./online-list";
 import { useAppMode } from "@/components/mode-context";
 import { startTour } from "@/lib/tour";
 import { isImmersiveChatPath } from "@/lib/immersive-routes";
@@ -43,6 +45,7 @@ export function MobileNav({
   initialUnreadCount,
   myCharacterIds,
   unreadCounts,
+  worldMembers,
 }: {
   worlds: World[];
   activeWorld: World;
@@ -55,6 +58,7 @@ export function MobileNav({
   initialUnreadCount: number;
   myCharacterIds: string[];
   unreadCounts: Record<string, number>;
+  worldMembers: OnlineMember[];
 }) {
   const pathname = usePathname();
   // Das Menü gehört zu der Seite, auf der man es geöffnet hat: wechselt die Seite (auch über Links im Menü, z. B. „Welten verwalten“), geht es zu
@@ -82,6 +86,7 @@ export function MobileNav({
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <MobileOnline members={worldMembers} selfId={userId} />
           <NotificationBell
             userId={userId}
             initialNotifications={initialNotifications}

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
 import { getUnreadCounts } from "@/lib/chat-reads";
+import { getWorldMembers } from "@/lib/world-members";
+import { SidebarOnline } from "./sidebar-online";
 import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
 import type { Profile } from "@/lib/types";
 import { CharacterSwitcher } from "./character-switcher";
@@ -93,10 +95,11 @@ export async function Sidebar() {
     );
   }
 
-  const [characters, activeCharacter, { data: myMembership }] = await Promise.all([
+  const [characters, activeCharacter, { data: myMembership }, worldMembers] = await Promise.all([
     getOwnCharacters(user.id, activeWorld.id),
     getActiveCharacter(user.id, activeWorld.id),
     supabase.from("world_members").select("role").eq("world_id", activeWorld.id).eq("user_id", user.id).maybeSingle(),
+    getWorldMembers(activeWorld.id),
   ]);
 
   const myCharacterIds = characters.map((c) => c.id);
@@ -143,6 +146,7 @@ export async function Sidebar() {
         activeCharacter={activeCharacter}
       />
       </div>
+      <SidebarOnline members={worldMembers} selfId={user.id} />
       {activeCharacter && (
         <div className="mt-2 flex shrink-0 items-center gap-2.5 rounded-xl bg-surface-2 px-2.5 py-2">
           <div className="relative shrink-0">
@@ -178,6 +182,7 @@ export async function Sidebar() {
       initialUnreadCount={initialUnreadCount}
       myCharacterIds={myCharacterIds}
       unreadCounts={unreadCounts}
+      worldMembers={worldMembers}
     />
     </>
   );
