@@ -22,6 +22,7 @@ import { MessageBubble } from "./message-bubble";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
+import { keepScrollAnchor } from "@/lib/keep-scroll";
 import type { Character, Message } from "@/lib/types";
 
 const OLDER_PAGE = 100;
@@ -77,7 +78,6 @@ export function ChatRoom({
   const [messages, setMessages] = useState(initialMessages);
   const [olderCursor, setOlderCursor] = useState<string | null>(olderBefore);
   const [loadingOlder, setLoadingOlder] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
   const holdScroll = useRef(false);
   const [draft, setDraft] = useState("");
   const enterSends = useEnterSends();
@@ -280,9 +280,7 @@ export function ChatRoom({
 
   async function showOlder() {
     if (!olderCursor || loadingOlder) return;
-    const el = listRef.current;
-    const before = el?.scrollHeight ?? 0;
-    const top = el?.scrollTop ?? 0;
+    const restore = keepScrollAnchor(messages.map((m) => `rpmsg-${m.id}`));
     setLoadingOlder(true);
     const { data } = await createClient()
       .from("messages")
@@ -304,9 +302,7 @@ export function ChatRoom({
       const have = new Set(prev.map((m) => m.id));
       return [...page.reverse().filter((m) => !have.has(m.id)), ...prev];
     });
-    requestAnimationFrame(() => {
-      if (el) el.scrollTop = top + (el.scrollHeight - before);
-    });
+    restore();
   }
 
   const wasAddPending = useRef(false);
@@ -644,7 +640,7 @@ export function ChatRoom({
         </form>
       )}
 
-      <div ref={listRef} className="flex-1 overflow-y-auto py-4">
+      <div className="flex-1 overflow-y-auto py-4">
         {olderCursor && (
           <div className="mb-3 flex justify-center">
             <button
@@ -662,7 +658,7 @@ export function ChatRoom({
             const isOwn = message.character_id === activeCharacter.id;
             const isLast = index === messages.length - 1;
             return (
-              <div key={message.id} className="flex flex-col">
+              <div key={message.id} id={`rpmsg-${message.id}`} className="flex flex-col">
                 <MessageBubble
                   message={message}
                   isOwn={isOwn}

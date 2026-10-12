@@ -16,6 +16,7 @@ import { splitMentions } from "@/lib/account-mentions";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
 import { useIsDark } from "@/lib/use-dark";
+import { keepScrollAnchor } from "@/lib/keep-scroll";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
 import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
@@ -101,7 +102,6 @@ export function AccountChatRoom({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Beim Nachladen früherer Nachrichten nicht ans Ende springen, sondern die Lesestelle halten
-  const listRef = useRef<HTMLDivElement>(null);
   const holdScroll = useRef(false);
   useEffect(() => {
     if (holdScroll.current) {
@@ -112,18 +112,14 @@ export function AccountChatRoom({
   }, [messages.length, typing.names.length]);
 
   async function showOlder() {
-    const el = listRef.current;
-    const before = el?.scrollHeight ?? 0;
-    const top = el?.scrollTop ?? 0;
+    const restore = keepScrollAnchor(messages.map((m) => `msg-${m.id}`));
     holdScroll.current = true;
     const added = await loadOlder();
     if (!added) {
       holdScroll.current = false;
       return;
     }
-    requestAnimationFrame(() => {
-      if (el) el.scrollTop = top + (el.scrollHeight - before);
-    });
+    restore();
   }
 
   // Kommt eine Nachricht vom Gegenüber an, tippt die Person nicht mehr
@@ -347,7 +343,7 @@ export function AccountChatRoom({
         </div>
       )}
 
-      <div ref={listRef} className="flex-1 overflow-y-auto py-4">
+      <div className="flex-1 overflow-y-auto py-4">
         {hasOlder && (
           <div className="mb-3 flex justify-center">
             <button
