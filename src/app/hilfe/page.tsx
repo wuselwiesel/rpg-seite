@@ -36,6 +36,7 @@ const TOC = [
   ["kuerzel", "Tastenkürzel und Schreibhilfen"],
   ["mehrere-figuren", "Mehrere Figuren in einer Nachricht"],
   ["welten", "Welten entdecken, Übungswelt und Rechte"],
+  ["verlassen", "Welt verlassen, Besitz übertragen, Konto löschen"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -399,7 +400,7 @@ export default function HelpPage() {
       <Section id="welten" title="15. Welten entdecken, Übungswelt und Rechte">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Übungswelt:</strong> Schattenmoor ist als Übungswelt zum Ausprobieren da. Du kannst dort einen Charakter anlegen, in Szenen schreiben, würfeln und Wiki-Seiten bauen. Alles, was Übende anlegen, wird nachts aufgeräumt. Die Hafenbewohner, Beispielszenen und Wiki-Seiten bleiben.
+            <strong>Übungswelt:</strong> Schattenmoor ist als Übungswelt zum Ausprobieren da. Du kannst dort einen Charakter anlegen, in Szenen schreiben, würfeln und Wiki-Seiten bauen. Alles, was Übende anlegen, wird nachts aufgeräumt. Die Figuren, Beispielszenen und Wiki-Seiten von Schattenmoor bleiben.
           </li>
           <li>
             <strong>Welten entdecken:</strong> Unter „Welten“ → „Welten entdecken“ siehst du die öffentlichen Welten mit Mitgliederzahl und letzter Aktivität. Steht dort „Erkunden“, kannst du Willkommenstext, Wiki, Figuren und manchmal auch Szenen ansehen, bevor du beitrittst. Was sichtbar ist, bestimmen die Admins der Welt.
@@ -412,6 +413,22 @@ export default function HelpPage() {
           </li>
           <li>
             <strong>Rechte in der Welt:</strong> Besitzer:in und ernannte Admins dürfen immer alles. Für alle anderen stellen die Admins unter „Welt bearbeiten“ ein, wer Wiki-Seiten anlegen oder bearbeiten, Ordner, Karten und Seitenarten ändern, Szenen starten und Handlungsstränge anlegen darf. Neue Welten starten streng: Mitglieder bearbeiten nur ihre eigenen Wiki-Seiten und ändern keine Ordner oder Karten.
+          </li>
+        </ul>
+      </Section>
+      <Section id="verlassen" title="16. Welt verlassen, Besitz übertragen, Konto löschen">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Welt verlassen:</strong> Unter „Welten“ erscheint beim Darüberfahren (am Handy beim Antippen) neben jeder Welt, die dir nicht gehört, ein Verlassen-Symbol. Auch auf der Weltseite gibt es „Welt verlassen“. Deine Charaktere und Beiträge bleiben in der Welt, du siehst sie nur nicht mehr. Über den Einladungslink oder eine Anfrage kommst du später wieder hinein.
+          </li>
+          <li>
+            <strong>Besitzer:in:</strong> Die Besitzer:in einer Welt kann sie nicht verlassen. Auf der Weltseite überträgt sie den Besitz mit „Besitz übertragen“ an ein anderes Mitglied; danach ist sie Admin und kann die Welt verlassen.
+          </li>
+          <li>
+            <strong>Konto löschen:</strong> Unter „Profil“ → „Konto“ ganz unten, nach Eingabe deines Benutzernamens. Besitzt du noch Welten mit anderen Mitgliedern, nennt die Seite sie und das Löschen geht erst nach der Übertragung. Welten, in denen du allein bist, verschwinden mit dem Konto.
+          </li>
+          <li>
+            <strong>Was bleibt:</strong> Deine Charaktere, Szenen-Nachrichten und Wiki-Seiten bleiben für die anderen erhalten und stehen dann unter „Gelöschter Account“. Konto, Chats, Benachrichtigungen, Freundschaften und Redaktions-Beiträge werden gelöscht. Das lässt sich nicht rückgängig machen; vorher kannst du unter „Konto“ deine Daten herunterladen.
           </li>
         </ul>
       </Section>
