@@ -76,7 +76,7 @@ export default async function DiscoverWorldsPage({ searchParams }: { searchParam
       ) : (
         <ul className="flex flex-col gap-3">
           {worlds.map((w) => (
-            <li key={w.id} className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4">
+            <li key={w.id} className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 sm:flex-row sm:items-center sm:gap-4">
               <Link href={`/worlds/${w.id}`} className="flex min-w-0 flex-1 items-center gap-4">
                 <WorldCover name={w.name} coverUrl={w.cover_image_url} className="h-16 w-16 shrink-0 text-lg" />
                 <div className="min-w-0">
@@ -91,12 +91,15 @@ export default async function DiscoverWorldsPage({ searchParams }: { searchParam
                   </p>
                 </div>
               </Link>
-              {!w.is_member && w.preview !== "none" && (
-                <Link href={`/worlds/${w.id}/vorschau`} className="shrink-0 rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent">
-                  Erkunden
-                </Link>
-              )}
-              {w.is_member ? <EnterWorldButton worldId={w.id} /> : <JoinOrRequestButton worldId={w.id} joinMode={w.join_mode} hasRequest={w.has_request} ownerId={w.created_by} />}
+              {/* Am Handy unter dem Text, ab sm daneben */}
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {!w.is_member && w.preview !== "none" && (
+                  <Link href={`/worlds/${w.id}/vorschau`} className="shrink-0 rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent">
+                    Erkunden
+                  </Link>
+                )}
+                {w.is_member ? <EnterWorldButton worldId={w.id} /> : <JoinOrRequestButton worldId={w.id} joinMode={w.join_mode} hasRequest={w.has_request} ownerId={w.created_by} />}
+              </div>
             </li>
           ))}
         </ul>
