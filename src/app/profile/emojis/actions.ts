@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { EMOJI_NAME } from "@/lib/custom-emoji";
-import { getActiveWorld } from "@/lib/worlds";
+import { cookies } from "next/headers";
+import { ACTIVE_WORLD_COOKIE } from "@/lib/types";
 
 const MAX_EMOJIS_PER_ACCOUNT = 300;
 
@@ -25,8 +26,12 @@ export async function createCustomEmoji(name: string, imageUrl: string): Promise
   if ((count ?? 0) >= MAX_EMOJIS_PER_ACCOUNT) return `Du kannst höchstens ${MAX_EMOJIS_PER_ACCOUNT} Emojis hochladen.`;
 
   // Neue Emojis gehören zur aktiven Welt und gelten nur dort
-  const world = await getActiveWorld(user.id);
-  if (!world) return "Wähle zuerst eine Welt.";
+  // Aktive Welt wie getActiveWorld (Cookie, sonst die erste Welt), hier ohne server-only-Modul, damit Client-Komponenten diese Aktion importieren dürfen
+  const { data: memberships } = await supabase.from("world_members").select("world_id").eq("user_id", user.id).order("joined_at", { ascending: true });
+  const worldIds = (memberships ?? []).map((m) => m.world_id as string);
+  const cookieWorld = (await cookies()).get(ACTIVE_WORLD_COOKIE)?.value;
+  const world = { id: worldIds.includes(cookieWorld ?? "") ? (cookieWorld as string) : worldIds[0] };
+  if (!world.id) return "Wähle zuerst eine Welt.";
   // Ältere, weltübergreifende Emojis mit gleichem Namen würden sonst unbemerkt überdeckt
   const { count: legacy } = await supabase.from("custom_emojis").select("id", { count: "exact", head: true }).eq("name", clean).eq("world_only", false);
   if ((legacy ?? 0) > 0) return `:${clean}: gibt es schon. Wähle einen anderen Namen.`;
