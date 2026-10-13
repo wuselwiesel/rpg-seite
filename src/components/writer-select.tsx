@@ -129,10 +129,12 @@ export function WriterSelect({
 
   if (characters.length < 2) {
     return (
-      <p className="flex w-fit max-w-full items-center gap-1.5 text-xs text-muted">
+      <div className="flex w-fit max-w-full items-center gap-1.5 text-xs text-muted">
         <CharacterAvatar name={selected.name} avatarUrl={selected.avatar_url} size={20} />
-        {label} <span className="truncate text-[13px] font-medium text-fg-soft">{selected.name}</span>
-      </p>
+        <span>
+          {label} <span className="truncate text-[13px] font-medium text-fg-soft">{selected.name}</span>
+        </span>
+      </div>
     );
   }
 

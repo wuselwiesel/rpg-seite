@@ -294,15 +294,28 @@ export function AppTour() {
   }
 
   const PAD = 8;
-  const spot = rect
-    ? { top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }
-    : null;
+  // Ziel nur hervorheben, wenn es wirklich auf dem Bildschirm liegt: Der Weltwechsler steckt am Handy im geschlossenen Menü (außerhalb
+  // des Bildschirms) und auf dem Laptop-Layout in einem ausgeblendeten Bereich (Größe 0). Dann steht die Karte mittig.
+  const onScreen =
+    !!rect &&
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.top < window.innerHeight &&
+    rect.top + rect.height > 0 &&
+    rect.left < window.innerWidth &&
+    rect.left + rect.width > 0;
+  const spot =
+    rect && onScreen
+      ? { top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }
+      : null;
   const last = stepIndex >= tour.steps.length - 1;
 
   // Tooltip-Position: unter dem Ziel, sonst darüber; passt die Karte an keine der beiden Stellen (Ziel höher als der Bildschirm, z. B. das
   // Schreibfeld auf einem kleinen Fenster), steht sie fest am unteren Rand über dem Ziel – sonst läge sie außerhalb und „Weiter“ wäre
   // nicht erreichbar. Ohne Ziel mittig.
-  const CARD_H = 280;
+  // Höhe der Karte grob nach Textlänge schätzen: lange Texte brauchen mehr Platz, sonst ragt die Karte unten aus dem Bildschirm
+  // und „Weiter“ ist am Handy nicht erreichbar.
+  const CARD_H = Math.max(240, 150 + Math.ceil(step.text.length / 34) * 24);
   let card: { top?: number; bottom?: number; left: number; placement: "below" | "above" | "pinned" | "center" };
   if (spot) {
     const width = 320;
@@ -312,7 +325,7 @@ export function AppTour() {
     const spaceBelow = vh - (spot.top + spot.height);
     const spaceAbove = spot.top;
     if (spaceBelow >= CARD_H) card = { top: spot.top + spot.height + 12, left, placement: "below" };
-    else if (spaceAbove >= CARD_H) card = { bottom: vh - spot.top + 12, left, placement: "above" };
+    else if (spaceAbove >= CARD_H) card = { bottom: Math.max(12, vh - spot.top + 12), left, placement: "above" };
     else card = { bottom: 12, left, placement: "pinned" };
   } else {
     card = { left: 0, placement: "center" };
@@ -364,7 +377,7 @@ export function AppTour() {
         <h2 className="mb-1.5 font-serif text-xl text-fg">{step.title}</h2>
         <p className="mb-4 max-h-[40dvh] overflow-y-auto text-sm leading-relaxed text-fg-soft">
           {step.text}
-          {!rect && step.match && !searching && (
+          {!onScreen && step.match && !searching && (
             <span className="mt-1 block text-xs text-muted">(Nicht auf diesem Bildschirm sichtbar – gilt trotzdem.)</span>
           )}
         </p>
