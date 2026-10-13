@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { EMOJI_NAME } from "@/lib/custom-emoji";
+import { getActiveWorld } from "@/lib/worlds";
 
 const MAX_EMOJIS_PER_ACCOUNT = 300;
 
@@ -23,9 +24,15 @@ export async function createCustomEmoji(name: string, imageUrl: string): Promise
     .eq("created_by", user.id);
   if ((count ?? 0) >= MAX_EMOJIS_PER_ACCOUNT) return `Du kannst höchstens ${MAX_EMOJIS_PER_ACCOUNT} Emojis hochladen.`;
 
-  // Emojis gelten in allen Welten, deshalb ohne Welt (world_id bleibt leer)
-  const { error } = await supabase.from("custom_emojis").insert({ name: clean, image_url: imageUrl, created_by: user.id });
-  if (error) return error.code === "23505" ? `:${clean}: gibt es schon. Wähle einen anderen Namen.` : error.message;
+  // Neue Emojis gehören zur aktiven Welt und gelten nur dort
+  const world = await getActiveWorld(user.id);
+  if (!world) return "Wähle zuerst eine Welt.";
+  // Ältere, weltübergreifende Emojis mit gleichem Namen würden sonst unbemerkt überdeckt
+  const { count: legacy } = await supabase.from("custom_emojis").select("id", { count: "exact", head: true }).eq("name", clean).eq("world_only", false);
+  if ((legacy ?? 0) > 0) return `:${clean}: gibt es schon. Wähle einen anderen Namen.`;
+
+  const { error } = await supabase.from("custom_emojis").insert({ name: clean, image_url: imageUrl, created_by: user.id, world_id: world.id, world_only: true });
+  if (error) return error.code === "23505" ? `:${clean}: gibt es in dieser Welt schon. Wähle einen anderen Namen.` : error.message;
 
   revalidatePath("/", "layout");
   return null;

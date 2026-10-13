@@ -118,12 +118,14 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
         <ul className="grid gap-2 sm:grid-cols-2">
           {((characters.data ?? []) as CharRow[]).length === 0 && <li className="text-sm text-muted">Noch keine Figuren.</li>}
           {((characters.data ?? []) as CharRow[]).map((c) => (
-            <li key={c.id} className="flex items-start gap-3 rounded-lg border border-line bg-surface px-4 py-3">
-              <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={44} />
-              <div className="min-w-0">
-                <p className="truncate font-medium text-fg">{c.name}</p>
-                {c.bio && <p className="line-clamp-2 text-sm text-muted">{c.bio}</p>}
-              </div>
+            <li key={c.id}>
+              <Link href={`/worlds/${id}/vorschau/figur/${c.id}`} className="flex items-start gap-3 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2">
+                <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={44} />
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-fg">{c.name}</p>
+                  {c.bio && <p className="line-clamp-2 text-sm text-muted">{c.bio}</p>}
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

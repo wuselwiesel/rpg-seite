@@ -8,6 +8,8 @@ import { NpcBadge } from "@/components/npc-badge";
 import { getActiveWorld } from "@/lib/worlds";
 import { Check } from "lucide-react";
 import { SetActiveButton } from "./set-active-button";
+import { DeleteCharacterIcon } from "./delete-character-icon";
+import { RevealRow } from "@/components/reveal-row";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { cookies } from "next/headers";
@@ -96,7 +98,11 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
           )}
           <ul className="flex flex-col gap-3">
             {npcs.map((npc) => (
-              <li key={npc.id} className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4">
+              <RevealRow
+                key={npc.id}
+                className="flex-wrap gap-4 rounded-2xl border border-line bg-surface p-4"
+                actions={canEditCharacter(npc, user.id, worldOwnerId) ? <DeleteCharacterIcon characterId={npc.id} characterName={npc.name} /> : null}
+              >
                 <Link href={`/characters/${npc.id}`} className="flex min-w-0 flex-1 items-center gap-4">
                   <CharacterAvatar name={npc.name} avatarUrl={npc.avatar_url} size={52} />
                   <div className="min-w-0 flex-1">
@@ -115,7 +121,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                     Bearbeiten
                   </Link>
                 )}
-              </li>
+              </RevealRow>
             ))}
           </ul>
         </>
@@ -132,11 +138,12 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
 
       <ul className={`flex flex-col gap-3 ${showNpcs ? "hidden" : ""}`}>
         {characters.map((character) => (
-          <li
+          <RevealRow
             key={character.id}
-            className={`flex items-center gap-4 rounded-2xl border bg-surface p-4 transition ${
+            className={`flex-wrap gap-4 rounded-2xl border bg-surface p-4 transition ${
               character.id === activeId ? "border-accent/60" : "border-line"
             }`}
+            actions={<DeleteCharacterIcon characterId={character.id} characterName={character.name} />}
           >
             <Link href={`/characters/${character.id}`} className="flex min-w-0 flex-1 items-center gap-4">
               <span className="relative shrink-0">
@@ -162,7 +169,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
             ) : (
               <SetActiveButton characterId={character.id} />
             )}
-          </li>
+          </RevealRow>
         ))}
       </ul>
     </div>
