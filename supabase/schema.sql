@@ -6579,4 +6579,8 @@ update public.notifications set world_id = public.notification_link_world(link) 
 
 create index if not exists notifications_user_world_idx on public.notifications (user_id, world_id, created_at desc);
 
+-- Die alte Variante ohne Geheimnis gab jeder Person ohne Anmeldung die E-Mail-Adresse zu einem Benutzernamen.
+-- Der Login nutzt nur noch get_email_for_username(text, text).
+drop function if exists public.get_email_for_username(text);
+
 notify pgrst, 'reload schema';
