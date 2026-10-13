@@ -1,5 +1,6 @@
 "use server";
 
+import { pwnedPasswordError } from "@/lib/pwned-password";
 import { redirect } from "next/navigation";
 import { cleanPresenceEmoji, cleanPresenceText } from "@/lib/presence-emoji";
 import { revalidatePath } from "next/cache";
@@ -126,6 +127,8 @@ export async function changePassword(_prevState: string | null, formData: FormDa
   const confirm = String(formData.get("confirm") ?? "");
   if (password.length < 6) return "Das Passwort braucht mindestens 6 Zeichen.";
   if (password !== confirm) return "Die beiden Passwörter sind nicht gleich.";
+  const pwned = await pwnedPasswordError(password);
+  if (pwned) return pwned;
 
   const supabase = await createClient();
   const {

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { pwnedPasswordError } from "@/lib/pwned-password";
 
 export async function signup(_prevState: string | null, formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -11,6 +12,9 @@ export async function signup(_prevState: string | null, formData: FormData) {
   if (username.length < 2) {
     return "Bitte einen Benutzernamen mit mindestens 2 Zeichen angeben.";
   }
+
+  const pwned = await pwnedPasswordError(password);
+  if (pwned) return pwned;
 
   const supabase = await createClient();
 
