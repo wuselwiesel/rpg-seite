@@ -446,6 +446,20 @@ export default function HelpPage() {
           </li>
         </ul>
       </Section>
+
+      <Section id="passwort-vergessen" title="18. Passwort vergessen">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Link anfordern:</strong> Auf der Anmeldeseite führt „Passwort vergessen?“ zu einer Seite, auf der du Benutzernamen oder E-Mail-Adresse eingibst. Du bekommst eine E-Mail mit einem Link, ob es ein Konto gibt oder nicht, steht dort aus Datenschutzgründen immer dieselbe Antwort.
+          </li>
+          <li>
+            <strong>Neues Passwort:</strong> Der Link öffnet eine Seite für das neue Passwort. Bekannt geleakte Passwörter werden dort wie bei der Registrierung abgelehnt. Danach bist du direkt angemeldet.
+          </li>
+          <li>
+            <strong>Link abgelaufen:</strong> Der Link gilt nur kurz und nur einmal. Ist er abgelaufen oder schon benutzt, fordere einfach einen neuen an. Kommt keine Mail an, schau im Spam-Ordner nach.
+          </li>
+        </ul>
+      </Section>
     </div>
   );
 }

@@ -52,6 +52,12 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-6 text-sm text-muted">
+        <Link href="/passwort-vergessen" className="text-accent hover:underline">
+          Passwort vergessen?
+        </Link>
+      </p>
+
+      <p className="mt-3 text-sm text-muted">
         Noch keinen Charakter?{" "}
         {/* Fortsetzungslink beim Wechsel zur Registrierung mitnehmen (z. B. Welt-Einladung) erhalten. */}
         <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="text-accent hover:underline">

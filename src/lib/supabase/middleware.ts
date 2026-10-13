@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
+// Offen für alle, auch für Angemeldete (Passwort vergessen und der Link aus der Mail)
+const OPEN_PATHS = ["/passwort-vergessen", "/passwort-neu"];
 // Läuft ohne Anmeldung, prüft aber selbst das Cron-Geheimnis.
 const SELF_AUTHED_PATHS = ["/api/cron/"];
 
@@ -34,6 +36,8 @@ export async function updateSession(request: NextRequest) {
   const user = claimsData?.claims ?? null;
 
   if (SELF_AUTHED_PATHS.some((path) => request.nextUrl.pathname.startsWith(path))) return supabaseResponse;
+
+  if (OPEN_PATHS.some((path) => request.nextUrl.pathname.startsWith(path))) return supabaseResponse;
 
   const isPublicPath = PUBLIC_PATHS.some((path) =>
     request.nextUrl.pathname.startsWith(path),
