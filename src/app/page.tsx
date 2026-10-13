@@ -12,7 +12,7 @@ import { FeedSidebar } from "@/components/feed-sidebar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { WorldOnboarding } from "@/components/world-onboarding";
 import { FirstSteps, type FirstStep } from "@/components/first-steps";
-import { AutoTour } from "@/components/auto-tour";
+import { TourOffer } from "@/components/tour-offer";
 
 export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -66,7 +66,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
     <PullToRefresh>
     <div className="flex gap-8 px-3 pb-4 pt-2 sm:px-6 sm:py-8 lg:px-10">
       <div className="mx-auto min-w-0 max-w-[470px] xl:max-w-[540px] 2xl:max-w-[600px] flex-1">
-        <AutoTour enabled={recentlyJoined} />
+        <TourOffer enabled={recentlyJoined} />
         <WorldOnboarding worldId={activeWorld.id} worldName={activeWorld.name} autoOpen={false} />
         {firstSteps.length > 0 && <FirstSteps worldId={activeWorld.id} steps={firstSteps} />}
 
