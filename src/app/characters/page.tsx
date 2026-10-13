@@ -100,7 +100,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
             {npcs.map((npc) => (
               <RevealRow
                 key={npc.id}
-                className="flex-wrap gap-4 rounded-2xl border border-line bg-surface p-4"
+                className="flex-wrap gap-3 rounded-2xl border border-line bg-surface p-4"
                 actions={canEditCharacter(npc, user.id, worldOwnerId) ? <DeleteCharacterIcon characterId={npc.id} characterName={npc.name} /> : null}
               >
                 <Link href={`/characters/${npc.id}`} className="flex min-w-0 flex-1 items-center gap-4">
@@ -140,7 +140,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
         {characters.map((character) => (
           <RevealRow
             key={character.id}
-            className={`flex-wrap gap-4 rounded-2xl border bg-surface p-4 transition ${
+            className={`flex-wrap gap-3 rounded-2xl border bg-surface p-4 transition ${
               character.id === activeId ? "border-accent/60" : "border-line"
             }`}
             actions={<DeleteCharacterIcon characterId={character.id} characterName={character.name} />}

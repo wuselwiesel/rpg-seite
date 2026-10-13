@@ -21,7 +21,7 @@ export function DeleteCharacterIcon({ characterId, characterName }: { characterI
           if (result) alert(result);
         });
       }}
-      className="shrink-0 rounded-full p-2 text-muted transition hover:bg-surface-2 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+      className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
     >
       <Trash2 className="h-4 w-4" strokeWidth={2} />
     </button>
