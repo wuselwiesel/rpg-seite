@@ -117,9 +117,13 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
     for (const m of memberships ?? []) memberWorldIds.add(m.world_id);
     for (const f of follows ?? []) followedWorldIds.add(f.world_id);
-    // Private Welten erscheinen nur für ihre Mitglieder und die Besitzer:in (sonst nur über den Einladungslink)
+    // Private Welten erscheinen nur für ihre Mitglieder und die Besitzer:in (sonst nur über den Einladungslink),
+    // es sei denn, sie erlauben das Erkunden: dann sind sie auch auffindbar
     worldResults = (worlds ?? [])
-      .filter((w) => (w as { is_public?: boolean }).is_public || (w as { is_demo?: boolean }).is_demo || memberWorldIds.has(w.id) || w.created_by === user.id)
+      .filter((w) => {
+        const x = w as { is_public?: boolean; is_demo?: boolean; preview?: string | null };
+        return x.is_public || x.is_demo || (x.preview != null && x.preview !== "none") || memberWorldIds.has(w.id) || w.created_by === user.id;
+      })
       .slice(0, 20);
   }
 

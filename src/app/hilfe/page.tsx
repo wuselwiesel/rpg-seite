@@ -403,7 +403,7 @@ export default function HelpPage() {
             <strong>Übungswelt:</strong> Schattenmoor ist als Übungswelt zum Ausprobieren da. Du kannst dort einen Charakter anlegen, in Szenen schreiben, würfeln und Wiki-Seiten bauen. Alles, was Übende anlegen, wird nachts aufgeräumt. Die Figuren, Beispielszenen und Wiki-Seiten von Schattenmoor bleiben.
           </li>
           <li>
-            <strong>Welten entdecken:</strong> Unter „Welten“ → „Welten entdecken“ siehst du die öffentlichen Welten mit Mitgliederzahl und letzter Aktivität. Steht dort „Erkunden“, kannst du Willkommenstext, Wiki, Figuren und manchmal auch Szenen ansehen, bevor du beitrittst. Was sichtbar ist, bestimmen die Admins der Welt.
+            <strong>Welten entdecken:</strong> Unter „Welten“ → „Welten entdecken“ siehst du die öffentlichen Welten mit Mitgliederzahl und letzter Aktivität. Steht dort „Erkunden“, kannst du Willkommenstext, Wiki, Figuren und manchmal auch Szenen ansehen, bevor du beitrittst. Was sichtbar ist, bestimmen die Admins der Welt. Eine Welt erscheint dort auch dann, wenn sie nicht „Öffentlich“ ist und nur auf Einladung beitritt, sobald sie „Erkunden“ erlaubt: Ansehen geht dann, beitreten nur mit Einladung.
           </li>
           <li>
             <strong>Beitritt:</strong> Je Welt gibt es drei Arten. Offene Welten betrittst du mit einem Klick. Bei „Auf Anfrage“ schickst du eine Nachricht an die Admins und wirst benachrichtigt, sobald sie entscheiden; über „Admin anschreiben“ erreichst du sie im privaten Chat. „Nur auf Einladung“ geht nur mit Einladungslink oder von Freund:innen.
