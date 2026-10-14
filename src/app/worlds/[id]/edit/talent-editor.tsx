@@ -36,14 +36,26 @@ export function TalentEditor({ worldId, initial }: { worldId: string; initial: T
       <input type="hidden" name="talents" value={JSON.stringify(rows)} />
       <ul className="flex flex-col gap-1.5">
         {rows.map((t, i) => (
-          <li key={i} className="flex flex-wrap items-center gap-1.5">
+          <li key={i} className="grid grid-cols-[1fr_auto] items-center gap-1.5 rounded-xl border border-line p-2 sm:flex sm:flex-wrap sm:rounded-none sm:border-0 sm:p-0">
             <input
               value={t.name}
               maxLength={MAX_TALENT_NAME}
               onChange={(e) => set(i, { name: e.target.value })}
               aria-label="Name des Talents"
-              className={`min-w-[8rem] flex-1 ${field}`}
+              className={`min-w-0 sm:min-w-[8rem] sm:flex-1 ${field}`}
             />
+            <span className="flex items-center sm:order-3">
+              <button type="button" onClick={() => move(i, -1)} aria-label="Nach oben" className="rounded p-2 text-muted sm:p-1 hover:bg-surface-2 hover:text-fg">
+                <ArrowUp className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+              <button type="button" onClick={() => move(i, 1)} aria-label="Nach unten" className="rounded p-2 text-muted sm:p-1 hover:bg-surface-2 hover:text-fg">
+                <ArrowDown className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+              <button type="button" onClick={() => setRows((r) => r.filter((_, j) => j !== i))} aria-label="Entfernen" className="rounded p-2 text-muted sm:p-1 hover:bg-surface-2 hover:text-red-500">
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            </span>
+            <div className="col-span-2 grid grid-cols-2 gap-1.5 sm:order-2 sm:contents">
             {[0, 1].map((k) => (
               <select
                 key={k}
@@ -54,7 +66,7 @@ export function TalentEditor({ worldId, initial }: { worldId: string; initial: T
                   set(i, { attrs });
                 }}
                 aria-label={k === 0 ? "Erstes Attribut" : "Zweites Attribut"}
-                className={field}
+                className={`min-w-0 ${field}`}
               >
                 {ATTRS.map((a) => (
                   <option key={a.code} value={a.code}>
@@ -63,17 +75,7 @@ export function TalentEditor({ worldId, initial }: { worldId: string; initial: T
                 ))}
               </select>
             ))}
-            <span className="flex items-center">
-              <button type="button" onClick={() => move(i, -1)} aria-label="Nach oben" className="rounded p-1 text-muted hover:bg-surface-2 hover:text-fg">
-                <ArrowUp className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <button type="button" onClick={() => move(i, 1)} aria-label="Nach unten" className="rounded p-1 text-muted hover:bg-surface-2 hover:text-fg">
-                <ArrowDown className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <button type="button" onClick={() => setRows((r) => r.filter((_, j) => j !== i))} aria-label="Entfernen" className="rounded p-1 text-muted hover:bg-surface-2 hover:text-red-500">
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-            </span>
+            </div>
           </li>
         ))}
       </ul>

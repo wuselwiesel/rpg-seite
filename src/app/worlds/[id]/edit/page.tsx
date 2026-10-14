@@ -43,8 +43,8 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
 
       <EditWorldForm world={world} />
 
-      <section data-tour="welt-willkommen" className="mt-8 border-t border-line pt-6">
-        <h2 className="mb-3 font-serif text-xl text-fg">Willkommen</h2>
+      <section className="mt-8 border-t border-line pt-6">
+        <h2 data-tour="welt-willkommen" className="mb-3 font-serif text-xl text-fg">Willkommen</h2>
         <WelcomeEditor worldId={world.id} initial={world.welcome_html ?? ""} />
       </section>
 
@@ -75,8 +75,8 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
       </section>
 
       {world.dice_enabled !== false && (
-      <section data-tour="welt-talente" className="mt-8 border-t border-line pt-6">
-        <h2 className="mb-3 font-serif text-xl text-fg">Talente</h2>
+      <section className="mt-8 border-t border-line pt-6">
+        <h2 data-tour="welt-talente" className="mb-3 font-serif text-xl text-fg">Talente</h2>
         <TalentEditor
           worldId={world.id}
           initial={(world as unknown as { talent_config?: unknown }).talent_config ? parseTalentConfig((world as unknown as { talent_config?: unknown }).talent_config) : DEFAULT_TALENTS}

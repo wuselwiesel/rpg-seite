@@ -126,14 +126,14 @@ function ListCard({ list, first, worldId, disabled, run }: { list: ChoiceList; f
               e.preventDefault();
               run(() => addChoiceOptions(worldId, list.id, adding), () => setAdding(""));
             }}
-            className="flex gap-2"
+            className="flex flex-wrap gap-2"
           >
             <input
               value={adding}
               onChange={(e) => setAdding(e.target.value)}
               placeholder="Einträge, mit Komma getrennt"
               aria-label={`Einträge zu ${list.label} hinzufügen`}
-              className={`${input} min-w-0 flex-1`}
+              className={`${input} min-w-[14rem] flex-1`}
             />
             <button type="submit" disabled={disabled || !adding.trim()} className="rounded-md bg-surface-2 px-4 py-2 text-sm font-medium text-fg-soft transition hover:text-fg disabled:opacity-50">
               Hinzufügen
