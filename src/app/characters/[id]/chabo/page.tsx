@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCharacterSheet } from "@/lib/character-sheet-data";
+import { getWorldTalents } from "@/lib/world-talents";
+import { getWorldNatures } from "@/lib/world-natures";
 import { CharacterGallery } from "@/components/character-gallery";
 import { CharacterScenesTimeline } from "@/components/character-scenes-timeline";
 import { getMentionableCharacters, getOwnCharacters, getOwnNpcs, getWorldNpcs } from "@/lib/active-character";
@@ -60,7 +62,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
           <ChaboSwitcher currentId={id} characters={ownChars.map((c) => ({ id: c.id, name: c.name }))} npcs={switcherNpcs.map((c) => ({ id: c.id, name: c.name }))} />
         </div>
       </div>
-      <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} randomLists={randomLists} />
+      <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} talentDefs={await getWorldTalents(character.world_id)} natureDefs={await getWorldNatures(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} mentionCharacters={mentionCharacters} randomLists={randomLists} />
       <CharacterGallery characterId={id} canEdit={isOwn} />
       <CharacterScenesTimeline characterId={id} isOwn={isOwn} />
     </div>

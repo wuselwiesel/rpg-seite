@@ -537,7 +537,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Würfeln an oder aus",
-        text: "Ohne Würfeln gibt es in dieser Welt keine Würfe und keine Attribute oder Talente. Der ChaBo bleibt trotzdem als Steckbrief mit den eigenen Feldern der Charaktere.",
+        text: "Ohne Würfeln gibt es in dieser Welt keine Würfe, keine Attribute, Talente und besonderen Naturen. Neue Welten starten ohne Würfeln. Der ChaBo bleibt trotzdem als Steckbrief mit den eigenen Feldern der Charaktere.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-wuerfeln" },
       },
@@ -582,6 +582,12 @@ export const TOURS: Tour[] = [
         text: "Wenn Würfeln eingeschaltet ist, legst du auf der Bearbeiten-Seite die Talente deiner Welt fest: Name und zwei Attribute, auf die geprobt wird. „Standardliste“ stellt die ursprünglichen Talente wieder her. Gespeichert werden sie mit dem Speichern-Knopf unten.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-talente" },
+      },
+      {
+        title: "Besondere Naturen",
+        text: "Nur bei eingeschaltetem Würfeln: Hier legst du fest, welche besonderen Naturen es in deiner Welt gibt, zum Beispiel Werwolf, Vampir oder etwas ganz Eigenes. Jede Natur bekommt einen Namen und feste Boni oder Abzüge bei den Attributen. Wer im ChaBo eine Natur wählt, bekommt diese Boni eingetragen. Mit „Natur hinzufügen“ legst du beliebig viele an.",
+        route: "@worldEdit|/worlds",
+        match: { attr: "welt-naturen" },
       },
       {
         title: "Löschen",

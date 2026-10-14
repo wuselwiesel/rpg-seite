@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { hasErrors, hasSecrets, mergeSecrets, normalizeSheet, parseSecrets, splitSecrets, stripSecrets, validateSheet } from "@/lib/sheet-rules";
 import { getCharacterTalents } from "@/lib/world-talents";
+import { getCharacterNatures } from "@/lib/world-natures";
 import { syncFamilyRows } from "@/lib/family-sync";
 import { diffSheets, mergeWithRecent, type SheetChange } from "@/lib/sheet-diff";
 
@@ -48,23 +49,25 @@ export async function saveCharacterSheet(characterId: string, raw: unknown): Pro
   if (!user) return "Nicht angemeldet.";
 
   const talentDefs = await getCharacterTalents(characterId);
-  const data = normalizeSheet(raw, talentDefs);
+  const natureDefs = await getCharacterNatures(characterId);
+  const data = normalizeSheet(raw, talentDefs, natureDefs);
   const errors = validateSheet(data);
   if (hasErrors(errors)) return errors.budget[0] ?? "Einige Werte sind ungültig.";
   data.notesBlocks = data.notesBlocks.map((b) => ({ label: b.label, html: sanitizePostHtml(b.html) }));
 
   const { data: prevRow } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
-  const prev = prevRow ? stripSecrets(normalizeSheet(prevRow.data, talentDefs)) : null;
+  const prev = prevRow ? stripSecrets(normalizeSheet(prevRow.data, talentDefs, natureDefs)) : null;
   const { data: prevSecretRow } = await supabase.from("character_sheet_secrets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
-  const prevFamily = prevRow ? (prevSecretRow ? mergeSecrets(normalizeSheet(prevRow.data, talentDefs), parseSecrets(prevSecretRow.data)) : normalizeSheet(prevRow.data, talentDefs)).family : [];
+  const prevFamily = prevRow ? (prevSecretRow ? mergeSecrets(normalizeSheet(prevRow.data, talentDefs, natureDefs), parseSecrets(prevSecretRow.data)) : normalizeSheet(prevRow.data, talentDefs, natureDefs)).family : [];
   // Beziehungen im ChaBo und im Beziehungsnetz gleichen sich ab (auch geheime Zeilen: die werden zu geheimen Beziehungen)
   data.family = await syncFamilyRows(supabase, user.id, characterId, data.family, prevFamily);
   // Geheimes kommt nie in die für alle lesbare Zeile, sondern in eine eigene (nur für die Besitzer:in)
   const split = splitSecrets(data);
   const secrets = split.secrets;
-  // Die Talentliste der Welt gehört nicht in den gespeicherten Bogen
-  const { talentDefs: _defs, ...open } = split.open;
+  // Talent- und Naturenliste der Welt gehören nicht in den gespeicherten Bogen
+  const { talentDefs: _defs, natureDefs: _natures, ...open } = split.open;
   void _defs;
+  void _natures;
 
   const { data: row, error } = await supabase
     .from("character_sheets")

@@ -156,12 +156,13 @@ export function genderFromText(text: string): Gender | null {
   return null;
 }
 
-export function rollRace(rng: Rng): Race {
+export function rollRace(rng: Rng): "none" | "werwolf" | "vampir" {
   const r = rng();
   return r < 0.7 ? "none" : r < 0.85 ? "werwolf" : "vampir";
 }
 
 export const RACE_WORDS: Record<Race, string> = { none: "Mensch", werwolf: "Werwolf", vampir: "Vampir" };
+const raceWord = (race: Race) => RACE_WORDS[race] ?? "Mensch";
 
 // Alter nach Wesen: Menschen und Werwölfe jung bis mittleres Alter, Vampire deutlich älter.
 export function rollAge(race: Race, rng: Rng): number {
@@ -212,7 +213,7 @@ export function rollValue(kind: FieldKind, ctx: RollContext): string {
     case "alter":
       return String(rollAge(ctx.race ?? "none", rng));
     case "wesen":
-      return RACE_WORDS[ctx.race ?? rollRace(rng)];
+      return raceWord(ctx.race ?? rollRace(rng));
     case "hobby":
       return clip(hobbys(custom?.hobby, rng), 200);
     case "beruf":
@@ -308,7 +309,7 @@ export function rollRow(data: SheetData, index: number, custom: Partial<CustomPo
   if (kind === "wesen") {
     const race = rollRace(rng);
     const next = applyRace(data, race);
-    return { ...next, personalFields: setValue(next.personalFields, index, RACE_WORDS[race]) };
+    return { ...next, personalFields: setValue(next.personalFields, index, raceWord(race)) };
   }
   const value = rollValue(kind, { rng, custom, race: raceOfSheet(data), age: ageOfSheet(data), gender: kind === "geschlecht" ? null : genderOfSheet(data), avoid });
   return { ...data, personalFields: setValue(data.personalFields, index, value) };
@@ -329,7 +330,7 @@ export function rollAllFields(data: SheetData, custom: Partial<CustomPools> | un
       // Eine schon gewählte Besondere Natur bleibt; sonst würfelt der Zufall sie.
       const race = cur.race !== "none" ? cur.race : rollRace(rng);
       cur = applyRace(cur, race);
-      cur = { ...cur, personalFields: setValue(cur.personalFields, index, RACE_WORDS[race]) };
+      cur = { ...cur, personalFields: setValue(cur.personalFields, index, raceWord(race)) };
     } else {
       cur = { ...cur, personalFields: setValue(cur.personalFields, index, rollValue(kind, { rng, custom, race: raceOfSheet(cur), age: ageOfSheet(cur), gender: genderOfSheet(cur), avoid })) };
     }

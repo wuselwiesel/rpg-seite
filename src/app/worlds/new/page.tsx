@@ -85,6 +85,10 @@ export default function NewWorldPage() {
           />
           Öffentlich
         </label>
+        <label className="flex items-center gap-3 text-sm text-fg">
+          <input type="checkbox" name="dice_enabled" className="h-4 w-4 accent-[var(--accent-strong)]" />
+          Würfeln
+        </label>
 
         <PermissionFields value={strictPermissions()} />
 

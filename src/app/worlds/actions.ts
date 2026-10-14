@@ -7,6 +7,7 @@ import { permissionsFromForm, strictPermissions, parsePermissions } from "@/lib/
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
+import { isDefaultNatures, parseNatureConfig } from "@/lib/natures";
 import { sanitizePostHtml } from "@/lib/sanitize";
 
 // Beitrittsart aus dem Formular: offen (Standard), auf Anfrage oder nur Einladung
@@ -33,7 +34,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
 
   const { data: world, error } = await supabase
     .from("worlds")
-    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", join_mode: parseJoinMode(formData.get("join_mode")), preview: parsePreview(formData.get("preview")), permissions: permissionsFromForm(formData, strictPermissions()) })
+    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", dice_enabled: formData.get("dice_enabled") === "on", join_mode: parseJoinMode(formData.get("join_mode")), preview: parsePreview(formData.get("preview")), permissions: permissionsFromForm(formData, strictPermissions()) })
     .select("id")
     .single();
 
@@ -181,6 +182,18 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
     }
     const list = parseTalentConfig(raw);
     patch.talent_config = isDefaultTalents(list) ? null : list;
+  }
+
+  // Wie die Talente: fehlt das Feld (Würfeln aus), bleibt die Liste der Naturen unverändert
+  if (formData.has("natures")) {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(String(formData.get("natures") ?? "[]"));
+    } catch {
+      return "Die Liste der Naturen ist ungültig.";
+    }
+    const list = parseNatureConfig(raw);
+    patch.nature_config = isDefaultNatures(list) ? null : list;
   }
 
   const supabase = await createClient();

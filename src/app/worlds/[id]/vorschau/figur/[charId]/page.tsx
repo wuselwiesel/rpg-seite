@@ -6,6 +6,7 @@ import { ProfileThemeWrapper } from "@/components/profile-theme-wrapper";
 import { Chabo } from "@/components/chabo/chabo";
 import { normalizeSheet, stripSecrets } from "@/lib/sheet-rules";
 import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
+import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
 import { stripHtml } from "@/lib/strip-html";
 import { JoinOrRequestButton } from "@/app/worlds/join-or-request-button";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
@@ -32,6 +33,7 @@ type CharInfo = {
   dice_enabled: boolean;
   preview: "none" | "info" | "full";
   talent_config: unknown;
+  nature_config: unknown;
 };
 type PostRow = { id: string; content: string; media_url: string | null; media_type: string | null; media_urls: string[] | null; created_at: string };
 
@@ -73,7 +75,8 @@ export default async function PreviewCharacterPage({
     const { data } = await supabase.rpc("world_preview_character_sheet", { p_char: charId });
     if (data) {
       const talents = character.talent_config ? parseTalentConfig(character.talent_config) : DEFAULT_TALENTS;
-      sheetData = stripSecrets(normalizeSheet(data, talents));
+      const natures = character.nature_config != null ? parseNatureConfig(character.nature_config) : DEFAULT_NATURES;
+      sheetData = stripSecrets(normalizeSheet(data, talents, natures));
     }
   }
 

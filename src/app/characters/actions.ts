@@ -12,6 +12,7 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { hasErrors, normalizeSheet, validateSheet, withDerived, type SheetData } from "@/lib/sheet-rules";
 import { getCharacterAccess } from "@/lib/npc-data";
 import { parseTalentConfig } from "@/lib/talents";
+import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
 import { createNotification } from "@/lib/notifications";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { activeLists, parseChoices, speciesFromLabel } from "@/lib/choice-lists";
@@ -103,9 +104,10 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   // Die Talentliste der Welt gilt auch für den gewürfelten Bogen
   let sheet: SheetData | null = null;
   if (sheetParsed) {
-    const { data: worldRow } = await supabase.from("worlds").select("talent_config").eq("id", activeWorld.id).maybeSingle<{ talent_config: unknown }>();
+    const { data: worldRow } = await supabase.from("worlds").select("talent_config, nature_config").eq("id", activeWorld.id).maybeSingle<{ talent_config: unknown; nature_config: unknown }>();
     const defs = worldRow?.talent_config ? parseTalentConfig(worldRow.talent_config) : undefined;
-    sheet = normalizeSheet(sheetParsed, defs);
+    const natures = worldRow?.nature_config != null ? parseNatureConfig(worldRow.nature_config) : DEFAULT_NATURES;
+    sheet = normalizeSheet(sheetParsed, defs, natures);
     const errors = validateSheet(sheet);
     if (hasErrors(errors)) return errors.budget[0] ?? "Der gewürfelte Bogen ist ungültig.";
     sheet = withDerived({ ...sheet, notesBlocks: sheet.notesBlocks.map((b) => ({ label: b.label, html: sanitizePostHtml(b.html) })) });
@@ -137,8 +139,9 @@ export async function createCharacter(_prevState: string | null, formData: FormD
 
   if (sheet) {
     // Die Talentliste der Welt gehört nicht in den gespeicherten Bogen
-    const { talentDefs: _defs, ...stored } = sheet;
+    const { talentDefs: _defs, natureDefs: _natures, ...stored } = sheet;
     void _defs;
+    void _natures;
     const { error: sheetError } = await supabase.from("character_sheets").insert({ character_id: data.id, data: stored });
     if (sheetError) {
       // Lieber nichts anlegen als einen Charakter ohne den gewürfelten Bogen: wieder entfernen

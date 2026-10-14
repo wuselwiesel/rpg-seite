@@ -29,7 +29,7 @@ const TOC = [
   ["talente", "Talente: Wie wird der Wert berechnet?"],
   ["talentpunkte", "Talentpunkte selbst verteilen"],
   ["glueck", "Glückspunkte: Nochmal würfeln bei Pech"],
-  ["natur", "Besondere Natur: Werwolf und Vampir"],
+  ["natur", "Besondere Naturen"],
   ["bogen", "Den ChaBo bearbeiten und speichern"],
   ["zufall", "Zufall und NPCs"],
   ["uebersicht", "Welches Talent braucht welche Attribute?"],
@@ -218,9 +218,9 @@ export default function HelpPage() {
         </ul>
       </Section>
 
-      <Section id="natur" title="8. Besondere Natur: Werwolf und Vampir">
+      <Section id="natur" title="8. Besondere Naturen">
         <p className={p}>
-          Im ChaBo kannst du unter „Besondere Natur“ Werwolf oder Vampir wählen. Dann tragen sich feste Boni bei den Attributen ein. Wechselst du zurück auf „Keine“, verschwinden sie wieder.
+          Wenn in der Welt gewürfelt wird, kannst du im ChaBo unter „Besondere Natur“ eine Natur wählen, standardmäßig Werwolf oder Vampir. Dann tragen sich feste Boni bei den Attributen ein. Wechselst du zurück auf „Keine“, verschwinden sie wieder. Admins legen unter „Bearbeiten“ → „Besondere Naturen“ eigene Naturen mit eigenen Boni an, so viele sie wollen. Ohne Würfeln gibt es keine besondere Natur.
         </p>
         <ul className="grid gap-2 sm:grid-cols-2">
           <li className="rounded-xl border border-line bg-surface px-4 py-3 text-sm text-fg-soft">

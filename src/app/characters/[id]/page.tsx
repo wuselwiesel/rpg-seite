@@ -1,4 +1,6 @@
 import { getWorldDiceEnabled } from "@/lib/world-dice";
+import { getWorldTalents } from "@/lib/world-talents";
+import { getWorldNatures } from "@/lib/world-natures";
 import { PresenceControl, PresenceDot } from "@/components/character-presence";
 import { BadgeRow } from "@/components/badge-row";
 import { CharacterTimeline } from "@/components/character-timeline";
@@ -464,7 +466,7 @@ export default async function CharacterProfilePage({
 
         {tab === "chabo" ? (
           <div className="px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
-            <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" />
+            <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} talentDefs={await getWorldTalents(character.world_id)} natureDefs={await getWorldNatures(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" />
           </div>
         ) : (
           <>

@@ -1,5 +1,5 @@
 // Vergleich zweier ChaBo-Stände für den Verlauf in der Redaktion: Was hat sich geändert (Feld, alter und neuer Wert)?
-import { RACES, attrRows, talentRows, type SheetData } from "@/lib/sheet-rules";
+import { raceOptions, attrRows, talentRows, type SheetData } from "@/lib/sheet-rules";
 
 export type SheetChange = { key: string; label: string; from: string | null; to: string | null };
 
@@ -39,7 +39,7 @@ export function diffSheets(prev: SheetData | null, next: SheetData): SheetChange
   const changes: SheetChange[] = [];
 
   if (prev.race !== next.race) {
-    const name = (r: SheetData["race"]) => RACES.find((x) => x.id === r)?.label ?? "Keine";
+    const name = (r: SheetData["race"]) => raceOptions(next.natureDefs).find((x) => x.id === r)?.label ?? "Keine";
     changes.push({ key: "race", label: "Besondere Natur", from: name(prev.race), to: name(next.race) });
   }
 

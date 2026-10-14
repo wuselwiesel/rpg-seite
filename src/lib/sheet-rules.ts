@@ -2,6 +2,7 @@
 // Rein und ohne DOM, damit Server (Speichern) und Oberfläche dieselben Zahlen benutzen. Datenform wie der alte Charakterbogen.
 import { ATTR_TABLE, luckPointsFromGl } from "@/lib/charakterbogen-stats";
 import { DEFAULT_TALENTS, talentSlug, type TalentDef } from "@/lib/talents";
+import { DEFAULT_NATURES, type NatureDef } from "@/lib/natures";
 
 export const BASIS_MIN = 1;
 export const BASIS_MAX = 19;
@@ -21,18 +22,22 @@ export const MAX_NOTE_HTML = 30000;
 export const PERSONAL_DEFAULT_LABELS = ["Titel", "Vorname", "Nachname", "Spitzname", "Alter", "Wesen", "Rang"];
 
 export type AttrCode = (typeof ATTR_TABLE)[number]["code"];
-export type Race = "none" | "werwolf" | "vampir";
+// Besondere Natur: „none“ oder die Id einer Natur der Welt (Standard: werwolf, vampir; die Liste je Welt siehe natures.ts)
+export type Race = string;
 
-export const RACES: { id: Race; label: string }[] = [
-  { id: "none", label: "Keine" },
-  { id: "werwolf", label: "Werwolf" },
-  { id: "vampir", label: "Vampir" },
-];
+// Auswahl der Naturen für den Bogen: „Keine“ plus die Naturen der Welt
+export function raceOptions(defs?: NatureDef[]): { id: Race; label: string }[] {
+  return [{ id: "none", label: "Keine" }, ...(defs ?? DEFAULT_NATURES).map((n) => ({ id: n.id, label: n.name }))];
+}
 
-export const RACE_BONUSES: Record<Exclude<Race, "none">, Partial<Record<AttrCode, number>>> = {
-  werwolf: { MU: 3, GE: 5, KO: 5, KK: 5, CH: 1, SB: -5 },
-  vampir: { GE: 5, KO: 5, IN: 3, KK: 3, CH: 5, SB: -5 },
-};
+// Die Boni der zwei Standard-Naturen (für Würfel-Zufall und Tests)
+export const RACE_BONUSES = Object.fromEntries(DEFAULT_NATURES.map((n) => [n.id, n.bonuses])) as Record<string, Partial<Record<AttrCode, number>>>;
+
+// Boni einer Natur (leer bei „none“ oder einer Natur, die es in der Welt nicht (mehr) gibt)
+export function natureBonuses(defs: NatureDef[] | undefined, race: Race): Partial<Record<string, number>> {
+  if (race === "none") return {};
+  return (defs ?? DEFAULT_NATURES).find((n) => n.id === race)?.bonuses ?? {};
+}
 
 // Standard-Talente: Name → die zwei Attribute, aus denen der Basiswert entsteht (die Liste je Welt kann abweichen, siehe talents.ts).
 export const TALENT_ATTRS: Record<string, [AttrCode, AttrCode]> = Object.fromEntries(DEFAULT_TALENTS.map((t) => [t.name, t.attrs])) as Record<string, [AttrCode, AttrCode]>;
@@ -44,6 +49,8 @@ export type NoteBlock = { label: string; html: string; secret?: boolean };
 export type SheetData = {
   // Talentliste der Welt; wird nicht gespeichert (fehlt sie, gilt die Standardliste)
   talentDefs?: TalentDef[];
+  // Naturen der Welt; wird ebenfalls nicht gespeichert (fehlt sie, gelten die Standard-Naturen)
+  natureDefs?: NatureDef[];
   race: Race;
   portraitUrl: string | null;
   luckPointsUsed: number;
@@ -143,12 +150,14 @@ export function luckAvailable(data: SheetData): number {
 }
 
 // Besondere Natur: setzt die Boni der Rasse; bei Wechsel werden die Boni der alten und der neuen Rasse überschrieben (wie im alten Bogen).
-export function applyRace(data: SheetData, race: Race): SheetData {
-  const oldB = data.race === "none" ? {} : RACE_BONUSES[data.race];
-  const newB = race === "none" ? {} : RACE_BONUSES[race];
+export function applyRace(data: SheetData, requested: Race): SheetData {
+  // Eine Natur, die es in dieser Welt nicht gibt, gilt als „Keine“
+  const race: Race = requested !== "none" && (data.natureDefs ?? DEFAULT_NATURES).some((n) => n.id === requested) ? requested : "none";
+  const oldB = natureBonuses(data.natureDefs, data.race);
+  const newB = natureBonuses(data.natureDefs, race);
   const attrBonus = { ...data.attrBonus };
   for (const code of new Set([...Object.keys(oldB), ...Object.keys(newB)])) {
-    const v = (newB as Record<string, number | undefined>)[code];
+    const v = newB[code];
     attrBonus[code] = v !== undefined ? String(v) : "";
   }
   return { ...data, race, attrBonus };
@@ -198,7 +207,7 @@ const numStr = (v: unknown) => {
 
 // Macht aus beliebigen Daten (Formular, alter Bogen, Datenbank) einen gültigen SheetData; kaputte Werte werden leer.
 // Die Notiz-Texte (HTML) bereinigt der Server zusätzlich mit sanitizePostHtml.
-export function normalizeSheet(raw: unknown, talentDefs?: TalentDef[]): SheetData {
+export function normalizeSheet(raw: unknown, talentDefs?: TalentDef[], natureDefs?: NatureDef[]): SheetData {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rec = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
   const base = emptySheet();
@@ -234,12 +243,15 @@ export function normalizeSheet(raw: unknown, talentDefs?: TalentDef[]): SheetDat
     ? blocks.slice(0, MAX_NOTE_BLOCKS).map((b) => ({ label: clip(rec(b).label, 60), html: clip(rec(b).html, MAX_NOTE_HTML), ...(rec(b).secret === true ? { secret: true } : {}) }))
     : base.notesBlocks;
 
-  const race: Race = r.race === "werwolf" || r.race === "vampir" ? r.race : "none";
+  // Gültig ist nur eine Natur der Welt (ohne Angabe: die Standard-Naturen). Alle Speicher-Wege übergeben die Naturen der Welt.
+  const rawRace = typeof r.race === "string" ? r.race : "none";
+  const race: Race = rawRace !== "none" && (natureDefs ?? DEFAULT_NATURES).some((n) => n.id === rawRace) ? rawRace : "none";
   const portrait = typeof r.portraitUrl === "string" && /^https?:\/\//.test(r.portraitUrl) && r.portraitUrl.length <= 500 ? r.portraitUrl : null;
   const used = Number(r.luckPointsUsed);
 
   const data: SheetData = {
     ...(talentDefs ? { talentDefs } : {}),
+    ...(natureDefs ? { natureDefs } : {}),
     race,
     portraitUrl: portrait,
     luckPointsUsed: Number.isInteger(used) && used >= 0 && used <= 99 ? used : 0,

@@ -9,7 +9,9 @@ import type { World } from "@/lib/types";
 import { PermissionFields } from "@/components/permission-fields";
 import { parsePermissions } from "@/lib/world-permissions";
 import type { TalentDef } from "@/lib/talents";
+import type { NatureDef } from "@/lib/natures";
 import { TalentEditor } from "./talent-editor";
+import { NatureEditor } from "./nature-editor";
 
 // Alle Einstellungen einer Welt in einem Formular mit einem Speichern-Knopf, der am unteren Rand mitläuft.
 // listsSlot: der (serverseitig gerenderte) Abschnitt „Auswahllisten“, der zwischen Willkommen und Talenten steht.
@@ -17,16 +19,19 @@ export function EditWorldForm({
   world,
   welcomeInitial,
   talentsInitial,
+  naturesInitial,
   listsSlot,
 }: {
   world: World;
   welcomeInitial: string;
   talentsInitial: TalentDef[];
+  naturesInitial: NatureDef[];
   listsSlot: ReactNode;
 }) {
   const [dirty, setDirty] = useState(false);
   const [dice, setDice] = useState(world.dice_enabled !== false);
   const [talents, setTalents] = useState<TalentDef[]>(talentsInitial);
+  const [natures, setNatures] = useState<NatureDef[]>(naturesInitial);
   const formRef = useRef<HTMLFormElement>(null);
   // Nach bestätigtem Entfernen von Talenten das Formular noch einmal ohne Rückfrage abschicken
   const confirmed = useRef(false);
@@ -55,10 +60,14 @@ export function EditWorldForm({
     }
     if (!dice) return;
     const removed = talentsInitial.filter((t) => !talents.some((r) => r.name.trim().toLowerCase() === t.name.toLowerCase()));
-    if (removed.length === 0) return;
+    const removedNatures = naturesInitial.filter((n) => !natures.some((r) => r.id === n.id));
+    if (removed.length === 0 && removedNatures.length === 0) return;
     e.preventDefault();
+    const parts: string[] = [];
+    if (removed.length > 0) parts.push(`${removed.length} Talent(e) entfallen und verlieren ihre Punkte in den Bögen.`);
+    if (removedNatures.length > 0) parts.push(`${removedNatures.map((n) => n.name || "Eine Natur").join(", ")} entfällt: Bei Charakteren mit dieser Natur bleiben die Werte stehen, die Natur wird aber nicht mehr angezeigt.`);
     void confirm({
-      message: `${removed.length} Talent(e) entfallen und verlieren ihre Punkte in den Bögen. Speichern?`,
+      message: `${parts.join(" ")} Speichern?`,
       confirmLabel: "Speichern",
       danger: true,
     }).then((ok) => {
@@ -177,6 +186,22 @@ export function EditWorldForm({
             }}
           />
           <input type="hidden" name="talents" value={JSON.stringify(talents)} />
+        </section>
+      )}
+
+      {dice && (
+        <section className="mt-4 border-t border-line pt-6">
+          <h2 data-tour="welt-naturen" className="mb-3 font-serif text-xl text-fg">
+            Besondere Naturen
+          </h2>
+          <NatureEditor
+            rows={natures}
+            onChange={(next) => {
+              setNatures(next);
+              setDirty(true);
+            }}
+          />
+          <input type="hidden" name="natures" value={JSON.stringify(natures)} />
         </section>
       )}
 

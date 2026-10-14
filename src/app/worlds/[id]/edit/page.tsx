@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
+import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
 
 export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/edit">) {
   const { id } = await params;
@@ -35,6 +36,9 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
   const talentsInitial = (world as unknown as { talent_config?: unknown }).talent_config
     ? parseTalentConfig((world as unknown as { talent_config?: unknown }).talent_config)
     : DEFAULT_TALENTS;
+
+  const natureRaw = (world as unknown as { nature_config?: unknown }).nature_config;
+  const naturesInitial = natureRaw != null ? parseNatureConfig(natureRaw) : DEFAULT_NATURES;
 
   const listsSlot = (
     <section data-tour="welt-auswahllisten" className="mt-4 border-t border-line pt-6">
@@ -75,7 +79,7 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
         Titelbild, Name und Beschreibung von {world.name}.
       </p>
 
-      <EditWorldForm world={world} welcomeInitial={world.welcome_html ?? ""} talentsInitial={talentsInitial} listsSlot={listsSlot} />
+      <EditWorldForm world={world} welcomeInitial={world.welcome_html ?? ""} talentsInitial={talentsInitial} naturesInitial={naturesInitial} listsSlot={listsSlot} />
 
       {isOwner && (
         <div data-tour="welt-loeschen" className="mt-8 border-t border-line pt-6">

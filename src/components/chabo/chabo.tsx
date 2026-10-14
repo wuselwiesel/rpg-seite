@@ -10,6 +10,8 @@ import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { MentionInput, MentionText } from "./mention-input";
 import { RollBar } from "./roll-bar";
 import { useDiceEnabled } from "@/components/dice-context";
+import type { TalentDef } from "@/lib/talents";
+import type { NatureDef } from "@/lib/natures";
 import { rollAttributes, rollTalents, type AttrStyle, type TalentStyle } from "@/lib/sheet-random";
 import { fieldKind, rollAllFields, rollRow, worldNames, type CustomPools } from "@/lib/random-pools";
 import { stripMentionAt } from "@/lib/sheet-mentions";
@@ -29,7 +31,7 @@ import {
   MAX_FAMILY_FIELDS,
   MAX_NOTE_BLOCKS,
   MAX_PERSONAL_FIELDS,
-  RACES,
+  raceOptions,
   TALENT_BONUS_BUDGET,
   TALENT_BONUS_MAX,
   TALENT_BONUS_MIN,
@@ -159,6 +161,8 @@ export function Chabo({
   randomLists,
   variant = "page",
   diceEnabled,
+  talentDefs,
+  natureDefs,
 }: {
   characterId: string;
   characterName: string;
@@ -174,6 +178,9 @@ export function Chabo({
   variant?: "page" | "panel";
   // Würfeln der Welt eingeschaltet? Aus: kein Attribute-/Talente-Teil, nur der Steckbrief (ohne Angabe gilt die aktive Welt)
   diceEnabled?: boolean;
+  // Talente und Naturen der Welt für einen noch leeren Bogen (ein gespeicherter bringt sie selbst mit)
+  talentDefs?: TalentDef[];
+  natureDefs?: NatureDef[];
 }) {
   const worldDice = useDiceEnabled();
   const dice = diceEnabled ?? worldDice;
@@ -181,12 +188,13 @@ export function Chabo({
   // Geheimes zeigt die Ansicht nur der Besitzer:in (fremde Bögen enthalten es gar nicht erst, das hier ist zusätzliche Absicherung)
   const seen = <T extends { secret?: boolean }>(list: T[]) => (editable ? list : list.filter((x) => !x.secret));
   const Title = variant === "page" ? "h1" : "h2";
-  const [data, setData] = useState<SheetData>(() => withDerived(initial ?? emptySheet()));
+  const startSheet = () => initial ?? { ...emptySheet(), ...(talentDefs ? { talentDefs } : {}), ...(natureDefs ? { natureDefs } : {}) };
+  const [data, setData] = useState<SheetData>(() => withDerived(startSheet()));
   const [editing, setEditing] = useState(canEdit && !initial);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const [blockIds, setBlockIds] = useState(() => (initial ?? emptySheet()).notesBlocks.map((_, i) => `s${i}`));
+  const [blockIds, setBlockIds] = useState(() => startSheet().notesBlocks.map((_, i) => `s${i}`));
   const [portraitKey, setPortraitKey] = useState(0);
   const [attrStyle, setAttrStyle] = useState<AttrStyle>("ausgewogen");
   const [talentStyle, setTalentStyle] = useState<TalentStyle>("allrounder");
@@ -233,7 +241,8 @@ export function Chabo({
   const errors = validateSheet(data);
   const clovers = luckTotal(data);
   const activeAttrs = new Set(talents.find((t) => t.slug === activeTalent)?.attrs ?? []);
-  const raceLabel = RACES.find((r) => r.id === data.race)?.label;
+  const raceChoices = raceOptions(data.natureDefs);
+  const raceLabel = raceChoices.find((r) => r.id === data.race)?.label;
 
   async function importLegacy() {
     if (!legacyUrl) return;
@@ -251,7 +260,7 @@ export function Chabo({
         setImportError("Der alte Charakterbogen ist nicht öffentlich oder wurde nicht gefunden.");
         return;
       }
-      const next = normalizeSheet(sheet.data, data.talentDefs);
+      const next = normalizeSheet(sheet.data, data.talentDefs, data.natureDefs);
       // Altes Bild (als Daten-Adresse im Bogen) in den Speicher übernehmen
       const dataUrl = sheet.data.portrait?.dataUrl;
       if (dataUrl?.startsWith("data:image/")) {
@@ -371,7 +380,7 @@ export function Chabo({
               {dice && <label className="flex items-center gap-2 text-fg-soft">
                 Besondere Natur
                 <select value={data.race} onChange={(e) => commit(applyRace(data, e.target.value as Race))} className="rounded-lg border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent">
-                  {RACES.map((r) => (
+                  {raceChoices.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.label}
                     </option>

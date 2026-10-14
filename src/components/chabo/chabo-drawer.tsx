@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { IdCard, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { mergeSecrets, normalizeSheet, parseSecrets, stripSecrets, type SheetData } from "@/lib/sheet-rules";
+import { parseTalentConfig, type TalentDef } from "@/lib/talents";
+import { parseNatureConfig, type NatureDef } from "@/lib/natures";
 import { fetchRandomLists } from "@/lib/random-lists";
 import type { CustomPools } from "@/lib/random-pools";
 import { Chabo } from "./chabo";
@@ -16,6 +18,7 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<SheetData | null | undefined>(undefined);
   const [randomLists, setRandomLists] = useState<CustomPools | undefined>(undefined);
+  const [defs, setDefs] = useState<{ talents?: TalentDef[]; natures?: NatureDef[] }>({});
 
   useEffect(() => {
     if (!open) return;
@@ -29,9 +32,16 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
       }
       // Geheimes bekommt nur die Besitzer:in (RLS); das Fenster zeigt immer den Bogen eines eigenen Charakters
       const { data: secret } = await supabase.from("character_sheet_secrets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
-      const open = stripSecrets(normalizeSheet(data.data));
-      // Eigene Zufallslisten der Welt dieses Charakters
+      // Talente und Naturen der Welt dieses Charakters (sonst zeigte und speicherte das Fenster nur die Standardlisten)
       const { data: ch } = await supabase.from("characters").select("world_id").eq("id", characterId).maybeSingle<{ world_id: string }>();
+      const { data: world } = ch
+        ? await supabase.from("worlds").select("talent_config, nature_config").eq("id", ch.world_id).maybeSingle<{ talent_config: unknown; nature_config: unknown }>()
+        : { data: null };
+      const talents = world?.talent_config ? parseTalentConfig(world.talent_config) : undefined;
+      const natures = world?.nature_config != null ? parseNatureConfig(world.nature_config) : undefined;
+      const open = stripSecrets(normalizeSheet(data.data, talents, natures));
+      if (!cancelled) setDefs({ talents, natures });
+      // Eigene Zufallslisten der Welt dieses Charakters
       const lists = ch ? await fetchRandomLists(supabase, ch.world_id) : undefined;
       if (!cancelled) setRandomLists(lists);
       if (!cancelled) setSheet(secret ? mergeSecrets(open, parseSecrets(secret.data)) : open);
@@ -88,7 +98,7 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
                 </a>
               </p>
             ) : (
-              <Chabo key={characterId} characterId={characterId} characterName={characterName} initial={sheet} editable mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" />
+              <Chabo key={characterId} talentDefs={defs.talents} natureDefs={defs.natures} characterId={characterId} characterName={characterName} initial={sheet} editable mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" />
             )}
           </aside>
         </div>,
