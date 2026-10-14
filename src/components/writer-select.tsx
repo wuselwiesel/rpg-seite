@@ -59,6 +59,24 @@ export function WriterSelect({
     }, 80);
   }
 
+  // Auch wer ohne Auswahl hier schreibt (Szene geöffnet, Charakter woanders aktiviert), kommt in die Reihenfolge: So gibt es beim
+  // nächsten Mal einen „davor Benutzten“, selbst wenn in diesem Browser noch nie gewechselt wurde.
+  const selectedId = selected?.id;
+  useEffect(() => {
+    if (!shortcuts || !selectedId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reihenfolge im Browser-Speicher nachziehen
+    setRecent((prev) => {
+      if (prev[0] === selectedId) return prev;
+      const next = [selectedId, ...prev.filter((x) => x !== selectedId)].slice(0, MAX_RECENT);
+      try {
+        localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+      } catch {
+        /* egal */
+      }
+      return next;
+    });
+  }, [shortcuts, selectedId]);
+
   function pick(id: string) {
     const from = selected?.id;
     onChange(id);
@@ -105,10 +123,15 @@ export function WriterSelect({
         }
         return;
       }
-      // Alt+0: zurück zum zuletzt davor benutzten Charakter
-      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.code !== "Digit0" || !previousId) return;
+      // Alt+0: zurück zum zuletzt davor benutzten Charakter. Kennt der Browser noch keinen, geht es zum nächsten in der Reihenfolge
+      // (bei zwei Charakteren also genau der andere), damit die Taste nie ins Leere läuft.
+      // Mac: Option+0 liefert je nach Tastaturbelegung die Taste „0“ oder das Zeichen „º“; der Tastencode bleibt Digit0.
+      const zero = e.code === "Digit0" || e.code === "Numpad0" || e.key === "0" || e.key === "º";
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || !zero) return;
+      const target = previousId ?? cycleId(fixedOrder.map((c) => c.id), selected?.id, 1);
+      if (!target || target === selected?.id) return;
       e.preventDefault();
-      pick(previousId);
+      pick(target);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
