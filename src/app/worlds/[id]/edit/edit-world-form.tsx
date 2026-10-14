@@ -13,7 +13,7 @@ export function EditWorldForm({ world }: { world: World }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1 text-sm text-fg-soft">
+      <div data-tour="welt-titel" className="flex flex-col gap-1 text-sm text-fg-soft">
         Titelbild
         <AvatarUpload
           name="cover_image_url"
@@ -44,7 +44,7 @@ export function EditWorldForm({ world }: { world: World }) {
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+      <label data-tour="welt-erkunden" className="flex flex-col gap-1 text-sm text-fg-soft">
         Erkunden vor dem Beitritt
         <select
           name="preview"
@@ -56,7 +56,7 @@ export function EditWorldForm({ world }: { world: World }) {
           <option value="full">Alles, auch Szenen</option>
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm text-fg-soft">
+      <label data-tour="welt-beitritt" className="flex flex-col gap-1 text-sm text-fg-soft">
         Beitritt
         <select
           name="join_mode"
@@ -77,7 +77,7 @@ export function EditWorldForm({ world }: { world: World }) {
         />
         Öffentlich
       </label>
-      <label className="flex items-center gap-3 text-sm text-fg">
+      <label data-tour="welt-wuerfeln" className="flex items-center gap-3 text-sm text-fg">
         <input
           type="checkbox"
           name="dice_enabled"

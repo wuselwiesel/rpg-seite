@@ -43,12 +43,12 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
 
       <EditWorldForm world={world} />
 
-      <section className="mt-8 border-t border-line pt-6">
+      <section data-tour="welt-willkommen" className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-xl text-fg">Willkommen</h2>
         <WelcomeEditor worldId={world.id} initial={world.welcome_html ?? ""} />
       </section>
 
-      <section className="mt-8 border-t border-line pt-6">
+      <section data-tour="welt-auswahllisten" className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-xl text-fg">Auswahllisten</h2>
         <ul className="flex flex-col gap-2">
           {lists.map((l) => (
@@ -75,7 +75,7 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
       </section>
 
       {world.dice_enabled !== false && (
-      <section className="mt-8 border-t border-line pt-6">
+      <section data-tour="welt-talente" className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-xl text-fg">Talente</h2>
         <TalentEditor
           worldId={world.id}
@@ -85,7 +85,7 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
       )}
 
       {isOwner && (
-        <div className="mt-8 border-t border-line pt-6">
+        <div data-tour="welt-loeschen" className="mt-8 border-t border-line pt-6">
           <p className="mb-3 text-sm text-muted">
             Das Löschen entfernt auch alle Charaktere, Beiträge und die Story dieser Welt – für alle
             Mitglieder, unwiderruflich.

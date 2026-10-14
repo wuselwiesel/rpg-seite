@@ -28,7 +28,7 @@ export function ListsEditor({ worldId, lists }: { worldId: string; lists: Choice
   return (
     <div className="flex flex-col gap-5">
       {lists.map((list) => (
-        <ListCard key={list.id} list={list} worldId={worldId} disabled={pending} run={run} />
+        <ListCard key={list.id} first={list === lists[0]} list={list} worldId={worldId} disabled={pending} run={run} />
       ))}
 
       <form
@@ -36,6 +36,7 @@ export function ListsEditor({ worldId, lists }: { worldId: string; lists: Choice
           e.preventDefault();
           run(() => createChoiceList(worldId, newLabel, newMode), () => setNewLabel(""));
         }}
+        data-tour="listen-neu"
         className="flex flex-wrap items-end gap-2 rounded-xl border border-dashed border-line p-4"
       >
         <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted">
@@ -57,12 +58,12 @@ export function ListsEditor({ worldId, lists }: { worldId: string; lists: Choice
   );
 }
 
-function ListCard({ list, worldId, disabled, run }: { list: ChoiceList; worldId: string; disabled: boolean; run: (fn: () => Promise<string | null>, after?: () => void) => void }) {
+function ListCard({ list, first, worldId, disabled, run }: { list: ChoiceList; first: boolean; worldId: string; disabled: boolean; run: (fn: () => Promise<string | null>, after?: () => void) => void }) {
   const [label, setLabel] = useState(list.label);
   const [adding, setAdding] = useState("");
 
   return (
-    <section id={`liste-${list.id}`} aria-label={list.label} className="flex scroll-mt-20 flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+    <section id={`liste-${list.id}`} data-tour={first ? "listen-erste" : undefined} aria-label={list.label} className="flex scroll-mt-20 flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-2">
         {list.isSpecies ? (
           <h2 className="mr-auto font-serif text-xl text-fg">{list.label}</h2>

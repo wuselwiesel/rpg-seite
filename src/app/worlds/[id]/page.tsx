@@ -120,7 +120,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
 
       {isAdmin && requests.length > 0 && <JoinRequests worldId={world.id} requests={requests} />}
 
-      <h2 className="mb-3 font-serif text-xl text-fg">Mitglieder</h2>
+      <h2 data-tour="welt-mitglieder" className="mb-3 font-serif text-xl text-fg">Mitglieder</h2>
       <ul className="mb-8 flex flex-col gap-2">
         {(members ?? []).map((member) => (
           <li
@@ -151,7 +151,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
 
       {isAdmin && (
         <>
-          <h2 className="mb-3 font-serif text-xl text-fg">Freund:innen einladen</h2>
+          <h2 data-tour="welt-einladen" className="mb-3 font-serif text-xl text-fg">Freund:innen einladen</h2>
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <InviteLink worldId={world.id} />
           </div>

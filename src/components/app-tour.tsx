@@ -9,8 +9,16 @@ import { TOURS, getTour, type TourMatch } from "@/lib/tours";
 type Rect = { top: number; left: number; width: number; height: number };
 
 // Dinge, die erst auf einer Seite gefunden werden müssen (erste Szene, ChaBo/Profil des aktiven Charakters, erster Chat)
-type Refs = { thread: string | null; chabo: string | null; profile: string | null; chat: string | null };
-const NO_REFS: Refs = { thread: null, chabo: null, profile: null, chat: null };
+type Refs = {
+  thread: string | null;
+  chabo: string | null;
+  profile: string | null;
+  chat: string | null;
+  world: string | null;
+  worldEdit: string | null;
+  worldLists: string | null;
+};
+const NO_REFS: Refs = { thread: null, chabo: null, profile: null, chat: null, world: null, worldEdit: null, worldLists: null };
 
 function isVisible(el: Element): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false;
@@ -61,10 +69,17 @@ function scanRefs(): Partial<Refs> {
   }
   const chat = hrefOf('a[href^="/chats/"]', /^\/chats\/[0-9a-f-]{36}/);
   if (chat) found.chat = chat;
+  // Die aktive Welt steht als Marke am Weltauswahl-Knopf; Bearbeiten und Auswahllisten hängen an ihrer Seite.
+  const worldId = document.querySelector<HTMLElement>("[data-world-id]")?.dataset.worldId;
+  if (worldId && /^[0-9a-f-]{36}$/.test(worldId)) {
+    found.world = `/worlds/${worldId}`;
+    found.worldEdit = `/worlds/${worldId}/edit`;
+    found.worldLists = `/worlds/${worldId}/listen`;
+  }
   return found;
 }
 
-// Platzhalter ("@thread", "@chabo", "@profile", "@chat") werden zur gefundenen Seite; "@platzhalter|/seite" springt zunächst
+// Platzhalter ("@thread", "@chabo", "@profile", "@chat", "@world", "@worldEdit", "@worldLists") werden zur gefundenen Seite; "@platzhalter|/seite" springt zunächst
 // auf /seite, wo er sich finden lässt. Eine feste Route bleibt, wie sie ist.
 function resolveRoute(route: string | undefined, refs: Refs): string | null {
   if (!route) return null;

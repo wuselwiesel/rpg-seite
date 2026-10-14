@@ -38,6 +38,7 @@ export function WorldSwitcher({
         onClick={() => setOpen((v) => !v)}
         disabled={isPending}
         data-tour="world"
+        data-world-id={activeWorld.id}
         className="flex w-full items-center gap-3 rounded-xl px-1 py-1 text-left transition hover:bg-surface-2 disabled:opacity-60"
       >
         <WorldCover
