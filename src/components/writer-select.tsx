@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import type { Character } from "@/lib/types";
-import { cycleId, filterByName } from "@/lib/writer-shortcuts";
+import { cycleId, filterByName, pushRecent } from "@/lib/writer-shortcuts";
 
 const RECENT_KEY = "wortwinkel:writer-recent";
 const MAX_RECENT = 12;
@@ -51,10 +51,20 @@ export function WriterSelect({
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
+  // Nach dem Wechsel gleich ins Textfeld: Der Schreibbereich wird für den neuen Charakter neu aufgebaut, daher kurz warten.
+  function focusField() {
+    window.setTimeout(() => {
+      const root = ref.current?.closest('[data-tour="story-composer"]') ?? document;
+      root.querySelector<HTMLElement>('.ProseMirror[contenteditable="true"], textarea')?.focus({ preventScroll: true });
+    }, 80);
+  }
+
   function pick(id: string) {
+    const from = selected?.id;
     onChange(id);
+    if (shortcuts) focusField();
     setRecent((prev) => {
-      const next = [id, ...prev.filter((x) => x !== id)].slice(0, MAX_RECENT);
+      const next = pushRecent(prev, id, from, MAX_RECENT);
       try {
         localStorage.setItem(RECENT_KEY, JSON.stringify(next));
       } catch {

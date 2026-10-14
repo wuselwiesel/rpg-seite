@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cycleId, filterByName } from "./writer-shortcuts";
+import { cycleId, filterByName, pushRecent } from "./writer-shortcuts";
 
 describe("cycleId", () => {
   it("läuft vor und zurück im Kreis", () => {
@@ -24,5 +24,19 @@ describe("filterByName", () => {
     expect(filterByName(list, "ian").map((c) => c.name)).toEqual(["Dorian Blackwood"]);
     expect(filterByName(list, "n").map((c) => c.name)).toEqual(["Vesper Nachtsang", "Dorian Blackwood", "Ärin Lund"]);
     expect(filterByName(list, "  ")).toHaveLength(3);
+  });
+});
+
+describe("pushRecent", () => {
+  it("setzt den bisherigen Charakter direkt hinter den neuen", () => {
+    expect(pushRecent([], "b", "a", 12)).toEqual(["b", "a"]);
+    expect(pushRecent(["x", "y"], "b", "a", 12)).toEqual(["b", "a", "x", "y"]);
+  });
+  it("führt jede Id nur einmal und kürzt die Liste", () => {
+    expect(pushRecent(["a", "b", "c"], "a", "b", 12)).toEqual(["a", "b", "c"]);
+    expect(pushRecent(["x", "y", "z"], "b", "a", 3)).toEqual(["b", "a", "x"]);
+  });
+  it("kommt ohne bisherigen Charakter klar", () => {
+    expect(pushRecent(["x"], "b", undefined, 12)).toEqual(["b", "x"]);
   });
 });

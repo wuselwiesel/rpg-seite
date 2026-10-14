@@ -19,3 +19,9 @@ export function filterByName<T extends { name: string }>(items: T[], query: stri
   const contains = items.filter((c) => !starts.includes(c) && fold(c.name).includes(q));
   return [...starts, ...contains];
 }
+
+// Reihenfolge „zuletzt benutzt“ nach einem Wechsel: der neue Charakter zuerst, direkt dahinter der bisherige (er ist der „davor Benutzte“
+// für Alt+0, auch wenn er nie selbst gewählt wurde), dann der Rest.
+export function pushRecent(recent: string[], id: string, from: string | undefined, max: number): string[] {
+  return [id, ...(from && from !== id ? [from] : []), ...recent.filter((x) => x !== id && x !== from)].slice(0, max);
+}

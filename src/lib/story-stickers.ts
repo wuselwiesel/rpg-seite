@@ -1,10 +1,14 @@
 export type StorySticker =
   | { id: string; type: "poll"; q: string; options: string[] }
   | { id: string; type: "question"; prompt: string }
-  | { id: string; type: "countdown"; title: string; endsAt: string };
+  | { id: string; type: "countdown"; title: string; endsAt: string }
+  // Markierte Charaktere (wie bei Instagram): sie bekommen eine Benachrichtigung und stehen als Namensschilder in der Story
+  | { id: string; type: "mention"; people: { id: string; name: string }[] };
 
 // Feste Position (Mitte, in % der Bühnenhöhe) je Sticker-Art, damit sich die Sticker nicht überdecken.
-export const STICKER_TOP: Record<StorySticker["type"], number> = { countdown: 20, question: 42, poll: 68 };
+export const STICKER_TOP: Record<StorySticker["type"], number> = { mention: 13, countdown: 20, question: 42, poll: 68 };
+
+export const MAX_STORY_MENTIONS = 5;
 
 // Prüft und säubert Sticker aus dem Formular (höchstens einer pro Art).
 export function parseStickers(raw: string): StorySticker[] {
@@ -33,6 +37,17 @@ export function parseStickers(raw: string): StorySticker[] {
       if (prompt) {
         seen.add("question");
         out.push({ id, type: "question", prompt });
+      }
+    } else if (s.type === "mention" && !seen.has("mention")) {
+      const people = (Array.isArray(s.people) ? s.people : [])
+        .map((p) => (p && typeof p === "object" ? (p as Record<string, unknown>) : {}))
+        .filter((p) => typeof p.id === "string" && /^[0-9a-f-]{36}$/i.test(p.id))
+        .map((p) => ({ id: p.id as string, name: String(p.name ?? "").trim().slice(0, 60) }))
+        .filter((p, i, all) => all.findIndex((q) => q.id === p.id) === i)
+        .slice(0, MAX_STORY_MENTIONS);
+      if (people.length > 0) {
+        seen.add("mention");
+        out.push({ id, type: "mention", people });
       }
     } else if (s.type === "countdown" && !seen.has("countdown")) {
       const title = String(s.title ?? "").trim().slice(0, 80);

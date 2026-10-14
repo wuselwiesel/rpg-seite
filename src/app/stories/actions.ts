@@ -8,7 +8,7 @@ import { getActiveCharacter } from "@/lib/active-character";
 import { createNotification } from "@/lib/notifications";
 import { sendMessage } from "@/app/chats/actions";
 import { STORY_DURATIONS, isValidStoryBg, parseOverlays } from "@/lib/stories";
-import { parseStickers, type StickerState } from "@/lib/story-stickers";
+import { parseStickers, MAX_STORY_MENTIONS, type StickerState, type StorySticker } from "@/lib/story-stickers";
 
 export async function createStory(_prev: string | null, formData: FormData) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -40,6 +40,23 @@ export async function createStory(_prev: string | null, formData: FormData) {
   const character = world ? await getActiveCharacter(user.id, world.id) : null;
   if (!character) return "Du brauchst zuerst einen Charakter.";
 
+  // Markierungen prüfen: nur Charaktere dieser Welt, nicht der Autor selbst; Namen kommen aus der Datenbank, nicht aus dem Formular
+  const mentionSticker = stickers.find((s): s is Extract<StorySticker, { type: "mention" }> => s.type === "mention");
+  let tagged: { id: string; name: string; owner_id: string }[] = [];
+  if (mentionSticker) {
+    const { data: found } = await supabase
+      .from("characters")
+      .select("id, name, owner_id")
+      .eq("world_id", character.world_id)
+      .is("deleted_at", null)
+      .in("id", mentionSticker.people.map((p) => p.id));
+    tagged = (found ?? []).filter((c) => c.id !== character.id).slice(0, MAX_STORY_MENTIONS);
+    const rest = stickers.filter((s) => s.type !== "mention");
+    stickers.length = 0;
+    stickers.push(...rest);
+    if (tagged.length > 0) stickers.push({ ...mentionSticker, people: tagged.map((c) => ({ id: c.id, name: c.name })) });
+  }
+
   const { error } = await supabase.from("stories").insert({
     character_id: character.id,
     image_url: imageUrl || null,
@@ -56,8 +73,44 @@ export async function createStory(_prev: string | null, formData: FormData) {
   });
   if (error) return error.message;
 
+  // Wer markiert wurde, bekommt eine Benachrichtigung (ein Konto mit mehreren markierten Charakteren je Charakter eine; eigene Charaktere nicht)
+  await Promise.all(
+    tagged
+      .filter((c) => c.owner_id !== user.id)
+      .map((c) =>
+      createNotification(supabase, {
+        userId: c.owner_id,
+        type: "story_mention",
+        actorName: character.name,
+        actorAvatarUrl: character.avatar_url,
+        link: `/characters/${character.id}`,
+        message: "hat dich in einer Story markiert",
+        recipientName: c.name,
+      }),
+    ),
+  );
+
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+// Suche nach Charakteren der aktiven Welt zum Markieren in einer Story (ohne den Autor selbst und ohne NPCs).
+export async function searchCharactersToTag(query: string): Promise<{ id: string; name: string; avatar_url: string | null }[]> {
+  const viewer = await activeViewer();
+  if (!viewer) return [];
+  const term = query.trim().replace(/[%_,()]/g, " ").slice(0, 40);
+  let request = viewer.supabase
+    .from("characters")
+    .select("id, name, avatar_url")
+    .eq("world_id", viewer.character.world_id)
+    .is("deleted_at", null)
+    .eq("is_npc", false)
+    .neq("id", viewer.character.id)
+    .order("name")
+    .limit(8);
+  if (term) request = request.ilike("name", `%${term}%`);
+  const { data } = await request;
+  return data ?? [];
 }
 
 export async function deleteStory(storyId: string): Promise<string | null> {

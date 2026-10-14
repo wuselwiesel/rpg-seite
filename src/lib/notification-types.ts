@@ -5,7 +5,7 @@
 export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: string[] }[] = [
   { key: "like", label: "Gefällt mir", types: ["like", "story_like"] },
   { key: "comment", label: "Kommentare", types: ["comment"] },
-  { key: "mention", label: "Erwähnungen", types: ["mention"] },
+  { key: "mention", label: "Erwähnungen", types: ["mention", "story_mention"] },
   { key: "message", label: "Chat-Nachrichten", types: ["message"] },
   { key: "turn", label: "Du bist dran (Story)", types: ["turn"] },
   { key: "new_scene", label: "Neue Szenen in deiner Welt", types: ["new_scene"] },

@@ -55,7 +55,7 @@ export function StoryStickerLayer({
   const [showAnswers, setShowAnswers] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const hasInteractive = stickers.some((s) => s.type !== "countdown");
+  const hasInteractive = stickers.some((s) => s.type === "poll" || s.type === "question");
 
   useEffect(() => {
     if (preview || !hasInteractive) return;
@@ -111,6 +111,20 @@ export function StoryStickerLayer({
           onPointerDown={(e) => e.stopPropagation()}
         >
           {s.type === "countdown" && <Countdown sticker={s} />}
+
+          {s.type === "mention" && (
+            <div className="flex max-w-[92%] flex-wrap justify-center gap-[1.5cqw]">
+              {s.people.map((p) => (
+                <a
+                  key={p.id}
+                  href={`/characters/${p.id}`}
+                  className="rounded-[2cqw] bg-white/90 px-[3cqw] py-[1.2cqw] text-[3.6cqw] font-semibold text-neutral-900 shadow"
+                >
+                  @{p.name}
+                </a>
+              ))}
+            </div>
+          )}
 
           {s.type === "poll" && (
             <div className={card}>
