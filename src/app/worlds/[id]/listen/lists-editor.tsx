@@ -62,7 +62,7 @@ function ListCard({ list, worldId, disabled, run }: { list: ChoiceList; worldId:
   const [adding, setAdding] = useState("");
 
   return (
-    <section aria-label={list.label} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+    <section id={`liste-${list.id}`} aria-label={list.label} className="flex scroll-mt-20 flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-2">
         {list.isSpecies ? (
           <h2 className="mr-auto font-serif text-xl text-fg">{list.label}</h2>

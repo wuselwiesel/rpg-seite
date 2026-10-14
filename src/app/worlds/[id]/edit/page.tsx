@@ -5,6 +5,9 @@ import { EditWorldForm } from "./edit-world-form";
 import { DeleteWorldButton } from "./delete-world-button";
 import { TalentEditor } from "./talent-editor";
 import { WelcomeEditor } from "./welcome-editor";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
 
 export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/edit">) {
@@ -29,6 +32,8 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
     if (me?.role !== "admin") redirect(`/worlds/${id}`);
   }
 
+  const lists = await getWorldChoiceLists(id);
+
   return (
     <div className="mx-auto max-w-xl px-4 py-10">
       <h1 className="mb-1 font-serif text-3xl text-fg">Welt bearbeiten</h1>
@@ -41,6 +46,32 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
       <section className="mt-8 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-xl text-fg">Willkommen</h2>
         <WelcomeEditor worldId={world.id} initial={world.welcome_html ?? ""} />
+      </section>
+
+      <section className="mt-8 border-t border-line pt-6">
+        <h2 className="mb-3 font-serif text-xl text-fg">Auswahllisten</h2>
+        <ul className="flex flex-col gap-2">
+          {lists.map((l) => (
+            <li key={l.id}>
+              <Link
+                href={`/worlds/${world.id}/listen#liste-${l.id}`}
+                className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-fg transition hover:border-accent"
+              >
+                <span className="min-w-0 truncate">{l.label}</span>
+                <span className="flex shrink-0 items-center gap-1 text-muted">
+                  {l.mode === "dropdown" ? `${l.options.length} Einträge` : "Freitext"}
+                  <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link
+          href={`/worlds/${world.id}/listen`}
+          className="mt-3 inline-block rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
+        >
+          {lists.length > 0 ? "Alle bearbeiten" : "Liste anlegen"}
+        </Link>
       </section>
 
       {world.dice_enabled !== false && (
