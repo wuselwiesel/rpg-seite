@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import { deleteCharacter } from "../../actions";
 
@@ -18,11 +19,9 @@ export function DeleteCharacterButton({
       <button
         type="button"
         disabled={isPending}
-        onClick={() => {
+        onClick={async () => {
           if (
-            confirm(
-              `"${characterName}" löschen? Alles, was der Charakter geschrieben hat, bleibt erhalten.`,
-            )
+            (await confirmDialog({ message: `"${characterName}" löschen? Alles, was der Charakter geschrieben hat, bleibt erhalten.`, confirmLabel: "Löschen", danger: true }))
           ) {
             setError(null);
             startTransition(async () => {

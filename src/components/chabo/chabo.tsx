@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, CircleHelp, Clover, Dices, Eye, EyeOff, Pencil, Plus, Undo2, X } from "lucide-react";
@@ -241,7 +242,7 @@ export function Chabo({
       setImportError("Die Adresse des alten Charakterbogens ist ungültig.");
       return;
     }
-    if (!window.confirm("Die aktuellen Werte im ChaBo werden durch den alten Charakterbogen ersetzt. Fortfahren?")) return;
+    if (!(await confirmDialog({ message: "Die aktuellen Werte im ChaBo werden durch den alten Charakterbogen ersetzt. Fortfahren?", confirmLabel: "Ersetzen", danger: true }))) return;
     setImporting(true);
     setImportError(null);
     try {

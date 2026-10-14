@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
@@ -20,7 +21,7 @@ export function EmojiManager({
   const [error, setError] = useState<string | null>(null);
 
   async function remove(id: string) {
-    if (!confirm("Dieses Emoji wirklich löschen?")) return;
+    if (!(await confirmDialog({ message: "Dieses Emoji wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     const err = await deleteCustomEmoji(id);
     if (err) setError(err);
     else window.location.reload();

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { SpoilerGate } from "@/components/spoiler-gate";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
@@ -42,8 +43,8 @@ export function StoryPostBody({
     wasPending.current = pending;
   }, [pending, error]);
 
-  function handleDelete() {
-    if (!window.confirm("Diese Szene samt allen Fortsetzungen endgültig löschen?")) return;
+  async function handleDelete() {
+    if (!(await confirmDialog({ message: "Diese Szene samt allen Fortsetzungen endgültig löschen?", confirmLabel: "Löschen", danger: true }))) return;
     setDeleteError(null);
     startDelete(async () => {
       const err = await deleteStoryPost(storyPostId);

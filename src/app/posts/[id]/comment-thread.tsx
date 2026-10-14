@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { NameBadge } from "@/components/name-badge";
 import { useOptimistic, useState, useTransition, useActionState, useEffect, useRef } from "react";
 import { Heart, Pencil, Trash2, UserRoundPlus, X } from "lucide-react";
@@ -238,7 +239,7 @@ export function CommentThread({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Diesen Kommentar wirklich löschen?")) return;
+    if (!(await confirmDialog({ message: "Diesen Kommentar wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     setRemoved((prev) => new Set(prev).add(id));
     const err = await deleteComment(id, postId);
     if (err) {

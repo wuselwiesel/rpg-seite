@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -293,7 +294,7 @@ function StoryViewer({
     if (!group || !story) return;
     setPaused(true);
     const isHighlight = Boolean(group.highlightId);
-    if (!confirm(isHighlight ? "Dieses Highlight löschen? Die Storys selbst bleiben erhalten." : "Diese Story wirklich löschen?")) {
+    if (!(await confirmDialog({ message: isHighlight ? "Dieses Highlight löschen? Die Storys selbst bleiben erhalten." : "Diese Story wirklich löschen?", confirmLabel: "Löschen", danger: true }))) {
       setPaused(false);
       return;
     }

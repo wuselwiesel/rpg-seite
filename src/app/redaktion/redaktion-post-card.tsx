@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { NameBadge } from "@/components/name-badge";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import Link from "next/link";
@@ -44,7 +45,7 @@ export function RedaktionPostCard({
   const hasMedia = Boolean(post.media_type);
 
   async function handleDelete() {
-    if (!confirm("Diesen Beitrag wirklich löschen?")) return;
+    if (!(await confirmDialog({ message: "Diesen Beitrag wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     setRemoved(true);
     const err = await deleteRedaktionPost(post.id);
     if (err) {

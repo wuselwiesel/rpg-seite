@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { deleteWikiPage } from "../actions";
@@ -19,7 +20,7 @@ export function DeleteWikiPageButton({
     const text = hasSubpages
       ? "Diese Seite wirklich löschen? Ihre Unterseiten bleiben erhalten und rücken eine Ebene nach oben."
       : "Diese Seite wirklich löschen?";
-    if (!confirm(text)) return;
+    if (!(await confirmDialog({ message: text, confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteWikiPage(wikiPageId);
     if (error) {
       alert(error);

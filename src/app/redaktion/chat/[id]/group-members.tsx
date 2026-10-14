@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -114,7 +115,7 @@ export function GroupMembers({
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => confirm(`${m.name} aus der Gruppe entfernen?`) && void run(() => removeAccountGroupMember(chatId, m.id))}
+                  onClick={async () => (await confirmDialog({ message: `${m.name} aus der Gruppe entfernen?`, confirmLabel: "Entfernen", danger: true })) && void run(() => removeAccountGroupMember(chatId, m.id))}
                   aria-label={`${m.name} entfernen`}
                   title="Entfernen"
                   className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500"
@@ -180,8 +181,8 @@ export function GroupMembers({
             <button
               type="button"
               disabled={busy}
-              onClick={() =>
-                confirm("Gruppe wirklich verlassen?") &&
+              onClick={async () =>
+                (await confirmDialog({ message: "Gruppe wirklich verlassen?", confirmLabel: "Verlassen", danger: true })) &&
                 void run(() => removeAccountGroupMember(chatId, userId), () => router.push("/redaktion/chat"))
               }
               className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-sm font-medium text-red-600 transition hover:bg-surface-2/60 dark:text-red-400"

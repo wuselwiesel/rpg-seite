@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import { ImagePlus, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -71,8 +72,8 @@ export function GalleryEditor({ characterId, images, canEdit }: { characterId: s
                 <button
                   type="button"
                   aria-label="Bild entfernen"
-                  onClick={() => {
-                    if (!confirm("Dieses Bild entfernen?")) return;
+                  onClick={async () => {
+                    if (!(await confirmDialog({ message: "Dieses Bild entfernen?", confirmLabel: "Entfernen", danger: true }))) return;
                     startTransition(async () => {
                       const err = await deleteGalleryImage(img.id);
                       if (err) setError(err);

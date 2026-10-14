@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useActionState, useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
@@ -153,7 +154,7 @@ export function RevokeButton({ awardId, label }: { awardId: string; label: strin
       disabled={pending}
       aria-label={`${label} entziehen`}
       title="Entziehen"
-      onClick={() => confirm(`${label} wirklich entziehen?`) && startTransition(async () => void (await revokeBadge(awardId)))}
+      onClick={async () => (await confirmDialog({ message: `${label} wirklich entziehen?`, confirmLabel: "Entziehen", danger: true })) && startTransition(async () => void (await revokeBadge(awardId)))}
       className="rounded-full p-0.5 text-muted transition hover:text-red-500 disabled:opacity-50"
     >
       <X className="h-3.5 w-3.5" strokeWidth={2} />
@@ -169,8 +170,8 @@ export function DeleteDefButton({ defId, name }: { defId: string; name: string }
       disabled={pending}
       aria-label={`${name} löschen`}
       title="Badge löschen (auch bei allen, die es haben)"
-      onClick={() =>
-        confirm(`„${name}“ löschen? Es verschwindet auch bei allen, die es haben.`) &&
+      onClick={async () =>
+        (await confirmDialog({ message: `„${name}“ löschen? Es verschwindet auch bei allen, die es haben.`, confirmLabel: "Löschen", danger: true })) &&
         startTransition(async () => void (await deleteBadgeDef(defId)))
       }
       className="rounded-full p-1 text-muted transition hover:text-red-500 disabled:opacity-50"
@@ -257,8 +258,8 @@ export function VisibilityList({
 
   const toggle = (id: string, show: boolean) => apply([id], show);
 
-  function remove(id: string, label: string) {
-    if (!confirm(`${label} endgültig entfernen? Wer es verliehen hat, kann es dir erneut geben.`)) return;
+  async function remove(id: string, label: string) {
+    if (!(await confirmDialog({ message: `${label} endgültig entfernen? Wer es verliehen hat, kann es dir erneut geben.`, confirmLabel: "Entfernen", danger: true }))) return;
     setError(null);
     startTransition(async () => {
       const err = await revokeBadge(id);

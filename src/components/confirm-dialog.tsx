@@ -97,3 +97,44 @@ function ConfirmDialog({ options, onAnswer }: { options: ConfirmOptions; onAnswe
     document.body,
   );
 }
+
+// Globale Variante ohne eigenen Zustand je Komponente: `await confirmDialog({...})` genügt, einmal im Layout hängt der <ConfirmHost />.
+// Läuft der Host (noch) nicht, fällt es auf das Browser-Fenster zurück.
+type Request = { options: ConfirmOptions; resolve: (ok: boolean) => void };
+let hostOpen: ((request: Request) => void) | null = null;
+
+export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
+  if (!hostOpen) return Promise.resolve(typeof window !== "undefined" ? window.confirm(options.message) : false);
+  return new Promise<boolean>((resolve) => hostOpen!({ options, resolve }));
+}
+
+export function ConfirmHost() {
+  const [request, setRequest] = useState<Request | null>(null);
+
+  useEffect(() => {
+    hostOpen = (next) => {
+      // Es ist immer nur eine Rückfrage offen: eine zweite gilt als abgelehnt
+      setRequest((current) => {
+        if (current) {
+          next.resolve(false);
+          return current;
+        }
+        return next;
+      });
+    };
+    return () => {
+      hostOpen = null;
+    };
+  }, []);
+
+  if (!request) return null;
+  return (
+    <ConfirmDialog
+      options={request.options}
+      onAnswer={(ok) => {
+        request.resolve(ok);
+        setRequest(null);
+      }}
+    />
+  );
+}

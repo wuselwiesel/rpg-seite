@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
@@ -96,7 +97,7 @@ export function StoryEntryItem({
   const [splitting, setSplitting] = useState(false);
 
   async function splitChapter() {
-    if (!confirm("Dieses Kapitel zur eigenen Szene machen? Die Beiträge ab hier ziehen in die neue Szene um, die alte Szene wird abgeschlossen.")) return;
+    if (!(await confirmDialog({ message: "Dieses Kapitel zur eigenen Szene machen? Die Beiträge ab hier ziehen in die neue Szene um, die alte Szene wird abgeschlossen.", confirmLabel: "Zur Szene machen", danger: false }))) return;
     setSplitting(true);
     const result = await chapterToScene(entry.id, storyPostId);
     if ("error" in result) {
@@ -119,7 +120,7 @@ export function StoryEntryItem({
   }
 
   async function handleDelete() {
-    if (!confirm("Diesen Eintrag wirklich löschen?")) return;
+    if (!(await confirmDialog({ message: "Diesen Eintrag wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     const err = await deleteStoryEntry(entry.id, storyPostId);
     if (err) alert(err);
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -467,7 +468,7 @@ export function ChatRoom({
     const text = isGroup
       ? "Diesen Gruppenchat mit allen Nachrichten für alle löschen? Das kann nicht rückgängig gemacht werden."
       : "Diesen Chat mit allen Nachrichten löschen? Das kann nicht rückgängig gemacht werden.";
-    if (!confirm(text)) return;
+    if (!(await confirmDialog({ message: text, confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteChat(chatId);
     if (error) alert(error);
   }
@@ -488,7 +489,7 @@ export function ChatRoom({
   }
 
   async function handleDelete(messageId: string) {
-    if (!confirm("Diese Nachricht wirklich löschen?")) return;
+    if (!(await confirmDialog({ message: "Diese Nachricht wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
     const error = await deleteMessage(messageId, chatId);
     if (error) alert(error);

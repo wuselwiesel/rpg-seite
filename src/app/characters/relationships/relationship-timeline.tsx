@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { deleteRelationship, updateRelationshipStep } from "../actions";
@@ -42,7 +43,7 @@ export function RelationshipTimeline({
   const canDelete = canEdit;
 
   async function handleDelete(id: string) {
-    if (!confirm("Diese Beziehung samt Verlauf wirklich löschen?")) return;
+    if (!(await confirmDialog({ message: "Diese Beziehung samt Verlauf wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteRelationship(id);
     if (error) alert(error);
   }

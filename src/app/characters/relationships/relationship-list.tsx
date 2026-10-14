@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Pencil, Trash2, Users } from "lucide-react";
@@ -125,7 +126,7 @@ export function RelationshipList({
     [rel.character_a_id, rel.character_b_id].some((id) => charactersById.get(id)?.owner_id === currentUserId);
 
   async function handleDelete(id: string) {
-    if (!confirm("Diese Beziehung wirklich löschen? Sie verschwindet auch aus den ChaBos.")) return;
+    if (!(await confirmDialog({ message: "Diese Beziehung wirklich löschen? Sie verschwindet auch aus den ChaBos.", confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteRelationship(id);
     if (error) alert(error);
   }

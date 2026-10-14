@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { deleteCharacter } from "./actions";
@@ -14,8 +15,8 @@ export function DeleteCharacterIcon({ characterId, characterName }: { characterI
       disabled={pending}
       aria-label={`${characterName} löschen`}
       title="Charakter löschen"
-      onClick={() => {
-        if (!confirm(`"${characterName}" löschen? Alles, was der Charakter geschrieben hat, bleibt erhalten.`)) return;
+      onClick={async () => {
+        if (!(await confirmDialog({ message: `"${characterName}" löschen? Alles, was der Charakter geschrieben hat, bleibt erhalten.`, confirmLabel: "Löschen", danger: true }))) return;
         startTransition(async () => {
           const result = await deleteCharacter(characterId);
           if (result) alert(result);

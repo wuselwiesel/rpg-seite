@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { BADGE_PREF_EVENT, BADGE_PROFILE_KEY, type BadgeView } from "@/lib/badges";
@@ -46,8 +47,8 @@ export function BadgeRow({
   if (!enabled || badges.length === 0) return null;
 
   // Verliehene (besondere) Badges lassen sich ganz entfernen.
-  function remove(b: BadgeView) {
-    if (!confirm(`${b.name} endgültig entfernen? Wer es verliehen hat, kann es dir erneut geben.`)) return;
+  async function remove(b: BadgeView) {
+    if (!(await confirmDialog({ message: `${b.name} endgültig entfernen? Wer es verliehen hat, kann es dir erneut geben.`, confirmLabel: "Entfernen", danger: true }))) return;
     setError(null);
     startTransition(async () => {
       const err = await revokeBadge(b.awardId);

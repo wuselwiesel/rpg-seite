@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -15,8 +16,8 @@ export function DeletePostButton({ postId }: { postId: string }) {
       <button
         type="button"
         disabled={pending}
-        onClick={() => {
-          if (!window.confirm("Diesen Beitrag endgültig löschen?")) return;
+        onClick={async () => {
+          if (!(await confirmDialog({ message: "Diesen Beitrag endgültig löschen?", confirmLabel: "Löschen", danger: true }))) return;
           setError(null);
           startTransition(async () => {
             const err = await deletePost(postId);

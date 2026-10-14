@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Bookmark, Download, FolderPlus, MessageSquareQuote, Pencil, Printer, Trash2, X } from "lucide-react";
@@ -154,8 +155,8 @@ export function ChaboClips({ characterId }: { characterId: string }) {
                   title="Sammlung löschen"
                   aria-label="Sammlung löschen"
                   className={`${iconBtn} hover:text-red-500`}
-                  onClick={() => {
-                    if (window.confirm(`Sammlung „${c.name}“ löschen? Ausschnitte, die in keiner anderen Sammlung liegen, werden mitgelöscht.`)) void run(deleteClipCollection(c.id));
+                  onClick={async () => {
+                    if ((await confirmDialog({ message: `Sammlung „${c.name}“ löschen? Ausschnitte, die in keiner anderen Sammlung liegen, werden mitgelöscht.`, confirmLabel: "Löschen", danger: true }))) void run(deleteClipCollection(c.id));
                   }}
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={2} />
@@ -172,8 +173,8 @@ export function ChaboClips({ characterId }: { characterId: string }) {
                       <ClipView
                         clip={clip}
                         onRemove={() => void run(removeClipFromCollection(c.id, clip.id))}
-                        onDelete={() => {
-                          if (window.confirm(`„${clip.title}“ aus allen Sammlungen löschen?`)) void run(deleteClip(clip.id));
+                        onDelete={async () => {
+                          if ((await confirmDialog({ message: `„${clip.title}“ aus allen Sammlungen löschen?`, confirmLabel: "Löschen", danger: true }))) void run(deleteClip(clip.id));
                         }}
                         onEdit={() => {
                           const title = window.prompt("Titel", clip.title);
@@ -183,8 +184,8 @@ export function ChaboClips({ characterId }: { characterId: string }) {
                           void run(updateClip(clip.id, title, note));
                         }}
                         onShare={() => void run(shareClipToSceneChat(clip.id), "Im Chat der Szene geteilt.")}
-                        onWiki={() => {
-                          if (!window.confirm(`„${clip.title}“ im Wiki für alle in der Welt zeigen?`)) return;
+                        onWiki={async () => {
+                          if (!(await confirmDialog({ message: `„${clip.title}“ im Wiki für alle in der Welt zeigen?`, confirmLabel: "Zeigen", danger: false }))) return;
                           void run(publishClipToWiki(clip.id).then((r) => ("error" in r ? r.error : null)), "Im Wiki für alle gezeigt.");
                         }}
                       />

@@ -1,3 +1,4 @@
+import { ConfirmHost } from "@/components/confirm-dialog";
 import type { Metadata, Viewport } from "next";
 import {
   Geist,
@@ -329,6 +330,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </CustomEmojiProvider>
         </OnlineProvider>
         </ModeProvider>
+        <ConfirmHost />
       </body>
     </html>
   );

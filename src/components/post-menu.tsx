@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -180,8 +181,8 @@ export function PostMenu({
                     type="button"
                     disabled={pending}
                     className={`${item} !text-red-600 dark:!text-red-400`}
-                    onClick={() => {
-                      if (!window.confirm("Diesen Beitrag endgültig löschen?")) return;
+                    onClick={async () => {
+                      if (!(await confirmDialog({ message: "Diesen Beitrag endgültig löschen?", confirmLabel: "Löschen", danger: true }))) return;
                       startTransition(async () => {
                         const err = await deletePost(postId);
                         if (err) setNote(err);

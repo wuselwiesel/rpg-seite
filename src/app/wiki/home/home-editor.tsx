@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -257,8 +258,8 @@ export function HomeEditor({ worldId, initial, hasHome, options }: { worldId: st
             <button
               type="button"
               disabled={pending}
-              onClick={() => {
-                if (window.confirm("Startseite zurücksetzen? Danach erscheint wieder die Standard-Vorbelegung.")) submit(null);
+              onClick={async () => {
+                if ((await confirmDialog({ message: "Startseite zurücksetzen? Danach erscheint wieder die Standard-Vorbelegung.", confirmLabel: "Zurücksetzen", danger: true }))) submit(null);
               }}
               className="mt-4 w-fit text-sm text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
             >

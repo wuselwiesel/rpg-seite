@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
@@ -529,7 +530,7 @@ export function AccountChatRoom({
                         </button>
                         <button
                           type="button"
-                          onClick={() => confirm("Diese Nachricht wirklich löschen?") && void remove(m.id)}
+                          onClick={async () => (await confirmDialog({ message: "Diese Nachricht wirklich löschen?", confirmLabel: "Löschen", danger: true })) && void remove(m.id)}
                           aria-label="Nachricht löschen"
                           title="Löschen"
                           className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500"

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force";
@@ -658,7 +659,7 @@ export function RelationshipGraph({
                   <button
                     type="button"
                     onClick={async () => {
-                      if (!confirm("Diese Beziehung wirklich löschen? Sie verschwindet auch aus den ChaBos.")) return;
+                      if (!(await confirmDialog({ message: "Diese Beziehung wirklich löschen? Sie verschwindet auch aus den ChaBos.", confirmLabel: "Löschen", danger: true }))) return;
                       const error = await deleteRelationship(rel.id);
                       if (error) alert(error);
                       else setSelectedRelId(null);

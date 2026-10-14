@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useTransition } from "react";
 import { acceptFriendRequest, removeFriendship } from "./actions";
 
@@ -41,8 +42,8 @@ export function FriendRequestActions({
     <button
       type="button"
       disabled={isPending}
-      onClick={() => {
-        if (mode === "accepted" && !confirm(`Freundschaft${name ? ` mit @${name}` : ""} beenden? Es wird nichts gelöscht; Chats und Beiträge in gemeinsamen Welten bleiben bestehen.`)) return;
+      onClick={async () => {
+        if (mode === "accepted" && !(await confirmDialog({ message: `Freundschaft${name ? ` mit @${name}` : ""} beenden? Es wird nichts gelöscht; Chats und Beiträge in gemeinsamen Welten bleiben bestehen.`, confirmLabel: "Beenden", danger: true }))) return;
         startTransition(() => removeFriendship(friendshipId));
       }}
       className="rounded-full border border-line px-3 py-1 text-xs font-medium text-fg-soft transition hover:border-red-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { purgeCharacter, restoreCharacter } from "../actions";
@@ -32,8 +33,8 @@ export function DeletedCharacterActions({ characterId, name }: { characterId: st
         <button
           type="button"
           disabled={pending}
-          onClick={() => {
-            if (confirm(`"${name}" endgültig löschen? Alle Beiträge, Kommentare, Nachrichten und Story-Einträge dieses Charakters werden dann unwiderruflich gelöscht.`)) {
+          onClick={async () => {
+            if ((await confirmDialog({ message: `"${name}" endgültig löschen? Alle Beiträge, Kommentare, Nachrichten und Story-Einträge dieses Charakters werden dann unwiderruflich gelöscht.`, confirmLabel: "Löschen", danger: true }))) {
               run(() => purgeCharacter(characterId));
             }
           }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { NameBadge } from "@/components/name-badge";
 import { MentionTextarea } from "@/components/mention-textarea";
 import { EmojiText } from "@/components/custom-emoji-provider";
@@ -54,7 +55,7 @@ export function RedaktionCommentThread({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Diesen Kommentar wirklich löschen?")) return;
+    if (!(await confirmDialog({ message: "Diesen Kommentar wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     setRemoved((prev) => new Set(prev).add(id));
     const err = await deleteRedaktionComment(id, postId);
     if (err) {

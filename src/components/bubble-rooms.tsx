@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { EmojiText } from "./custom-emoji-provider";
 import { SpoilerText } from "./spoiler-text";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
@@ -311,8 +312,8 @@ function MiniThread({
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
-                            confirm("Diese Nachricht wirklich löschen?") &&
+                          onClick={async () =>
+                            (await confirmDialog({ message: "Diese Nachricht wirklich löschen?", confirmLabel: "Löschen", danger: true })) &&
                             onDelete?.(m.id)
                           }
                           className="text-muted hover:text-red-500"
