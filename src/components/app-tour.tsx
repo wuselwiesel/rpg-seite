@@ -28,6 +28,16 @@ function isVisible(el: Element): el is HTMLElement {
 // Findet das Ziel-Element eines Schritts, ohne dass jede Nav-Stelle extra markiert werden müsste:
 // über data-tour, den Titel (z. B. der Glocke), den Link-Zielpfad oder den sichtbaren Namen (aria-label/Text).
 function findTarget(match: TourMatch): HTMLElement | null {
+  if ("any" in match) {
+    for (const m of match.any) {
+      const el = findTarget(m);
+      if (!el) continue;
+      // Ein Ziel, das ausgeblendet im Menü-Schubfach liegt (am Handy), zählt nicht: dann gilt die nächste Möglichkeit
+      const r = el.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth) return el;
+    }
+    return null;
+  }
   if ("attr" in match) {
     const els = document.querySelectorAll<HTMLElement>(`[data-tour="${match.attr}"]`);
     return Array.from(els).find(isVisible) ?? null;

@@ -4,7 +4,8 @@
 
 // Wie ein Ziel-Element gefunden wird:
 // attr = data-tour-Marke · title = title-Attribut · name = sichtbarer Name eines Links/Knopfs · href = Link mit genau diesem Ziel
-export type TourMatch = { attr: string } | { title: string } | { name: string } | { href: string };
+// any = mehrere Möglichkeiten, das erste sichtbare Ziel gilt (z. B. am Handy der Menü-Knopf, wenn die Weltauswahl nur im Menü steht)
+export type TourMatch = { attr: string } | { title: string } | { name: string } | { href: string } | { any: TourMatch[] };
 
 // route: feste Seite oder ein Platzhalter für etwas, das erst gefunden werden muss:
 // @thread (erste Szene der Liste) · @chabo / @profile (ChaBo bzw. Profil des aktiven Charakters) · @chat (erster Chat der Liste).
@@ -37,15 +38,15 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Deine Welt",
-        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Hier siehst du, in welcher Welt du gerade bist, und wechselst zu einer anderen. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
+        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Hier siehst du, in welcher Welt du gerade bist, und wechselst zu einer anderen. Am Handy steckt die Weltauswahl im Menü oben rechts. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
         route: "/",
-        match: { attr: "world" },
+        match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
       {
         title: "Welten entdecken und üben",
         text: "Über die Weltauswahl kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt in Schattenmoor ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen, nachts wird alles aufgeräumt.",
         route: "/",
-        match: { attr: "world" },
+        match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
       {
         title: "Dein Charakter",
@@ -494,9 +495,9 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "Eigene Welt verwalten",
-        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über die Weltauswahl oben erreichst du „Welten verwalten“, „Diese Welt bearbeiten“ (nur Besitzer:in), „Welten entdecken“ und „Neue Welt erschaffen“.",
+        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über die Weltauswahl erreichst du (am Handy im Menü oben rechts) „Welten verwalten“, „Diese Welt bearbeiten“ (nur Besitzer:in), „Welten entdecken“ und „Neue Welt erschaffen“.",
         route: "/worlds",
-        match: { attr: "world" },
+        match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
       {
         title: "Die Seite deiner Welt",
