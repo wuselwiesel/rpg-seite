@@ -189,11 +189,12 @@ export function AppTour() {
       return;
     }
     // Ein Ziel innerhalb einer Seite kann außerhalb des sichtbaren Bereichs liegen – dann einmal pro Schritt dorthin scrollen.
+    // Unten bleibt Platz für die Tab-Leiste und den mitlaufenden Speichern-Knopf: Ein Ziel dicht über dem unteren Rand gilt als nicht sichtbar.
     // Nur einmal: Ist das Ziel höher als der Bildschirm (z. B. das Schreibfeld), bliebe die Bedingung sonst immer wahr, jedes Scrollen
     // löste eine neue Suche mit erneutem Scrollen aus, und der Rundgang hing in einer Endlosschleife.
     const before = el.getBoundingClientRect();
     const key = `${tourId}:${stepIndex}`;
-    if (scrolledFor.current !== key && (before.bottom < 60 || before.top > window.innerHeight - 60 || before.top < 0)) {
+    if (scrolledFor.current !== key && (before.bottom < 60 || before.top > window.innerHeight - 180 || before.top < 0)) {
       scrolledFor.current = key;
       el.scrollIntoView({ block: before.height > window.innerHeight - 160 ? "start" : "center", behavior: "instant" as ScrollBehavior });
     }

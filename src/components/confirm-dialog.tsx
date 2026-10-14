@@ -61,7 +61,7 @@ function ConfirmDialog({ options, onAnswer }: { options: ConfirmOptions; onAnswe
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 p-3 sm:items-center"
+      className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 p-3 sm:items-center"
       onClick={() => onAnswer(false)}
     >
       <div
