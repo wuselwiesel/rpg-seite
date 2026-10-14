@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { ChevronDown, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { ActiveCharacterMenu } from "./active-character-menu";
 import { InstallAppButton } from "./install-app-button";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { CharacterAvatar } from "./character-avatar";
+import { WorldCover } from "./world-cover";
 import { PresenceControl } from "./character-presence";
 import { Wordmark } from "./wordmark";
 import { MobileTabLink } from "./mobile-tab-link";
@@ -38,7 +39,7 @@ function MobileCreateTab({ href, label }: { href: string; label: string }) {
 export function MobileNav({
   worlds,
   activeWorld,
-  isOwner,
+  canManage,
   activeCharacter,
   characters,
   profile,
@@ -52,7 +53,7 @@ export function MobileNav({
 }: {
   worlds: World[];
   activeWorld: World;
-  isOwner: boolean;
+  canManage: boolean;
   activeCharacter: Character | null;
   characters: Character[];
   profile: Profile | null | undefined;
@@ -77,7 +78,8 @@ export function MobileNav({
 
   return (
     <>
-      <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-app px-4 py-2.5 print:hidden lg:hidden">
+      <div className="sticky top-0 z-30 border-b border-line bg-app print:hidden lg:hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5">
         {pathname === "/" && (
           <Link href="/" aria-label="Wortwinkel" className="shrink-0">
             <Wordmark height={28} />
@@ -113,6 +115,19 @@ export function MobileNav({
             <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
           </button>
         </div>
+      </div>
+      {/* Welt, in der man gerade ist: ein Tipp öffnet im Menü die Weltauswahl */}
+      <button
+        type="button"
+        onClick={() => setMoreOpen(true)}
+        data-tour="world"
+        aria-label={`Welt: ${activeWorld.name}. Welt wechseln`}
+        className="flex w-full items-center gap-2 px-4 pb-1.5 text-left text-xs text-muted transition hover:text-fg-soft"
+      >
+        <WorldCover name={activeWorld.name} coverUrl={activeWorld.cover_image_url} className="h-4 w-4 shrink-0 rounded text-[8px]" />
+        <span className="min-w-0 truncate font-medium text-fg-soft">{activeWorld.name}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+      </button>
       </div>
 
       <nav className="mobile-bottom-nav transform-gpu fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
@@ -239,7 +254,7 @@ export function MobileNav({
 
         <div className="mb-4">
           <p className="mb-1 px-1 text-xs text-muted">Welt</p>
-          <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} inline />
+          <WorldSwitcher worlds={worlds} activeWorld={activeWorld} canManage={canManage} inline />
         </div>
 
         <div className="flex flex-col gap-1">

@@ -1,8 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, RotateCcw, X } from "lucide-react";
-import { saveWorldTalents } from "../../actions";
 import { ATTR_TABLE } from "@/lib/charakterbogen-stats";
 import { DEFAULT_TALENTS, MAX_TALENTS, MAX_TALENT_NAME, type TalentAttr, type TalentDef } from "@/lib/talents";
 
@@ -10,10 +8,8 @@ const field = "rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm te
 // Glück fließt in kein Talent ein
 const ATTRS = ATTR_TABLE.filter((a) => a.code !== "GL");
 
-export function TalentEditor({ worldId, initial }: { worldId: string; initial: TalentDef[] }) {
-  const [rows, setRows] = useState<TalentDef[]>(initial);
-  const [state, action, pending] = useActionState(saveWorldTalents.bind(null, worldId), null);
-
+export function TalentEditor({ rows, onChange }: { rows: TalentDef[]; onChange: (rows: TalentDef[]) => void }) {
+  const setRows = (update: TalentDef[] | ((r: TalentDef[]) => TalentDef[])) => onChange(typeof update === "function" ? update(rows) : update);
   const set = (i: number, patch: Partial<TalentDef>) => setRows((r) => r.map((t, j) => (j === i ? { ...t, ...patch } : t)));
   const move = (i: number, d: number) =>
     setRows((r) => {
@@ -25,15 +21,7 @@ export function TalentEditor({ worldId, initial }: { worldId: string; initial: T
     });
 
   return (
-    <form
-      action={action}
-      onSubmit={(e) => {
-        const removed = initial.filter((t) => !rows.some((r) => r.name.trim().toLowerCase() === t.name.toLowerCase()));
-        if (removed.length > 0 && !confirm(`${removed.length} Talent(e) entfallen und verlieren ihre Punkte in den Bögen. Speichern?`)) e.preventDefault();
-      }}
-      className="flex flex-col gap-2"
-    >
-      <input type="hidden" name="talents" value={JSON.stringify(rows)} />
+    <div className="flex flex-col gap-2">
       <ul className="flex flex-col gap-1.5">
         {rows.map((t, i) => (
           <li key={i} className="grid grid-cols-[1fr_auto] items-center gap-1.5 rounded-xl border border-line p-2 sm:flex sm:flex-wrap sm:rounded-none sm:border-0 sm:p-0">
@@ -99,15 +87,6 @@ export function TalentEditor({ worldId, initial }: { worldId: string; initial: T
           Standardliste
         </button>
       </div>
-      {state && state !== "ok" && <p className="text-sm text-red-600 dark:text-red-400">{state}</p>}
-      {state === "ok" && <p className="text-sm text-accent">Gespeichert.</p>}
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-fit rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
-      >
-        {pending ? "Speichere..." : "Talente speichern"}
-      </button>
-    </form>
+    </div>
   );
 }

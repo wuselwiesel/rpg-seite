@@ -38,7 +38,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Deine Welt",
-        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Hier siehst du, in welcher Welt du gerade bist, und wechselst zu einer anderen. Am Handy steckt die Weltauswahl im Menü oben rechts. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
+        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Hier siehst du, in welcher Welt du gerade bist, und wechselst zu einer anderen. Am Handy tippst du dafür oben auf den Weltnamen. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
         route: "/",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
@@ -495,13 +495,13 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "Eigene Welt verwalten",
-        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über die Weltauswahl erreichst du (am Handy im Menü oben rechts) „Welten verwalten“, „Diese Welt bearbeiten“ (nur Besitzer:in), „Welten entdecken“ und „Neue Welt erschaffen“.",
+        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über die Weltauswahl (am Handy der Weltname oben) erreichst du „Welten verwalten“, „Diese Welt bearbeiten“ (Besitzer:in und Admins), „Welten entdecken“ und „Neue Welt erschaffen“.",
         route: "/worlds",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
       {
         title: "Die Seite deiner Welt",
-        text: "Auf der Weltseite stehen oben „Auswahllisten“ und „Bearbeiten“. Darunter findest du Willkommenstext, Beitrittsanfragen (falls die Welt auf Anfrage beitritt), Mitglieder und Einladungen.",
+        text: "Auf der Weltseite führt oben „Bearbeiten“ zu allen Einstellungen, auch zu den Auswahllisten. Darunter findest du Willkommenstext, Beitrittsanfragen (falls die Welt auf Anfrage beitritt), Mitglieder und Einladungen.",
         route: "@world|/worlds",
         match: { name: "Bearbeiten" },
       },
@@ -519,7 +519,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Titelbild, Name und Beschreibung",
-        text: "Unter „Bearbeiten“ legst du das Titelbild fest. Es darf quadratisch, 4:3 oder breit sein und bleibt in seinem Format. Ein Icon ohne Hintergrund funktioniert ebenso. Name und Beschreibung erscheinen in der Weltauswahl und unter „Welten entdecken“.",
+        text: "Unter „Bearbeiten“ steht alles in einem Formular mit einem Speichern-Knopf, der am unteren Rand mitläuft. Dort legst du das Titelbild fest. Es darf quadratisch, 4:3 oder breit sein und bleibt in seinem Format. Ein Icon ohne Hintergrund funktioniert ebenso. Name und Beschreibung erscheinen in der Weltauswahl und unter „Welten entdecken“.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-titel" },
       },
@@ -549,13 +549,13 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Willkommenstext",
-        text: "Der Willkommenstext steht auf der Weltseite und in der Vorschau für Außenstehende. Er lässt sich formatieren und mit Bildern, Links und Emojis füllen. Gespeichert wird er mit dem eigenen Knopf unter dem Feld, getrennt vom Rest der Einstellungen.",
+        text: "Der Willkommenstext steht auf der Weltseite und in der Vorschau für Außenstehende. Er lässt sich formatieren und mit Bildern, Links und Emojis füllen. Gespeichert wird er zusammen mit den übrigen Einstellungen.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-willkommen" },
       },
       {
         title: "Auswahllisten auf einen Blick",
-        text: "Alle Listen deiner Welt stehen hier mit der Zahl ihrer Einträge. Ein Klick öffnet die Liste direkt zum Bearbeiten. „Alle bearbeiten“ öffnet die gesamte Übersicht.",
+        text: "Alle Listen deiner Welt stehen hier mit der Zahl ihrer Einträge. Ein Klick öffnet die Liste direkt zum Bearbeiten. „Alle bearbeiten“ öffnet die gesamte Übersicht. Einträge, die du entfernst, kannst du kurz danach mit „Rückgängig“ zurückholen.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-auswahllisten" },
       },
@@ -579,7 +579,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Talente",
-        text: "Wenn Würfeln eingeschaltet ist, legst du auf der Bearbeiten-Seite die Talente deiner Welt fest: Name und zwei Attribute, auf die geprobt wird. „Standardliste“ stellt die ursprünglichen Talente wieder her.",
+        text: "Wenn Würfeln eingeschaltet ist, legst du auf der Bearbeiten-Seite die Talente deiner Welt fest: Name und zwei Attribute, auf die geprobt wird. „Standardliste“ stellt die ursprünglichen Talente wieder her. Gespeichert werden sie mit dem Speichern-Knopf unten.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-talente" },
       },

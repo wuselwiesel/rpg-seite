@@ -115,7 +115,7 @@ export async function Sidebar() {
   // Wie in der Chatliste aus der Sicht des aktiven Charakters zählen.
   const unreadCounts = await getUnreadCounts(user.id, myCharacterIds, activeCharacter?.id);
   // Besitzer:in oder Admin: darf die Welt bearbeiten
-  const isOwner = activeWorld.created_by === user.id || myMembership?.role === "admin";
+  const canManage = activeWorld.created_by === user.id || myMembership?.role === "admin";
 
   return (
     <>
@@ -138,7 +138,7 @@ export async function Sidebar() {
           </div>
         </div>
       <div className="mb-3">
-        <WorldSwitcher worlds={worlds} activeWorld={activeWorld} isOwner={isOwner} />
+        <WorldSwitcher worlds={worlds} activeWorld={activeWorld} canManage={canManage} />
       </div>
       <div className="-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 pb-3 [mask-image:linear-gradient(to_bottom,black_calc(100%-14px),transparent)]">
       <div className="mb-4">
@@ -185,7 +185,7 @@ export async function Sidebar() {
     <MobileNav
       worlds={worlds}
       activeWorld={activeWorld}
-      isOwner={isOwner}
+      canManage={canManage}
       activeCharacter={activeCharacter}
       characters={characters}
       profile={profile}

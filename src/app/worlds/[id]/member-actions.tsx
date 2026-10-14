@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { removeWorldMember, setWorldMemberRole, transferWorldOwnership } from "../actions";
+import { useConfirm } from "@/components/confirm-dialog";
 
 // Verwalten eines Mitglieds: entfernen (Besitzer:in und Admins; Admins nur normale Mitglieder) und zum Admin ernennen bzw. zurückstufen (nur die Besitzer:in).
 export function MemberActions({
@@ -24,6 +25,7 @@ export function MemberActions({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   function run(task: () => Promise<string | null>) {
     setError(null);
@@ -41,7 +43,7 @@ export function MemberActions({
           type="button"
           disabled={pending}
           onClick={() => run(() => setWorldMemberRole(worldId, userId, role === "admin" ? "member" : "admin"))}
-          className="rounded-md px-2 py-1 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
+          className="rounded-md px-2 py-1.5 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
         >
           {role === "admin" ? "Admin entziehen" : "Zum Admin ernennen"}
         </button>
@@ -50,10 +52,10 @@ export function MemberActions({
         <button
           type="button"
           disabled={pending}
-          onClick={() => {
-            if (confirm(`Den Besitz der Welt an ${name} übertragen? Du wirst Admin und kannst die Welt danach verlassen.`)) run(() => transferWorldOwnership(worldId, userId));
+          onClick={async () => {
+            if (await confirm({ message: `Den Besitz der Welt an ${name} übertragen? Du wirst Admin und kannst die Welt danach verlassen.`, confirmLabel: "Besitz übertragen", danger: true })) run(() => transferWorldOwnership(worldId, userId));
           }}
-          className="rounded-md px-2 py-1 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
+          className="rounded-md px-2 py-1.5 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
         >
           Besitz übertragen
         </button>
@@ -62,14 +64,15 @@ export function MemberActions({
         <button
           type="button"
           disabled={pending}
-          onClick={() => {
-            if (confirm(`${name} wirklich aus der Welt entfernen?`)) run(() => removeWorldMember(worldId, userId));
+          onClick={async () => {
+            if (await confirm({ message: `${name} aus der Welt entfernen?`, confirmLabel: "Entfernen", danger: true })) run(() => removeWorldMember(worldId, userId));
           }}
-          className="rounded-md px-2 py-1 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+          className="rounded-md px-2 py-1.5 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
         >
           Entfernen
         </button>
       )}
+    {dialog}
     </span>
   );
 }

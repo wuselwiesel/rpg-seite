@@ -10,12 +10,13 @@ import type { World } from "@/lib/types";
 export function WorldSwitcher({
   worlds,
   activeWorld,
-  isOwner,
+  canManage,
   inline = false,
 }: {
   worlds: World[];
   activeWorld: World;
-  isOwner: boolean;
+  // Besitzer:in oder Admin: darf die Welt bearbeiten
+  canManage: boolean;
   // inline: Liste klappt im Fluss auf (z. B. im Hamburger-Menü) statt als Popover.
   inline?: boolean;
 }) {
@@ -82,7 +83,7 @@ export function WorldSwitcher({
             ))}
           </div>
           <div className="flex flex-col gap-0.5 border-t border-line p-2">
-            {isOwner && (
+            {canManage && (
               <Link
                 href={`/worlds/${activeWorld.id}/edit`}
                 onClick={() => setOpen(false)}

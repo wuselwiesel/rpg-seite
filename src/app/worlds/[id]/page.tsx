@@ -82,14 +82,6 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         <div className="flex shrink-0 items-center gap-2">
           {isAdmin && (
             <Link
-              href={`/worlds/${world.id}/listen`}
-              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
-            >
-              Auswahllisten
-            </Link>
-          )}
-          {isAdmin && (
-            <Link
               href={`/worlds/${world.id}/edit`}
               className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
             >

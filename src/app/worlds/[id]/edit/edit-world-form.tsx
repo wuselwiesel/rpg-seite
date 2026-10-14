@@ -1,18 +1,75 @@
 "use client";
 
-import { useActionState } from "react";
-import { updateWorld } from "../../actions";
+import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
+import { saveWorldSettings } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import { useConfirm } from "@/components/confirm-dialog";
 import type { World } from "@/lib/types";
 import { PermissionFields } from "@/components/permission-fields";
 import { parsePermissions } from "@/lib/world-permissions";
+import type { TalentDef } from "@/lib/talents";
+import { TalentEditor } from "./talent-editor";
 
-export function EditWorldForm({ world }: { world: World }) {
-  const action = updateWorld.bind(null, world.id);
-  const [error, formAction, pending] = useActionState(action, null);
+// Alle Einstellungen einer Welt in einem Formular mit einem Speichern-Knopf, der am unteren Rand mitläuft.
+// listsSlot: der (serverseitig gerenderte) Abschnitt „Auswahllisten“, der zwischen Willkommen und Talenten steht.
+export function EditWorldForm({
+  world,
+  welcomeInitial,
+  talentsInitial,
+  listsSlot,
+}: {
+  world: World;
+  welcomeInitial: string;
+  talentsInitial: TalentDef[];
+  listsSlot: ReactNode;
+}) {
+  const [dirty, setDirty] = useState(false);
+  const [dice, setDice] = useState(world.dice_enabled !== false);
+  const [talents, setTalents] = useState<TalentDef[]>(talentsInitial);
+  const formRef = useRef<HTMLFormElement>(null);
+  // Nach bestätigtem Entfernen von Talenten das Formular noch einmal ohne Rückfrage abschicken
+  const confirmed = useRef(false);
+  const { confirm, dialog } = useConfirm();
+
+  const [state, formAction, pending] = useActionState(async (prev: string | null, formData: FormData) => {
+    const result = await saveWorldSettings(world.id, prev, formData);
+    if (result === "ok") setDirty(false);
+    return result;
+  }, null);
+
+  // Wer mit ungespeicherten Änderungen die Seite verlässt, wird gefragt
+  useEffect(() => {
+    if (!dirty) return;
+    function warn(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (confirmed.current) {
+      confirmed.current = false;
+      return;
+    }
+    if (!dice) return;
+    const removed = talentsInitial.filter((t) => !talents.some((r) => r.name.trim().toLowerCase() === t.name.toLowerCase()));
+    if (removed.length === 0) return;
+    e.preventDefault();
+    void confirm({
+      message: `${removed.length} Talent(e) entfallen und verlieren ihre Punkte in den Bögen. Speichern?`,
+      confirmLabel: "Speichern",
+      danger: true,
+    }).then((ok) => {
+      if (!ok) return;
+      confirmed.current = true;
+      formRef.current?.requestSubmit();
+    });
+  }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} onInput={() => setDirty(true)} className="flex flex-col gap-4">
       <div data-tour="welt-titel" className="flex flex-col gap-1 text-sm text-fg-soft">
         Titelbild
         <AvatarUpload
@@ -21,6 +78,7 @@ export function EditWorldForm({ world }: { world: World }) {
           displayName={world.name}
           bucket="world-covers"
           variant="world"
+          onChange={() => setDirty(true)}
         />
       </div>
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
@@ -81,7 +139,8 @@ export function EditWorldForm({ world }: { world: World }) {
         <input
           type="checkbox"
           name="dice_enabled"
-          defaultChecked={world.dice_enabled !== false}
+          checked={dice}
+          onChange={(e) => setDice(e.target.checked)}
           className="h-4 w-4 accent-[var(--accent-strong)]"
         />
         Würfeln
@@ -89,15 +148,57 @@ export function EditWorldForm({ world }: { world: World }) {
 
       <PermissionFields value={parsePermissions(world.permissions)} />
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      <section className="mt-4 border-t border-line pt-6">
+        <h2 data-tour="welt-willkommen" className="mb-3 font-serif text-xl text-fg">
+          Willkommen
+        </h2>
+        <RichTextEditor
+          name="welcome"
+          initialContent={welcomeInitial}
+          minHeight={160}
+          showToolbar
+          placeholder="Regeln, wichtige Orte, offene Rollen …"
+          onChange={() => setDirty(true)}
+        />
+      </section>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-2 self-start rounded-md bg-accent-strong px-5 py-2 font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
-      >
-        {pending ? "Speichere..." : "Speichern"}
-      </button>
+      {listsSlot}
+
+      {dice && (
+        <section className="mt-4 border-t border-line pt-6">
+          <h2 data-tour="welt-talente" className="mb-3 font-serif text-xl text-fg">
+            Talente
+          </h2>
+          <TalentEditor
+            rows={talents}
+            onChange={(next) => {
+              setTalents(next);
+              setDirty(true);
+            }}
+          />
+          <input type="hidden" name="talents" value={JSON.stringify(talents)} />
+        </section>
+      )}
+
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 -mx-4 mt-2 flex items-center gap-3 border-t border-line bg-app/90 px-4 py-3 backdrop-blur lg:bottom-0 lg:mx-0 lg:rounded-xl lg:border lg:px-4">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-md bg-accent-strong px-5 py-2 font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+        >
+          {pending ? "Speichere..." : "Speichern"}
+        </button>
+        <span role="status" className="min-w-0 text-sm">
+          {state && state !== "ok" ? (
+            <span className="text-red-600 dark:text-red-400">{state}</span>
+          ) : dirty ? (
+            <span className="text-muted">Nicht gespeichert</span>
+          ) : state === "ok" ? (
+            <span className="text-accent">Gespeichert.</span>
+          ) : null}
+        </span>
+      </div>
+      {dialog}
     </form>
   );
 }

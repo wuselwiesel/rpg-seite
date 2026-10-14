@@ -3,14 +3,21 @@
 import { useState, useTransition } from "react";
 import { LogOut } from "lucide-react";
 import { leaveWorld } from "../actions";
+import { useConfirm } from "@/components/confirm-dialog";
 
 // „Welt verlassen“: als Text-Knopf auf der Weltseite oder als kleines Symbol in der Weltenliste (erscheint beim Darüberfahren).
 export function LeaveWorldButton({ worldId, worldName, variant = "text" }: { worldId: string; worldName?: string; variant?: "text" | "icon" }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
-  function leave() {
-    if (!confirm(worldName ? `„${worldName}“ wirklich verlassen? Deine Charaktere bleiben in der Welt erhalten.` : "Diese Welt wirklich verlassen?")) return;
+  async function leave() {
+    const ok = await confirm({
+      message: worldName ? `„${worldName}“ verlassen? Deine Charaktere bleiben in der Welt erhalten.` : "Diese Welt verlassen?",
+      confirmLabel: "Verlassen",
+      danger: true,
+    });
+    if (!ok) return;
     setError(null);
     startTransition(async () => {
       const err = await leaveWorld(worldId);
@@ -20,6 +27,7 @@ export function LeaveWorldButton({ worldId, worldName, variant = "text" }: { wor
 
   if (variant === "icon") {
     return (
+      <>
       <button
         type="button"
         disabled={isPending}
@@ -30,6 +38,8 @@ export function LeaveWorldButton({ worldId, worldName, variant = "text" }: { wor
       >
         <LogOut className="h-4 w-4" strokeWidth={2} />
       </button>
+      {dialog}
+      </>
     );
   }
 
@@ -44,6 +54,7 @@ export function LeaveWorldButton({ worldId, worldName, variant = "text" }: { wor
         Welt verlassen
       </button>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {dialog}
     </div>
   );
 }

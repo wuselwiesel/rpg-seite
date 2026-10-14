@@ -141,7 +141,7 @@ export function NotificationBell({
       </button>
 
       {open && (
-        <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+3.75rem)] z-50 rounded-2xl border border-line bg-surface shadow-lg lg:absolute lg:inset-x-auto lg:left-0 lg:top-full lg:mt-2 lg:w-80">
+        <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+5.5rem)] z-50 rounded-2xl border border-line bg-surface shadow-lg lg:absolute lg:inset-x-auto lg:left-0 lg:top-full lg:mt-2 lg:w-80">
           <div className="border-b border-line px-4 py-3">
             <p className="font-serif text-lg text-fg">Benachrichtigungen</p>
           </div>

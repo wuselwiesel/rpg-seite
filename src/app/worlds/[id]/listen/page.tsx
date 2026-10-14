@@ -24,9 +24,9 @@ export default async function WorldListsPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link href={`/worlds/${id}`} className="mb-4 flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
+      <Link href={`/worlds/${id}/edit`} className="mb-4 flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
         <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-        {world.name}
+        Welt bearbeiten
       </Link>
       <h1 className="mb-6 font-serif text-3xl text-fg">Auswahllisten</h1>
       <ListsEditor worldId={id} lists={lists} />

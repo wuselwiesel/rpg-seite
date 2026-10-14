@@ -145,16 +145,43 @@ export async function addWorldMember(
   return null;
 }
 
-export async function updateWorld(
-  worldId: string,
-  _prevState: string | null,
-  formData: FormData,
-) {
+// Alle Einstellungen einer Welt in einem Zug speichern (Besitzer:in und Admins): Titelbild, Name, Beschreibung, Erkunden, Beitritt,
+// Rechte, Willkommenstext und – wenn das Feld mitkommt – die Talentliste. Bleibt auf der Seite und meldet „ok“.
+export async function saveWorldSettings(worldId: string, _prevState: string | null, formData: FormData): Promise<string | null> {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const coverImageUrl = String(formData.get("cover_image_url") ?? "").trim();
 
   if (!name) return "Bitte einen Namen für die Welt angeben.";
+
+  const patch: Record<string, unknown> = {
+    name,
+    description: description || null,
+    cover_image_url: coverImageUrl || null,
+    dice_enabled: formData.get("dice_enabled") === "on",
+    is_public: formData.get("is_public") === "on",
+    join_mode: parseJoinMode(formData.get("join_mode")),
+    preview: parsePreview(formData.get("preview")),
+    permissions: permissionsFromForm(formData, parsePermissions({})),
+  };
+
+  if (formData.has("welcome")) {
+    const html = sanitizePostHtml(String(formData.get("welcome") ?? "").trim());
+    const text = html.replace(/<[^>]*>/g, "").trim();
+    patch.welcome_html = text || /<img/i.test(html) ? html : null;
+  }
+
+  // Die Talentliste fehlt im Formular, solange Würfeln aus ist: dann bleibt sie unverändert
+  if (formData.has("talents")) {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(String(formData.get("talents") ?? "[]"));
+    } catch {
+      return "Die Talentliste ist ungültig.";
+    }
+    const list = parseTalentConfig(raw);
+    patch.talent_config = isDefaultTalents(list) ? null : list;
+  }
 
   const supabase = await createClient();
   const {
@@ -163,73 +190,15 @@ export async function updateWorld(
   if (!user) return "Nicht angemeldet.";
 
   // Besitzer:in und Admins dürfen die Welt bearbeiten (Policy worlds_update_own prüft das; 0 Zeilen = keine Berechtigung)
-  const { error, count } = await supabase
-    .from("worlds")
-    .update(
-      {
-        name,
-        description: description || null,
-        cover_image_url: coverImageUrl || null,
-        dice_enabled: formData.get("dice_enabled") === "on",
-        is_public: formData.get("is_public") === "on",
-        join_mode: parseJoinMode(formData.get("join_mode")),
-        preview: parsePreview(formData.get("preview")),
-        permissions: permissionsFromForm(formData, parsePermissions({})),
-      },
-      { count: "exact" },
-    )
-    .eq("id", worldId);
-
+  const { error, count } = await supabase.from("worlds").update(patch, { count: "exact" }).eq("id", worldId);
   if (error) return error.message;
   if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
 
   revalidatePath(`/worlds/${worldId}`);
-  revalidatePath("/worlds");
-  revalidatePath("/", "layout");
-  redirect(`/worlds/${worldId}`);
-}
-
-// Willkommenstext der Welt (Regeln, Orte, offene Rollen) speichern
-export async function saveWorldWelcome(worldId: string, _prevState: string | null, formData: FormData): Promise<string | null> {
-  const html = sanitizePostHtml(String(formData.get("welcome") ?? "").trim());
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return "Nicht angemeldet.";
-  const text = html.replace(/<[^>]*>/g, "").trim();
-  const { error, count } = await supabase
-    .from("worlds")
-    .update({ welcome_html: text || /<img/i.test(html) ? html : null }, { count: "exact" })
-    .eq("id", worldId);
-  if (error) return error.message;
-  if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
-  revalidatePath(`/worlds/${worldId}`);
-  return "ok";
-}
-
-// Talentliste der Welt speichern (Besitzer:in und Admins). Leere oder unveränderte Standardliste = Standard.
-export async function saveWorldTalents(worldId: string, _prevState: string | null, formData: FormData): Promise<string | null> {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(String(formData.get("talents") ?? "[]"));
-  } catch {
-    return "Die Liste ist ungültig.";
-  }
-  const list = parseTalentConfig(raw);
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return "Nicht angemeldet.";
-  const { error, count } = await supabase
-    .from("worlds")
-    .update({ talent_config: isDefaultTalents(list) ? null : list }, { count: "exact" })
-    .eq("id", worldId);
-  if (error) return error.message;
-  if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
   revalidatePath(`/worlds/${worldId}/edit`);
+  revalidatePath("/worlds");
   revalidatePath("/characters", "layout");
+  revalidatePath("/", "layout");
   return "ok";
 }
 

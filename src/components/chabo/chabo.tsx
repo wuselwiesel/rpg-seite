@@ -134,7 +134,7 @@ function StickyBudget({ used, max, label }: { used: number; max: number; label: 
   const left = max - used;
   const over = left < 0;
   return (
-    <div className="pointer-events-none sticky top-[4.5rem] z-20 -mb-1 flex justify-end lg:top-3">
+    <div className="pointer-events-none sticky top-[6rem] z-20 -mb-1 flex justify-end lg:top-3">
       <span
         role="status"
         className={`pointer-events-auto rounded-full border px-2.5 py-0.5 text-xs shadow-sm backdrop-blur ${
