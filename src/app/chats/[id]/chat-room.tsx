@@ -579,16 +579,6 @@ export function ChatRoom({
             muted={muted}
             onToggleMute={toggleMute}
           />
-          {canDelete && (
-            <button
-              type="button"
-              onClick={handleDeleteChat}
-              title="Chat löschen"
-              className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 dark:hover:text-red-400"
-            >
-              <Trash2 className="h-4 w-4" strokeWidth={2} />
-            </button>
-          )}
           {isGroup && availableCharacters.length > 0 && (
             <button
               type="button"
@@ -611,6 +601,16 @@ export function ChatRoom({
               <Users className="h-4 w-4" strokeWidth={2} />
               Gruppe erstellen
             </Link>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={handleDeleteChat}
+              title="Chat löschen"
+              className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={2} />
+            </button>
           )}
         </div>
       </div>

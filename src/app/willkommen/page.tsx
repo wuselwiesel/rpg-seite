@@ -63,7 +63,7 @@ export default async function WelcomePage() {
         <div>
           <Link
             href="/worlds/new?welcome=1"
-            className="inline-block rounded-full bg-accent-strong px-4 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+            className="inline-block rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
           >
             Welt erschaffen
           </Link>

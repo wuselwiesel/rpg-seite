@@ -78,7 +78,8 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
           <AvatarUpload name="avatar_url" displayName={name || "?"} />
         </div>
         <details open={!isWelcome} className={isWelcome ? "rounded-lg border border-line px-3 py-2" : "contents"}>
-          {isWelcome && <summary className="cursor-pointer text-sm text-fg-soft">Mehr Angaben</summary>}
+          {/* Ohne eigenen Kopf würde der Browser ein „▼ Details“ erzeugen, das alle Felder zuklappt */}
+          <summary className={isWelcome ? "cursor-pointer text-sm text-fg-soft" : "hidden"}>Mehr Angaben</summary>
           <div className={isWelcome ? "mt-3 flex flex-col gap-4" : "contents"}>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Nutzername (optional)
