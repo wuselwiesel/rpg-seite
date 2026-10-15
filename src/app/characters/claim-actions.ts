@@ -87,7 +87,7 @@ export async function offerCharacter(characterId: string, userId: string, messag
     type: "character_offer",
     actorName: who.name,
     actorAvatarUrl: who.avatarUrl,
-    link: `/worlds/${r.world_id}`,
+    link: `/worlds/${r.world_id}/angebote`,
     message: `bietet dir die Rolle ${r.character_name} an`,
   });
   refresh(r.world_id, characterId);

@@ -168,6 +168,8 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         </div>
       </div>
 
+      {isMember && offersForMe.length > 0 && <RolesPanel isAdmin={false} roles={[]} offersForMe={offersForMe} members={[]} />}
+
       {world.welcome_html && sanitizePostHtml(world.welcome_html).replace(/<[^>]*>/g, "").trim() && (
         <section aria-label="Willkommen" className="mb-8 rounded-2xl border border-line bg-surface p-5">
           <div className="post-content text-[15.5px] leading-[1.75] text-fg" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(world.welcome_html) }} />
@@ -178,7 +180,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         <RolesPanel
           isAdmin={isAdmin}
           roles={roles}
-          offersForMe={offersForMe}
+          offersForMe={[]}
           members={(members ?? []).map((m) => ({ id: m.user_id, name: m.profiles.nickname || m.profiles.username }))}
         />
       )}
