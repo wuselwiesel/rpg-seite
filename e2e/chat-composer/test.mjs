@@ -10,12 +10,12 @@ const results = [];
 const check = (name, ok, extra = "") => { results.push(ok); console.log(ok ? "OK  " : "FAIL", name, extra); };
 const errors = [];
 
-async function open(width, height, mobile) {
+async function open(width, height, mobile, query = "") {
   const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: mobile, isMobile: mobile, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  await page.goto("file://" + path.join(here, ".build", "index.html"));
+  await page.goto("file://" + path.join(here, ".build", "index.html") + query);
   await page.locator("textarea").first().waitFor();
   return page;
 }
@@ -27,7 +27,7 @@ const box = (loc) => loc.evaluate((el) => { const r = el.getBoundingClientRect()
   const ta = page.locator("textarea").first();
   const plus = page.getByRole("button", { name: "Bild, GIF oder Emoji hinzufügen" });
   check("Handy: ein „+“ statt drei Knöpfen", await plus.isVisible());
-  check("Handy: GIF-, Bild- und Emoji-Knopf nicht einzeln sichtbar", !(await page.getByTitle("GIF senden").isVisible()) && !(await page.getByTitle("Bild senden").isVisible()) && !(await page.getByRole("button", { name: "Emojis", exact: true }).isVisible()));
+  check("Handy: GIF-, Bild- und Emoji-Knopf nicht einzeln sichtbar", !(await page.getByTitle("GIF senden").isVisible()) && !(await page.getByTitle("Bild oder Video senden").isVisible()) && !(await page.getByRole("button", { name: "Emojis", exact: true }).isVisible()));
   const b = await box(ta);
   check("Handy: Schreibleiste breit (≥ 230 px), eine Zeile hoch (46–56 px)", b.w >= 230 && b.h >= 46 && b.h <= 56, `${Math.round(b.w)}×${Math.round(b.h)}`);
   const send = page.getByRole("button", { name: "Senden" });
@@ -60,10 +60,30 @@ const box = (loc) => loc.evaluate((el) => { const r = el.getBoundingClientRect()
 // ---- Laptop ----
 {
   const page = await open(1280, 800, false);
-  check("Laptop: Bild, GIF und Emoji einzeln sichtbar, kein „+“", (await page.getByTitle("Bild senden").isVisible()) && (await page.getByTitle("GIF senden").isVisible()) && (await page.getByRole("button", { name: "Emojis", exact: true }).first().isVisible()) && !(await page.getByRole("button", { name: "Bild, GIF oder Emoji hinzufügen" }).isVisible()));
+  check("Laptop: Bild, GIF und Emoji einzeln sichtbar, kein „+“", (await page.getByTitle("Bild oder Video senden").isVisible()) && (await page.getByTitle("GIF senden").isVisible()) && (await page.getByRole("button", { name: "Emojis", exact: true }).first().isVisible()) && !(await page.getByRole("button", { name: "Bild, GIF oder Emoji hinzufügen" }).isVisible()));
   check("Laptop: Senden mit Beschriftung", (await page.getByRole("button", { name: "Senden" }).innerText()).trim() === "Senden");
   check("Laptop: kein seitliches Scrollen", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   await page.screenshot({ path: path.join(here, ".build", "desktop.png") });
+}
+
+// ---- Scrollen im langen Verlauf ----
+{
+  const page = await open(375, 740, true, "?n=80");
+  await page.waitForTimeout(900);
+  const list = page.locator("div.overflow-y-auto").first();
+  const st = () => list.evaluate((el) => ({ top: el.scrollTop, max: el.scrollHeight - el.clientHeight }));
+  const a = await st();
+  check("Scrollen: Verlauf ist scrollbar und startet unten", a.max > 500 && a.max - a.top < 5, JSON.stringify(a));
+  check("Scrollen: die Seite selbst scrollt nicht mit", await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1));
+  await list.hover();
+  await page.mouse.wheel(0, -800);
+  await page.waitForTimeout(300);
+  const b = await st();
+  check("Scrollen: nach oben wischen funktioniert", b.top < a.top - 300, JSON.stringify(b));
+  await page.evaluate(() => { window.dispatchEvent(new Event("resize")); });
+  await page.waitForTimeout(500);
+  const c = await st();
+  check("Scrollen: Lage bleibt stehen (kein Zurückspringen)", Math.abs(c.top - b.top) < 5, JSON.stringify(c));
 }
 
 const real = errors.filter((e) => !/gif-search|ERR_FAILED/.test(e));

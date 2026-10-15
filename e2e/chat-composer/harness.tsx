@@ -6,12 +6,12 @@ import type { Character, Message } from "@/lib/types";
 const me = { id: "c1", name: "Lyra Nachtfeder", avatar_url: null, owner_id: "u1" } as unknown as Character;
 const other = { id: "c2", name: "Finn Murphy", avatar_url: null, owner_id: "u2" } as unknown as Character;
 const now = Date.now();
-const messages = Array.from({ length: 6 }, (_, i) => ({
+const messages = Array.from({ length: Number(new URLSearchParams(location.search).get("n")) || 6 }, (_, i) => ({
   id: `m${i}`,
   chat_id: "chat",
   character_id: i % 2 ? "c1" : "c2",
   content: i % 2 ? "Bin gleich da, wartet kurz auf mich!" : "Hast du schon gesehen, was im Park los ist?",
-  created_at: new Date(now - (6 - i) * 60000).toISOString(),
+  created_at: new Date(now - (100 - i) * 60000).toISOString(),
   characters: i % 2 ? me : other,
   reactions: [],
 })) as unknown as Message[];
