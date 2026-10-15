@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getOfficialAccountId } from "@/lib/account-marks";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAcceptedFriends } from "@/lib/friends";
@@ -60,7 +61,8 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
   }));
   const myRequest = (requestRows ?? []).some((r) => r.user_id === user.id);
 
-  const friends = isAdmin ? await getAcceptedFriends(user.id) : [];
+  const officialId = isAdmin ? await getOfficialAccountId() : null;
+  const friends = isAdmin ? (await getAcceptedFriends(user.id)).filter((f) => f.id !== officialId) : [];
   const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
 
   return (

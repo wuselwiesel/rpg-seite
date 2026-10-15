@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { BarChart3, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { MobileWorldPicker } from "./mobile-world-picker";
 import { ActiveCharacterMenu } from "./active-character-menu";
@@ -40,6 +40,7 @@ export function MobileNav({
   worlds,
   activeWorld,
   canManage,
+  appAdmin = false,
   activeCharacter,
   characters,
   profile,
@@ -54,6 +55,7 @@ export function MobileNav({
   worlds: World[];
   activeWorld: World;
   canManage: boolean;
+  appAdmin?: boolean;
   activeCharacter: Character | null;
   characters: Character[];
   profile: Profile | null | undefined;
@@ -276,6 +278,16 @@ export function MobileNav({
             <UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Freund:innen
           </Link>
+          {appAdmin && (
+            <Link
+              href="/redaktion/ueberblick"
+              onClick={() => setMoreOpen(false)}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <BarChart3 className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              Überblick
+            </Link>
+          )}
           <Link
             href="/redaktion"
             onClick={() => setMoreOpen(false)}

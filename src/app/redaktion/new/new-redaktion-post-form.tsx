@@ -26,10 +26,14 @@ const KINDS: { id: Kind; label: string; icon: typeof Type }[] = [
 export function NewRedaktionPostForm({
   mentionCharacters,
   storyPosts,
+  canPostAsOfficial = false,
 }: {
   mentionCharacters: Character[];
   storyPosts: { id: string; title: string }[];
+  // App-Admins: „Schreiben als Wortwinkel“ (offizielles Konto)
+  canPostAsOfficial?: boolean;
 }) {
+  const [asOfficial, setAsOfficial] = useState(false);
   const router = useRouter();
   const [error, formAction, pending] = useActionState(createRedaktionPost, null);
   const { draft, restored, update, clear } = useDraft("draft:redaktion-new", { content: "", caption: "" });
@@ -384,6 +388,27 @@ export function NewRedaktionPostForm({
             </div>
           )}
         </div>
+
+        {canPostAsOfficial && (
+          <div className="flex flex-col gap-2 rounded-xl border border-line p-3">
+            <label className="flex items-center gap-3 text-sm text-fg">
+              <input
+                type="checkbox"
+                name="as_official"
+                checked={asOfficial}
+                onChange={(e) => setAsOfficial(e.target.checked)}
+                className="h-4 w-4 accent-[var(--accent-strong)]"
+              />
+              Als Wortwinkel schreiben
+            </label>
+            {asOfficial && (
+              <label className="flex items-center gap-3 text-sm text-fg">
+                <input type="checkbox" name="notify_all" className="h-4 w-4 accent-[var(--accent-strong)]" />
+                Alle benachrichtigen
+              </label>
+            )}
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

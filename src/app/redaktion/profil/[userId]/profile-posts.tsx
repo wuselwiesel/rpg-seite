@@ -49,10 +49,12 @@ export function ProfilePosts({
   posts,
   pinnedIds,
   currentUserId,
+  extraManageId = null,
 }: {
   posts: ProfilePost[];
   pinnedIds: string[];
   currentUserId: string;
+  extraManageId?: string | null;
 }) {
   const [view, setView] = useState<"grid" | "list">("grid");
 
@@ -96,7 +98,7 @@ export function ProfilePosts({
               )}
               <RedaktionPostCard
                 post={post}
-                isOwn={post.author_id === currentUserId}
+                isOwn={post.author_id === currentUserId || (extraManageId !== null && post.author_id === extraManageId)}
               />
             </div>
           ))}

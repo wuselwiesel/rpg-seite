@@ -1,3 +1,4 @@
+import { LastSeenPing } from "@/components/last-seen-ping";
 import { ConfirmHost } from "@/components/confirm-dialog";
 import type { Metadata, Viewport } from "next";
 import {
@@ -331,6 +332,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         </OnlineProvider>
         </ModeProvider>
         <ConfirmHost />
+        {ownPresence && <LastSeenPing />}
       </body>
     </html>
   );

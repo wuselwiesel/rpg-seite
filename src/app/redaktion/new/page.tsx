@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAllMentionableCharacters } from "@/lib/redaktion";
 import { NewRedaktionPostForm } from "./new-redaktion-post-form";
+import { isAppAdmin } from "@/lib/account-marks";
 
 export default async function NewRedaktionPostPage() {
   const supabase = await createClient();
@@ -27,5 +28,5 @@ export default async function NewRedaktionPostPage() {
         .returns<{ id: string; title: string }[]>()
     : { data: [] as { id: string; title: string }[] };
 
-  return <NewRedaktionPostForm mentionCharacters={mentionCharacters} storyPosts={storyPosts ?? []} />;
+  return <NewRedaktionPostForm mentionCharacters={mentionCharacters} storyPosts={storyPosts ?? []} canPostAsOfficial={await isAppAdmin()} />;
 }

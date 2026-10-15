@@ -10,11 +10,14 @@ export function RedaktionFeedList({
   initialPosts,
   filters,
   currentUserId,
+  extraManageId = null,
   emptyState,
 }: {
   initialPosts: RedaktionFeedPost[];
   filters: RedaktionFilters;
   currentUserId: string;
+  // Beiträge dieses Kontos darf die Person ebenfalls verwalten (App-Admin: das offizielle Wortwinkel-Konto)
+  extraManageId?: string | null;
   emptyState: React.ReactNode;
 }) {
   const [posts, setPosts] = useState(initialPosts);
@@ -64,7 +67,7 @@ export function RedaktionFeedList({
           <div key={post.id} className={i >= initialPosts.length ? "feed-in" : undefined}>
             <RedaktionPostCard
               post={post}
-              isOwn={post.author_id === currentUserId}
+              isOwn={post.author_id === currentUserId || (extraManageId !== null && post.author_id === extraManageId)}
               priority={i === 0}
             />
           </div>

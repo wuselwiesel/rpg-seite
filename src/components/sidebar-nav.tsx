@@ -4,7 +4,7 @@ import { useDiceEnabled } from "./dice-context";
 import { useWorldRights } from "./rights-context";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { BarChart3, House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { useAppMode } from "@/components/mode-context";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -17,11 +17,14 @@ export function SidebarNav({
   myCharacterIds,
   unreadCounts,
   activeCharacter,
+  appAdmin = false,
 }: {
   userId: string;
   myCharacterIds: string[];
   unreadCounts: Record<string, number>;
   activeCharacter: Character | null;
+  // App-Admins sehen in der Redaktion zusätzlich den Überblick
+  appAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const mode = useAppMode();
@@ -45,6 +48,11 @@ export function SidebarNav({
           <NavLink href={`/redaktion/profil/${userId}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
             Profil
           </NavLink>
+          {appAdmin && (
+            <NavLink href="/redaktion/ueberblick" icon={<BarChart3 className={ICON} strokeWidth={2} />}>
+              Überblick
+            </NavLink>
+          )}
         </nav>
         <Link
           href="/redaktion/new"

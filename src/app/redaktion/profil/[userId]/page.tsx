@@ -1,4 +1,6 @@
 import { OnlineBadge } from "@/components/online-status";
+import { NameBadge } from "@/components/name-badge";
+import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
 import { BadgeRow } from "@/components/badge-row";
 import { getAccountBadges, syncAccountBadges, visibleBadges } from "@/lib/badges-server";
 import { EmojiText } from "@/components/custom-emoji-provider";
@@ -75,7 +77,9 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
             )}
           </div>
 
-          <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{displayName}
+          <h1 className="mt-3 flex items-center gap-1.5 truncate text-xl font-semibold text-fg sm:text-2xl">
+            {displayName}
+            <NameBadge userId={profile.id} sealOnly />
             {redProfile?.name_symbol && (
               <span className="ml-1.5 inline-block align-middle">
                 <EmojiText text={redProfile.name_symbol} />
@@ -137,7 +141,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
               {isOwn ? "Du hast hier noch nichts gepostet." : "Noch nichts zu sehen."}
             </p>
           ) : (
-            <ProfilePosts posts={posts} pinnedIds={redProfile?.pinned_post_ids ?? []} currentUserId={user.id} />
+            <ProfilePosts posts={posts} pinnedIds={redProfile?.pinned_post_ids ?? []} currentUserId={user.id} extraManageId={(await isAppAdmin()) ? await getOfficialAccountId() : null} />
           )}
         </div>
       </div>

@@ -7,6 +7,7 @@ import { PullToRefresh } from "@/components/pull-to-refresh";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { RedaktionFeedList } from "./redaktion-feed-list";
 import { RedaktionSidebar } from "./redaktion-sidebar";
+import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
 
 export default async function RedaktionPage({ searchParams }: PageProps<"/redaktion">) {
   const params = await searchParams;
@@ -23,6 +24,7 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
 
   const filters = { q, from, to, tag };
   const initialPosts = await fetchRedaktionPage(filters);
+  const extraManageId = (await isAppAdmin()) ? await getOfficialAccountId() : null;
 
   return (
     <PullToRefresh>
@@ -37,6 +39,7 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
             initialPosts={initialPosts}
             filters={filters}
             currentUserId={user.id}
+            extraManageId={extraManageId}
             emptyState={
               q || tag || from || to ? (
                 <p className="text-muted">Keine Beiträge gefunden.</p>

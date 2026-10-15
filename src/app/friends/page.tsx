@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Friendship } from "@/lib/types";
 import { AddFriendForm } from "./add-friend-form";
 import { FriendRequestActions } from "./friend-request-actions";
+import { NameBadge } from "@/components/name-badge";
+import { getOfficialAccountId } from "@/lib/account-marks";
 
 export default async function FriendsPage() {
   const supabase = await createClient();
@@ -27,6 +29,7 @@ export default async function FriendsPage() {
     (f) => f.status === "pending" && f.requester_id === user.id,
   );
   const accepted = (friendships ?? []).filter((f) => f.status === "accepted");
+  const officialId = await getOfficialAccountId();
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
@@ -64,8 +67,14 @@ export default async function FriendsPage() {
           <p className="text-sm text-muted">Noch keine Freund:innen hinzugefügt.</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {accepted.map((f) => {
+            {[...accepted]
+              .sort((a, b) => {
+                const idOf = (f: (typeof accepted)[number]) => (f.requester_id === user.id ? f.addressee?.id : f.requester?.id);
+                return Number(idOf(b) === officialId) - Number(idOf(a) === officialId);
+              })
+              .map((f) => {
               const friend = f.requester_id === user.id ? f.addressee : f.requester;
+              const isOfficial = Boolean(officialId) && friend?.id === officialId;
               return (
                 <li
                   key={f.id}
@@ -73,9 +82,14 @@ export default async function FriendsPage() {
                 >
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-fg">
                     @{friend?.username}
+                    <NameBadge userId={friend?.id} sealOnly />
                     <OnlineBadge userId={friend?.id} />
                   </span>
-                  <FriendRequestActions friendshipId={f.id} mode="accepted" name={friend?.username} />
+                  {isOfficial ? (
+                    <span className="text-xs text-muted">Offiziell</span>
+                  ) : (
+                    <FriendRequestActions friendshipId={f.id} mode="accepted" name={friend?.username} />
+                  )}
                 </li>
               );
             })}

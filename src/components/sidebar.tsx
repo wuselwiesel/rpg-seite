@@ -15,6 +15,7 @@ import { PresenceControl } from "./character-presence";
 import { WorldSwitcher } from "./world-switcher";
 import { ModeSwitch } from "./mode-switch";
 import { SidebarNav } from "./sidebar-nav";
+import { isAppAdmin } from "@/lib/account-marks";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { SidebarMenu } from "./sidebar-menu";
@@ -116,6 +117,7 @@ export async function Sidebar() {
   const unreadCounts = await getUnreadCounts(user.id, myCharacterIds, activeCharacter?.id);
   // Besitzer:in oder Admin: darf die Welt bearbeiten
   const canManage = activeWorld.created_by === user.id || myMembership?.role === "admin";
+  const appAdmin = await isAppAdmin();
 
   return (
     <>
@@ -156,6 +158,7 @@ export async function Sidebar() {
         myCharacterIds={myCharacterIds}
         unreadCounts={unreadCounts}
         activeCharacter={activeCharacter}
+        appAdmin={appAdmin}
       />
       </div>
       <SidebarOnline members={worldMembers} selfId={user.id} />
@@ -186,6 +189,7 @@ export async function Sidebar() {
       worlds={worlds}
       activeWorld={activeWorld}
       canManage={canManage}
+      appAdmin={appAdmin}
       activeCharacter={activeCharacter}
       characters={characters}
       profile={profile}

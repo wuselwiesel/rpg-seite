@@ -1,5 +1,6 @@
 "use server";
 
+import { isReservedBadgeName } from "@/lib/reserved-badge-names";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
@@ -14,6 +15,7 @@ export async function createBadgeDef(_prev: string | null, formData: FormData): 
   const icon = String(formData.get("icon") ?? "").trim().slice(0, 40);
   const color = String(formData.get("color") ?? "").trim();
   if (name.length < 2) return "Bitte einen Namen mit mindestens 2 Zeichen angeben.";
+  if (isReservedBadgeName(name)) return "Dieser Name ist für offizielle Siegel reserviert. Bitte wähle einen anderen.";
   if (!icon) return "Bitte ein Symbol angeben (Emoji oder :eigenes-emoji:).";
   if (!HEX.test(color)) return "Ungültige Farbe.";
 
@@ -193,6 +195,8 @@ export async function getFeaturedBadges(
   characters: Record<string, FeaturedBadge>;
   users: Record<string, FeaturedBadge>;
   symbols: { characters: Record<string, string>; users: Record<string, string> };
+  // Konto-Siegel (builder, verified, official), nur vom Betreiber vergeben
+  marks: Record<string, string>;
 }> {
   const { autoBadgeByKey } = await import("@/lib/badges");
   const supabase = await createClient();
@@ -215,7 +219,21 @@ export async function getFeaturedBadges(
     characters: {} as Record<string, FeaturedBadge>,
     users: {} as Record<string, FeaturedBadge>,
     symbols: { characters: {} as Record<string, string>, users: {} as Record<string, string> },
+    marks: {} as Record<string, string>,
   };
+  // Konto-Siegel: tolerant (ohne die Tabelle einfach keine Siegel)
+  if (userIds.length) {
+    const { data: markRows } = await supabase
+      .from("account_marks")
+      .select("user_id, kind")
+      .in("user_id", userIds.slice(0, 100))
+      .in("kind", ["official", "builder", "verified"]);
+    const rank = ["official", "builder", "verified"];
+    for (const r of (markRows ?? []) as { user_id: string; kind: string }[]) {
+      const cur = out.marks[r.user_id];
+      if (!cur || rank.indexOf(r.kind) < rank.indexOf(cur)) out.marks[r.user_id] = r.kind;
+    }
+  }
   // Frei gewähltes Zeichen neben dem Namen (eigene, tolerante Abfragen: ohne die Spalte einfach keine Zeichen).
   const [charSymbols, userSymbols] = await Promise.all([
     characterIds.length

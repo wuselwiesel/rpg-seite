@@ -1,5 +1,6 @@
 "use server";
 
+import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
 import { cleanNameSymbol } from "@/lib/name-symbol";
 import { syncAccountBadges } from "@/lib/badges-server";
 import { after } from "next/server";
@@ -78,6 +79,16 @@ export async function createRedaktionPost(_prevState: string | null, formData: F
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
+  // „Schreiben als Wortwinkel“: nur App-Admins; das offizielle Konto hat keine Umfragen
+  let authorId = user.id;
+  const asOfficial = formData.get("as_official") === "on";
+  const officialAuthorId = asOfficial ? await getOfficialAccountId() : null;
+  if (asOfficial) {
+    if (!officialAuthorId || !(await isAppAdmin())) return "Das dürfen nur App-Admins.";
+    if (hasPoll) return "Als Wortwinkel gibt es keine Umfragen.";
+    authorId = officialAuthorId;
+  }
+
   const pollMultiSelect = formData.get("poll_multi_select") === "on";
   const pollShowVoters = formData.get("poll_show_voters") === "on";
   const closesRaw = String(formData.get("poll_closes_at") ?? "").trim();
@@ -87,7 +98,7 @@ export async function createRedaktionPost(_prevState: string | null, formData: F
   const { data: post, error } = await supabase
     .from("redaktion_posts")
     .insert({
-      author_id: user.id,
+      author_id: authorId,
       content,
       media_url: mediaType ? mediaUrl : null,
       media_type: mediaType,
@@ -121,9 +132,16 @@ export async function createRedaktionPost(_prevState: string | null, formData: F
     }
   }
 
-  const friends = await getAcceptedFriends(user.id);
+  const officialId = await getOfficialAccountId();
+  // Als Wortwinkel: Meldung an alle Konten nur, wenn „Alle benachrichtigen“ gesetzt ist (sonst nur im Feed)
+  const recipients = asOfficial
+    ? formData.get("notify_all") === "on"
+      ? ((await supabase.from("profiles").select("id, username").neq("id", authorId)).data ?? []).filter((p) => p.username.toLowerCase() !== "geloescht")
+      : []
+    : (await getAcceptedFriends(user.id)).filter((f) => f.id !== officialId);
+  const friends = recipients as { id: string }[];
   if (friends.length > 0) {
-    const { data: me } = await supabase.from("profiles").select("username, nickname, avatar_url").eq("id", user.id).maybeSingle();
+    const { data: me } = await supabase.from("profiles").select("username, nickname, avatar_url").eq("id", authorId).maybeSingle();
     const actorName = me?.nickname || me?.username || "Jemand";
     await Promise.all(
       friends.map((f) =>
@@ -139,7 +157,7 @@ export async function createRedaktionPost(_prevState: string | null, formData: F
     );
   }
 
-  after(() => syncAccountBadges());
+  if (!asOfficial) after(() => syncAccountBadges());
   revalidatePath("/redaktion");
   return null;
 }
@@ -151,11 +169,13 @@ export async function deleteRedaktionPost(postId: string): Promise<string | null
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
+  // Eigene Beiträge und (nur für App-Admins, die Policy prüft das) die des offiziellen Kontos
+  const officialId = await getOfficialAccountId();
   const { error, count } = await supabase
     .from("redaktion_posts")
     .delete({ count: "exact" })
     .eq("id", postId)
-    .eq("author_id", user.id);
+    .in("author_id", [user.id, ...(officialId ? [officialId] : [])]);
   if (error) return error.message;
   if (!count) return "Keine Berechtigung dafür.";
 
