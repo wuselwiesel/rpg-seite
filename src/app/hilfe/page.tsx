@@ -36,10 +36,12 @@ const TOC = [
   ["zufall", "Zufall und NPCs"],
   ["uebersicht", "Welches Talent braucht welche Attribute?"],
   ["kuerzel", "Tastenkürzel und Schreibhilfen"],
+  ["momente", "Wichtige Momente"],
   ["mehrere-figuren", "Mehrere Figuren in einer Nachricht"],
   ["welten", "Welten entdecken, Übungswelt und Rechte"],
   ["verlassen", "Welt verlassen, Besitz übertragen, Konto löschen"],
-  ["siegel", "Siegel und das Wortwinkel-Konto"],
+  ["benachrichtigungen", "Benachrichtigungen aus mehreren Welten"],
+  ["passwort-vergessen", "Passwort vergessen"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -505,23 +507,6 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>Link abgelaufen:</strong> Der Link gilt nur kurz und nur einmal. Ist er abgelaufen oder schon benutzt, fordere einfach einen neuen an. Kommt keine Mail an, schau im Spam-Ordner nach.
-          </li>
-        </ul>
-      </Section>
-
-      <Section id="siegel" title="19. Siegel und das Wortwinkel-Konto">
-        <ul className="flex list-disc flex-col gap-2 pl-5">
-          <li>
-            <strong>Siegel am Namen:</strong> Ein kleiner Haken neben einem Konto-Namen bedeutet: Dieses Konto ist das offizielle Wortwinkel-Konto, gehört der Bastlerin der App oder wurde von uns bestätigt. Das Siegel vergibt nur die Betreiberin, man kann es sich nicht selbst geben, auch nicht über ein Badge oder ein Zeichen. Es steht an Konto-Namen, etwa in der Redaktion, in Konto-Chats und in der Freundesliste. Charaktere tragen kein Siegel.
-          </li>
-          <li>
-            <strong>Wortwinkel-Konto:</strong> Das offizielle Konto „Wortwinkel“ ist mit allen Konten befreundet. Dort stehen Neuigkeiten in deinem Redaktions-Feed, und du kannst ihm schreiben, wenn etwas hakt. Die Freundschaft lässt sich nicht beenden, das Konto sieht über sie aber nichts von dir: nicht deine Beiträge und nicht deine Charaktere.
-          </li>
-          <li>
-            <strong>Wer Wortwinkel betreut:</strong> Die Betreiberin wechselt unter „Einstellungen“ → „Konto wechseln“ per Tipp zwischen ihrem Konto und dem Wortwinkel-Konto, ohne sich abzumelden. Dort steht auch der „Überblick“ mit Zahlen zur App (nur für Admins sichtbar, nur Zahlen, nie Inhalte).
-          </li>
-          <li>
-            <strong>Zuletzt gesehen:</strong> Die App merkt sich für den Überblick der Betreiberin nur, wann du zuletzt aktiv warst. Wer das sehen kann, siehst du hier: nur die Betreiberin, und nur als Zahl in der Statistik.
           </li>
         </ul>
       </Section>
