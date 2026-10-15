@@ -68,6 +68,9 @@ export type Character = {
   avatar_url: string | null;
   banner_url?: string | null;
   status_text?: string | null;
+  // Frei oder beschäftigt und wo der Charakter gerade ist (für alle in der Welt sichtbar)
+  availability?: "free" | "busy" | null;
+  location?: string | null;
   custom_fields?: { icon: string; title: string; text: string }[];
   bio: string | null;
   sheet_url: string | null;

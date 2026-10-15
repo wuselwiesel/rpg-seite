@@ -13,6 +13,8 @@ type Row = {
   claimable: boolean | null;
   choices: Record<string, unknown> | null;
   species: string | null;
+  availability: "free" | "busy" | null;
+  location: string | null;
   review_status: "pending" | "approved" | "rejected" | null;
   created_at: string;
   owner: { username: string; nickname: string | null } | null;
@@ -25,7 +27,7 @@ export async function loadWorldRoster(supabase: SupabaseClient, worldId: string,
     getWorldChoiceLists(worldId),
     supabase
       .from("characters")
-      .select("id, name, avatar_url, owner_id, is_npc, claimable, choices, species, review_status, created_at, owner:profiles!characters_owner_id_fkey(username, nickname)")
+      .select("id, name, avatar_url, owner_id, is_npc, claimable, choices, species, availability, location, review_status, created_at, owner:profiles!characters_owner_id_fkey(username, nickname)")
       .eq("world_id", worldId)
       .is("deleted_at", null)
       .order("name")
@@ -57,6 +59,8 @@ export async function loadWorldRoster(supabase: SupabaseClient, worldId: string,
       species: speciesLabelOf(c, speciesList),
       status,
       isNpc,
+      availability: c.availability,
+      location: c.location,
       reviewStatus: c.review_status ?? "approved",
       claimable,
       ownerName: c.owner ? c.owner.nickname || c.owner.username : null,

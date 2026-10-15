@@ -33,6 +33,7 @@ import { getWikiPagesAboutCharacter } from "@/lib/wiki-characters";
 import { getCharacterAccess } from "@/lib/npc-data";
 import { NpcBadge } from "@/components/npc-badge";
 import { ReviewChip } from "@/components/review-chip";
+import { AvailabilityBadge, AvailabilityControl } from "@/components/character-availability";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { WikiTypesProvider } from "@/components/wiki-types-context";
 import { getWikiTypes } from "@/lib/wiki-data";
@@ -304,6 +305,8 @@ export default async function CharacterProfilePage({
             <Link href={`/characters/${character.id}/follows?tab=followers`} className="hover:opacity-70"><b className="font-semibold text-fg">{followerCount ?? 0}</b> Follower</Link>
             <Link href={`/characters/${character.id}/follows?tab=following`} className="hover:opacity-70"><b className="font-semibold text-fg">{followingCount ?? 0}</b> Gefolgt</Link>
           </div>
+
+          {!gone && (canEdit ? <AvailabilityControl characterId={character.id} availability={character.availability ?? null} location={character.location ?? null} /> : <AvailabilityBadge className="mt-3" availability={character.availability ?? null} location={character.location ?? null} />)}
 
           {character.status_text && (
             <p className="mt-3 inline-block rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft"><EmojiText text={character.status_text} /></p>

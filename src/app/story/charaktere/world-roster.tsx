@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { AvailabilityBadge } from "@/components/character-availability";
 import { NpcRoleActions } from "@/app/characters/npc-role-actions";
 
 export type RosterStatus = "free" | "npc" | "taken" | "mine" | "review";
@@ -15,6 +16,8 @@ export type RosterCharacter = {
   species: string | null;
   status: RosterStatus;
   isNpc: boolean;
+  availability: "free" | "busy" | null;
+  location: string | null;
   reviewStatus: "pending" | "approved" | "rejected";
   claimable: boolean;
   ownerName: string | null;
@@ -192,6 +195,7 @@ export function WorldRoster({
                     <span className="block truncate font-medium text-fg">{c.name}</span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <StatusChip c={c} />
+                      <AvailabilityBadge availability={c.availability} location={c.location} />
                       {c.species && <span className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">{c.species}</span>}
                       {c.requestCount > 0 && c.canManage && <span className="rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">{c.requestCount} {c.requestCount === 1 ? "Anfrage" : "Anfragen"}</span>}
                     </span>
