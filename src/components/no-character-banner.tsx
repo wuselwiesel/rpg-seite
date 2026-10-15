@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // Ohne Charakter in der Welt: erkunden ist erlaubt, mitmachen braucht einen Charakter oder eine freie Rolle
-export function NoCharacterBanner({ worldId, className = "" }: { worldId: string; className?: string }) {
+export function NoCharacterBanner({ className = "" }: { worldId?: string; className?: string }) {
   return (
     <div role="note" className={`flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 ${className}`}>
       <p className="text-sm text-fg">
@@ -15,7 +15,7 @@ export function NoCharacterBanner({ worldId, className = "" }: { worldId: string
           Charakter anlegen
         </Link>
         <Link
-          href={`/worlds/${worldId}`}
+          href="/story/charaktere?stand=free"
           className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
         >
           Freie Rollen ansehen

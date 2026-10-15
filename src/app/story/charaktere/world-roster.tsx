@@ -59,13 +59,15 @@ export function WorldRoster({
   members,
   offerTargets,
   isAdmin,
+  initialFilter = "all",
 }: {
   characters: RosterCharacter[];
   members: RosterMember[];
   offerTargets: { id: string; name: string }[];
   isAdmin: boolean;
+  initialFilter?: "all" | RosterStatus;
 }) {
-  const [filter, setFilter] = useState<"all" | RosterStatus>("all");
+  const [filter, setFilter] = useState<"all" | RosterStatus>(initialFilter);
   const [species, setSpecies] = useState("");
   const [sort, setSort] = useState<"name" | "neu">("name");
   const [query, setQuery] = useState("");
