@@ -85,7 +85,7 @@ export function WorldSwitcher({
           <div className="flex flex-col gap-0.5 border-t border-line p-2">
             {canManage && (
               <Link
-                href={`/worlds/${activeWorld.id}/edit`}
+                href={`/worlds/${activeWorld.id}`}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2 rounded-xl px-2 py-2 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
               >
