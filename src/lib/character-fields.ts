@@ -11,7 +11,7 @@
 import type { ChoiceList } from "@/lib/choice-lists";
 import { activeLists } from "@/lib/choice-lists";
 import { ATTR_TABLE } from "@/lib/charakterbogen-stats";
-import { BASIS_MAX, BASIS_MIN, BONUS_MAX, BONUS_MIN, TALENT_BONUS_MAX, TALENT_BONUS_MIN, parseWhole, talentRows, type SheetData } from "@/lib/sheet-rules";
+import { DEFAULT_FAMILY_TITLE, BASIS_MAX, BASIS_MIN, BONUS_MAX, BONUS_MIN, TALENT_BONUS_MAX, TALENT_BONUS_MIN, parseWhole, talentRows, type SheetData } from "@/lib/sheet-rules";
 
 export type ProfileFields = {
   name: string;
@@ -175,7 +175,7 @@ export function applyFieldChange(key: string, rawValue: string, c: ProfileFields
     return { ok: true, sheet: next };
   }
   if (kind === "familyTitle") {
-    next.familyTitle = value.trim().slice(0, 40) || "Familie";
+    next.familyTitle = value.trim().slice(0, 40) || DEFAULT_FAMILY_TITLE;
     return { ok: true, sheet: next };
   }
   if (kind === "basis" || kind === "bonus") {

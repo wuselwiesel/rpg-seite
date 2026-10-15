@@ -265,7 +265,7 @@ export default async function HelpPage() {
           </li>
           <li>Die Notizen sind frei formatierbar. Du kannst beliebig viele Blöcke mit eigenen Überschriften anlegen.</li>
           <li>
-            In der Sektion <strong>Familie</strong> legst du eigene Zeilen an, zum Beispiel „Mutter“. Die Bezeichnung tippst du frei oder wählst einen Vorschlag. Auch die Überschrift lässt sich beim Bearbeiten ändern, zum Beispiel in „Freunde“.
+            In der Sektion <strong>Beziehungen</strong> legst du eigene Zeilen an, zum Beispiel „Mutter“ oder „Beste Freundin“. Die Bezeichnung tippst du frei oder wählst einen Vorschlag. Auch die Überschrift lässt sich beim Bearbeiten ändern, zum Beispiel in „Familie“ oder „Freunde“.
           </li>
           <li>
             In den persönlichen Infos, in der Familie und in den Notizen kannst du mit <strong>@</strong> Charaktere deiner Welt markieren. Tippe @ und wähle den Namen aus der Liste. In der Ansicht steht nur der Name (ohne @) und ist ein Link zum Profil.
