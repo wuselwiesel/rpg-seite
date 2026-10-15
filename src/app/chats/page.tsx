@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { NoCharacterBanner } from "@/components/no-character-banner";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
@@ -17,7 +18,14 @@ export default async function ChatsPage() {
   if (!activeWorld) redirect("/worlds");
 
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
-  if (!activeCharacter) redirect("/characters/new");
+  if (!activeCharacter) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-10">
+        <h1 className="mb-3 font-serif text-3xl text-fg">Chats</h1>
+        <NoCharacterBanner worldId={activeWorld.id} />
+      </div>
+    );
+  }
 
   return (
     <>

@@ -19,7 +19,7 @@ export default async function NewChatPage({ searchParams }: PageProps<"/chats/ne
   if (!activeWorld) redirect("/worlds");
 
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
-  if (!activeCharacter) redirect("/characters/new");
+  if (!activeCharacter) redirect("/chats");
 
   const { data: characters } = await supabase
     .from("characters")

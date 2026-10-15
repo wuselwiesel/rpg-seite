@@ -13,6 +13,7 @@ import { SearchFilterBar } from "@/components/search-filter-bar";
 import { WorldOnboarding } from "@/components/world-onboarding";
 import { FirstSteps, type FirstStep } from "@/components/first-steps";
 import { TourOffer } from "@/components/tour-offer";
+import { NoCharacterBanner } from "@/components/no-character-banner";
 
 export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -35,11 +36,12 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const recentlyJoined = !!joinedAt && new Date().getTime() - new Date(joinedAt).getTime() < 48 * 60 * 60 * 1000;
 
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
-  if (!activeCharacter) redirect("/characters/new");
+  // Ohne Charakter darf man die Welt erkunden (nur lesen)
+  const noCharacter = !activeCharacter;
 
   const filters = { q, from, to, tag };
   const [initialPosts, ownCharacters] = await Promise.all([
-    fetchFeedPage(filters, activeCharacter.id, activeWorld.id),
+    fetchFeedPage(filters, activeCharacter?.id ?? "", activeWorld.id),
     getOwnCharacters(user.id, activeWorld.id),
   ]);
   const myCharacters = ownCharacters.map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }));
@@ -47,7 +49,7 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
   // Erste Schritte: nur für Mitglieder, die in den letzten 30 Tagen beigetreten sind; hakt sich aus den Daten selbst ab
   const newcomer = !!joinedAt && new Date().getTime() - new Date(joinedAt).getTime() < 30 * 24 * 60 * 60 * 1000;
   let firstSteps: FirstStep[] = [];
-  if (newcomer) {
+  if (newcomer && activeCharacter) {
     const ownIds = ownCharacters.map((c) => c.id);
     const [{ count: postCount }, { count: sceneCount }, { count: entryCount }] = await Promise.all([
       supabase.from("posts").select("id", { count: "exact", head: true }).in("character_id", ownIds),
@@ -69,23 +71,29 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
         <h1 className="sr-only">Feed</h1>
         <TourOffer enabled={recentlyJoined} />
         <WorldOnboarding worldId={activeWorld.id} worldName={activeWorld.name} autoOpen={false} />
+        {noCharacter && <NoCharacterBanner worldId={activeWorld.id} className="mb-4" />}
         {firstSteps.length > 0 && <FirstSteps worldId={activeWorld.id} steps={firstSteps} />}
 
         <div className="relative">
-          <Suspense fallback={<div className="mb-3 h-[84px]" />}>
-            <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
-          </Suspense>
+          {activeCharacter && (
+            <Suspense fallback={<div className="mb-3 h-[84px]" />}>
+              <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
+            </Suspense>
+          )}
           <SearchFilterBar basePath="/" q={q} from={from} to={to} tag={tag} iconOnly />
         </div>
 
         <FeedList
           initialPosts={initialPosts}
           filters={filters}
-          activeCharacterId={activeCharacter.id}
+          activeCharacterId={activeCharacter?.id ?? ""}
+          readOnly={noCharacter}
           myCharacters={myCharacters}
           emptyState={
             q || tag || from || to ? (
               <p className="text-muted">Keine Einträge gefunden.</p>
+            ) : noCharacter ? (
+              <p className="text-muted">Noch keine Einträge in dieser Welt.</p>
             ) : (
               <p className="text-muted">
                 Noch keine Einträge. Sei die*der Erste und{" "}

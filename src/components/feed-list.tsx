@@ -12,12 +12,15 @@ export function FeedList({
   filters,
   activeCharacterId,
   myCharacters = [],
+  readOnly = false,
   emptyState,
 }: {
   initialPosts: FeedPost[];
   filters: FeedFilters;
   activeCharacterId: string;
   myCharacters?: { id: string; name: string; avatar_url: string | null }[];
+  // Ohne Charakter: nur lesen, keine Reaktionen
+  readOnly?: boolean;
   emptyState: React.ReactNode;
 }) {
   const [posts, setPosts] = useState(initialPosts);
@@ -70,6 +73,7 @@ export function FeedList({
               post={post}
               activeCharacterId={activeCharacterId}
               myCharacters={myCharacters}
+              readOnly={readOnly}
               tagHrefBase="/"
               priority={i === 0}
             />

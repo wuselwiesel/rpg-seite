@@ -53,7 +53,8 @@ export async function createWorld(_prevState: string | null, formData: FormData)
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
 
   revalidatePath("/", "layout");
-  redirect("/characters/new?welcome=1");
+  // Die Besitzer:in landet auf der Weltseite (Verwaltung) statt im Charakterformular
+  redirect(`/worlds/${world.id}`);
 }
 
 // backTo: nur das Wiki darf als Ziel angegeben werden (sonst Startseite).
@@ -120,14 +121,8 @@ export async function joinWorld(worldId: string): Promise<string | null> {
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
 
   revalidatePath("/", "layout");
-  // Ohne eigenen Charakter in dieser Welt geht es direkt ins Kurzformular
-  const { count } = await supabase
-    .from("characters")
-    .select("id", { count: "exact", head: true })
-    .eq("world_id", worldId)
-    .eq("owner_id", user.id)
-    .is("deleted_at", null);
-  redirect(count ? "/" : "/characters/new?welcome=1");
+  // Ein Charakter ist nicht nötig: man darf die Welt erst erkunden
+  redirect("/");
 }
 
 export async function addWorldMember(
@@ -419,11 +414,5 @@ export async function joinWithInvite(worldId: string, token: string): Promise<st
   cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
   cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
   revalidatePath("/", "layout");
-  const { count } = await supabase
-    .from("characters")
-    .select("id", { count: "exact", head: true })
-    .eq("world_id", worldId)
-    .eq("owner_id", user.id)
-    .is("deleted_at", null);
-  redirect(count ? "/" : "/characters/new?welcome=1");
+  redirect("/");
 }

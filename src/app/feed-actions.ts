@@ -15,6 +15,7 @@ export async function loadMorePosts(filters: FeedFilters, before: string): Promi
   if (!user) return [];
   const world = await getActiveWorld(user.id);
   const character = world ? await getActiveCharacter(user.id, world.id) : null;
-  if (!world || !character) return [];
-  return fetchFeedPage(filters, character.id, world.id, before);
+  if (!world) return [];
+  // Ohne Charakter wird nur gelesen (kein „gefällt mir“-Stand)
+  return fetchFeedPage(filters, character?.id ?? "", world.id, before);
 }

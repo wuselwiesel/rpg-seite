@@ -9,6 +9,7 @@ import { StoryCompactRow } from "@/components/story-compact-row";
 import { RecapToggle } from "@/components/recap-toggle";
 import { recapToHtml } from "@/lib/recap-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
+import { NoCharacterBanner } from "@/components/no-character-banner";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { MessageHits, type MessageHit } from "./message-hits";
 import { snippetAround } from "@/lib/snippet";
@@ -50,7 +51,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   if (!activeWorld) redirect("/worlds");
 
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
-  if (!activeCharacter) redirect("/characters/new");
+  // Ohne Charakter darf man die Szenen lesen
 
   let storyQuery = supabase
     .from("story_posts")
@@ -309,19 +310,25 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       </details>
 
       <div className="mb-4 flex items-center gap-2">
-        <Link
-          href="/story/new"
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2 active:bg-surface-3"
-        >
-          <CharacterAvatar
-            name={activeCharacter.name}
-            avatarUrl={activeCharacter.avatar_url}
-            size={36}
-          />
-          <span className="truncate text-sm text-muted">
-            Beginn eine neue Szene als {activeCharacter.name}...
-          </span>
-        </Link>
+        {activeCharacter ? (
+          <Link
+            href="/story/new"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition hover:bg-surface-2 active:bg-surface-3"
+          >
+            <CharacterAvatar
+              name={activeCharacter.name}
+              avatarUrl={activeCharacter.avatar_url}
+              size={36}
+            />
+            <span className="truncate text-sm text-muted">
+              Beginn eine neue Szene als {activeCharacter.name}...
+            </span>
+          </Link>
+        ) : (
+          <div className="min-w-0 flex-1">
+            <NoCharacterBanner worldId={activeWorld.id} />
+          </div>
+        )}
         <Link
           href="/story/schicksal"
           aria-label="Schicksalswürfel"

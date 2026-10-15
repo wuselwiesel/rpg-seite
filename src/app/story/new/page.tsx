@@ -6,6 +6,7 @@ import { getWorldRights } from "@/lib/world-rights";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import type { StoryArc } from "@/lib/types";
 import { NewStoryPostForm } from "./new-story-post-form";
+import { NoCharacterBanner } from "@/components/no-character-banner";
 
 export default async function NewStoryPostPage() {
   const supabase = await createClient();
@@ -30,6 +31,14 @@ export default async function NewStoryPostPage() {
     getMentionableCharacters(user.id, activeWorld.id),
     supabase.from("story_posts").select("location").eq("world_id", activeWorld.id).not("location", "is", null),
   ]);
+  if (!activeCharacter) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-10">
+        <h1 className="mb-3 font-serif text-3xl text-fg">Neue Szene</h1>
+        <NoCharacterBanner worldId={activeWorld.id} />
+      </div>
+    );
+  }
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
   const worldCharacters = await getWorldCharacters(user.id, activeWorld.id);

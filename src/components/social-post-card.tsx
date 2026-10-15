@@ -20,6 +20,7 @@ export function SocialPostCard({
   myCharacters = [],
   tagHrefBase,
   priority = false,
+  readOnly = false,
 }: {
   post: FeedPost;
   activeCharacterId: string;
@@ -28,6 +29,8 @@ export function SocialPostCard({
   tagHrefBase?: string;
   // Erster Beitrag im Feed: Bild sofort und bevorzugt laden.
   priority?: boolean;
+  // Ohne Charakter in der Welt: keine Reaktionen, nur ansehen
+  readOnly?: boolean;
 }) {
   const { title, content, character, tags, storyPost } = post;
   const characterHref = `/characters/${post.characterId}`;
@@ -125,6 +128,13 @@ export function SocialPostCard({
           )}
         </DoubleTapLike>
 
+        {readOnly ? (
+          <div className="px-3 pt-3 sm:px-1">
+            <Link href={detailHref} className="text-sm text-fg-soft hover:text-fg hover:underline">
+              Beitrag und Kommentare ansehen
+            </Link>
+          </div>
+        ) : (
         <div className="px-3 pt-3 sm:px-1">
           <ReactionBar
             heart
@@ -144,6 +154,7 @@ export function SocialPostCard({
             }
           />
         </div>
+        )}
 
         {!image && !media && !gallery && preview.length > 260 && (
           <Link href={detailHref} className="mt-2 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1">

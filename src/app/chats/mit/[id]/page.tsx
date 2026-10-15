@@ -15,7 +15,7 @@ export default async function DirectChatPage({ params }: PageProps<"/chats/mit/[
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) redirect("/worlds");
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
-  if (!activeCharacter) redirect("/characters/new");
+  if (!activeCharacter) redirect("/chats");
   if (otherId === activeCharacter.id) redirect("/chats");
 
   const { data: other } = await supabase
