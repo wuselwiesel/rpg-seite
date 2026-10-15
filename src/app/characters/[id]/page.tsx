@@ -32,6 +32,7 @@ import { BookOpen, Plus } from "lucide-react";
 import { getWikiPagesAboutCharacter } from "@/lib/wiki-characters";
 import { getCharacterAccess } from "@/lib/npc-data";
 import { NpcBadge } from "@/components/npc-badge";
+import { ReviewChip } from "@/components/review-chip";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { WikiTypesProvider } from "@/components/wiki-types-context";
 import { getWikiTypes } from "@/lib/wiki-data";
@@ -62,7 +63,14 @@ export default async function CharacterProfilePage({
 
   const isOwnerView = character.owner_id === user.id;
   // Bearbeiten (Profil, ChaBo, Geheimes): Besitzer:in, bei NPCs auch die Welt-Besitzerin
-  const canEdit = (await getCharacterAccess(character, user.id)).canEdit;
+  const access = await getCharacterAccess(character, user.id);
+  const canEdit = access.canEdit;
+  const reviewStatus = (character as { review_status?: "pending" | "approved" | "rejected" }).review_status ?? "approved";
+  const isWorldAdmin = access.worldAdminIds.includes(user.id);
+  const showReview = character.is_npc !== true && (isOwnerView || isWorldAdmin);
+  const { count: openProposals } = showReview
+    ? await supabase.from("character_change_proposals").select("id", { count: "exact", head: true }).eq("character_id", id).eq("status", "open")
+    : { count: 0 };
   const isNpcProfile = character.is_npc === true;
   const gone = Boolean(character.deleted_at);
   const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
@@ -284,6 +292,7 @@ export default async function CharacterProfilePage({
               </span>
             )}
           </h1>
+          {showReview && <ReviewChip characterId={character.id} status={reviewStatus} openProposals={openProposals ?? 0} admin={isWorldAdmin} />}
           {character.quote && <p className="mt-1 font-serif text-base italic text-fg-soft">„{character.quote}“</p>}
           <p className="text-sm text-muted">
             {character.username ? `@${character.username}` : isOwn ? "kein.nutzername" : null}

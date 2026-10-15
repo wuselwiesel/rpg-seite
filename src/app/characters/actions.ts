@@ -140,8 +140,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       is_npc: isNpc,
       claimable: free,
     })
-    .select("id")
-    .single();
+    .select("id, review_status")
+    .single<{ id: string; review_status: string }>();
 
   if (error || !data) {
     return error ? usernameErrorMessage(error.message) : "Charakter konnte nicht erstellt werden.";
@@ -161,7 +161,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   }
 
   // Admins der Welt erfahren von neuen Charakteren und NPCs und davon, dass ein Eintrag seine Höchstzahl erreicht hat
-  await notifyWorldAdmins(supabase, activeWorld.id, isNpc ? "npc_new" : "character_new", user.id, `hat ${isNpc ? "einen neuen NPC" : "einen neuen Charakter"} erstellt: ${name}`, `/characters/${data.id}`);
+  await notifyWorldAdmins(supabase, activeWorld.id, isNpc ? "npc_new" : "character_new", user.id, `hat ${isNpc ? "einen neuen NPC" : "einen neuen Charakter"} erstellt: ${name}${data.review_status === "pending" ? " (zur Prüfung)" : ""}`, data.review_status === "pending" ? `/characters/${data.id}/pruefung` : `/characters/${data.id}`);
   await notifyFullEntries(supabase, activeWorld.id, user.id, newlyFullEntries(choiceLists, choices, createUsage));
 
   revalidatePath("/", "layout");

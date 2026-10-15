@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NpcRoleActions } from "@/app/characters/npc-role-actions";
 
-export type RosterStatus = "free" | "npc" | "taken" | "mine";
+export type RosterStatus = "free" | "npc" | "taken" | "mine" | "review";
 
 export type RosterCharacter = {
   id: string;
@@ -15,6 +15,7 @@ export type RosterCharacter = {
   species: string | null;
   status: RosterStatus;
   isNpc: boolean;
+  reviewStatus: "pending" | "approved" | "rejected";
   claimable: boolean;
   ownerName: string | null;
   createdAt: string;
@@ -33,6 +34,7 @@ const FILTERS: { key: "all" | RosterStatus; label: string }[] = [
   { key: "all", label: "Alle" },
   { key: "free", label: "Frei" },
   { key: "taken", label: "Vergeben" },
+  { key: "review", label: "Zur Prüfung" },
   { key: "mine", label: "Meine" },
   { key: "npc", label: "NPCs" },
 ];
@@ -46,6 +48,7 @@ function StatusChip({ c }: { c: RosterCharacter }) {
     return <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{c.offer ? `Angeboten an ${c.offer.toName}` : "Frei, ohne Spieler:in"}</span>;
   }
   if (c.status === "taken") return <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">Gespielt von {c.ownerName ?? "?"}</span>;
+  if (c.status === "review") return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.reviewStatus === "rejected" ? "bg-red-500/15 text-red-600 dark:text-red-400" : "bg-accent/15 text-accent"}`}>{c.reviewStatus === "rejected" ? "Abgelehnt" : "Zur Prüfung"}</span>;
   if (c.status === "mine") return <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-fg-soft">Dein Charakter</span>;
   return <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">NPC</span>;
 }
@@ -192,6 +195,11 @@ export function WorldRoster({
                     </span>
                   </span>
                 </Link>
+                {c.status === "review" && (isAdmin || c.canManage) && (
+                  <Link href={`/characters/${c.id}/pruefung`} className="w-fit rounded-full border border-line px-3 py-1 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent">
+                    {isAdmin ? "Prüfen" : "Zur Prüfung"}
+                  </Link>
+                )}
                 {(c.canManage || (c.claimable && c.status !== "mine")) && (
                   <NpcRoleActions
                     characterId={c.id}

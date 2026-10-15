@@ -33,6 +33,7 @@ export function EditWorldForm({
 }) {
   const [dirty, setDirty] = useState(false);
   const [dice, setDice] = useState(world.dice_enabled !== false);
+  const [review, setReview] = useState(world.review_characters === true);
   const [talents, setTalents] = useState<TalentDef[]>(talentsInitial);
   const [natures, setNatures] = useState<NatureDef[]>(naturesInitial);
   const formRef = useRef<HTMLFormElement>(null);
@@ -187,6 +188,16 @@ export function EditWorldForm({
           className="h-4 w-4 accent-[var(--accent-strong)]"
         />
         Würfeln
+      </label>
+      <label data-tour="welt-pruefen" className="flex items-center gap-3 text-sm text-fg">
+        <input
+          type="checkbox"
+          name="review_characters"
+          checked={review}
+          onChange={(e) => setReview(e.target.checked)}
+          className="h-4 w-4 accent-[var(--accent-strong)]"
+        />
+        Neue Charaktere prüfen
       </label>
 
       <PermissionFields value={parsePermissions(world.permissions)} allowSecrets={world.allow_secrets !== false} />
