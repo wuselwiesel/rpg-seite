@@ -3,7 +3,13 @@
 import { useState, useTransition } from "react";
 import { deleteWorld } from "../../actions";
 
-export function DeleteWorldButton({ worldId, worldName }: { worldId: string; worldName: string }) {
+export function DeleteWorldButton({
+  worldId,
+  worldName,
+}: {
+  worldId: string;
+  worldName: string;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +30,8 @@ export function DeleteWorldButton({ worldId, worldName }: { worldId: string; wor
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line p-4">
       <p className="text-sm text-fg">
-        Gib <span className="font-medium">{worldName}</span> ein, um das endgültige Löschen für alle
-        Mitglieder zu bestätigen.
+        Gib <span className="font-medium">{worldName}</span> ein, um das
+        endgültige Löschen für alle Mitglieder zu bestätigen.
       </p>
       <input
         type="text"
@@ -61,7 +67,9 @@ export function DeleteWorldButton({ worldId, worldName }: { worldId: string; wor
           Abbrechen
         </button>
       </div>
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      )}
     </div>
   );
 }
