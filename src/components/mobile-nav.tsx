@@ -3,14 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
+import { MobileWorldPicker } from "./mobile-world-picker";
 import { ActiveCharacterMenu } from "./active-character-menu";
 import { InstallAppButton } from "./install-app-button";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { CharacterAvatar } from "./character-avatar";
-import { WorldCover } from "./world-cover";
 import { PresenceControl } from "./character-presence";
 import { Wordmark } from "./wordmark";
 import { MobileTabLink } from "./mobile-tab-link";
@@ -116,18 +116,8 @@ export function MobileNav({
           </button>
         </div>
       </div>
-      {/* Welt, in der man gerade ist: ein Tipp öffnet im Menü die Weltauswahl */}
-      <button
-        type="button"
-        onClick={() => setMoreOpen(true)}
-        data-tour="world"
-        aria-label={`Welt: ${activeWorld.name}. Welt wechseln`}
-        className="flex w-full items-center gap-2 px-4 pb-1.5 text-left text-xs text-muted transition hover:text-fg-soft"
-      >
-        <WorldCover name={activeWorld.name} coverUrl={activeWorld.cover_image_url} className="h-4 w-4 shrink-0 rounded text-[8px]" />
-        <span className="min-w-0 truncate font-medium text-fg-soft">{activeWorld.name}</span>
-        <ChevronDown className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-      </button>
+      {/* Welt, in der man gerade ist: ein Tipp klappt die Liste der eigenen Welten auf */}
+      <MobileWorldPicker worlds={worlds} activeWorld={activeWorld} />
       </div>
 
       <nav className="mobile-bottom-nav transform-gpu fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">

@@ -38,13 +38,13 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Deine Welt",
-        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Hier siehst du, in welcher Welt du gerade bist, und wechselst zu einer anderen. Am Handy tippst du dafür oben auf den Weltnamen. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
+        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Hier siehst du, in welcher Welt du gerade bist, und wechselst zu einer anderen. Am Handy tippst du dafür oben auf den Weltnamen, die Liste deiner Welten klappt direkt auf. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
         route: "/",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
       {
         title: "Welten entdecken und üben",
-        text: "Über die Weltauswahl kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt in Schattenmoor ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen, nachts wird alles aufgeräumt.",
+        text: "Über die Weltauswahl (am Handy im Menü oben rechts) kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt in Schattenmoor ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen; aufgeräumt wird bei Bedarf von Hand.",
         route: "/",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
@@ -495,7 +495,7 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "Eigene Welt verwalten",
-        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über die Weltauswahl (am Handy der Weltname oben) erreichst du „Welten verwalten“, „Diese Welt bearbeiten“ (Besitzer:in und Admins), „Welten entdecken“ und „Neue Welt erschaffen“.",
+        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über die Weltauswahl (am Handy: der Weltname oben wechselt direkt die Welt, die übrigen Punkte stehen im Menü oben rechts) erreichst du „Welten verwalten“, „Diese Welt bearbeiten“ (Besitzer:in und Admins), „Welten entdecken“ und „Neue Welt erschaffen“.",
         route: "/worlds",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },

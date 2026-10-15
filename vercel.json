@@ -1,7 +1,6 @@
 {
   "regions": ["lhr1"],
   "crons": [
-    { "path": "/api/cron/digest", "schedule": "0 17 * * *" },
-    { "path": "/api/cron/reset-demo", "schedule": "0 3 * * *" }
+    { "path": "/api/cron/digest", "schedule": "0 17 * * *" }
   ]
 }
