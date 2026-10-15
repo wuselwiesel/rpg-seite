@@ -10,10 +10,12 @@ import { timeAgoShort } from "@/lib/format";
 import { previewHtml, type WorldPreviewInfo } from "@/lib/world-preview";
 import { JoinOrRequestButton } from "../../join-or-request-button";
 import { EnterWorldButton } from "../../enter-world-button";
+import { PreviewRoleAction } from "./preview-role-action";
 
 export const metadata = { title: "Welt erkunden" };
 
-type Tab = "info" | "wiki" | "figuren" | "szenen";
+type Tab = "info" | "wiki" | "figuren" | "rollen" | "szenen";
+type RoleRow = { id: string; name: string; avatar_url: string | null; bio: string | null; species: string | null };
 type WikiRow = { id: string; title: string; page_type: string | null; lead: string | null; cover_image_url: string | null; icon_url: string | null };
 type CharRow = { id: string; name: string; avatar_url: string | null; bio: string | null; is_npc: boolean };
 type SceneRow = { id: string; title: string; content: string; author_name: string | null; created_at: string; entry_count: number; location: string | null };
@@ -32,8 +34,13 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
   const info = ((infoRows ?? []) as WorldPreviewInfo[])[0];
   if (!info) notFound();
 
+  // Freie Rollen immer laden: der Reiter erscheint nur, wenn es welche gibt
+  const { data: roleRows } = await supabase.rpc("world_preview_roles", { p_world: id });
+  const roles = (roleRows ?? []) as RoleRow[];
+
   const wanted = typeof sp.tab === "string" ? sp.tab : "info";
-  const tab: Tab = wanted === "wiki" || wanted === "figuren" || (wanted === "szenen" && info.preview === "full") ? wanted : "info";
+  const tab: Tab =
+    wanted === "wiki" || wanted === "figuren" || (wanted === "rollen" && roles.length > 0) || (wanted === "szenen" && info.preview === "full") ? (wanted as Tab) : "info";
 
   const [wiki, characters, scenes] = await Promise.all([
     tab === "wiki" ? supabase.rpc("world_preview_wiki", { p_world: id }) : Promise.resolve({ data: [] }),
@@ -45,6 +52,7 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
     { key: "info", label: "Willkommen" },
     { key: "wiki", label: "Wiki" },
     { key: "figuren", label: "Figuren" },
+    ...(roles.length > 0 ? [{ key: "rollen" as Tab, label: `Zu vergeben (${roles.length})` }] : []),
     ...(info.preview === "full" ? [{ key: "szenen" as Tab, label: "Szenen" }] : []),
   ];
   const welcome = info.welcome_html ? previewHtml(info.welcome_html) : "";
@@ -126,6 +134,24 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
                   {c.bio && <p className="line-clamp-2 text-sm text-muted">{c.bio}</p>}
                 </div>
               </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {tab === "rollen" && (
+        <ul className="flex flex-col gap-2">
+          {roles.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3">
+              <Link href={`/worlds/${id}/vorschau/figur/${r.id}`} className="flex min-w-0 flex-1 items-start gap-3">
+                <CharacterAvatar name={r.name} avatarUrl={r.avatar_url} size={48} />
+                <span className="min-w-0">
+                  <span className="block truncate font-medium text-fg">{r.name}</span>
+                  {r.species && <span className="block text-xs text-muted">{r.species}</span>}
+                  {r.bio && <span className="line-clamp-2 text-sm text-fg-soft">{r.bio}</span>}
+                </span>
+              </Link>
+              <PreviewRoleAction worldId={id} characterId={r.id} isMember={info.is_member} joinMode={info.join_mode} hasRequest={info.has_request} />
             </li>
           ))}
         </ul>

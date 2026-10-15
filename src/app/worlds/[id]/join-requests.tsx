@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { decideJoinRequest } from "../join-actions";
 
-export type JoinRequest = { id: string; user_id: string; name: string; message: string; created_at: string };
+export type JoinRequest = { id: string; user_id: string; name: string; message: string; created_at: string; role: { id: string; name: string } | null };
 
 // Offene Beitrittsanfragen einer Welt: annehmen, ablehnen oder die Person privat anschreiben (nur Admins).
 export function JoinRequests({ worldId, requests }: { worldId: string; requests: JoinRequest[] }) {
@@ -14,10 +14,10 @@ export function JoinRequests({ worldId, requests }: { worldId: string; requests:
   const [pending, startTransition] = useTransition();
   void worldId;
 
-  function decide(id: string, approve: boolean) {
+  function decide(id: string, approve: boolean, giveRole = false) {
     setError(null);
     startTransition(async () => {
-      const err = await decideJoinRequest(id, approve);
+      const err = await decideJoinRequest(id, approve, giveRole);
       if (err) setError(err);
       else router.refresh();
     });
@@ -47,16 +47,45 @@ export function JoinRequests({ worldId, requests }: { worldId: string; requests:
                 >
                   Ablehnen
                 </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => decide(r.id, true)}
-                  className="rounded-full bg-accent-strong px-3 py-1 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
-                >
-                  Annehmen
-                </button>
+                {r.role ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => decide(r.id, true, false)}
+                      className="rounded-full border border-line px-3 py-1 text-sm text-fg-soft transition hover:text-fg disabled:opacity-50"
+                    >
+                      Nur aufnehmen
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => decide(r.id, true, true)}
+                      className="rounded-full bg-accent-strong px-3 py-1 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+                    >
+                      Aufnehmen und Rolle geben
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => decide(r.id, true)}
+                    className="rounded-full bg-accent-strong px-3 py-1 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
+                  >
+                    Annehmen
+                  </button>
+                )}
               </div>
             </div>
+            {r.role && (
+              <p className="text-sm text-fg">
+                Möchte die Rolle{" "}
+                <Link href={`/characters/${r.role.id}`} className="font-medium text-accent hover:underline">
+                  {r.role.name}
+                </Link>
+              </p>
+            )}
             {r.message && <p className="whitespace-pre-line text-sm text-fg-soft">{r.message}</p>}
           </li>
         ))}

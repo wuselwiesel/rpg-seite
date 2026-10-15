@@ -12,7 +12,7 @@ async function actor(supabase: Supabase, userId: string) {
 }
 
 // Beitritt anfragen (Welten mit „Auf Anfrage“): die Admins bekommen eine Benachrichtigung
-export async function requestWorldJoin(worldId: string, message: string): Promise<string | null> {
+export async function requestWorldJoin(worldId: string, message: string, characterId?: string | null): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,7 +23,18 @@ export async function requestWorldJoin(worldId: string, message: string): Promis
   if (!world) return "Diese Welt gibt es nicht.";
   if (world.join_mode !== "request") return world.join_mode === "invite" ? "In diese Welt kommt man nur auf Einladung." : "Du kannst dieser Welt direkt beitreten.";
 
-  const { error } = await supabase.from("world_join_requests").insert({ world_id: worldId, user_id: user.id, message: message.trim().slice(0, 500) });
+  // Gewünschte Rolle: muss in der Vorschau dieser Welt als frei geführt sein
+  let roleName: string | null = null;
+  if (characterId) {
+    const { data: roles } = await supabase.rpc("world_preview_roles", { p_world: worldId });
+    const role = ((roles ?? []) as { id: string; name: string }[]).find((r) => r.id === characterId);
+    if (!role) return "Diese Rolle ist nicht mehr frei.";
+    roleName = role.name;
+  }
+
+  const { error } = await supabase
+    .from("world_join_requests")
+    .insert({ world_id: worldId, user_id: user.id, message: message.trim().slice(0, 500), ...(characterId ? { character_id: characterId } : {}) });
   if (error) return /duplicate|unique/i.test(error.message) ? "Du hast schon angefragt." : error.message;
 
   const { data: admins } = await supabase.from("world_members").select("user_id").eq("world_id", worldId).eq("role", "admin");
@@ -38,7 +49,7 @@ export async function requestWorldJoin(worldId: string, message: string): Promis
         actorName: who.name,
         actorAvatarUrl: who.avatarUrl,
         link: `/worlds/${worldId}`,
-        message: `möchte „${world.name}“ beitreten`,
+        message: roleName ? `möchte „${world.name}“ beitreten und die Rolle ${roleName} übernehmen` : `möchte „${world.name}“ beitreten`,
       }),
     ),
   );
@@ -63,7 +74,8 @@ export async function withdrawWorldJoin(worldId: string): Promise<string | null>
 }
 
 // Anfrage annehmen oder ablehnen (nur Besitzer:in und Admins); die anfragende Person wird benachrichtigt
-export async function decideJoinRequest(requestId: string, approve: boolean): Promise<string | null> {
+// giveRole: hat die Person eine Rolle gewünscht, wird sie mit der Aufnahme gleich übergeben (sonst als offene Rollenanfrage vorgemerkt)
+export async function decideJoinRequest(requestId: string, approve: boolean, giveRole = false): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -72,14 +84,22 @@ export async function decideJoinRequest(requestId: string, approve: boolean): Pr
 
   const { data: request } = await supabase
     .from("world_join_requests")
-    .select("world_id, user_id, worlds(name)")
+    .select("world_id, user_id, character_id, worlds(name)")
     .eq("id", requestId)
-    .maybeSingle<{ world_id: string; user_id: string; worlds: { name: string } | null }>();
+    .maybeSingle<{ world_id: string; user_id: string; character_id: string | null; worlds: { name: string } | null }>();
   if (!request) return "Anfrage nicht gefunden.";
 
   const { data: result, error } = await supabase.rpc("decide_join_request", { p_request: requestId, p_approve: approve });
   if (error) return error.message;
   if (result) return result as string;
+
+  // Gewünschte Rolle: gleich übergeben oder als Rollenanfrage vormerken
+  let givenRole: string | null = null;
+  if (approve && request.character_id) {
+    const { data: role } = await supabase.rpc("resolve_requested_role", { p_request: requestId, p_give: giveRole });
+    const r = role as { character_name: string; given: boolean } | null;
+    if (r?.given) givenRole = r.character_name;
+  }
 
   const who = await actor(supabase, user.id);
   await createNotification(supabase, {
@@ -88,10 +108,13 @@ export async function decideJoinRequest(requestId: string, approve: boolean): Pr
     actorName: who.name,
     actorAvatarUrl: who.avatarUrl,
     link: approve ? `/worlds/${request.world_id}` : "/worlds/entdecken",
-    message: approve ? `hat deine Anfrage für „${request.worlds?.name ?? "die Welt"}“ angenommen` : `hat deine Anfrage für „${request.worlds?.name ?? "die Welt"}“ abgelehnt`,
+    message: approve
+      ? `hat deine Anfrage für „${request.worlds?.name ?? "die Welt"}“ angenommen${givenRole ? ` und dir die Rolle ${givenRole} gegeben` : ""}`
+      : `hat deine Anfrage für „${request.worlds?.name ?? "die Welt"}“ abgelehnt`,
   });
 
   revalidatePath(`/worlds/${request.world_id}`);
+  revalidatePath("/characters");
   revalidatePath("/", "layout");
   return null;
 }

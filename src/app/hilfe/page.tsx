@@ -433,6 +433,9 @@ export default function HelpPage() {
           <li>
             <strong>Rollen zu vergeben:</strong> Admins legen einen NPC an und setzen den Haken „Zu vergeben“ (beim Anlegen oder unter „Bearbeiten“ des NPCs). Die Figur erscheint dann auf der Weltseite unter „Zu vergeben“. Mitglieder können sie dort anfragen, ein Admin entscheidet. Admins können eine Rolle auch einem Mitglied anbieten, das Angebot muss die Person annehmen. Bei der Übergabe wechselt der Charakter samt Beiträgen, Bogen, Geheimem und Verlauf auf das Konto der neuen Besitzer:in und ist kein NPC mehr. Wer einen Charakter nicht mehr spielen möchte, gibt ihn unter „Bearbeiten“ → „An die Welt zurückgeben“ zurück. Alle Admins der Welt dürfen NPCs und freie Rollen bearbeiten.
           </li>
+          <li>
+            <strong>Rollen schon vor dem Beitritt:</strong> Ist „Erkunden“ eingeschaltet, erscheint in der Vorschau der Reiter „Zu vergeben“ mit den freien Rollen. In offenen Welten klickst du „Beitreten und anfragen“, bei „Auf Anfrage“ schickst du mit dem Beitrittsantrag gleich die Rolle mit. Die Admins sehen die gewünschte Rolle beim Antrag und wählen „Aufnehmen und Rolle geben“ oder „Nur aufnehmen“ (dann bleibt die Rolle als Rollenanfrage vorgemerkt).
+          </li>
         </ul>
       </Section>
       <Section id="verlassen" title="16. Welt verlassen, Besitz übertragen, Konto löschen">

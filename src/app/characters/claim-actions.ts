@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
 import { notifyWorldAdmins } from "@/lib/world-admin-notify";
+import { cookies } from "next/headers";
+import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -140,5 +142,38 @@ export async function releaseCharacter(characterId: string): Promise<string | nu
   const r = data as { world_id: string; character_name: string };
   await notifyWorldAdmins(supabase, r.world_id, "leave", user.id, `hat den Charakter ${r.character_name} an die Welt zurückgegeben`, `/characters/${characterId}`);
   refresh(r.world_id, characterId);
+  return null;
+}
+
+// Offene Welt: beitreten und die gewünschte Rolle gleich anfragen (aus der Vorschau)
+export async function joinAndRequestRole(worldId: string, characterId: string, message: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: world } = await supabase.from("worlds").select("join_mode, created_by").eq("id", worldId).maybeSingle<{ join_mode: string; created_by: string }>();
+  if (!world) return "Diese Welt gibt es nicht.";
+  if (world.join_mode !== "open" && world.created_by !== user.id) return "Dieser Welt kannst du nicht direkt beitreten.";
+
+  // Die Rolle muss in der Vorschau als frei geführt sein
+  const { data: roles } = await supabase.rpc("world_preview_roles", { p_world: worldId });
+  if (!((roles ?? []) as { id: string }[]).some((r) => r.id === characterId)) return "Diese Rolle ist nicht mehr frei.";
+
+  const { data: existing } = await supabase.from("world_members").select("world_id").eq("world_id", worldId).eq("user_id", user.id).maybeSingle();
+  if (!existing) {
+    const { error } = await supabase.from("world_members").insert({ world_id: worldId, user_id: user.id });
+    if (error) return error.message;
+    await notifyWorldAdmins(supabase, worldId, "member_join", user.id, "ist der Welt beigetreten");
+  }
+
+  const err = await requestCharacter(characterId, message);
+  if (err) return `Du bist der Welt beigetreten, aber die Anfrage klappte nicht: ${err}`;
+
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
+  cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  revalidatePath("/", "layout");
   return null;
 }

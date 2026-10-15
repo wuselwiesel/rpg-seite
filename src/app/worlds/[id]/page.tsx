@@ -73,17 +73,18 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
   // Offene Beitrittsanfragen (nur für Admins sichtbar) bzw. die eigene Anfrage
   const { data: requestRows } = await supabase
     .from("world_join_requests")
-    .select("id, user_id, message, created_at, profiles!world_join_requests_user_id_fkey(username, nickname)")
+    .select("id, user_id, message, created_at, character_id, role:characters!world_join_requests_character_id_fkey(id, name), profiles!world_join_requests_user_id_fkey(username, nickname)")
     .eq("world_id", id)
     .eq("status", "pending")
     .order("created_at")
-    .returns<(Omit<JoinRequest, "name"> & { profiles: { username: string; nickname: string | null } | null })[]>();
+    .returns<(Omit<JoinRequest, "name" | "role"> & { character_id: string | null; role: { id: string; name: string } | null; profiles: { username: string; nickname: string | null } | null })[]>();
   const requests: JoinRequest[] = (requestRows ?? []).map((r) => ({
     id: r.id,
     user_id: r.user_id,
     message: r.message,
     created_at: r.created_at,
     name: r.profiles?.nickname || r.profiles?.username || "Unbekannt",
+    role: r.role,
   }));
   const myRequest = (requestRows ?? []).some((r) => r.user_id === user.id);
 
