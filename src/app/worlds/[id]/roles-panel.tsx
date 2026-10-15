@@ -13,6 +13,9 @@ export type RoleCard = {
   avatarUrl: string | null;
   bio: string | null;
   species: string | null;
+  // NPC oder Hauptcharakter; mine: gehört der angemeldeten Person
+  isNpc: boolean;
+  mine: boolean;
   // eigene offene Anfrage (Mitglied) bzw. offenes Angebot an jemanden (Admin)
   myRequestId: string | null;
   offer: { claimId: string; toName: string } | null;
@@ -57,7 +60,9 @@ export function RolesPanel({
     });
   }
 
-  const allRequests = roles.flatMap((r) => r.requests.map((q) => ({ ...q, role: r })));
+  // Vergeben darf, wem der Charakter gehört, und bei NPCs die Admins
+  const canManage = (r: RoleCard) => r.mine || (isAdmin && r.isNpc);
+  const allRequests = roles.filter(canManage).flatMap((r) => r.requests.map((q) => ({ ...q, role: r })));
   if (roles.length === 0 && offersForMe.length === 0) return null;
 
   return (
@@ -88,7 +93,7 @@ export function RolesPanel({
         </div>
       )}
 
-      {isAdmin && allRequests.length > 0 && (
+      {allRequests.length > 0 && (
         <div className="flex flex-col gap-2">
           <h2 className="font-serif text-xl text-fg">Rollenanfragen</h2>
           {allRequests.map((q) => (
@@ -136,13 +141,13 @@ export function RolesPanel({
                           </button>
                         </>
                       ) : (
-                        !isAdmin && (
+                        !canManage(r) && (
                           <button type="button" onClick={() => setOpen(isOpen ? null : r.id)} className={primary}>
                             Anfragen
                           </button>
                         )
                       )}
-                      {isAdmin && (
+                      {canManage(r) && (
                         r.offer ? (
                           <>
                             <span className="rounded-full bg-surface-2 px-3 py-1 text-sm text-muted">Angeboten an {r.offer.toName}</span>
@@ -156,7 +161,7 @@ export function RolesPanel({
                           </button>
                         )
                       )}
-                      {isAdmin && (
+                      {canManage(r) && (
                         <button
                           type="button"
                           disabled={pending}
@@ -173,11 +178,11 @@ export function RolesPanel({
                       className="mt-3 flex flex-col gap-2 border-t border-line pt-3"
                       onSubmit={(e) => {
                         e.preventDefault();
-                        if (isAdmin) run(() => offerCharacter(r.id, target, message));
+                        if (canManage(r)) run(() => offerCharacter(r.id, target, message));
                         else run(() => requestCharacter(r.id, message));
                       }}
                     >
-                      {isAdmin && (
+                      {canManage(r) && (
                         <select value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Person auswählen" required className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
                           <option value="">Person auswählen …</option>
                           {members.map((m) => (
@@ -192,12 +197,12 @@ export function RolesPanel({
                         onChange={(e) => setMessage(e.target.value)}
                         maxLength={500}
                         rows={2}
-                        placeholder={isAdmin ? "Nachricht (optional)" : "Warum möchtest du die Rolle? (optional)"}
+                        placeholder={canManage(r) ? "Nachricht (optional)" : "Warum möchtest du die Rolle? (optional)"}
                         className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
                       />
                       <div className="flex gap-2">
-                        <button type="submit" disabled={pending || (isAdmin && !target)} className={primary}>
-                          {isAdmin ? "Anbieten" : "Anfrage senden"}
+                        <button type="submit" disabled={pending || (canManage(r) && !target)} className={primary}>
+                          {canManage(r) ? "Anbieten" : "Anfrage senden"}
                         </button>
                         <button type="button" onClick={() => setOpen(null)} className={quiet}>
                           Abbrechen

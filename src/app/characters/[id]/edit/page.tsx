@@ -44,7 +44,7 @@ export default async function EditCharacterPage({
           <NpcToggle characterId={character.id} initial={Boolean(character.is_npc)} />
         </div>
       )}
-      {character.is_npc && (access.canToggle || access.canOffer) && (
+      {((character.is_npc && (access.canToggle || access.canOffer)) || (!character.is_npc && access.canToggle)) && (
         <div className="mb-5">
           <ClaimableToggle characterId={character.id} initial={Boolean(character.claimable)} />
         </div>

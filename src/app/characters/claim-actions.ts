@@ -24,16 +24,16 @@ function refresh(worldId?: string, characterId?: string) {
   revalidatePath("/", "layout");
 }
 
-// Eine Rolle (NPC) zur Vergabe freigeben oder wieder zurücknehmen: Anleger:in und alle Admins der Welt
+// Einen Charakter (NPC oder Hauptcharakter) zur Vergabe freigeben oder wieder zurücknehmen: die Besitzer:in, bei NPCs auch alle Admins der Welt
 export async function setCharacterClaimable(characterId: string, claimable: boolean): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const { data, error } = await supabase.from("characters").update({ claimable }).eq("id", characterId).eq("is_npc", true).select("id, world_id");
+  const { data, error } = await supabase.from("characters").update({ claimable }).eq("id", characterId).select("id, world_id");
   if (error) return error.message;
-  if (!data?.length) return "Nur NPCs lassen sich zur Vergabe freigeben, und nur Admins oder die Person, die sie angelegt hat.";
+  if (!data?.length) return "Das dürfen nur die Besitzer:in des Charakters und bei NPCs die Admins der Welt.";
   // Wer die Freigabe zurücknimmt, beendet offene Anfragen und Angebote
   if (!claimable) {
     await supabase.from("character_claims").update({ status: "withdrawn", decided_by: user.id, decided_at: new Date().toISOString() }).eq("character_id", characterId).eq("status", "pending");
@@ -51,8 +51,21 @@ export async function requestCharacter(characterId: string, message: string): Pr
   if (!user) return "Nicht angemeldet.";
   const { data, error } = await supabase.rpc("request_character", { p_character: characterId, p_message: message.trim().slice(0, 500) });
   if (error) return error.message;
-  const r = data as { world_id: string; character_name: string };
-  await notifyWorldAdmins(supabase, r.world_id, "role_request", user.id, `möchte die Rolle ${r.character_name} übernehmen`, `/worlds/${r.world_id}`);
+  const r = data as { world_id: string; character_name: string; owner_id: string; is_npc: boolean };
+  if (r.is_npc) {
+    await notifyWorldAdmins(supabase, r.world_id, "role_request", user.id, `möchte die Rolle ${r.character_name} übernehmen`, `/worlds/${r.world_id}`);
+  } else {
+    // Hauptcharakter: die Besitzer:in entscheidet
+    const who = await actor(supabase, user.id);
+    await createNotification(supabase, {
+      userId: r.owner_id,
+      type: "character_offer",
+      actorName: who.name,
+      actorAvatarUrl: who.avatarUrl,
+      link: `/worlds/${r.world_id}`,
+      message: `möchte deinen Charakter ${r.character_name} übernehmen`,
+    });
+  }
   refresh(r.world_id, characterId);
   return null;
 }
