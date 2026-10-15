@@ -9,7 +9,7 @@ import { getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/ba
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AtSign, ChevronDown, Clock, Grid3x3, IdCard, Images, MessageCircle, Pencil, Pin, Rows3 } from "lucide-react";
+import { ChevronDown, Clock, Grid3x3, IdCard, Images, MessageCircle, Pencil, Pin, Rows3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
@@ -74,7 +74,7 @@ export default async function CharacterProfilePage({
     : { count: 0 };
   const isNpcProfile = character.is_npc === true;
   const gone = Boolean(character.deleted_at);
-  const tab = tabParam === "tagged" ? "tagged" : tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
+  const tab = tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
   const [sheet, mentionCharacters, randomLists] = await Promise.all([
     getCharacterSheet(id, canEdit),
     getMentionableCharacters(user.id, character.world_id),
@@ -88,15 +88,7 @@ export default async function CharacterProfilePage({
     .select(POST_SELECT)
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false });
-  if (tab === "tagged") {
-    // Erwähnungen (@) im Beitragstext: <span data-type="mention" data-id="...">
-    const { data: tagRows } = await supabase.from("post_tags").select("post_id").eq("character_id", id);
-    const taggedIds = (tagRows ?? []).map((r) => r.post_id as string);
-    postsQuery = postsQuery
-      .or(`content.ilike.%data-id="${id}"%${taggedIds.length ? `,id.in.(${taggedIds.join(",")})` : ""}`)
-      .lte("publish_at", nowIso)
-      .neq("character_id", id);
-  } else if (tab === "scheduled") {
+  if (tab === "scheduled") {
     postsQuery = postsQuery.eq("character_id", id).gt("publish_at", nowIso);
   } else {
     postsQuery = postsQuery.eq("character_id", id).lte("publish_at", nowIso);
@@ -455,7 +447,6 @@ export default async function CharacterProfilePage({
         <div className="mt-6 flex justify-center gap-0.5 border-t border-line sm:gap-6">
           {[
             { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
-            { id: "tagged", label: "Getaggt", icon: AtSign, show: true },
             { id: "chabo", label: chaboLabel(await getWorldDiceEnabled(character.world_id)), icon: IdCard, show: Boolean(sheet) || canEdit },
             { id: "scheduled", label: "Geplant", icon: Clock, show: isOwnerView },
           ]
@@ -571,7 +562,7 @@ export default async function CharacterProfilePage({
           </div>
         ) : (
           <p className="py-16 text-center text-muted">
-            {tab === "tagged" ? "Noch nicht in Beiträgen markiert." : tab === "scheduled" ? "Keine geplanten Beiträge." : "Noch keine Beiträge."}
+            {tab === "scheduled" ? "Keine geplanten Beiträge." : "Noch keine Beiträge."}
           </p>
         )}
           </>
