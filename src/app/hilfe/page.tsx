@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getActiveWorld } from "@/lib/worlds";
 import { TourButtons } from "@/components/tour-buttons";
 import { ChevronLeft, CircleHelp } from "lucide-react";
 import { ATTR_TABLE, TALENT_LIST } from "@/lib/charakterbogen-stats";
@@ -62,7 +64,14 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  // Ohne Würfeln in der aktiven Welt gibt es keinen Würfelverlauf
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const world = user ? await getActiveWorld(user.id) : null;
+  const showRolls = world?.dice_enabled !== false;
   const nameByCode = new Map<string, string>(ATTR_TABLE.map((a) => [a.code, a.name]));
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-10 px-4 py-8 xl:max-w-3xl">
@@ -76,7 +85,7 @@ export default function HelpPage() {
         </div>
         <nav aria-label="Inhaltsverzeichnis" className="rounded-2xl border border-line bg-surface p-4">
           <ol className="grid gap-1 text-sm sm:grid-cols-2">
-            {TOC.map(([id, label], i) => (
+            {TOC.map(([id, label], i) => (showRolls || id !== "verlauf") && (
               <li key={id}>
                 <a href={`#${id}`} className="flex gap-2 rounded-lg px-2 py-1 text-fg-soft transition hover:bg-surface-2 hover:text-accent">
                   <span className="text-muted">{i + 1}.</span>
@@ -127,12 +136,14 @@ export default function HelpPage() {
         </p>
       </Section>
 
+      {showRolls && (
       <Section id="verlauf" title="2. Würfelverlauf">
         <p className={p}>
           Alle Würfe deiner aktuellen Welt stehen im <strong>Würfelverlauf</strong>, neueste zuerst. Du findest ihn links in der Seitenleiste unter „Würfelverlauf“ (am Handy im Menü „Mehr“). Mit den Filtern zeigst du nur einen Charakter oder nur
           Erfolge beziehungsweise Misserfolge. Ein Klick auf einen Wurf führt direkt zu seiner Zeile in der Szene und hebt sie kurz hervor. Mit dem Papierkorb löschst du eigene Würfe. Ein gelöschter Wurf verschwindet auch aus der Szene. Würfe aus privaten Szenen siehst du nur, wenn du die Szene auch sonst sehen darfst.
         </p>
       </Section>
+      )}
 
       <Section id="attribute" title="3. Attribute: Basiswert, Bonus, Gesamtwert">
         <p className={p}>Dein Charakter hat 10 Attribute. Jedes hat drei Werte:</p>

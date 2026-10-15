@@ -101,7 +101,7 @@ function resolveRoute(route: string | undefined, refs: Refs): string | null {
   return refs[key] ?? fallback ?? null;
 }
 
-export function AppTour() {
+export function AppTour({ diceEnabled = true }: { diceEnabled?: boolean }) {
   // Auswahl aller Rundgänge, einzelner Rundgang oder nichts
   const [view, setView] = useState<"closed" | "list" | "tour">("closed");
   const [tourId, setTourId] = useState<string | null>(null);
@@ -118,7 +118,9 @@ export function AppTour() {
   // Schritt, für den schon einmal zum Ziel gescrollt wurde
   const scrolledFor = useRef<string | null>(null);
 
-  const tour = tourId ? getTour(tourId) : undefined;
+  // Ohne Würfeln in der Welt entfällt der Schritt zum Würfelverlauf
+  const baseTour = tourId ? getTour(tourId) : undefined;
+  const tour = baseTour && !diceEnabled ? { ...baseTour, steps: baseTour.steps.filter((s) => s.title !== "Würfelverlauf") } : baseTour;
   const active = view === "tour" && !!tour;
   const step = tour?.steps[stepIndex];
 

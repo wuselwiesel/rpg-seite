@@ -29,9 +29,21 @@ export function KeyboardFix() {
         if (active && active.matches(TEXT_INPUT)) return;
         root.classList.remove("kb-open");
         nudge();
+        resetZoom();
       }, 200);
     }
+    // Ist die Seite doch hineingezoomt (und dadurch verschoben), wieder auf 100 % zurück: Viewport kurz neu setzen
+    function resetZoom() {
+      const vv = window.visualViewport;
+      const meta = document.querySelector('meta[name="viewport"]');
+      if (!vv || !meta || vv.scale <= 1.01 || document.activeElement?.matches(TEXT_INPUT)) return;
+      const content = meta.getAttribute("content") ?? "width=device-width, initial-scale=1";
+      meta.setAttribute("content", "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover");
+      window.scrollTo(0, window.scrollY);
+      setTimeout(() => meta.setAttribute("content", content), 50);
+    }
     function onViewport() {
+      resetZoom();
       const vv = window.visualViewport;
       if (vv && vv.height >= window.innerHeight - 1 && !document.activeElement?.matches(TEXT_INPUT)) {
         root.classList.remove("kb-open");

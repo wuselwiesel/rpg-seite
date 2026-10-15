@@ -316,7 +316,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <WikiPreviewLayer />
         <KeyboardFix />
         <OfflineBanner />
-        <AppTour />
+        <AppTour diceEnabled={diceEnabled} />
         <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"} initialEmoji={ownPresence?.emoji ?? null} initialText={ownPresence?.text ?? null}>
           <CustomEmojiProvider map={emojiMap}>
             <DiceProvider enabled={diceEnabled}>
