@@ -21,6 +21,8 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
   const [gender, setGender] = useState("");
   const [bio, setBio] = useState("");
   const [isNpc, setIsNpc] = useState(startAsNpc && !isWelcome);
+  // Frei: ein Charakter ohne Spieler:in, den man später anbietet (technisch ein NPC, der zur Vergabe freigegeben ist)
+  const [free, setFree] = useState(false);
   // Gewürfelter Bogen: wird mit dem Formular abgeschickt und zusammen mit dem Charakter angelegt
   const [sheetJson, setSheetJson] = useState("");
 
@@ -47,16 +49,23 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
         <input type="hidden" name="sheet_json" value={sheetJson} />
         <div className="flex flex-wrap items-center justify-between gap-3">
           {!isWelcome && (
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-soft">
-              <input type="checkbox" name="is_npc" checked={isNpc} onChange={(e) => setIsNpc(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
-              NPC
-            </label>
-          )}
-          {!isWelcome && isNpc && (
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-soft">
-              <input type="checkbox" name="claimable" className="h-4 w-4 accent-[var(--accent)]" />
-              Zu vergeben
-            </label>
+            <div className="flex flex-col gap-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-soft">
+                <input
+                  type="checkbox"
+                  name="is_npc"
+                  checked={isNpc || free}
+                  disabled={free}
+                  onChange={(e) => setIsNpc(e.target.checked)}
+                  className="h-4 w-4 accent-[var(--accent)]"
+                />
+                NPC
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-soft">
+                <input type="checkbox" name="free" checked={free} onChange={(e) => setFree(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
+                Frei: noch ohne Spieler:in, zum Anbieten
+              </label>
+            </div>
           )}
           <button
             type="button"
@@ -168,7 +177,7 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
           disabled={pending}
           className="mt-2 rounded-md bg-accent-strong px-4 py-2 font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
         >
-          {pending ? "Erschaffe..." : isNpc ? "NPC erschaffen" : "Charakter erschaffen"}
+          {pending ? "Erschaffe..." : free ? "Freien Charakter erschaffen" : isNpc ? "NPC erschaffen" : "Charakter erschaffen"}
         </button>
       </form>
     </div>

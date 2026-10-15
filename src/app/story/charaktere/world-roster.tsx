@@ -43,7 +43,7 @@ function norm(s: string) {
 
 function StatusChip({ c }: { c: RosterCharacter }) {
   if (c.status === "free") {
-    return <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{c.offer ? `Angeboten an ${c.offer.toName}` : "Frei"}</span>;
+    return <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{c.offer ? `Angeboten an ${c.offer.toName}` : "Frei, ohne Spieler:in"}</span>;
   }
   if (c.status === "taken") return <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">Gespielt von {c.ownerName ?? "?"}</span>;
   if (c.status === "mine") return <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-fg-soft">Dein Charakter</span>;

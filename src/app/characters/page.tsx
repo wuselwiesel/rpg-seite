@@ -161,7 +161,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                     <p className="truncate font-medium text-fg">{npc.name}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <NpcBadge />
-                      {npc.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
+                      {npc.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Frei</span>}
                     </p>
                     {npc.bio && <p className="line-clamp-1 text-sm text-muted">{npc.bio}</p>}
                   </div>

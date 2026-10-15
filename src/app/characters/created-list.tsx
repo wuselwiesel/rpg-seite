@@ -40,7 +40,7 @@ function StatusChip({ c }: { c: CreatedCharacter }) {
     return c.offer ? (
       <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Angeboten an {c.offer.toName}</span>
     ) : (
-      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{c.isMain ? "Frei (Hauptcharakter)" : "Frei"}</span>
+      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Frei, ohne Spieler:in</span>
     );
   }
   if (c.status === "assigned") return <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">Vergeben an {c.ownerName ?? "?"}</span>;

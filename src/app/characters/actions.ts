@@ -65,7 +65,9 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
   const quote = String(formData.get("quote") ?? "").trim().slice(0, 200);
   const gender = parseGender(formData.get("gender"));
-  const isNpc = formData.get("is_npc") === "on";
+  // „Frei“: Charakter ohne Spieler:in, zur Vergabe freigegeben (gespeichert als NPC, der bei der Übergabe zum normalen Charakter wird)
+  const free = formData.get("free") === "on";
+  const isNpc = free || formData.get("is_npc") === "on";
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -136,7 +138,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       avatar_url: avatarUrl || null,
       ...(sheetUrl ? { sheet_url: sheetUrl } : {}),
       is_npc: isNpc,
-      claimable: isNpc && formData.get("claimable") === "on",
+      claimable: free,
     })
     .select("id")
     .single();
