@@ -4,7 +4,8 @@ export type ChoiceList = {
   label: string;
   mode: "dropdown" | "text";
   isSpecies: boolean;
-  options: { id: string; label: string }[];
+  // maxCount: Höchstzahl der Charaktere mit diesem Eintrag in der Welt (null = unbegrenzt); used: wie viele es schon gibt
+  options: { id: string; label: string; maxCount?: number | null; used?: number }[];
 };
 
 export const MAX_CHOICE_LISTS = 12;
@@ -35,6 +36,23 @@ export function parseChoices(get: (key: string) => string | null, lists: ChoiceL
 export function speciesFromLabel(label: string | null | undefined): "mensch" | "vampir" | "werwolf" {
   const v = (label ?? "").trim().toLowerCase();
   return v === "vampir" || v === "werwolf" ? v : "mensch";
+}
+
+// Wie viele Charaktere haben je Liste und Eintrag schon diesen Wert: { listenId: { Eintrag: Anzahl } }
+export type ChoiceUsage = Record<string, Record<string, number>>;
+
+// Ist ein gewählter Eintrag schon so oft vergeben, wie die Welt erlaubt? `own` sind die bisherigen Werte des Charakters, der gerade
+// bearbeitet wird: Behält er seinen Eintrag, zählt er nicht gegen die Grenze.
+export function limitError(lists: ChoiceList[], choices: Record<string, string>, usage: ChoiceUsage, own: Record<string, string> = {}): string | null {
+  for (const list of lists) {
+    const value = choices[list.id];
+    if (!value || list.mode !== "dropdown" || own[list.id] === value) continue;
+    const option = list.options.find((o) => o.label === value);
+    if (!option || option.maxCount == null) continue;
+    const used = usage[list.id]?.[value] ?? 0;
+    if (used >= option.maxCount) return `„${value}“ gibt es in dieser Welt schon ${option.maxCount}× (${list.label}). Bitte wähle etwas anderes.`;
+  }
+  return null;
 }
 
 // Für die Anzeige im Profil: nur Listen, zu denen ein Wert gewählt wurde, in Listenreihenfolge.

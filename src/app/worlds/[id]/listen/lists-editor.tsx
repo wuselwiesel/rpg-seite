@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, X } from "lucide-react";
 import type { ChoiceList } from "@/lib/choice-lists";
 import { useConfirm, type ConfirmOptions } from "@/components/confirm-dialog";
-import { addChoiceOptions, createChoiceList, deleteChoiceList, deleteChoiceOption, updateChoiceList } from "./actions";
+import { addChoiceOptions, createChoiceList, deleteChoiceList, deleteChoiceOption, setChoiceOptionLimit, updateChoiceList } from "./actions";
 
 // Vorschläge: Einträge für die leere Liste „Wesen“ (die Namen Vampir und Werwolf schalten deren Würfelregeln frei) und Namen für neue Listen
 const SPECIES_SUGGESTIONS = ["Mensch", "Vampir", "Werwolf"];
@@ -112,6 +112,36 @@ export function ListsEditor({ worldId, lists }: { worldId: string; lists: Choice
   );
 }
 
+// Höchstzahl eines Eintrags: leer = unbegrenzt
+function LimitInput({ value, label, disabled, onCommit }: { value: number | null; label: string; disabled: boolean; onCommit: (limit: number | null) => void }) {
+  const [text, setText] = useState(value == null ? "" : String(value));
+  function commit() {
+    const trimmed = text.trim();
+    const next = trimmed === "" ? null : Number(trimmed);
+    if (next === value) return;
+    if (next !== null && (!Number.isInteger(next) || next < 1 || next > 999)) {
+      setText(value == null ? "" : String(value));
+      return;
+    }
+    onCommit(next);
+  }
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={text}
+      disabled={disabled}
+      maxLength={3}
+      placeholder="max"
+      aria-label={`Höchstzahl für ${label} (leer = unbegrenzt)`}
+      onChange={(e) => setText(e.target.value.replace(/\D/g, ""))}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === "Enter" && (e.currentTarget.blur())}
+      className="w-11 rounded-md border border-line bg-surface px-1.5 py-0.5 text-center text-xs text-fg outline-none focus:border-accent"
+    />
+  );
+}
+
 function ListCard({
   list,
   first,
@@ -207,8 +237,19 @@ function ListCard({
           {list.options.length > 0 && (
             <ul className="flex flex-wrap gap-1.5">
               {list.options.map((o) => (
-                <li key={o.id} className="flex items-center gap-1 rounded-full bg-surface-2 py-1 pl-3 pr-1.5 text-sm text-fg">
+                <li key={o.id} className="flex items-center gap-1.5 rounded-full bg-surface-2 py-1 pl-3 pr-1.5 text-sm text-fg">
                   {o.label}
+                  <span className="text-xs tabular-nums text-muted" title="So viele Charaktere haben diesen Eintrag (Höchstzahl)">
+                    {o.used ?? 0}
+                    {o.maxCount != null ? `/${o.maxCount}` : ""}
+                  </span>
+                  <LimitInput
+                    key={`${o.id}:${o.maxCount ?? ""}`}
+                    value={o.maxCount ?? null}
+                    label={o.label}
+                    disabled={disabled}
+                    onCommit={(limit) => run(() => setChoiceOptionLimit(worldId, o.id, limit))}
+                  />
                   <button
                     type="button"
                     disabled={disabled}

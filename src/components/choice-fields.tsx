@@ -21,11 +21,15 @@ export function ChoiceField({ list, value }: { list: ChoiceList; value?: string 
       <select name={name} defaultValue={value ?? ""} className={control}>
         <option value="">–</option>
         {legacy && <option value={legacy}>{legacy}</option>}
-        {list.options.map((o) => (
-          <option key={o.id} value={o.label}>
-            {o.label}
-          </option>
-        ))}
+        {list.options.map((o) => {
+          // Voll vergebene Einträge (Höchstzahl der Welt) bleiben sichtbar, aber nicht wählbar; der eigene Wert bleibt wählbar
+          const full = o.maxCount != null && (o.used ?? 0) >= o.maxCount && o.label !== value;
+          return (
+            <option key={o.id} value={o.label} disabled={full}>
+              {full ? `${o.label} (voll)` : o.label}
+            </option>
+          );
+        })}
       </select>
     </label>
   );

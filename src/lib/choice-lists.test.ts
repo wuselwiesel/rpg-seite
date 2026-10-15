@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeLists, choiceEntries, isListActive, parseChoices, speciesFromLabel, splitOptionLabels, type ChoiceList } from "./choice-lists";
+import { activeLists, choiceEntries, isListActive, limitError, parseChoices, speciesFromLabel, splitOptionLabels, type ChoiceList } from "./choice-lists";
 
 const species: ChoiceList = { id: "s", label: "Wesen", mode: "dropdown", isSpecies: true, options: [{ id: "1", label: "Elf" }, { id: "2", label: "Werwolf" }] };
 const job: ChoiceList = { id: "j", label: "Beruf", mode: "text", isSpecies: false, options: [] };
@@ -28,5 +28,34 @@ describe("choice-lists", () => {
   });
   it("Einträge trennen", () => {
     expect(splitOptionLabels("Elf, Zwerg\nelf; Troll")).toEqual(["Elf", "Zwerg", "Troll"]);
+  });
+});
+
+describe("limitError", () => {
+  const lists = [
+    {
+      id: "l1",
+      label: "Wesen",
+      mode: "dropdown" as const,
+      isSpecies: true,
+      options: [
+        { id: "o1", label: "Vampir", maxCount: 2 },
+        { id: "o2", label: "Mensch", maxCount: null },
+      ],
+    },
+  ];
+  it("lässt Einträge ohne Grenze und unterhalb der Grenze zu", () => {
+    expect(limitError(lists, { l1: "Mensch" }, { l1: { Mensch: 50 } })).toBeNull();
+    expect(limitError(lists, { l1: "Vampir" }, { l1: { Vampir: 1 } })).toBeNull();
+  });
+  it("sperrt, wenn die Höchstzahl erreicht ist", () => {
+    expect(limitError(lists, { l1: "Vampir" }, { l1: { Vampir: 2 } })).toContain("schon 2×");
+  });
+  it("wer den Eintrag schon hat, bleibt ungestört", () => {
+    expect(limitError(lists, { l1: "Vampir" }, { l1: { Vampir: 2 } }, { l1: "Vampir" })).toBeNull();
+  });
+  it("ohne Wert oder bei Freitext gibt es keine Prüfung", () => {
+    expect(limitError(lists, {}, { l1: { Vampir: 9 } })).toBeNull();
+    expect(limitError([{ ...lists[0], mode: "text" as const }], { l1: "Vampir" }, { l1: { Vampir: 9 } })).toBeNull();
   });
 });

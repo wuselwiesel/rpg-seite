@@ -14,8 +14,8 @@ import { getCharacterAccess } from "@/lib/npc-data";
 import { parseTalentConfig } from "@/lib/talents";
 import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
 import { createNotification } from "@/lib/notifications";
-import { getWorldChoiceLists } from "@/lib/choice-lists-data";
-import { activeLists, parseChoices, speciesFromLabel } from "@/lib/choice-lists";
+import { getChoiceUsage, getWorldChoiceLists } from "@/lib/choice-lists-data";
+import { activeLists, limitError, parseChoices, speciesFromLabel } from "@/lib/choice-lists";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
 const GENDERS = ["maennlich", "weiblich", "divers"] as const;
@@ -98,6 +98,9 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   // Auswahllisten der Welt: gewählte Werte; ersetzt die Liste „Wesen“ die feste Auswahl, folgt die Natur ihrem Wert
   const choiceLists = await getWorldChoiceLists(activeWorld.id);
   const choices = parseChoices((k) => (formData.has(k) ? String(formData.get(k)) : null), choiceLists);
+  // Höchstzahl je Eintrag (z. B. höchstens 2 Vampire in der Welt)
+  const createLimit = limitError(choiceLists, choices, await getChoiceUsage(activeWorld.id));
+  if (createLimit) return createLimit;
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
   const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
 
@@ -217,6 +220,9 @@ export async function updateCharacter(
     if (submitted[list.id]) choices[list.id] = submitted[list.id];
     else delete choices[list.id];
   }
+  // Höchstzahl je Eintrag: Behält der Charakter seinen Eintrag, zählt er nicht gegen die Grenze
+  const updateLimit = limitError(choiceLists, choices, await getChoiceUsage(own.world_id), (own.choices ?? {}) as Record<string, string>);
+  if (updateLimit) return updateLimit;
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
   const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
 

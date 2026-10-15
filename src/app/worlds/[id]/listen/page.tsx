@@ -20,7 +20,7 @@ export default async function WorldListsPage({ params }: { params: Promise<{ id:
   const { data: admin } = await supabase.rpc("is_world_admin", { _world_id: id });
   if (!admin) redirect(`/worlds/${id}`);
 
-  const lists = await getWorldChoiceLists(id);
+  const lists = await getWorldChoiceLists(id, true);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">

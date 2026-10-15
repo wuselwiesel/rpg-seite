@@ -84,7 +84,8 @@ export function NameBadge({ characterId, userId, symbolOnly = false, sealOnly = 
   return (
     <>
       {decor.mark && <AccountSeal kind={decor.mark} />}
-      {decor.symbol && (
+      {/* Ein Konto mit Siegel zeigt nur das Siegel: ein selbst gewähltes Zeichen daneben sähe wie ein zweites Abzeichen aus */}
+      {decor.symbol && !decor.mark && (
         <span className="inline-flex shrink-0 items-center self-center text-[13px] leading-none">
           <EmojiText text={decor.symbol} />
         </span>

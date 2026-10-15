@@ -38,6 +38,9 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
   const accountBadges = (await getAccountBadges(userId)).filter((b) => b.kind === "account");
   const badges = isOwn ? accountBadges : visibleBadges(accountBadges);
   const displayName = profile.nickname || profile.username;
+  // Ein Konto mit Siegel zeigt nur das Siegel, kein zusätzliches selbst gewähltes Zeichen
+  const { data: sealRows } = await supabase.from("account_marks").select("kind").eq("user_id", profile.id).in("kind", ["builder", "verified", "official"]);
+  const sealed = (sealRows ?? []).length > 0;
   const fields = redProfile?.custom_fields ?? [];
 
   return (
@@ -80,7 +83,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
           <h1 className="mt-3 flex items-center gap-1.5 truncate text-xl font-semibold text-fg sm:text-2xl">
             {displayName}
             <NameBadge userId={profile.id} sealOnly />
-            {redProfile?.name_symbol && (
+            {redProfile?.name_symbol && !sealed && (
               <span className="ml-1.5 inline-block align-middle">
                 <EmojiText text={redProfile.name_symbol} />
               </span>

@@ -32,7 +32,7 @@ export default async function EditCharacterPage({
 
   // Für Partner:in / beste:r Freund:in: eigene + Freundes-Charaktere derselben Welt, ohne sich selbst.
   const mentionable = (await getMentionableCharacters(user.id, character.world_id)).filter((c) => c.id !== character.id);
-  const choiceLists = await getWorldChoiceLists(character.world_id);
+  const choiceLists = await getWorldChoiceLists(character.world_id, true);
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">

@@ -83,6 +83,17 @@ export async function addChoiceOptions(worldId: string, listId: string, raw: str
   return done(worldId);
 }
 
+// Höchstzahl eines Eintrags (null = unbegrenzt): so viele Charaktere der Welt dürfen ihn höchstens haben
+export async function setChoiceOptionLimit(worldId: string, optionId: string, limit: number | null): Promise<string | null> {
+  if (limit !== null && (!Number.isInteger(limit) || limit < 1 || limit > 999)) return "Bitte eine Zahl von 1 bis 999 eingeben (leer = unbegrenzt).";
+  const { supabase, user } = await me();
+  if (!user) return "Nicht angemeldet.";
+  const { data, error } = await supabase.from("world_choice_options").update({ max_count: limit }).eq("id", optionId).select("id");
+  if (error) return permissionError(error);
+  if (!data?.length) return NOT_ALLOWED;
+  return done(worldId);
+}
+
 export async function deleteChoiceOption(worldId: string, optionId: string): Promise<string | null> {
   const { supabase, user } = await me();
   if (!user) return "Nicht angemeldet.";

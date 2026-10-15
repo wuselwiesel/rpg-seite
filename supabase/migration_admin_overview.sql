@@ -48,15 +48,15 @@ begin
       'month', (select count(*) from real_accounts where last_seen_at > now() - interval '30 days')
     ),
     'content', jsonb_build_object(
-      'worlds', (select count(*) from public.worlds where coalesce(is_demo, false) = false),
-      'worlds_public', (select count(*) from public.worlds where is_public and coalesce(is_demo, false) = false),
-      'worlds_explorable', (select count(*) from public.worlds where preview <> 'none' and coalesce(is_demo, false) = false),
-      'characters', (select count(*) from public.characters where deleted_at is null and coalesce(is_npc, false) = false),
-      'npcs', (select count(*) from public.characters where deleted_at is null and coalesce(is_npc, false)),
-      'posts_7d', (select count(*) from public.posts where created_at > now() - interval '7 days'),
-      'scene_entries_7d', (select count(*) from public.story_entries where created_at > now() - interval '7 days'),
-      'messages_7d', (select count(*) from public.messages where created_at > now() - interval '7 days'),
-      'redaktion_posts_7d', (select count(*) from public.redaktion_posts where created_at > now() - interval '7 days')
+      'worlds', (select count(*) from public.worlds w where coalesce(w.is_demo, false) = false and w.created_by in (select id from real_accounts)),
+      'worlds_public', (select count(*) from public.worlds w where w.is_public and coalesce(w.is_demo, false) = false and w.created_by in (select id from real_accounts)),
+      'worlds_explorable', (select count(*) from public.worlds w where w.preview <> 'none' and coalesce(w.is_demo, false) = false and w.created_by in (select id from real_accounts)),
+      'characters', (select count(*) from public.characters c where c.deleted_at is null and coalesce(c.is_npc, false) = false and c.owner_id in (select id from real_accounts)),
+      'npcs', (select count(*) from public.characters c where c.deleted_at is null and coalesce(c.is_npc, false) and c.owner_id in (select id from real_accounts)),
+      'posts_7d', (select count(*) from public.posts x join public.characters c on c.id = x.character_id where x.created_at > now() - interval '7 days' and c.owner_id in (select id from real_accounts)),
+      'scene_entries_7d', (select count(*) from public.story_entries e join public.characters c on c.id = e.character_id where e.created_at > now() - interval '7 days' and c.owner_id in (select id from real_accounts)),
+      'messages_7d', (select count(*) from public.messages m join public.characters c on c.id = m.character_id where m.created_at > now() - interval '7 days' and c.owner_id in (select id from real_accounts)),
+      'redaktion_posts_7d', (select count(*) from public.redaktion_posts r where r.created_at > now() - interval '7 days' and r.author_id in (select id from real_accounts))
     ),
     'recent_signups', (
       select coalesce(jsonb_agg(row_to_json(s)), '[]'::jsonb) from (

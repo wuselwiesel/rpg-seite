@@ -16,7 +16,7 @@ export default async function NewCharacterPage({ searchParams }: PageProps<"/cha
   const world = await getActiveWorld(user.id);
   const takenNames = world ? await getWorldFirstNames(world.id) : [];
   const randomLists = world ? await fetchRandomLists(supabase, world.id) : undefined;
-  const choiceLists = world ? await getWorldChoiceLists(world.id) : [];
+  const choiceLists = world ? await getWorldChoiceLists(world.id, true) : [];
   const npc = Array.isArray(sp.npc) ? sp.npc[0] : sp.npc;
   return <NewCharacterForm takenNames={takenNames} randomLists={randomLists} startAsNpc={npc === "1"} choiceLists={choiceLists} />;
 }
