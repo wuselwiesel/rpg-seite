@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseInviteLink } from "./invite-link";
+import { parseInviteLink, parseInviteToken } from "./invite-link";
 
 const id = "4a7afa6c-d110-42b5-8bc2-1b995ec6aca4";
 
@@ -15,5 +15,17 @@ describe("Einladungslink", () => {
   it("lehnt anderes ab", () => {
     expect(parseInviteLink("hallo")).toBeNull();
     expect(parseInviteLink("https://x.de/wiki/" + id)).toBeNull();
+  });
+});
+
+describe("Einladungs-Schlüssel", () => {
+  const token = "0123456789abcdef0123456789abcdef";
+  it("liest den Schlüssel aus dem Link", () => {
+    expect(parseInviteToken(`https://x.de/worlds/join/${id}?t=${token}`)).toBe(token);
+    expect(parseInviteToken(`/worlds/join/${id}?a=1&t=${token.toUpperCase()}#x`)).toBe(token);
+  });
+  it("gibt ohne Schlüssel null zurück", () => {
+    expect(parseInviteToken(`https://x.de/worlds/join/${id}`)).toBeNull();
+    expect(parseInviteToken(`?t=zu-kurz`)).toBeNull();
   });
 });

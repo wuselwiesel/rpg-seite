@@ -367,3 +367,63 @@ export async function setAdminNotifyMuted(worldId: string, muted: string[]): Pro
   if (error) return error.code === "42501" ? "Das geht nur für Admins dieser Welt." : error.message;
   return null;
 }
+
+// Einladungslink einer Welt (Admins): den aktiven Schlüssel liefern, sonst einen neuen anlegen
+export async function getInviteToken(worldId: string): Promise<{ token: string } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { data: existing } = await supabase
+    .from("world_invites")
+    .select("token")
+    .eq("world_id", worldId)
+    .is("revoked_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ token: string }>();
+  if (existing) return { token: existing.token };
+  const { data, error } = await supabase.from("world_invites").insert({ world_id: worldId, created_by: user.id }).select("token").single<{ token: string }>();
+  if (error || !data) return { error: error?.code === "42501" ? "Einladungslinks erstellen nur Admins der Welt." : (error?.message ?? "Der Link konnte nicht erstellt werden.") };
+  return { token: data.token };
+}
+
+// Alten Einladungslink ungültig machen und einen neuen anlegen
+export async function renewInviteToken(worldId: string): Promise<{ token: string } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { error } = await supabase.from("world_invites").update({ revoked_at: new Date().toISOString() }).eq("world_id", worldId).is("revoked_at", null);
+  if (error) return { error: error.message };
+  return getInviteToken(worldId);
+}
+
+// Mit Einladungslink beitreten: gilt auch für „Nur auf Einladung“ und „Auf Anfrage“
+export async function joinWithInvite(worldId: string, token: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: wasMember } = await supabase.from("world_members").select("world_id").eq("world_id", worldId).eq("user_id", user.id).maybeSingle();
+  const { data: err, error } = await supabase.rpc("join_world_by_invite", { p_world: worldId, p_token: token });
+  if (error) return error.message;
+  if (err) return err as string;
+  if (!wasMember) await notifyWorldAdmins(supabase, worldId, "member_join", user.id, "ist der Welt per Einladungslink beigetreten");
+
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
+  cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  revalidatePath("/", "layout");
+  const { count } = await supabase
+    .from("characters")
+    .select("id", { count: "exact", head: true })
+    .eq("world_id", worldId)
+    .eq("owner_id", user.id)
+    .is("deleted_at", null);
+  redirect(count ? "/" : "/characters/new?welcome=1");
+}

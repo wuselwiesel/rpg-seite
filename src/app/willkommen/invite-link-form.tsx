@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { parseInviteLink } from "@/lib/invite-link";
+import { parseInviteLink, parseInviteToken } from "@/lib/invite-link";
 
 export function InviteLinkForm() {
   const router = useRouter();
@@ -15,7 +15,8 @@ export function InviteLinkForm() {
         e.preventDefault();
         const id = parseInviteLink(value);
         if (!id) return setError(true);
-        router.push(`/worlds/join/${id}`);
+        const token = parseInviteToken(value);
+        router.push(`/worlds/join/${id}${token ? `?t=${token}` : ""}`);
       }}
       className="flex flex-col gap-1"
     >

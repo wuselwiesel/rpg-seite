@@ -8,3 +8,9 @@ export function parseInviteLink(text: string): string | null {
   const bare = t.match(new RegExp(`^(${UUID})$`, "i"));
   return bare ? bare[1].toLowerCase() : null;
 }
+
+// Schlüssel eines Einladungslinks („…/worlds/join/<id>?t=<schlüssel>“); ohne Schlüssel gilt der alte Link nur mit Welt-Nummer
+export function parseInviteToken(text: string): string | null {
+  const m = text.trim().match(/[?&]t=([0-9a-f]{32})(?:[&#]|$)/i);
+  return m ? m[1].toLowerCase() : null;
+}
