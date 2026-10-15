@@ -111,6 +111,7 @@ export async function ChatList() {
                 lastMessage={last ? { text: messagePreview(last), at: last.created_at, sender: senderName } : null}
                 unreadCount={unreadCounts[chat.id] ?? 0}
                 sealCharacterId={chat.is_group ? null : (others[0]?.id ?? null)}
+                groupMembers={chat.is_group ? others.map((c) => ({ name: c.name, avatarUrl: c.avatar_url ?? null })) : []}
                 muted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
               />
             </li>

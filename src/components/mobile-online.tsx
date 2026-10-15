@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { X, Users } from "lucide-react";
 import { useOnline } from "@/components/online-status";
 import { MemberList, useOnlineMembers, type OnlineMember } from "@/components/online-list";
 
@@ -23,8 +23,9 @@ export function MobileOnline({ members, selfId }: { members: OnlineMember[]; sel
   const label = online.length > 0 ? `Online: ${online.map((m) => m.name).join(", ")}` : "Mitglieder";
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={label} title={label} className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2">
-        <span aria-hidden className={`h-3 w-3 rounded-full ${online.length > 0 ? "bg-emerald-500" : "bg-fg/30"}`} />
+      <button type="button" onClick={() => setOpen(true)} aria-label={label} title={label} className="relative flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+        <Users className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+        <span aria-hidden className={`absolute bottom-1.5 right-1 h-2.5 w-2.5 rounded-full ring-2 ring-app ${online.length > 0 ? "bg-emerald-500" : "bg-fg/30"}`} />
       </button>
       {/* Über der Kopfzeile und der unteren Leiste (eigene Ebene am Seitenende), sonst schneidet die untere Leiste das Blatt ab */}
       {open &&

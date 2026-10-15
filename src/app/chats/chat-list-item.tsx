@@ -18,6 +18,7 @@ export function ChatListItem({
   unreadCount,
   muted = false,
   sealCharacterId = null,
+  groupMembers = [],
 }: {
   id: string;
   title: string;
@@ -30,6 +31,8 @@ export function ChatListItem({
   muted?: boolean;
   // Zweier-Chat: Charakter der Gegenseite, damit ihr Konto-Siegel neben dem Namen steht
   sealCharacterId?: string | null;
+  // Gruppe ohne eigenes Bild: Bilder und Namen der Mitglieder (bis zu zwei werden übereinander gezeigt)
+  groupMembers?: { name: string; avatarUrl: string | null }[];
 }) {
   const active = usePathname() === `/chats/${id}`;
   const unread = unreadCount > 0 && !active;
@@ -42,7 +45,18 @@ export function ChatListItem({
       }`}
     >
       <span className="relative shrink-0">
-        <CharacterAvatar name={title} avatarUrl={avatarUrl} size={52} />
+        {!avatarUrl && groupMembers.length >= 2 ? (
+          <span className="relative block h-[52px] w-[52px]" aria-hidden>
+            <span className="absolute left-0 top-0 rounded-full ring-2 ring-app">
+              <CharacterAvatar name={groupMembers[0].name} avatarUrl={groupMembers[0].avatarUrl} size={34} />
+            </span>
+            <span className="absolute bottom-0 right-0 rounded-full ring-2 ring-app">
+              <CharacterAvatar name={groupMembers[1].name} avatarUrl={groupMembers[1].avatarUrl} size={34} />
+            </span>
+          </span>
+        ) : (
+          <CharacterAvatar name={title} avatarUrl={avatarUrl} size={52} />
+        )}
         <PresenceDot online={online} overlay />
       </span>
       <div className="min-w-0 flex-1">
