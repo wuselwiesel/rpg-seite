@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -438,7 +438,7 @@ export function ChatRoom({
     const error = await setChatMuted(chatId, next);
     if (error) {
       setMuted(!next);
-      alert(error);
+      void alertDialog(error);
     }
   }
 
@@ -470,7 +470,7 @@ export function ChatRoom({
       : "Diesen Chat mit allen Nachrichten löschen? Das kann nicht rückgängig gemacht werden.";
     if (!(await confirmDialog({ message: text, confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteChat(chatId);
-    if (error) alert(error);
+    if (error) void alertDialog(error);
   }
 
   function startEdit(message: Message) {
@@ -485,14 +485,14 @@ export function ChatRoom({
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content } : m)));
     setEditingId(null);
     const error = await updateMessage(messageId, content);
-    if (error) alert(error);
+    if (error) void alertDialog(error);
   }
 
   async function handleDelete(messageId: string) {
     if (!(await confirmDialog({ message: "Diese Nachricht wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
     const error = await deleteMessage(messageId, chatId);
-    if (error) alert(error);
+    if (error) void alertDialog(error);
   }
 
   return (

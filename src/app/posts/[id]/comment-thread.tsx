@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { NameBadge } from "@/components/name-badge";
 import { useOptimistic, useState, useTransition, useActionState, useEffect, useRef } from "react";
 import { Heart, Pencil, Trash2, UserRoundPlus, X } from "lucide-react";
@@ -248,7 +248,7 @@ export function CommentThread({
         next.delete(id);
         return next;
       });
-      alert(err);
+      void alertDialog(err);
     }
   }
 

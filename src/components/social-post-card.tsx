@@ -136,7 +136,7 @@ export function SocialPostCard({
             isOwn={post.characterId === activeCharacterId}
             commentSlot={
               <>
-                <Link href={detailHref} aria-label="Kommentieren" className="text-fg transition duration-150 hover:text-muted active:scale-75">
+                <Link href={detailHref} aria-label="Kommentieren" className="relative text-fg transition duration-150 before:absolute before:-inset-2 before:content-[''] hover:text-muted active:scale-75">
                   <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
                 </Link>
                 <SharePostButton postId={post.id} characterId={activeCharacterId} />

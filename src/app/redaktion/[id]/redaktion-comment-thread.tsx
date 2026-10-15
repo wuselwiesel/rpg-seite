@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { NameBadge } from "@/components/name-badge";
 import { MentionTextarea } from "@/components/mention-textarea";
 import { EmojiText } from "@/components/custom-emoji-provider";
@@ -64,7 +64,7 @@ export function RedaktionCommentThread({
         next.delete(id);
         return next;
       });
-      alert(err);
+      void alertDialog(err);
     }
   }
 

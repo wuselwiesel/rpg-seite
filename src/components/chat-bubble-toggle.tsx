@@ -32,6 +32,7 @@ export function ChatBubbleToggle() {
         type="button"
         role="switch"
         aria-checked={enabled}
+        aria-label="Chat-Blase anzeigen"
         onClick={toggle}
         className={`relative h-6 w-11 shrink-0 rounded-full transition ${enabled ? "bg-accent-strong" : "bg-surface-3"}`}
       >

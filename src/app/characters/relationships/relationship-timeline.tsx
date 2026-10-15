@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { deleteRelationship, updateRelationshipStep } from "../actions";
@@ -45,7 +45,7 @@ export function RelationshipTimeline({
   async function handleDelete(id: string) {
     if (!(await confirmDialog({ message: "Diese Beziehung samt Verlauf wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteRelationship(id);
-    if (error) alert(error);
+    if (error) void alertDialog(error);
   }
 
   const names = new Map(characters.map((c) => [c.id, c.name]));
@@ -118,7 +118,7 @@ export function RelationshipTimeline({
                       setEditingId(editingId === rel.id ? null : rel.id)
                     }
                     title="Beziehung weiterentwickeln"
-                    className="rounded p-1 text-muted transition hover:bg-surface-3 hover:text-fg"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-3 hover:text-fg"
                   >
                     <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                   </button>
@@ -128,7 +128,7 @@ export function RelationshipTimeline({
                     type="button"
                     onClick={() => handleDelete(rel.id)}
                     title="Löschen"
-                    className="rounded p-1 text-muted transition hover:bg-surface-3 hover:text-red-500"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-3 hover:text-red-500"
                   >
                     <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                   </button>
@@ -165,7 +165,7 @@ export function RelationshipTimeline({
                           onClick={() => setEditingStep(step.id)}
                           title="Datum und Notiz ändern"
                           aria-label="Datum und Notiz dieses Schritts ändern"
-                          className="rounded p-0.5 text-muted transition hover:bg-surface-3 hover:text-fg"
+                          className="relative before:absolute before:-inset-2 before:content-[''] rounded p-0.5 text-muted transition hover:bg-surface-3 hover:text-fg"
                         >
                           <Pencil className="h-3 w-3" strokeWidth={2} />
                         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { deleteCharacter } from "./actions";
@@ -19,10 +19,10 @@ export function DeleteCharacterIcon({ characterId, characterName }: { characterI
         if (!(await confirmDialog({ message: `"${characterName}" löschen? Alles, was der Charakter geschrieben hat, bleibt erhalten.`, confirmLabel: "Löschen", danger: true }))) return;
         startTransition(async () => {
           const result = await deleteCharacter(characterId);
-          if (result) alert(result);
+          if (result) void alertDialog(result);
         });
       }}
-      className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
     >
       <Trash2 className="h-4 w-4" strokeWidth={2} />
     </button>

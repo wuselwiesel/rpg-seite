@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { deleteWikiPage } from "../actions";
@@ -23,7 +23,7 @@ export function DeleteWikiPageButton({
     if (!(await confirmDialog({ message: text, confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteWikiPage(wikiPageId);
     if (error) {
-      alert(error);
+      void alertDialog(error);
       return;
     }
     router.push(backTo);

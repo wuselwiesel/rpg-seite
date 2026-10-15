@@ -214,7 +214,8 @@ export function MobileNav({
           <button
             type="button"
             onClick={() => setMoreOpen(false)}
-            className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+            aria-label="Menü schließen"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
           >
             <X className="h-5 w-5" strokeWidth={2} />
           </button>

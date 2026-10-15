@@ -38,7 +38,7 @@ export function SharePostButton({ postId, characterId }: { postId: string; chara
         type="button"
         onClick={openModal}
         aria-label="In Chat teilen"
-        className="text-fg transition duration-150 hover:text-muted active:scale-75"
+        className="relative text-fg transition duration-150 before:absolute before:-inset-2 before:content-[''] hover:text-muted active:scale-75"
       >
         <Send className="h-7 w-7" strokeWidth={1.75} />
       </button>

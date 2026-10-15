@@ -67,7 +67,7 @@ export function RedaktionReactionBar({
           }}
           aria-pressed={liked}
           aria-label={liked ? "Gefällt mir nicht mehr" : "Gefällt mir"}
-          className="flex items-center text-fg transition-transform duration-150 active:scale-75"
+          className="relative flex items-center text-fg transition-transform duration-150 before:absolute before:-inset-2 before:content-[''] active:scale-75"
         >
           <Heart
             key={beat}
@@ -83,7 +83,7 @@ export function RedaktionReactionBar({
           onClick={() => setPickerOpen(true)}
           title="Reaktion hinzufügen"
           aria-label="Reaktion hinzufügen"
-          className="ml-auto flex h-7 w-7 items-center justify-center text-fg transition duration-150 hover:text-muted active:scale-75"
+          className="relative ml-auto flex h-7 w-7 items-center justify-center text-fg transition duration-150 before:absolute before:-inset-2 before:content-[''] hover:text-muted active:scale-75"
         >
           <SmilePlus className="h-6 w-6" strokeWidth={1.75} />
         </button>

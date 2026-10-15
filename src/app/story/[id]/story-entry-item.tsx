@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
@@ -102,7 +102,7 @@ export function StoryEntryItem({
     const result = await chapterToScene(entry.id, storyPostId);
     if ("error" in result) {
       setSplitting(false);
-      alert(result.error);
+      void alertDialog(result.error);
     } else router.push(`/story/${result.id}`);
   }
   const [chapterError, setChapterError] = useState<string | null>(null);
@@ -122,7 +122,7 @@ export function StoryEntryItem({
   async function handleDelete() {
     if (!(await confirmDialog({ message: "Diesen Eintrag wirklich löschen?", confirmLabel: "Löschen", danger: true }))) return;
     const err = await deleteStoryEntry(entry.id, storyPostId);
-    if (err) alert(err);
+    if (err) void alertDialog(err);
   }
 
   if (entry.kind === "chapter") {
@@ -325,7 +325,7 @@ export function StoryEntryItem({
                     void setEntrySpoiler(entry.id, storyPostId, next).then((err) => {
                       if (err) {
                         setSpoiler(!next);
-                        alert(err);
+                        void alertDialog(err);
                       }
                     });
                   }}

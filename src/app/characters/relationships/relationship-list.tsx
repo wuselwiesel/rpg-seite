@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Pencil, Trash2, Users } from "lucide-react";
@@ -128,13 +128,13 @@ export function RelationshipList({
   async function handleDelete(id: string) {
     if (!(await confirmDialog({ message: "Diese Beziehung wirklich löschen? Sie verschwindet auch aus den ChaBos.", confirmLabel: "Löschen", danger: true }))) return;
     const error = await deleteRelationship(id);
-    if (error) alert(error);
+    if (error) void alertDialog(error);
   }
 
   function resolve(relId: string, characterId: string, use: "netz" | "chabo") {
     startTransition(async () => {
       const error = await resolveRelationshipConflict(relId, characterId, use);
-      if (error) alert(error);
+      if (error) void alertDialog(error);
     });
   }
 
@@ -198,7 +198,7 @@ export function RelationshipList({
                     onClick={() => setEditingId(editingId === rel.id ? null : rel.id)}
                     title="Bearbeiten oder beenden"
                     aria-label="Beziehung bearbeiten"
-                    className="rounded p-1 text-muted transition hover:bg-surface-3 hover:text-fg"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-3 hover:text-fg"
                   >
                     <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                   </button>
@@ -209,7 +209,7 @@ export function RelationshipList({
                     onClick={() => handleDelete(rel.id)}
                     title="Löschen"
                     aria-label="Beziehung löschen"
-                    className="rounded p-1 text-muted transition hover:bg-surface-3 hover:text-red-500"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-3 hover:text-red-500"
                   >
                     <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                   </button>

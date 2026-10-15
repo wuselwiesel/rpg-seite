@@ -93,7 +93,7 @@ export function PresenceControl({ characterId, online, placement = "inline", dir
         aria-expanded={open}
         aria-label={value ? "Online – Status ändern" : "Offline – Status ändern"}
         title={value ? "Online" : "Offline"}
-        className="flex h-5 w-5 items-center justify-center rounded-full"
+        className="relative flex h-5 w-5 items-center justify-center rounded-full before:absolute before:-inset-2.5 before:content-['']"
       >
         <PresenceDot online={value} overlay={false} className={overlay ? "box-content h-3 w-3 border-2 border-app" : ""} />
       </button>

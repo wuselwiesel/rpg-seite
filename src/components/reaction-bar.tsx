@@ -10,6 +10,7 @@ import { toggleReaction, getPostReactors, setBonusLikes, type Reactor } from "@/
 import { CharacterAvatar } from "./character-avatar";
 import { POST_LIKE_EVENT } from "./double-tap-like";
 import type { ReactionSummary } from "@/lib/reactions";
+import { alertDialog } from "@/components/confirm-dialog";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
@@ -145,7 +146,7 @@ export function ReactionBar({
     const err = await setBonusLikes(postId, value);
     setBoostSaving(false);
     if (err) {
-      alert(err);
+      void alertDialog(err);
       return;
     }
     setBonusLikesState(value);
@@ -181,7 +182,7 @@ export function ReactionBar({
       aria-label="Reaktion hinzufügen"
       className={
         heart
-          ? "flex h-7 w-7 items-center justify-center text-fg transition duration-150 hover:text-muted active:scale-75"
+          ? "relative flex h-7 w-7 items-center justify-center text-fg transition duration-150 before:absolute before:-inset-2 before:content-[''] hover:text-muted active:scale-75"
           : `flex h-6 w-6 items-center justify-center rounded-full transition ${
               onBubble ? "text-current opacity-80 hover:bg-current/15" : "text-muted hover:bg-surface-2 hover:text-fg"
             }`
@@ -203,7 +204,7 @@ export function ReactionBar({
             }}
             aria-pressed={liked}
             aria-label={liked ? "Gefällt mir nicht mehr" : "Gefällt mir"}
-            className="flex items-center text-fg transition-transform duration-150 active:scale-75"
+            className="relative flex items-center text-fg transition-transform duration-150 before:absolute before:-inset-2 before:content-[''] active:scale-75"
           >
             <Heart
               key={beat}

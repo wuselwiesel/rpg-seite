@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Bookmark, BookOpen, Lock, Pin, Archive, EyeOff, ShieldAlert } from "lucide-react";
 import { toggleStoryPostFlag, toggleStoryBookmark } from "../actions";
+import { alertDialog } from "@/components/confirm-dialog";
 
 export function StoryPostControls({
   storyPostId,
@@ -62,7 +63,7 @@ export function StoryPostControls({
       const result = await toggleStoryBookmark(storyPostId);
       if (result.error) {
         setBookmarked(!next);
-        alert(result.error);
+        void alertDialog(result.error);
       }
     });
   }
@@ -74,7 +75,7 @@ export function StoryPostControls({
       const error = await toggleStoryPostFlag(storyPostId, flag, value);
       if (error) {
         setters[flag](!value);
-        alert(error);
+        void alertDialog(error);
       }
     });
   }

@@ -159,15 +159,15 @@ export function MessageBubble({
             </p>
             {!editing && !message.pending && (
               <span className="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
-                <button type="button" onClick={onReply} title="Antworten" className="rounded p-0.5 hover:bg-black/10">
+                <button type="button" onClick={onReply} title="Antworten" className="relative before:absolute before:-inset-2 before:content-[''] rounded p-0.5 hover:bg-black/10">
                   <CornerUpLeft className="h-3 w-3" strokeWidth={2} />
                 </button>
                 {isOwn && (
                   <>
-                    <button type="button" onClick={onStartEdit} title="Bearbeiten" className="rounded p-0.5 hover:bg-black/10">
+                    <button type="button" onClick={onStartEdit} title="Bearbeiten" className="relative before:absolute before:-inset-2 before:content-[''] rounded p-0.5 hover:bg-black/10">
                       <Pencil className="h-3 w-3" strokeWidth={2} />
                     </button>
-                    <button type="button" onClick={onDelete} title="Löschen" className="rounded p-0.5 hover:bg-black/10">
+                    <button type="button" onClick={onDelete} title="Löschen" className="relative before:absolute before:-inset-2 before:content-[''] rounded p-0.5 hover:bg-black/10">
                       <Trash2 className="h-3 w-3" strokeWidth={2} />
                     </button>
                   </>
