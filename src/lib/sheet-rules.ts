@@ -19,6 +19,8 @@ export const MAX_FAMILY_FIELDS = 30;
 export const FAMILY_SUGGESTIONS = ["Mutter", "Vater", "Bruder", "Schwester", "Geschwister", "Großmutter", "Großvater", "Tante", "Onkel", "Cousin", "Cousine", "Partner:in", "Kind", "Rudel", "Zieheltern"];
 export const MAX_NOTE_BLOCKS = 30;
 export const MAX_NOTE_HTML = 30000;
+// Standard-Überschrift der Sektion mit den Zeilen zu Familie, Freunden, Beziehungen (frei änderbar)
+export const DEFAULT_FAMILY_TITLE = "Beziehungen";
 export const PERSONAL_DEFAULT_LABELS = ["Titel", "Vorname", "Nachname", "Spitzname", "Alter", "Wesen", "Rang"];
 
 export type AttrCode = (typeof ATTR_TABLE)[number]["code"];
@@ -57,7 +59,7 @@ export type SheetData = {
   personalFields: SheetItem[];
   // Sektion „Familie“: eigene Zeilen (Bezeichnung + Angabe, mit @ auf Charaktere verlinkbar)
   family: SheetItem[];
-  // Überschrift dieser Sektion (frei wählbar, z. B. „Freunde“); leer = „Familie“
+  // Überschrift dieser Sektion (frei wählbar, z. B. „Familie“ oder „Freunde“); leer = „Beziehungen“
   familyTitle: string;
   attrBasis: Record<string, string>;
   attrBonus: Record<string, string>;
@@ -74,7 +76,7 @@ export function emptySheet(): SheetData {
     luckPointsUsed: 0,
     personalFields: PERSONAL_DEFAULT_LABELS.map((label) => ({ label, value: "" })),
     family: [],
-    familyTitle: "Familie",
+    familyTitle: DEFAULT_FAMILY_TITLE,
     attrBasis: {},
     attrBonus: {},
     talentBasis: {},
@@ -236,7 +238,7 @@ export function normalizeSheet(raw: unknown, talentDefs?: TalentDef[], natureDef
   const familyRaw = Array.isArray(r.family) ? r.family : [];
   const family = familyRaw.slice(0, MAX_FAMILY_FIELDS).map((f) => item(f));
 
-  const familyTitle = clip(r.familyTitle, 40).trim() || "Familie";
+  const familyTitle = clip(r.familyTitle, 40).trim() || DEFAULT_FAMILY_TITLE;
 
   const blocks = Array.isArray(r.notesBlocks) ? r.notesBlocks : null;
   const notesBlocks = blocks?.length

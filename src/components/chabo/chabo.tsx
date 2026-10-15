@@ -48,6 +48,7 @@ import {
   withDerived,
   type Race,
   type SheetData,
+  DEFAULT_FAMILY_TITLE,
 } from "@/lib/sheet-rules";
 
 // Jedes Attribut hat einen festen Farbton (dieselben Töne wie bei Ordnern und Seitenarten im Wiki).
@@ -480,11 +481,11 @@ export function Chabo({
       </header>
 
       {(editing || seen(data.family).some((f) => f.label.trim() || f.value.trim())) && (
-        <section aria-label={data.familyTitle || "Familie"} className={card}>
+        <section aria-label={data.familyTitle || DEFAULT_FAMILY_TITLE} className={card}>
           {editing ? (
-            <input value={data.familyTitle} maxLength={40} placeholder="Familie" aria-label="Titel des Abschnitts" onChange={(e) => commit({ ...data, familyTitle: e.target.value })} className={`${textInput} font-serif text-xl`} />
+            <input value={data.familyTitle} maxLength={40} placeholder={DEFAULT_FAMILY_TITLE} aria-label="Titel des Abschnitts" onChange={(e) => commit({ ...data, familyTitle: e.target.value })} className={`${textInput} font-serif text-xl`} />
           ) : (
-            <h2 className="font-serif text-xl text-fg">{data.familyTitle || "Familie"}</h2>
+            <h2 className="font-serif text-xl text-fg">{data.familyTitle || DEFAULT_FAMILY_TITLE}</h2>
           )}
           {editing ? (
             <div className="flex flex-col gap-3">
