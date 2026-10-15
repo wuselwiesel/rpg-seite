@@ -81,8 +81,31 @@ export function EditWorldForm({
     });
   }
 
+  const sections = [
+    { id: "allgemein", label: "Allgemein" },
+    { id: "zugang", label: "Zugang" },
+    { id: "regeln", label: "Regeln" },
+    { id: "willkommen", label: "Willkommen" },
+    { id: "listen", label: "Auswahllisten" },
+    { id: "meldungen", label: "Meldungen" },
+    ...(dice ? [{ id: "talente", label: "Talente" }, { id: "naturen", label: "Naturen" }] : []),
+  ];
+
   return (
     <form ref={formRef} action={formAction} onSubmit={onSubmit} onInput={() => setDirty(true)} className="flex flex-col gap-4">
+      <nav aria-label="Abschnitte" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        {sections.map((x) => (
+          <a
+            key={x.id}
+            href={`#${x.id}`}
+            className="shrink-0 rounded-full border border-line px-3 py-1 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+          >
+            {x.label}
+          </a>
+        ))}
+      </nav>
+
+      <section id="allgemein" aria-label="Allgemein" className="flex scroll-mt-20 flex-col gap-4">
       <div data-tour="welt-titel" className="flex flex-col gap-1 text-sm text-fg-soft">
         Titelbild
         <AvatarUpload
@@ -115,6 +138,10 @@ export function EditWorldForm({
         />
       </label>
 
+      </section>
+
+      <section id="zugang" aria-label="Zugang" className="mt-4 flex scroll-mt-20 flex-col gap-4 border-t border-line pt-6">
+      <h2 className="font-serif text-xl text-fg">Zugang</h2>
       <label data-tour="welt-erkunden" className="flex flex-col gap-1 text-sm text-fg-soft">
         Erkunden vor dem Beitritt
         <select
@@ -146,8 +173,12 @@ export function EditWorldForm({
           defaultChecked={world.is_public === true}
           className="h-4 w-4 accent-[var(--accent-strong)]"
         />
-        Öffentlich
+        Öffentlich in „Welten entdecken“
       </label>
+      </section>
+
+      <section id="regeln" aria-label="Regeln" className="mt-4 flex scroll-mt-20 flex-col gap-4 border-t border-line pt-6">
+      <h2 className="font-serif text-xl text-fg">Regeln</h2>
       <label data-tour="welt-wuerfeln" className="flex items-center gap-3 text-sm text-fg">
         <input
           type="checkbox"
@@ -160,8 +191,9 @@ export function EditWorldForm({
       </label>
 
       <PermissionFields value={parsePermissions(world.permissions)} allowSecrets={world.allow_secrets !== false} />
+      </section>
 
-      <section className="mt-4 border-t border-line pt-6">
+      <section id="willkommen" aria-label="Willkommen" className="mt-4 scroll-mt-20 border-t border-line pt-6">
         <h2 data-tour="welt-willkommen" className="mb-3 font-serif text-xl text-fg">
           Willkommen
         </h2>
@@ -177,8 +209,8 @@ export function EditWorldForm({
 
       {listsSlot}
 
-      <fieldset data-tour="welt-admin-meldungen" className="mt-4 flex flex-col gap-3 rounded-xl border border-line p-4">
-        <legend className="px-1 text-sm font-medium text-fg">Meine Admin-Meldungen</legend>
+      <section id="meldungen" aria-label="Meine Admin-Meldungen" data-tour="welt-admin-meldungen" className="mt-4 flex scroll-mt-20 flex-col gap-3 border-t border-line pt-6">
+        <h2 className="font-serif text-xl text-fg">Meine Admin-Meldungen</h2>
         <input type="hidden" name="admin_notify_present" value="1" />
         {WORLD_ADMIN_EVENTS.map((e) => (
           <label key={e.key} className="flex items-center gap-3 text-sm text-fg-soft">
@@ -191,10 +223,10 @@ export function EditWorldForm({
             {e.label}
           </label>
         ))}
-      </fieldset>
+      </section>
 
       {dice && (
-        <section className="mt-4 border-t border-line pt-6">
+        <section id="talente" aria-label="Talente" className="mt-4 scroll-mt-20 border-t border-line pt-6">
           <h2 data-tour="welt-talente" className="mb-3 font-serif text-xl text-fg">
             Talente
           </h2>
@@ -210,7 +242,7 @@ export function EditWorldForm({
       )}
 
       {dice && (
-        <section className="mt-4 border-t border-line pt-6">
+        <section id="naturen" aria-label="Besondere Naturen" className="mt-4 scroll-mt-20 border-t border-line pt-6">
           <h2 data-tour="welt-naturen" className="mb-3 font-serif text-xl text-fg">
             Besondere Naturen
           </h2>

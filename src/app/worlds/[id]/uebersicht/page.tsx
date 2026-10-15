@@ -36,7 +36,7 @@ const ROLE_LABEL = { owner: "Besitzer:in", admin: "Admin", member: "Mitglied" } 
 function Stat({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
     <div className={card}>
-      <p className="font-serif text-3xl text-fg">{value}</p>
+      <p className="font-serif text-3xl text-fg lining-nums tabular-nums">{value}</p>
       <p className="text-sm text-fg-soft">{label}</p>
       {hint && <p className="mt-0.5 text-xs text-muted">{hint}</p>}
     </div>

@@ -44,7 +44,7 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
   const naturesInitial = natureRaw != null ? parseNatureConfig(natureRaw) : DEFAULT_NATURES;
 
   const listsSlot = (
-    <section data-tour="welt-auswahllisten" className="mt-4 border-t border-line pt-6">
+    <section id="listen" data-tour="welt-auswahllisten" className="mt-4 scroll-mt-20 border-t border-line pt-6">
       <h2 className="mb-3 font-serif text-xl text-fg">Auswahllisten</h2>
       <ul className="flex flex-col gap-2">
         {lists.map((l) => (
@@ -77,13 +77,15 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
         <ChevronLeft className="h-4 w-4" strokeWidth={2} />
         {world.name}
       </Link>
-      <h1 className="mb-1 font-serif text-3xl text-fg">Welt bearbeiten</h1>
-      <p className="mb-6 text-sm text-muted">
-        Titelbild, Name und Beschreibung von {world.name}.{" "}
-        <Link href={`/worlds/${world.id}/uebersicht`} className="text-accent hover:underline">
-          Zur Übersicht
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="font-serif text-3xl text-fg">Welt bearbeiten</h1>
+        <Link
+          href={`/worlds/${world.id}/uebersicht`}
+          className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
+        >
+          Übersicht
         </Link>
-      </p>
+      </div>
 
       <EditWorldForm world={world} welcomeInitial={world.welcome_html ?? ""} talentsInitial={talentsInitial} naturesInitial={naturesInitial} mutedEventsInitial={mutedEvents} listsSlot={listsSlot} />
 

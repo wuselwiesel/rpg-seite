@@ -81,7 +81,20 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
           {world.is_demo && <p className="mt-1 text-xs font-medium text-accent">Übungswelt</p>}
           {world.description && <p className="mt-1 text-sm text-muted">{world.description}</p>}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {isMember ? (
+            <EnterWorldButton worldId={world.id} primary />
+          ) : (
+            <JoinOrRequestButton worldId={world.id} joinMode={world.join_mode ?? "open"} hasRequest={myRequest} ownerId={world.created_by} />
+          )}
+          {!isMember && world.preview && world.preview !== "none" && (
+            <Link
+              href={`/worlds/${world.id}/vorschau`}
+              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
+            >
+              Erkunden
+            </Link>
+          )}
           {isAdmin && (
             <Link
               href={`/worlds/${world.id}/uebersicht`}
@@ -97,19 +110,6 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
             >
               Bearbeiten
             </Link>
-          )}
-          {!isMember && world.preview && world.preview !== "none" && (
-            <Link
-              href={`/worlds/${world.id}/vorschau`}
-              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
-            >
-              Erkunden
-            </Link>
-          )}
-          {isMember ? (
-            <EnterWorldButton worldId={world.id} />
-          ) : (
-            <JoinOrRequestButton worldId={world.id} joinMode={world.join_mode ?? "open"} hasRequest={myRequest} ownerId={world.created_by} />
           )}
         </div>
       </div>

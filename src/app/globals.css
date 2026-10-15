@@ -795,6 +795,8 @@ body {
 
 .font-serif {
   font-family: var(--font-serif), Georgia, serif;
+  /* Die Serifenschrift hat Mediävalziffern, bei denen 1 und 0 wie „I“ und „O“ aussehen: überall Versalziffern */
+  font-variant-numeric: lining-nums;
 }
 
 ::selection {
@@ -812,6 +814,7 @@ body {
 
 .post-content h2 {
   margin: 1em 0 0.5em;
+  font-variant-numeric: lining-nums;
   font-family: var(--font-serif), Georgia, serif;
   font-size: 1.5rem;
   color: var(--fg);
