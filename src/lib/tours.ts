@@ -50,13 +50,13 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Dein Charakter",
-        text: "Du schreibst immer als einer deiner Charaktere. Hier wählst du, wer gerade aktiv ist. Wechselst du, ändern sich Profil, ChaBo und Chats mit. Wie viele Charaktere du hast, bestimmst du selbst.",
+        text: "Du schreibst immer als einer deiner Charaktere. Hier wählst du, wer gerade aktiv ist. Wechselst du, ändern sich Profil, ChaBo (bzw. Steckbrief) und Chats mit. Wie viele Charaktere du hast, bestimmst du selbst.",
         route: "/",
         match: { attr: "character" },
       },
       {
         title: "Ingame, Story und Redaktion",
-        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit Feed, Chats und Suche. „Story“ ist das eigentliche Rollenspiel: Szenen, Wiki und ChaBo. „Redaktion“ ist für euch als Spieler:innen, außerhalb der Rolle, mit eigenem Feed und Chat.",
+        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit Feed, Chats und Suche. „Story“ ist das eigentliche Rollenspiel: Szenen, Wiki und ChaBo (Steckbrief). „Redaktion“ ist für euch als Spieler:innen, außerhalb der Rolle, mit eigenem Feed und Chat.",
         route: "/",
         match: { attr: "mode-switch" },
       },
@@ -209,7 +209,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Glückspunkte",
-        text: "Nach einem Misserfolg kannst du einen Glückspunkt einsetzen und neu würfeln. Wie viele du hast, steht im ChaBo. Auch ein Zustand wie „Betrunken“ lässt sich bei der Probe wählen, er verändert den Wurf.",
+        text: "Nach einem Misserfolg kannst du einen Glückspunkt einsetzen und neu würfeln. Wie viele du hast, steht im ChaBo (das gibt es nur in Welten mit Würfeln). Auch ein Zustand wie „Betrunken“ lässt sich bei der Probe wählen, er verändert den Wurf.",
         route: "@thread|/story",
       },
       {
@@ -312,14 +312,14 @@ export const TOURS: Tour[] = [
   },
   {
     id: "chabo",
-    title: "ChaBo: der Charakterbogen",
-    summary: "Attribute, Talente, Persönliches, Familie, Zufallsgenerator und Notizen.",
+    title: "ChaBo und Steckbrief: der Charakterbogen",
+    summary: "Persönliches, Familie, Notizen, Zufallsgenerator und (mit Würfeln) Attribute und Talente.",
     steps: [
       {
-        title: "Der ChaBo",
-        text: "Der ChaBo ist der Charakterbogen deiner Figur. Er enthält Bild, Name, Natur, persönliche Angaben, Familie, Attribute, Talente und Notizen. Du öffnest ihn über „ChaBo“ in der Navigation.",
+        title: "ChaBo oder Steckbrief",
+        text: "Das ist der Charakterbogen deiner Figur. In Welten, in denen gewürfelt wird, heißt er ChaBo und enthält Bild, Name, Natur, persönliche Angaben, Familie, Attribute, Talente und Notizen. In Welten ohne Würfeln heißt er Steckbrief und hat nur Bild, persönliche Angaben, Familie und Notizen. Du öffnest ihn in der Navigation unter „ChaBo“ bzw. „Steckbrief“.",
         route: "@chabo|/story",
-        match: { name: "ChaBo" },
+        match: { any: [{ name: "ChaBo" }, { name: "Steckbrief" }] },
       },
       {
         title: "Attribute und Talente",

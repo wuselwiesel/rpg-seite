@@ -30,7 +30,7 @@ const TOC = [
   ["talentpunkte", "Talentpunkte selbst verteilen"],
   ["glueck", "Glückspunkte: Nochmal würfeln bei Pech"],
   ["natur", "Besondere Naturen"],
-  ["bogen", "Den ChaBo bearbeiten und speichern"],
+  ["bogen", "ChaBo (Steckbrief) bearbeiten und speichern"],
   ["zufall", "Zufall und NPCs"],
   ["uebersicht", "Welches Talent braucht welche Attribute?"],
   ["kuerzel", "Tastenkürzel und Schreibhilfen"],
@@ -234,9 +234,12 @@ export default function HelpPage() {
         </ul>
       </Section>
 
-      <Section id="bogen" title="9. Den ChaBo bearbeiten und speichern">
+      <Section id="bogen" title="9. ChaBo (Steckbrief) bearbeiten und speichern">
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
-          <li>Den ChaBo findest du in der Seitenleiste unter „ChaBo“, im Profil eines Charakters als Reiter und in jeder Szene über das Bogen-Symbol neben „Würfeln“.</li>
+          <li>
+            <strong>ChaBo oder Steckbrief:</strong> Es ist dasselbe Blatt deines Charakters. In Welten, in denen gewürfelt wird, heißt es <strong>ChaBo</strong> (Charakterbogen) und hat zusätzlich Attribute, Talente und die besondere Natur. In Welten ohne Würfeln heißt es <strong>Steckbrief</strong> und zeigt nur Bild, persönliche Angaben, Familie und Notizen. Wo in dieser Hilfe „ChaBo“ steht, ist in solchen Welten der Steckbrief gemeint.
+          </li>
+          <li>Du findest ihn in der Seitenleiste unter „ChaBo“ bzw. „Steckbrief“, im Profil eines Charakters als Reiter und in jeder Szene über das Bogen-Symbol neben „Würfeln“.</li>
           <li>Bearbeiten kann nur, wem der Charakter gehört. Alle anderen in der Welt können ihn ansehen.</li>
           <li>Änderungen werden automatisch gespeichert, sobald alle Werte gültig sind. Ungültige Felder sind rot markiert, solange wird nicht gespeichert.</li>
           <li>Das Bild im ChaBo ist unabhängig vom Profilbild des Charakters.</li>
