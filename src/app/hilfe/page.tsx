@@ -37,6 +37,7 @@ const TOC = [
   ["mehrere-figuren", "Mehrere Figuren in einer Nachricht"],
   ["welten", "Welten entdecken, Übungswelt und Rechte"],
   ["verlassen", "Welt verlassen, Besitz übertragen, Konto löschen"],
+  ["siegel", "Siegel und das Wortwinkel-Konto"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -412,7 +413,7 @@ export default function HelpPage() {
             <strong>Beitritt:</strong> Je Welt gibt es drei Arten. Offene Welten betrittst du mit einem Klick. Bei „Auf Anfrage“ schickst du eine Nachricht an die Admins und wirst benachrichtigt, sobald sie entscheiden; über „Admin anschreiben“ erreichst du sie im privaten Chat. „Nur auf Einladung“ geht nur mit Einladungslink oder von Freund:innen.
           </li>
           <li>
-            <strong>Auswahllisten:</strong> Admins legen unter „Bearbeiten“ → „Auswahllisten“ Listen wie Wesen, Haus oder Beruf an und tragen die Einträge ein. Je Liste ist einstellbar, ob beim Anlegen und Bearbeiten eines Charakters ein Dropdown oder ein freies Textfeld erscheint. Die Liste „Wesen“ gibt es in jeder Welt: Hat sie Einträge, ersetzt sie die feste Auswahl Mensch / Vampir / Werwolf; heißt der gewählte Eintrag Vampir oder Werwolf, gelten dessen Würfelregeln weiter. Die gewählten Werte stehen im Profil.
+            <strong>Auswahllisten:</strong> Admins legen unter „Bearbeiten“ → „Auswahllisten“ Listen wie Wesen, Haus oder Beruf an und tragen die Einträge ein. Je Liste ist einstellbar, ob beim Anlegen und Bearbeiten eines Charakters ein Dropdown oder ein freies Textfeld erscheint. Die Liste „Wesen“ gibt es in jeder Welt: Hat sie Einträge, ersetzt sie die feste Auswahl Mensch / Vampir / Werwolf; heißt der gewählte Eintrag Vampir oder Werwolf, gelten dessen Würfelregeln weiter. Die gewählten Werte stehen im Profil. Bei jedem Eintrag kannst du unter „max“ eine <strong>Höchstzahl</strong> festlegen, zum Beispiel höchstens 2 Vampire in der Welt. Daneben steht, wie viele es schon gibt (z. B. „1/2“). Ist ein Eintrag voll, steht er im Charakterformular als „(voll)“ und lässt sich nicht mehr wählen; wer ihn schon hat, behält ihn. Leer lassen heißt unbegrenzt.
           </li>
           <li>
             <strong>Rechte in der Welt:</strong> Besitzer:in und ernannte Admins dürfen immer alles. Für alle anderen stellen die Admins unter „Welt bearbeiten“ ein, wer Wiki-Seiten anlegen oder bearbeiten, Ordner, Karten und Seitenarten ändern, Szenen starten und Handlungsstränge anlegen darf. Neue Welten starten streng: Mitglieder bearbeiten nur ihre eigenen Wiki-Seiten und ändern keine Ordner oder Karten.
@@ -460,6 +461,23 @@ export default function HelpPage() {
           </li>
           <li>
             <strong>Link abgelaufen:</strong> Der Link gilt nur kurz und nur einmal. Ist er abgelaufen oder schon benutzt, fordere einfach einen neuen an. Kommt keine Mail an, schau im Spam-Ordner nach.
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="siegel" title="19. Siegel und das Wortwinkel-Konto">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Siegel am Namen:</strong> Ein kleiner Haken neben einem Konto-Namen (in der Redaktion, in Chats und Listen) bedeutet: Dieses Konto gehört zum Wortwinkel-Team oder ist von uns bestätigt. Das Siegel kann man sich nicht selbst geben, auch nicht über ein Badge oder ein Zeichen. Bei Charakteren ingame gibt es kein Siegel.
+          </li>
+          <li>
+            <strong>Wortwinkel-Konto:</strong> Das offizielle Konto „Wortwinkel“ ist mit allen Konten befreundet. Dort stehen Neuigkeiten in deinem Redaktions-Feed, und du kannst ihm schreiben, wenn etwas hakt. Die Freundschaft lässt sich nicht beenden, das Konto sieht über sie aber nichts von dir: nicht deine Beiträge und nicht deine Charaktere.
+          </li>
+          <li>
+            <strong>Wer Wortwinkel betreut:</strong> Die Betreiberin wechselt unter „Einstellungen“ → „Konto wechseln“ per Tipp zwischen ihrem Konto und dem Wortwinkel-Konto, ohne sich abzumelden. Dort steht auch der „Überblick“ mit Zahlen zur App (nur für Admins sichtbar, nur Zahlen, nie Inhalte).
+          </li>
+          <li>
+            <strong>Zuletzt gesehen:</strong> Die App merkt sich für den Überblick der Betreiberin nur, wann du zuletzt aktiv warst. Wer das sehen kann, siehst du hier: nur die Betreiberin, und nur als Zahl in der Statistik.
           </li>
         </ul>
       </Section>

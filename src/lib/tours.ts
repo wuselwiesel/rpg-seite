@@ -451,7 +451,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Freund:innen",
-        text: "Wer in derselben Welt ist, ist automatisch mit dir befreundet. Zusätzlich schickst du hier Freundschaftsanfragen an Leute aus anderen Welten, siehst, wer online ist, und beendest Freundschaften. Freund:innen kannst du in Welten einladen und ihnen Badges verleihen.",
+        text: "Wer in derselben Welt ist, ist automatisch mit dir befreundet. Zusätzlich schickst du hier Freundschaftsanfragen an Leute aus anderen Welten, siehst, wer online ist, und beendest Freundschaften. Freund:innen kannst du in Welten einladen und ihnen Badges verleihen. Das offizielle Konto „Wortwinkel“ steht ganz oben und ist bei allen automatisch dabei: Dort findest du Neuigkeiten, und du kannst ihm schreiben. Das Haken-Siegel neben einem Namen zeigt ein Konto des Wortwinkel-Teams.",
         route: "/friends",
       },
       {
@@ -568,6 +568,12 @@ export const TOURS: Tour[] = [
       {
         title: "Dropdown oder Freitext",
         text: "Je Liste wählst du, ob Spieler:innen aus den Einträgen auswählen (Dropdown) oder frei schreiben (Textfeld). Beim Freitext spielen die Einträge keine Rolle. Bereits gewählte Werte bleiben in den Profilen erhalten, auch wenn du eine Liste löschst, werden dann aber nicht mehr angezeigt.",
+        route: "@worldLists|/worlds",
+        match: { attr: "listen-erste" },
+      },
+      {
+        title: "Höchstzahl je Eintrag",
+        text: "Bei jedem Eintrag steht ein kleines Feld „max“. Trägst du dort eine Zahl ein, dürfen höchstens so viele Charaktere der Welt diesen Eintrag haben, zum Beispiel höchstens 2 Vampire. Daneben zeigt dir die Zahl, wie viele es schon gibt („1/2“). Ist ein Eintrag voll, steht er im Charakterformular als „(voll)“ und lässt sich nicht mehr wählen. Leer bedeutet unbegrenzt.",
         route: "@worldLists|/worlds",
         match: { attr: "listen-erste" },
       },
