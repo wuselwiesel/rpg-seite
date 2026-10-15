@@ -12,7 +12,6 @@ import type { TalentDef } from "@/lib/talents";
 import type { NatureDef } from "@/lib/natures";
 import { TalentEditor } from "./talent-editor";
 import { NatureEditor } from "./nature-editor";
-import { WORLD_ADMIN_EVENTS, type WorldAdminEvent } from "@/lib/world-admin-events";
 
 // Alle Einstellungen einer Welt in einem Formular mit einem Speichern-Knopf, der am unteren Rand mitläuft.
 // listsSlot: der (serverseitig gerenderte) Abschnitt „Auswahllisten“, der zwischen Willkommen und Talenten steht.
@@ -21,16 +20,16 @@ export function EditWorldForm({
   welcomeInitial,
   talentsInitial,
   naturesInitial,
-  mutedEventsInitial,
   listsSlot,
+  notifySlot,
 }: {
   world: World;
   welcomeInitial: string;
   talentsInitial: TalentDef[];
   naturesInitial: NatureDef[];
-  // Admin-Meldungen, die die angemeldete Person in dieser Welt ausgeschaltet hat
-  mutedEventsInitial: WorldAdminEvent[];
   listsSlot: ReactNode;
+  // Schalter für die eigenen Admin-Meldungen (wirken sofort, ohne Speichern)
+  notifySlot: ReactNode;
 }) {
   const [dirty, setDirty] = useState(false);
   const [dice, setDice] = useState(world.dice_enabled !== false);
@@ -211,18 +210,7 @@ export function EditWorldForm({
 
       <section id="meldungen" aria-label="Meine Admin-Meldungen" data-tour="welt-admin-meldungen" className="mt-4 flex scroll-mt-20 flex-col gap-3 border-t border-line pt-6">
         <h2 className="font-serif text-xl text-fg">Meine Admin-Meldungen</h2>
-        <input type="hidden" name="admin_notify_present" value="1" />
-        {WORLD_ADMIN_EVENTS.map((e) => (
-          <label key={e.key} className="flex items-center gap-3 text-sm text-fg-soft">
-            <input
-              type="checkbox"
-              name={`admin_notify_${e.key}`}
-              defaultChecked={!mutedEventsInitial.includes(e.key)}
-              className="h-4 w-4 accent-[var(--accent-strong)]"
-            />
-            {e.label}
-          </label>
-        ))}
+        {notifySlot}
       </section>
 
       {dice && (

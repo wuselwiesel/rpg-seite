@@ -501,7 +501,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Die Seite deiner Welt",
-        text: "Auf der Weltseite führt oben „Bearbeiten“ zu allen Einstellungen, auch zu den Auswahllisten. Darunter findest du Willkommenstext, Beitrittsanfragen (falls die Welt auf Anfrage beitritt), Mitglieder und Einladungen.",
+        text: "Auf der Weltseite führt die Leiste „Welt · Übersicht · Bearbeiten · Auswahllisten“ zu allen Verwaltungsseiten. Darunter findest du Willkommenstext, Beitrittsanfragen (falls die Welt auf Anfrage beitritt), Mitglieder und Einladungen.",
         route: "@world|/worlds",
         match: { name: "Bearbeiten" },
       },

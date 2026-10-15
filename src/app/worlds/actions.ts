@@ -10,7 +10,7 @@ import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
 import { isDefaultNatures, parseNatureConfig } from "@/lib/natures";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { notifyWorldAdmins } from "@/lib/world-admin-notify";
-import { WORLD_ADMIN_EVENTS } from "@/lib/world-admin-events";
+import { parseMutedEvents } from "@/lib/world-admin-events";
 
 // Beitrittsart aus dem Formular: offen (Standard), auf Anfrage oder nur Einladung
 function parseJoinMode(raw: FormDataEntryValue | null): "open" | "request" | "invite" {
@@ -218,15 +218,6 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
   if (error) return error.message;
   if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
 
-  // Eigene Admin-Meldungen (nur für dich, je Welt): Häkchen = an, ausgeschaltete werden gemerkt
-  if (formData.has("admin_notify_present")) {
-    const muted = WORLD_ADMIN_EVENTS.filter((e) => formData.get(`admin_notify_${e.key}`) !== "on").map((e) => e.key);
-    const { error: prefsError } = await supabase
-      .from("world_admin_notify_prefs")
-      .upsert({ world_id: worldId, user_id: user.id, muted_events: muted, updated_at: new Date().toISOString() });
-    if (prefsError) return prefsError.message;
-  }
-
   revalidatePath(`/worlds/${worldId}`);
   revalidatePath(`/worlds/${worldId}/edit`);
   revalidatePath("/worlds");
@@ -361,4 +352,18 @@ export async function leaveWorld(worldId: string): Promise<string | null> {
 
   revalidatePath("/", "layout");
   redirect("/worlds");
+}
+
+// Eigene Admin-Meldungen dieser Welt: `muted` sind die ausgeschalteten Ereignisse (nur für die angemeldete Person; die Policy sichert das)
+export async function setAdminNotifyMuted(worldId: string, muted: string[]): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase
+    .from("world_admin_notify_prefs")
+    .upsert({ world_id: worldId, user_id: user.id, muted_events: parseMutedEvents(muted), updated_at: new Date().toISOString() });
+  if (error) return error.code === "42501" ? "Das geht nur für Admins dieser Welt." : error.message;
+  return null;
 }

@@ -6808,7 +6808,7 @@ begin
   with
   w as (select * from public.worlds where id = p_world),
   chars as (
-    select c.id, c.owner_id, c.name, c.choices, coalesce(c.is_npc, false) as is_npc
+    select c.id, c.owner_id, c.name, c.avatar_url, c.choices, coalesce(c.is_npc, false) as is_npc
     from public.characters c where c.world_id = p_world and c.deleted_at is null
   ),
   writes as (
@@ -6840,6 +6840,8 @@ begin
           select m.user_id, m.username, m.nickname, m.role, m.joined_at,
                  (select count(*) from chars c where c.owner_id = m.user_id and not c.is_npc) as characters,
                  (select count(*) from chars c where c.owner_id = m.user_id and c.is_npc) as npcs,
+                 (select c.id from chars c where c.owner_id = m.user_id and not c.is_npc order by c.name limit 1) as character_id,
+                 (select c.avatar_url from chars c where c.owner_id = m.user_id and not c.is_npc order by c.name limit 1) as avatar_url,
                  (select max(x.created_at) from writes x where x.owner_id = m.user_id) as last_written_at
           from mem m
         ) t

@@ -12,7 +12,31 @@ import { InviteFriendForm } from "./invite-friend-form";
 import { InviteLink } from "@/components/invite-link";
 import { MemberActions } from "./member-actions";
 import { sanitizePostHtml } from "@/lib/sanitize";
+import { getActiveWorld } from "@/lib/worlds";
+import { WorldAdminTabs } from "@/components/world-admin-tabs";
+import { AdminHint } from "@/components/admin-hint";
+import { CharacterAvatar } from "@/components/character-avatar";
 import type { Profile, World } from "@/lib/types";
+
+// Bis zu drei Charakterbilder des Mitglieds, jedes führt zum Profil; ohne Charakter ein neutraler Kreis
+function MemberFigures({ figures, fallbackName }: { figures: { id: string; name: string; avatar_url: string | null }[]; fallbackName: string }) {
+  if (figures.length === 0) {
+    return (
+      <span className="mr-3">
+        <CharacterAvatar name={fallbackName} avatarUrl={null} size={32} />
+      </span>
+    );
+  }
+  return (
+    <span className="mr-3 flex -space-x-2">
+      {figures.slice(0, 3).map((c) => (
+        <Link key={c.id} href={`/characters/${c.id}`} title={c.name} aria-label={c.name} className="rounded-full ring-2 ring-surface">
+          <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={32} />
+        </Link>
+      ))}
+    </span>
+  );
+}
 
 type WorldMemberRow = { user_id: string; role: "member" | "admin"; profiles: Profile };
 
@@ -61,12 +85,34 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
   }));
   const myRequest = (requestRows ?? []).some((r) => r.user_id === user.id);
 
+  // Aktive Welt (dann heißt der Hauptknopf „Zum Feed“) und die Charaktere der Mitglieder für die Liste
+  const activeWorld = isMember ? await getActiveWorld(user.id) : null;
+  const inThisWorld = activeWorld?.id === world.id;
+  const { data: memberCharacters } = isMember
+    ? await supabase
+        .from("characters")
+        .select("id, owner_id, name, avatar_url")
+        .eq("world_id", id)
+        .eq("is_npc", false)
+        .is("deleted_at", null)
+        .order("name")
+        .returns<{ id: string; owner_id: string; name: string; avatar_url: string | null }[]>()
+    : { data: [] as { id: string; owner_id: string; name: string; avatar_url: string | null }[] };
+  const charactersByOwner = new Map<string, { id: string; name: string; avatar_url: string | null }[]>();
+  for (const c of memberCharacters ?? []) {
+    const list = charactersByOwner.get(c.owner_id) ?? [];
+    list.push(c);
+    charactersByOwner.set(c.owner_id, list);
+  }
+
   const officialId = isAdmin ? await getOfficialAccountId() : null;
   const friends = isAdmin ? (await getAcceptedFriends(user.id)).filter((f) => f.id !== officialId) : [];
   const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
+      {isAdmin && <WorldAdminTabs worldId={world.id} />}
+      {isAdmin && <AdminHint worldId={world.id} />}
       {world.cover_image_url ? (
         // Das Bild bleibt in seinem Format (quadratisch, 4:3, breit), nur in der Höhe begrenzt
         // eslint-disable-next-line @next/next/no-img-element
@@ -83,7 +129,13 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {isMember ? (
-            <EnterWorldButton worldId={world.id} primary />
+            inThisWorld ? (
+              <Link href="/" className="shrink-0 rounded-full bg-accent-strong px-4 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
+                Zum Feed
+              </Link>
+            ) : (
+              <EnterWorldButton worldId={world.id} primary />
+            )
           ) : (
             <JoinOrRequestButton worldId={world.id} joinMode={world.join_mode ?? "open"} hasRequest={myRequest} ownerId={world.created_by} />
           )}
@@ -93,22 +145,6 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
               className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
             >
               Erkunden
-            </Link>
-          )}
-          {isAdmin && (
-            <Link
-              href={`/worlds/${world.id}/uebersicht`}
-              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
-            >
-              Übersicht
-            </Link>
-          )}
-          {isAdmin && (
-            <Link
-              href={`/worlds/${world.id}/edit`}
-              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
-            >
-              Bearbeiten
             </Link>
           )}
         </div>
@@ -129,6 +165,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
             key={member.user_id}
             className="flex flex-wrap items-center rounded-lg border border-line bg-surface px-4 py-2 text-sm text-fg"
           >
+            <MemberFigures figures={charactersByOwner.get(member.user_id) ?? []} fallbackName={member.profiles.username} />
             @{member.profiles.username}
             {member.user_id === world.created_by && (
               <span className="ml-2 text-xs text-muted">Erstellt von</span>

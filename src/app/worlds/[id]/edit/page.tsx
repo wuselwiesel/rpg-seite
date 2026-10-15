@@ -2,9 +2,11 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { World } from "@/lib/types";
 import { EditWorldForm } from "./edit-world-form";
+import { AdminNotifySwitches } from "./admin-notify-switches";
+import { WorldAdminTabs } from "@/components/world-admin-tabs";
 import { DeleteWorldButton } from "./delete-world-button";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
 import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
@@ -73,21 +75,10 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
 
   return (
     <div className="mx-auto max-w-xl px-4 py-10">
-      <Link href={`/worlds/${world.id}`} className="mb-4 flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
-        <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-        {world.name}
-      </Link>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="font-serif text-3xl text-fg">Welt bearbeiten</h1>
-        <Link
-          href={`/worlds/${world.id}/uebersicht`}
-          className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent"
-        >
-          Übersicht
-        </Link>
-      </div>
+      <h1 className="mb-4 font-serif text-3xl text-fg">{world.name}</h1>
+      <WorldAdminTabs worldId={world.id} />
 
-      <EditWorldForm world={world} welcomeInitial={world.welcome_html ?? ""} talentsInitial={talentsInitial} naturesInitial={naturesInitial} mutedEventsInitial={mutedEvents} listsSlot={listsSlot} />
+      <EditWorldForm world={world} welcomeInitial={world.welcome_html ?? ""} talentsInitial={talentsInitial} naturesInitial={naturesInitial} listsSlot={listsSlot} notifySlot={<AdminNotifySwitches worldId={world.id} mutedInitial={mutedEvents} />} />
 
       {isOwner && (
         <div data-tour="welt-loeschen" className="mt-8 border-t border-line pt-6">

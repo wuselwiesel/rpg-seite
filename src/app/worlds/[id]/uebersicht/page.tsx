@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { WorldAdminTabs } from "@/components/world-admin-tabs";
+import { CharacterAvatar } from "@/components/character-avatar";
 
 export const metadata = { title: "Weltübersicht" };
 
@@ -12,7 +13,7 @@ type Overview = {
     new_7d: number;
     new_30d: number;
     pending_requests: number;
-    list: { user_id: string; username: string; nickname: string | null; role: "owner" | "admin" | "member"; joined_at: string; characters: number; npcs: number; last_written_at: string | null }[];
+    list: { user_id: string; username: string; nickname: string | null; role: "owner" | "admin" | "member"; joined_at: string; characters: number; npcs: number; character_id: string | null; avatar_url: string | null; last_written_at: string | null }[];
   };
   characters: {
     total: number;
@@ -33,13 +34,20 @@ type Overview = {
 const card = "rounded-2xl border border-line bg-surface p-4";
 const ROLE_LABEL = { owner: "Besitzer:in", admin: "Admin", member: "Mitglied" } as const;
 
-function Stat({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
-  return (
-    <div className={card}>
+function Stat({ label, value, hint, href }: { label: string; value: number | string; hint?: string; href?: string }) {
+  const body = (
+    <>
       <p className="font-serif text-3xl text-fg lining-nums tabular-nums">{value}</p>
       <p className="text-sm text-fg-soft">{label}</p>
       {hint && <p className="mt-0.5 text-xs text-muted">{hint}</p>}
-    </div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={`${card} block transition hover:border-accent`}>
+      {body}
+    </Link>
+  ) : (
+    <div className={card}>{body}</div>
   );
 }
 
@@ -80,12 +88,9 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8">
-      <div>
-        <Link href={`/worlds/${world.id}`} className="mb-3 flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
-          <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-          {world.name}
-        </Link>
-        <h1 className="font-serif text-3xl text-fg">Übersicht</h1>
+      <div className="-mb-4">
+        <h1 className="mb-4 font-serif text-3xl text-fg">{world.name}</h1>
+        <WorldAdminTabs worldId={world.id} />
       </div>
 
       <section aria-label="Mitglieder" data-tour="uebersicht-mitglieder" className="flex flex-col gap-3">
@@ -94,19 +99,36 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
           <Stat label="Mitglieder" value={o.members.total} hint={`${o.members.admins} mit Admin-Rechten`} />
           <Stat label="Neu in 7 Tagen" value={o.members.new_7d} />
           <Stat label="Neu in 30 Tagen" value={o.members.new_30d} />
-          <Stat label="Offene Anfragen" value={o.members.pending_requests} />
+          <Stat label="Offene Anfragen" value={o.members.pending_requests} href={o.members.pending_requests > 0 ? `/worlds/${world.id}` : undefined} />
         </div>
         <ul className="flex flex-col gap-2">
           {o.members.list.map((m) => (
-            <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm">
-              <span className="min-w-0">
-                <span className="font-medium text-fg">{m.nickname || m.username}</span>
-                <span className="ml-2 text-xs text-muted">{ROLE_LABEL[m.role]}</span>
-              </span>
-              <span className="text-xs text-muted">
-                {m.characters} {m.characters === 1 ? "Charakter" : "Charaktere"}
-                {m.npcs > 0 ? ` · ${m.npcs} NPC${m.npcs === 1 ? "" : "s"}` : ""} · zuletzt geschrieben: {ago(m.last_written_at)}
-              </span>
+            <li key={m.user_id}>
+              {(() => {
+                const inner = (
+                  <>
+                    <span className="flex min-w-0 items-center gap-3">
+                      <CharacterAvatar name={m.nickname || m.username} avatarUrl={m.avatar_url} size={32} />
+                      <span className="min-w-0">
+                        <span className="font-medium text-fg">{m.nickname || m.username}</span>
+                        <span className="ml-2 text-xs text-muted">{ROLE_LABEL[m.role]}</span>
+                      </span>
+                    </span>
+                    <span className="text-xs text-muted">
+                      {m.characters} {m.characters === 1 ? "Charakter" : "Charaktere"}
+                      {m.npcs > 0 ? ` · ${m.npcs} NPC${m.npcs === 1 ? "" : "s"}` : ""} · zuletzt geschrieben: {ago(m.last_written_at)}
+                    </span>
+                  </>
+                );
+                const cls = "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm";
+                return m.character_id ? (
+                  <Link href={`/characters/${m.character_id}`} className={`${cls} transition hover:border-accent`}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div className={cls}>{inner}</div>
+                );
+              })()}
             </li>
           ))}
         </ul>
@@ -128,7 +150,9 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
                 return (
                   <li key={opt.label} className="flex flex-col gap-1">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="min-w-0 truncate text-fg">{opt.label}</span>
+                      <Link href={`/worlds/${world.id}/listen#liste-${l.id}`} className="min-w-0 truncate text-fg hover:text-accent hover:underline">
+                        {opt.label}
+                      </Link>
                       <span className={`shrink-0 tabular-nums ${full ? "font-medium text-accent" : "text-fg-soft"}`}>
                         {opt.used}
                         {opt.max_count != null ? ` / ${opt.max_count}` : ""}

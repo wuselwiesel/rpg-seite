@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { ListsEditor } from "./lists-editor";
+import { WorldAdminTabs } from "@/components/world-admin-tabs";
 
 export const metadata = { title: "Auswahllisten" };
 
@@ -24,11 +23,8 @@ export default async function WorldListsPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link href={`/worlds/${id}/edit`} className="mb-4 flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
-        <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-        Welt bearbeiten
-      </Link>
-      <h1 className="mb-6 font-serif text-3xl text-fg">Auswahllisten</h1>
+      <h1 className="mb-4 font-serif text-3xl text-fg">{world.name}</h1>
+      <WorldAdminTabs worldId={id} />
       <ListsEditor worldId={id} lists={lists} />
     </div>
   );
