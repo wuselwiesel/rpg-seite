@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getWorldNpcs } from "@/lib/active-character";
-import { getWorldOwnerId } from "@/lib/npc-data";
+import { getWorldAdminIds } from "@/lib/npc-data";
 import { canEditCharacter } from "@/lib/npc";
 import { NpcBadge } from "@/components/npc-badge";
 import { getActiveWorld } from "@/lib/worlds";
@@ -27,7 +27,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) redirect("/worlds");
 
-  const [characters, npcs, worldOwnerId] = await Promise.all([getOwnCharacters(user.id, activeWorld.id), getWorldNpcs(activeWorld.id), getWorldOwnerId(activeWorld.id)]);
+  const [characters, npcs, worldAdminIds] = await Promise.all([getOwnCharacters(user.id, activeWorld.id), getWorldNpcs(activeWorld.id), getWorldAdminIds(activeWorld.id)]);
   // Gelöschte, aber noch wiederherstellbare Charaktere (nur eigene)
   const { count: deletedCount = 0 } = await supabase
     .from("characters")
@@ -101,7 +101,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
               <RevealRow
                 key={npc.id}
                 className="flex-wrap gap-3 rounded-2xl border border-line bg-surface p-4"
-                actions={canEditCharacter(npc, user.id, worldOwnerId) ? <DeleteCharacterIcon characterId={npc.id} characterName={npc.name} /> : null}
+                actions={canEditCharacter(npc, user.id, worldAdminIds) ? <DeleteCharacterIcon characterId={npc.id} characterName={npc.name} /> : null}
               >
                 <Link href={`/characters/${npc.id}`} className="flex min-w-0 flex-1 items-center gap-4">
                   <CharacterAvatar name={npc.name} avatarUrl={npc.avatar_url} size={52} />
@@ -109,6 +109,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                     <p className="flex items-center gap-2 truncate font-medium text-fg">
                       <span className="truncate">{npc.name}</span>
                       <NpcBadge />
+                      {npc.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
                     </p>
                     {npc.bio && <p className="line-clamp-1 text-sm text-muted">{npc.bio}</p>}
                   </div>
@@ -116,7 +117,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                 <Link href={`/characters/${npc.id}/chabo`} className="shrink-0 rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-fg-soft transition hover:text-fg">
                   ChaBo
                 </Link>
-                {canEditCharacter(npc, user.id, worldOwnerId) && (
+                {canEditCharacter(npc, user.id, worldAdminIds) && (
                   <Link href={`/characters/${npc.id}/edit`} className="shrink-0 rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-fg-soft transition hover:text-fg">
                     Bearbeiten
                   </Link>

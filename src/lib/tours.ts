@@ -507,7 +507,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Mitglieder und Rollen",
-        text: "Hier siehst du alle Mitglieder. Admins dürfen Mitglieder entfernen. Nur die Besitzer:in ernennt Admins („Zum Admin ernennen“, „Admin entziehen“) oder überträgt mit „Besitz übertragen“ die Welt an jemand anderen. Die Knöpfe stehen neben dem jeweiligen Namen.",
+        text: "Hier siehst du alle Mitglieder. Admins dürfen Mitglieder entfernen. Nur die Besitzer:in ernennt Admins („Zum Admin ernennen“, „Admin entziehen“) oder überträgt mit „Besitz übertragen“ die Welt an jemand anderen. Die Knöpfe stehen neben dem jeweiligen Namen. Freie Rollen (NPCs mit dem Haken „Zu vergeben“) erscheinen auf dieser Seite unter „Zu vergeben“; Admins bieten sie an oder entscheiden über Anfragen.",
         route: "@world|/worlds",
         match: { attr: "welt-mitglieder" },
       },
@@ -609,7 +609,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Übersicht der Welt",
-        text: "Die Übersicht zeigt dir Mitglieder (auch neue und offene Anfragen), wie viele Charaktere es je Wesen, Haus oder Fraktion gibt (mit Höchstzahl und „voll“), die Aktivität der letzten 7 Tage und die Inhalte der Welt. Du erreichst sie über „Übersicht“ auf der Weltseite oder über den Link oben auf der Bearbeiten-Seite.",
+        text: "Die Übersicht zeigt dir die Mitgliederliste: Ein Klick auf ein Mitglied klappt alle seine Charaktere mit Wesen auf, „Nach Wesen“ gruppiert sie nach Wesen. Dazu kommen neue Mitglieder und offene Anfragen, wie viele Charaktere es je Wesen, Haus oder Fraktion gibt (mit Höchstzahl und „voll“), die Aktivität der letzten 7 Tage und die Inhalte der Welt. Du erreichst sie über „Übersicht“ auf der Weltseite oder über den Link oben auf der Bearbeiten-Seite.",
         route: "@worldOverview|/worlds",
         match: { attr: "uebersicht-mitglieder" },
       },

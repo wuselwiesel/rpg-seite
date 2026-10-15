@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { WorldAdminTabs } from "@/components/world-admin-tabs";
-import { CharacterAvatar } from "@/components/character-avatar";
+import { MembersCharacters, type OChar, type OMember } from "./members-characters";
+import { getWorldChoiceLists } from "@/lib/choice-lists-data";
+import { speciesLabelOf, speciesListOf } from "@/lib/world-species";
 
 export const metadata = { title: "Weltübersicht" };
 
@@ -32,7 +34,6 @@ type Overview = {
 };
 
 const card = "rounded-2xl border border-line bg-surface p-4";
-const ROLE_LABEL = { owner: "Besitzer:in", admin: "Admin", member: "Mitglied" } as const;
 
 function Stat({ label, value, hint, href }: { label: string; value: number | string; hint?: string; href?: string }) {
   const body = (
@@ -86,6 +87,37 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
   const o = data as Overview;
   const lists = o.characters.lists.filter((l) => l.mode === "dropdown" && l.options.length > 0);
 
+  // Alle Charaktere der Welt mit Besitzer:in und Wesen für die Mitglieder-Ansicht
+  const [{ data: charRows }, choiceLists] = await Promise.all([
+    supabase
+      .from("characters")
+      .select("id, owner_id, name, avatar_url, is_npc, claimable, choices, species")
+      .eq("world_id", id)
+      .is("deleted_at", null)
+      .order("name")
+      .returns<{ id: string; owner_id: string; name: string; avatar_url: string | null; is_npc: boolean | null; claimable: boolean | null; choices: Record<string, unknown> | null; species: string | null }[]>(),
+    getWorldChoiceLists(id),
+  ]);
+  const speciesList = speciesListOf(choiceLists);
+  const chars: OChar[] = (charRows ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    avatarUrl: c.avatar_url,
+    ownerId: c.owner_id,
+    isNpc: Boolean(c.is_npc),
+    claimable: Boolean(c.claimable),
+    species: speciesLabelOf(c, speciesList),
+  }));
+  const avatarByOwner = new Map<string, string | null>();
+  for (const c of chars) if (!c.isNpc && !avatarByOwner.has(c.ownerId)) avatarByOwner.set(c.ownerId, c.avatarUrl);
+  const oMembers: OMember[] = o.members.list.map((m) => ({
+    userId: m.user_id,
+    name: m.nickname || m.username,
+    role: m.role,
+    lastWritten: ago(m.last_written_at),
+    avatarUrl: avatarByOwner.get(m.user_id) ?? m.avatar_url ?? null,
+  }));
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8">
       <div className="-mb-4">
@@ -94,44 +126,33 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
       </div>
 
       <section aria-label="Mitglieder" data-tour="uebersicht-mitglieder" className="flex flex-col gap-3">
-        <h2 className="font-serif text-xl text-fg">Mitglieder</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Mitglieder" value={o.members.total} hint={`${o.members.admins} mit Admin-Rechten`} />
-          <Stat label="Neu in 7 Tagen" value={o.members.new_7d} />
-          <Stat label="Neu in 30 Tagen" value={o.members.new_30d} />
-          <Stat label="Offene Anfragen" value={o.members.pending_requests} href={o.members.pending_requests > 0 ? `/worlds/${world.id}` : undefined} />
-        </div>
-        <ul className="flex flex-col gap-2">
-          {o.members.list.map((m) => (
-            <li key={m.user_id}>
-              {(() => {
-                const inner = (
-                  <>
-                    <span className="flex min-w-0 items-center gap-3">
-                      <CharacterAvatar name={m.nickname || m.username} avatarUrl={m.avatar_url} size={32} />
-                      <span className="min-w-0">
-                        <span className="font-medium text-fg">{m.nickname || m.username}</span>
-                        <span className="ml-2 text-xs text-muted">{ROLE_LABEL[m.role]}</span>
-                      </span>
-                    </span>
-                    <span className="text-xs text-muted">
-                      {m.characters} {m.characters === 1 ? "Charakter" : "Charaktere"}
-                      {m.npcs > 0 ? ` · ${m.npcs} NPC${m.npcs === 1 ? "" : "s"}` : ""} · zuletzt geschrieben: {ago(m.last_written_at)}
-                    </span>
-                  </>
-                );
-                const cls = "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm";
-                return m.character_id ? (
-                  <Link href={`/characters/${m.character_id}`} className={`${cls} transition hover:border-accent`}>
-                    {inner}
+        <h2 className="font-serif text-xl text-fg">Mitglieder und Charaktere</h2>
+        <ul className="flex flex-wrap gap-2 text-sm">
+          {[
+            { n: o.members.total, label: o.members.total === 1 ? "Mitglied" : "Mitglieder", href: undefined as string | undefined },
+            { n: o.members.new_7d, label: "neu in 7 Tagen", href: undefined },
+            { n: o.members.new_30d, label: "neu in 30 Tagen", href: undefined },
+            { n: o.members.pending_requests, label: o.members.pending_requests === 1 ? "offene Anfrage" : "offene Anfragen", href: o.members.pending_requests > 0 ? `/worlds/${world.id}` : undefined },
+          ].map((c) => {
+            const body = (
+              <>
+                <span className="font-semibold text-fg lining-nums tabular-nums">{c.n}</span> <span className="text-fg-soft">{c.label}</span>
+              </>
+            );
+            return (
+              <li key={c.label}>
+                {c.href ? (
+                  <Link href={c.href} className="block rounded-full border border-accent/50 bg-accent/10 px-3 py-1">
+                    {body}
                   </Link>
                 ) : (
-                  <div className={cls}>{inner}</div>
-                );
-              })()}
-            </li>
-          ))}
+                  <span className="block rounded-full border border-line bg-surface px-3 py-1">{body}</span>
+                )}
+              </li>
+            );
+          })}
         </ul>
+        <MembersCharacters members={oMembers} characters={chars} />
       </section>
 
       <section aria-label="Charaktere" data-tour="uebersicht-charaktere" className="flex flex-col gap-3">

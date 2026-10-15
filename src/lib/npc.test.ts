@@ -6,13 +6,14 @@ const normal = { owner_id: "spieler", is_npc: false };
 
 describe("Berechtigungen", () => {
   it("Anleger:in bearbeitet immer, die Welt-Besitzerin nur NPCs", () => {
-    expect(canEditCharacter(npc, "anleger", "chef")).toBe(true);
-    expect(canEditCharacter(npc, "chef", "chef")).toBe(true);
-    expect(canEditCharacter(normal, "chef", "chef")).toBe(false);
-    expect(canEditCharacter(normal, "spieler", "chef")).toBe(true);
-    expect(canEditCharacter(npc, "fremd", "chef")).toBe(false);
+    expect(canEditCharacter(npc, "anleger", ["chef"])).toBe(true);
+    expect(canEditCharacter(npc, "chef", ["chef"])).toBe(true);
+    expect(canEditCharacter(normal, "chef", ["chef"])).toBe(false);
+    expect(canEditCharacter(normal, "spieler", ["chef"])).toBe(true);
+    expect(canEditCharacter(npc, "fremd", ["chef"])).toBe(false);
+    expect(canEditCharacter(npc, "co-admin", ["chef", "co-admin"])).toBe(true);
     expect(canEditCharacter(npc, "chef", null)).toBe(false);
-    expect(canEditCharacter({ owner_id: "a" }, "chef", "chef")).toBe(false);
+    expect(canEditCharacter({ owner_id: "a" }, "chef", ["chef"])).toBe(false);
   });
   it("Umschalten darf nur die Anleger:in, nicht einmal die Welt-Besitzerin", () => {
     expect(canToggleNpc(npc, "anleger")).toBe(true);

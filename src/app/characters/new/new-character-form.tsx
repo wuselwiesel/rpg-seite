@@ -52,6 +52,12 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
               NPC
             </label>
           )}
+          {!isWelcome && isNpc && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-soft">
+              <input type="checkbox" name="claimable" className="h-4 w-4 accent-[var(--accent)]" />
+              Zu vergeben
+            </label>
+          )}
           <button
             type="button"
             onClick={rollEverything}

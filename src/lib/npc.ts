@@ -1,5 +1,5 @@
 // NPCs: Charaktere ohne Spieler:in dahinter. `owner_id` ist die Person, die den NPC angelegt hat (Anleger:in).
-// Bearbeiten dürfen Anleger:in und die Besitzerin der Welt; zwischen NPC und Charakter umschalten darf nur die Anleger:in.
+// Bearbeiten dürfen Anleger:in und alle Admins der Welt (Besitzer:in und ernannte); zwischen NPC und Charakter umschalten darf nur die Anleger:in.
 // (Die Datenbank erzwingt dasselbe über Policies und einen Trigger; das hier steuert nur, was die Oberfläche anbietet.)
 
 type CharacterLike = { owner_id: string; is_npc?: boolean | null };
@@ -8,9 +8,10 @@ export function isNpc(c: { is_npc?: boolean | null }): boolean {
   return c.is_npc === true;
 }
 
-export function canEditCharacter(c: CharacterLike, userId: string, worldOwnerId: string | null | undefined): boolean {
+// worldAdminIds: Besitzer:in und Admins der Welt
+export function canEditCharacter(c: CharacterLike, userId: string, worldAdminIds: readonly string[] | null | undefined): boolean {
   if (c.owner_id === userId) return true;
-  return isNpc(c) && Boolean(worldOwnerId) && worldOwnerId === userId;
+  return isNpc(c) && Boolean(worldAdminIds?.includes(userId));
 }
 
 export function canToggleNpc(c: CharacterLike, userId: string): boolean {

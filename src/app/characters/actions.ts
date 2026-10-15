@@ -136,6 +136,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       avatar_url: avatarUrl || null,
       ...(sheetUrl ? { sheet_url: sheetUrl } : {}),
       is_npc: isNpc,
+      claimable: isNpc && formData.get("claimable") === "on",
     })
     .select("id")
     .single();

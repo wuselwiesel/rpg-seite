@@ -16,6 +16,8 @@ import { getActiveWorld } from "@/lib/worlds";
 import { WorldAdminTabs } from "@/components/world-admin-tabs";
 import { AdminHint } from "@/components/admin-hint";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { RolesPanel } from "./roles-panel";
+import { getWorldRoles } from "@/lib/character-claims-data";
 import type { Profile, World } from "@/lib/types";
 
 // Bis zu drei Charakterbilder des Mitglieds, jedes führt zum Profil; ohne Charakter ein neutraler Kreis
@@ -105,6 +107,10 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
     charactersByOwner.set(c.owner_id, list);
   }
 
+  // Freie Rollen, Rollenanfragen (Admins) und Angebote an mich
+  const memberNames = new Map((members ?? []).map((m) => [m.user_id, m.profiles.nickname || m.profiles.username]));
+  const { roles, offersForMe } = isMember ? await getWorldRoles(id, user.id, memberNames) : { roles: [], offersForMe: [] };
+
   const officialId = isAdmin ? await getOfficialAccountId() : null;
   const friends = isAdmin ? (await getAcceptedFriends(user.id)).filter((f) => f.id !== officialId) : [];
   const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
@@ -154,6 +160,15 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         <section aria-label="Willkommen" className="mb-8 rounded-2xl border border-line bg-surface p-5">
           <div className="post-content text-[15.5px] leading-[1.75] text-fg" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(world.welcome_html) }} />
         </section>
+      )}
+
+      {isMember && (
+        <RolesPanel
+          isAdmin={isAdmin}
+          roles={roles}
+          offersForMe={offersForMe}
+          members={(members ?? []).map((m) => ({ id: m.user_id, name: m.profiles.nickname || m.profiles.username }))}
+        />
       )}
 
       {isAdmin && requests.length > 0 && <JoinRequests worldId={world.id} requests={requests} />}

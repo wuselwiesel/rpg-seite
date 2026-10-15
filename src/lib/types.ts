@@ -72,6 +72,8 @@ export type Character = {
   name_symbol?: string | null;
   // NPC: Charakter ohne Spieler:in dahinter (owner_id = Anleger:in)
   is_npc?: boolean;
+  // Freie Rolle: ein NPC, den Admins zur Vergabe freigegeben haben (Mitglieder können ihn anfragen)
+  claimable?: boolean;
   // Online (grüner Punkt) oder offline (grauer Punkt), von der Besitzer:in gesetzt
   presence_online?: boolean;
   relationship_status?: CharacterRelationshipStatus | null;

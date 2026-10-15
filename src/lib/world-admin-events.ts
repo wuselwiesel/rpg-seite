@@ -2,7 +2,7 @@
 import type { ChoiceList, ChoiceUsage } from "@/lib/choice-lists";
 
 // Eigene Datei ohne „server-only“, damit Formular und Server dieselbe Liste benutzen.
-export type WorldAdminEvent = "member_join" | "character_new" | "npc_new" | "leave" | "entry_full";
+export type WorldAdminEvent = "member_join" | "character_new" | "npc_new" | "leave" | "entry_full" | "role_request";
 
 export const WORLD_ADMIN_EVENTS: { key: WorldAdminEvent; label: string; type: string }[] = [
   { key: "member_join", label: "Neues Mitglied", type: "world_admin_member" },
@@ -10,6 +10,7 @@ export const WORLD_ADMIN_EVENTS: { key: WorldAdminEvent; label: string; type: st
   { key: "npc_new", label: "Neuer NPC", type: "world_admin_npc" },
   { key: "leave", label: "Mitglied geht oder Charakter gelöscht", type: "world_admin_leave" },
   { key: "entry_full", label: "Eintrag voll (Höchstzahl erreicht)", type: "world_admin_full" },
+  { key: "role_request", label: "Anfrage für eine Rolle", type: "world_admin_role" },
 ];
 
 export const WORLD_ADMIN_NOTIFICATION_TYPES = WORLD_ADMIN_EVENTS.map((e) => e.type);

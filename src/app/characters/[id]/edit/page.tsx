@@ -4,6 +4,8 @@ import { getMentionableCharacters } from "@/lib/active-character";
 import { getCharacterAccess } from "@/lib/npc-data";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { NpcToggle } from "@/components/npc-toggle";
+import { ClaimableToggle } from "@/components/claimable-toggle";
+import { ReleaseCharacterButton } from "@/components/release-character-button";
 import type { Character } from "@/lib/types";
 import { EditCharacterForm } from "./edit-character-form";
 import { DeleteCharacterButton } from "./delete-character-button";
@@ -42,7 +44,18 @@ export default async function EditCharacterPage({
           <NpcToggle characterId={character.id} initial={Boolean(character.is_npc)} />
         </div>
       )}
+      {character.is_npc && (access.canToggle || access.canOffer) && (
+        <div className="mb-5">
+          <ClaimableToggle characterId={character.id} initial={Boolean(character.claimable)} />
+        </div>
+      )}
       <EditCharacterForm character={character} mentionableCharacters={mentionable} choiceLists={choiceLists} />
+
+      {access.canToggle && !character.is_npc && !access.isWorldOwner && (
+        <div className="mt-8 border-t border-line pt-6">
+          <ReleaseCharacterButton characterId={character.id} characterName={character.name} />
+        </div>
+      )}
 
       <div className="mt-8 border-t border-line pt-6">
         <p className="mb-3 text-sm text-muted">

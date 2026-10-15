@@ -427,6 +427,12 @@ export default function HelpPage() {
           <li>
             <strong>Übersicht der Welt:</strong> Admins sehen über „Übersicht“ auf der Weltseite die Zahlen ihrer Welt: Mitglieder und offene Anfragen, wie viele Charaktere es je Wesen oder Liste gibt (mit Höchstzahl), die Aktivität der letzten 7 Tage sowie Wiki-Seiten, Handlungsstränge und Beziehungen. Zu Geheimem zeigt sie nur eine Gesamtzahl, nie Inhalt oder Besitzer:in.
           </li>
+          <li>
+            <strong>Mitglieder und ihre Charaktere:</strong> Oben in der Übersicht steht die Mitgliederliste. Ein Klick auf ein Mitglied klappt alle seine Charaktere mit ihrem Wesen auf. „Nach Wesen“ gruppiert dieselben Figuren nach Wesen, die Suche findet Mitglieder, Charaktere und Wesen. NPCs und freie Rollen stehen in einer eigenen Gruppe.
+          </li>
+          <li>
+            <strong>Rollen zu vergeben:</strong> Admins legen einen NPC an und setzen den Haken „Zu vergeben“ (beim Anlegen oder unter „Bearbeiten“ des NPCs). Die Figur erscheint dann auf der Weltseite unter „Zu vergeben“. Mitglieder können sie dort anfragen, ein Admin entscheidet. Admins können eine Rolle auch einem Mitglied anbieten, das Angebot muss die Person annehmen. Bei der Übergabe wechselt der Charakter samt Beiträgen, Bogen, Geheimem und Verlauf auf das Konto der neuen Besitzer:in und ist kein NPC mehr. Wer einen Charakter nicht mehr spielen möchte, gibt ihn unter „Bearbeiten“ → „An die Welt zurückgeben“ zurück. Alle Admins der Welt dürfen NPCs und freie Rollen bearbeiten.
+          </li>
         </ul>
       </Section>
       <Section id="verlassen" title="16. Welt verlassen, Besitz übertragen, Konto löschen">
