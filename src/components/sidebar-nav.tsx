@@ -1,5 +1,6 @@
 "use client";
 
+import { chaboLabel } from "@/lib/chabo-label";
 import { useDiceEnabled } from "./dice-context";
 import { useWorldRights } from "./rights-context";
 import Link from "next/link";
@@ -83,7 +84,7 @@ export function SidebarNav({
           )}
           {activeCharacter && (
             <NavLink href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
-              ChaBo
+              {chaboLabel(diceEnabled)}
             </NavLink>
           )}
         </nav>

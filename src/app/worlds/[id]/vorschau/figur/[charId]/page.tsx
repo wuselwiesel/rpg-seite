@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { chaboLabel } from "@/lib/chabo-label";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft, IdCard, Images } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -83,7 +84,7 @@ export default async function PreviewCharacterPage({
   const base = `/worlds/${id}/vorschau/figur/${charId}`;
   const tabs = [
     ...(showPosts ? [{ key: "beitraege" as const, label: "Beiträge", icon: Images }] : []),
-    ...(character.has_sheet ? [{ key: "chabo" as const, label: "ChaBo", icon: IdCard }] : []),
+    ...(character.has_sheet ? [{ key: "chabo" as const, label: chaboLabel(character.dice_enabled), icon: IdCard }] : []),
   ];
 
   return (

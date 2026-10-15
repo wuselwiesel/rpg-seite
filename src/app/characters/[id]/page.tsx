@@ -1,4 +1,5 @@
 import { getWorldDiceEnabled } from "@/lib/world-dice";
+import { chaboLabel } from "@/lib/chabo-label";
 import { getWorldTalents } from "@/lib/world-talents";
 import { getWorldNatures } from "@/lib/world-natures";
 import { PresenceControl, PresenceDot } from "@/components/character-presence";
@@ -443,7 +444,7 @@ export default async function CharacterProfilePage({
           {[
             { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
             { id: "tagged", label: "Getaggt", icon: AtSign, show: true },
-            { id: "chabo", label: "ChaBo", icon: IdCard, show: Boolean(sheet) || canEdit },
+            { id: "chabo", label: chaboLabel(await getWorldDiceEnabled(character.world_id)), icon: IdCard, show: Boolean(sheet) || canEdit },
             { id: "scheduled", label: "Geplant", icon: Clock, show: isOwnerView },
           ]
             .filter((t) => t.show)

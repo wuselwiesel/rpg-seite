@@ -1,5 +1,7 @@
 "use client";
 
+import { chaboLabel } from "@/lib/chabo-label";
+import { useDiceEnabled } from "@/components/dice-context";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { IdCard, X } from "lucide-react";
@@ -15,6 +17,7 @@ import type { Character } from "@/lib/types";
 
 // Knopf mit seitlichem Fenster: der ChaBo des Charakters, ohne die Szene zu verlassen.
 export function ChaboDrawer({ characterId, characterName, mentionCharacters = [] }: { characterId: string; characterName: string; mentionCharacters?: Character[] }) {
+  const diceOn = useDiceEnabled();
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<SheetData | null | undefined>(undefined);
   const [randomLists, setRandomLists] = useState<CustomPools | undefined>(undefined);
@@ -63,8 +66,8 @@ export function ChaboDrawer({ characterId, characterName, mentionCharacters = []
       <button
         type="button"
         onClick={() => setOpen(true)}
-        title="ChaBo öffnen"
-        aria-label="ChaBo öffnen"
+        title={`${chaboLabel(diceOn)} öffnen`}
+        aria-label={`${chaboLabel(diceOn)} öffnen`}
         className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
       >
         <IdCard className="h-4 w-4" strokeWidth={2} />

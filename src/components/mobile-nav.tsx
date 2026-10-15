@@ -1,5 +1,6 @@
 "use client";
 
+import { chaboLabel } from "@/lib/chabo-label";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -161,7 +162,7 @@ export function MobileNav({
               <MobileTabLink
                 href={`/characters/${activeCharacter.id}/chabo`}
                 icon={<IdCard className="h-5 w-5" strokeWidth={2} />}
-                label="ChaBo"
+                label={chaboLabel(diceEnabled)}
               />
             )}
             {activeCharacter && (
@@ -267,7 +268,7 @@ export function MobileNav({
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
             >
               <IdCard className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              ChaBo
+              {chaboLabel(diceEnabled)}
             </Link>
           )}
           <Link
@@ -288,14 +289,6 @@ export function MobileNav({
               Überblick
             </Link>
           )}
-          <Link
-            href="/redaktion"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Newspaper className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Redaktion
-          </Link>
           <Link
             href="/characters"
             onClick={() => setMoreOpen(false)}

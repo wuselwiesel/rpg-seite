@@ -346,7 +346,7 @@ export function Chabo({
             <div className="min-w-0">
               <Title className="font-serif text-3xl leading-tight text-fg @xl:text-4xl">{characterName}</Title>
               <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
-                <span>Charakterbogen</span>
+                <span>{dice ? "Charakterbogen" : "Steckbrief"}</span>
                 {dice && data.race !== "none" && raceLabel && <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-fg-soft">{raceLabel}</span>}
               </p>
             </div>
