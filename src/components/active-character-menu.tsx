@@ -39,8 +39,11 @@ export function ActiveCharacterMenu({
 
   if (!activeCharacter) {
     return (
-      <Link href="/characters/new" className="text-sm font-medium text-accent">
-        Charakter erstellen
+      <Link
+        href="/characters/new?welcome=1"
+        className="whitespace-nowrap rounded-full border border-accent/50 bg-accent/10 px-3 py-1.5 text-sm font-medium text-accent transition hover:bg-accent/20"
+      >
+        + Charakter
       </Link>
     );
   }

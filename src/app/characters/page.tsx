@@ -158,8 +158,8 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                 <Link href={`/characters/${npc.id}`} className="flex min-w-0 flex-1 items-center gap-4">
                   <CharacterAvatar name={npc.name} avatarUrl={npc.avatar_url} size={52} />
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 truncate font-medium text-fg">
-                      <span className="truncate">{npc.name}</span>
+                    <p className="truncate font-medium text-fg">{npc.name}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <NpcBadge />
                       {npc.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
                     </p>

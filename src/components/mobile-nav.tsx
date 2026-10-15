@@ -88,7 +88,7 @@ export function MobileNav({
       <div className="sticky top-0 z-30 border-b border-line bg-app print:hidden lg:hidden">
       <div className="flex items-center justify-between gap-2 px-4 py-2.5">
         {pathname === "/" && (
-          <Link href="/" aria-label="Wortwinkel" className="shrink-0">
+          <Link href="/" aria-label="Wortwinkel" className="hidden shrink-0 min-[440px]:block">
             <Wordmark height={28} />
           </Link>
         )}
