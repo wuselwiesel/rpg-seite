@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { getOfficialAccountId } from "@/lib/account-marks";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -103,6 +104,9 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         .order("name")
         .returns<{ id: string; owner_id: string; name: string; avatar_url: string | null }[]>()
     : { data: [] as { id: string; owner_id: string; name: string; avatar_url: string | null }[] };
+  const { count: characterCount } = isMember
+    ? await supabase.from("characters").select("id", { count: "exact", head: true }).eq("world_id", id).is("deleted_at", null)
+    : { count: 0 };
   const charactersByOwner = new Map<string, { id: string; name: string; avatar_url: string | null }[]>();
   for (const c of memberCharacters ?? []) {
     const list = charactersByOwner.get(c.owner_id) ?? [];
@@ -177,6 +181,19 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
       )}
 
       {isAdmin && requests.length > 0 && <JoinRequests worldId={world.id} requests={requests} />}
+
+      {isMember && (
+        <Link
+          href={`/worlds/${world.id}/charaktere`}
+          className="mb-8 flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-fg transition hover:border-accent"
+        >
+          <span className="font-serif text-xl">Charaktere</span>
+          <span className="flex shrink-0 items-center gap-1 text-sm text-muted">
+            {characterCount ?? 0}
+            <ChevronRight className="h-4 w-4" strokeWidth={2} />
+          </span>
+        </Link>
+      )}
 
       <h2 data-tour="welt-mitglieder" className="mb-3 font-serif text-xl text-fg">Mitglieder</h2>
       <ul className="mb-8 flex flex-col gap-2">
