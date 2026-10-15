@@ -337,7 +337,10 @@ export function Chabo({
 
   return (
     <div className="@container flex shrink-0 flex-col gap-5">
-      <header onClick={() => setRevealEdit((v) => !v)} className={`group/hdr ${card} @xl:flex-row @xl:items-start`}>
+      <header onClick={() => setRevealEdit((v) => !v)} className={`group/hdr relative ${card} @xl:flex-row @xl:items-start`}>
+        <Link href="/hilfe" title="Hilfe" aria-label="Hilfe" onClick={(e) => e.stopPropagation()} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
+          <CircleHelp className="h-5 w-5" strokeWidth={1.75} />
+        </Link>
         {editing ? (
           <div key={portraitKey} className="shrink-0">
             <AvatarUpload name="portrait_url" initialUrl={data.portraitUrl} displayName={characterName} variant="portrait" onChange={(url) => commit({ ...data, portraitUrl: url || null })} />
@@ -359,10 +362,7 @@ export function Chabo({
                 {dice && data.race !== "none" && raceLabel && <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-fg-soft">{raceLabel}</span>}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link href="/hilfe" title="Hilfe" aria-label="Hilfe" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg">
-                <CircleHelp className="h-5 w-5" strokeWidth={1.75} />
-              </Link>
+            <div className="flex flex-wrap items-center gap-2 pr-10">
               {canEdit &&
                 (editing ? (
                   <button type="button" onClick={() => { setEditing(false); setSnapshots(NO_SNAPSHOTS); }} className="flex items-center gap-1.5 rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
