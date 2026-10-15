@@ -46,11 +46,11 @@ export function MobileModeButton({ compact = false }: { compact?: boolean }) {
             aria-label={label}
             aria-current={active ? "page" : undefined}
             className={`flex h-8 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-all ${
-              active ? `bg-accent-strong text-on-accent-strong shadow-sm ${compact ? "w-8" : "px-3"}` : "w-8 text-muted hover:text-fg"
+              active ? `bg-accent-strong text-on-accent-strong shadow-sm ${compact ? "w-8" : "w-8 min-[440px]:w-auto min-[440px]:px-3"}` : "w-8 text-muted hover:text-fg"
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-            {active && !compact && label}
+            {active && !compact && <span className="hidden min-[440px]:inline">{label}</span>}
           </Link>
         );
       })}

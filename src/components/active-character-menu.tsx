@@ -63,7 +63,7 @@ export function ActiveCharacterMenu({
             {activeCharacter.username ?? activeCharacter.name}
           </span>
         )}
-        {!hideChevron && <ChevronDown className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />}
+        {!hideChevron && <ChevronDown className="hidden h-4 w-4 shrink-0 text-muted min-[400px]:block" strokeWidth={2} />}
       </button>
 
       {open && (

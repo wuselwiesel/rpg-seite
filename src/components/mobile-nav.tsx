@@ -86,13 +86,13 @@ export function MobileNav({
   return (
     <>
       <div className="sticky top-0 z-30 border-b border-line bg-app print:hidden lg:hidden">
-      <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5 max-[359px]:px-2">
         {pathname === "/" && (
           <Link href="/" aria-label="Wortwinkel" className="hidden shrink-0 min-[440px]:block">
             <Wordmark height={28} />
           </Link>
         )}
-        <div className={pathname === "/" ? "flex min-w-0 flex-1 justify-end" : "min-w-0 flex-1"}>
+        <div className={pathname === "/" ? "flex min-w-0 flex-1 justify-start min-[440px]:justify-end" : "min-w-0 flex-1"}>
           <ActiveCharacterMenu
             characters={characters}
             activeCharacter={activeCharacter}
