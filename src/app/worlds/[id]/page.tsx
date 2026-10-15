@@ -107,6 +107,9 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
   const { count: characterCount } = isMember
     ? await supabase.from("characters").select("id", { count: "exact", head: true }).eq("world_id", id).is("deleted_at", null)
     : { count: 0 };
+  const { count: reviewCount } = isAdmin
+    ? await supabase.from("characters").select("id", { count: "exact", head: true }).eq("world_id", id).eq("review_status", "pending").is("deleted_at", null)
+    : { count: 0 };
   const charactersByOwner = new Map<string, { id: string; name: string; avatar_url: string | null }[]>();
   for (const c of memberCharacters ?? []) {
     const list = charactersByOwner.get(c.owner_id) ?? [];
@@ -189,6 +192,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         >
           <span className="font-serif text-xl">Charaktere</span>
           <span className="flex shrink-0 items-center gap-1 text-sm text-muted">
+            {(reviewCount ?? 0) > 0 && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{reviewCount} zur Prüfung</span>}
             {characterCount ?? 0}
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </span>

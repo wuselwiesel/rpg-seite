@@ -31,6 +31,8 @@ export type World = {
   preview?: "none" | "info" | "full";
   // Geheime Felder in Bögen und Beziehungen erlaubt (Standard) oder in dieser Welt nicht mehr neu anlegbar
   allow_secrets?: boolean;
+  // Neue Charaktere normaler Mitglieder starten „zur Prüfung“ (Admins genehmigen)
+  review_characters?: boolean;
   // Rechte-Tabelle (siehe lib/world-permissions.ts); fehlende Schlüssel gelten als „alle Mitglieder“
   permissions?: Record<string, string> | null;
 };
@@ -75,6 +77,9 @@ export type Character = {
   name_symbol?: string | null;
   // NPC: Charakter ohne Spieler:in dahinter (owner_id = Anleger:in)
   is_npc?: boolean;
+  // Prüfung durch Admins: zur Prüfung, genehmigt oder abgelehnt (mit Hinweis)
+  review_status?: "pending" | "approved" | "rejected";
+  review_note?: string | null;
   // Freie Rolle: ein NPC, den Admins zur Vergabe freigegeben haben (Mitglieder können ihn anfragen)
   claimable?: boolean;
   // Online (grüner Punkt) oder offline (grauer Punkt), von der Besitzer:in gesetzt

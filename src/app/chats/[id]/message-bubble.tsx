@@ -127,7 +127,7 @@ export function MessageBubble({
           swipe.current = null;
           return;
         }
-        if (dx > 10) s.active = true;
+        if (dx > 10 && dx > Math.abs(dy) * 2) s.active = true;
         if (s.active) rowRef.current.style.transform = `translateX(${Math.min(dx, 84) * 0.8}px)`;
       }}
       onTouchEnd={(e) => {

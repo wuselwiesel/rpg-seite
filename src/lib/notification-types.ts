@@ -16,5 +16,6 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "world_join", label: "Welt-Beitritt", types: ["world_request", "world_request_result"] },
   { key: "world_admin", label: "Welt-Verwaltung (als Admin)", types: ["world_admin_member", "world_admin_character", "world_admin_npc", "world_admin_leave", "world_admin_full", "world_admin_role"] },
   { key: "role", label: "Rollen (Angebote und Antworten)", types: ["character_offer", "character_claim_result"] },
+  { key: "review", label: "Charaktere prüfen (Entscheidungen und Änderungsvorschläge)", types: ["character_review", "character_change"] },
   { key: "redaktion", label: "Redaktion", types: ["redaktion_post", "redaktion_comment", "redaktion_reaction"] },
 ];

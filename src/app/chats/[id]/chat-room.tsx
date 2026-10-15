@@ -138,7 +138,9 @@ export function ChatRoom({
   const [typing, setTyping] = useState<Record<string, { name: string; until: number }>>({});
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const lastTypingSent = useRef(0);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  // Nur ans Ende springen, wenn man ohnehin unten liest (sonst reißt jede neue Nachricht das Scrollen weg)
+  const stickToBottom = useRef(true);
   const supabase = createClient();
   const addAction = addChatParticipant.bind(null, chatId);
   const [addError, addFormAction, addPending] = useActionState(addAction, null);
@@ -279,7 +281,15 @@ export function ChatRoom({
       holdScroll.current = false;
       return;
     }
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const list = listRef.current;
+    if (!list) return;
+    const last = messages[messages.length - 1];
+    const ownLast = last ? myCharacterIds.includes(last.character_id) : false;
+    if (stickToBottom.current || ownLast) {
+      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+      stickToBottom.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]);
 
   async function showOlder() {
@@ -644,7 +654,14 @@ export function ChatRoom({
         </form>
       )}
 
-      <div className="flex-1 overflow-y-auto py-4">
+      <div
+        ref={listRef}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+        }}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-4 [overflow-anchor:none]"
+      >
         {olderCursor && (
           <div className="mb-3 flex justify-center">
             <button
@@ -694,7 +711,6 @@ export function ChatRoom({
               {Object.values(typing).map((t) => t.name).join(", ")} schreibt…
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
       </div>
 
