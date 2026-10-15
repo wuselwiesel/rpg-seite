@@ -442,6 +442,9 @@ export default async function HelpPage() {
             <strong>Mitglieder und ihre Charaktere:</strong> Oben in der Übersicht steht die Mitgliederliste. Ein Klick auf ein Mitglied klappt alle seine Charaktere mit ihrem Wesen auf. „Nach Wesen“ gruppiert dieselben Figuren nach Wesen, die Suche findet Mitglieder, Charaktere und Wesen. NPCs und freie Rollen stehen in einer eigenen Gruppe.
           </li>
           <li>
+            <strong>Frei oder beschäftigt, und wo:</strong> Auf dem Profil deines Charakters tippst du auf „Status setzen“, wählst „Frei“ oder „Beschäftigt“ (zum Beispiel in einer Szene) und trägst ein, wo der Charakter gerade ist. Alle in der Welt sehen das auf dem Profil und in der Charakterliste der Welt. Nochmal auf die Wahl tippen schaltet sie aus, „Löschen“ leert beides.
+          </li>
+          <li>
             <strong>Charaktere prüfen:</strong> Admins schalten unter „Welt bearbeiten“ → Regeln „Neue Charaktere prüfen“ ein. Neue Charaktere normaler Mitglieder stehen dann zuerst auf „Zur Prüfung“ (Charaktere von Admins und NPCs nicht). Auf der Seite „Prüfung“ eines Charakters genehmigen Admins oder lehnen mit Hinweis ab; wer abgelehnt wurde, ändert den Charakter und reicht ihn erneut ein. Zusätzlich können Admins zu jedem Feld (Profil, Auswahllisten, ChaBo mit Angaben, Attributen, Talenten und Notizen) eine Änderung vorschlagen. Die Besitzer:in sieht alt und neu nebeneinander und übernimmt oder lehnt ab. Geheimes bleibt dabei unsichtbar. Alle Charaktere „Zur Prüfung“ stehen in der Charakterliste der Welt unter dem Filter „Zur Prüfung“.
           </li>
           <li>
