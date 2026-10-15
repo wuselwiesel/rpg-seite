@@ -10,7 +10,7 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "turn", label: "Du bist dran (Story)", types: ["turn"] },
   { key: "new_scene", label: "Neue Szenen in deiner Welt", types: ["new_scene"] },
   { key: "roll", label: "Würfe gegen dich", types: ["roll"] },
-  { key: "friend", label: "Freundschaftsanfragen", types: ["friend_request", "friend_accept"] },
+  { key: "friend", label: "Freundschaftsanfragen und Begrüßungen", types: ["friend_request", "friend_accept", "welcome_greeting"] },
   { key: "relationship", label: "Beziehungen", types: ["relationship"] },
   { key: "badge", label: "Badges", types: ["badge"] },
   { key: "world_join", label: "Welt-Beitritt", types: ["world_request", "world_request_result"] },

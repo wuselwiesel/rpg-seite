@@ -5,6 +5,7 @@ import type { Profile } from "@/lib/types";
 import { ProfileForm } from "../profile-form";
 import { PasswordForm } from "./password-form";
 import { DeleteAccountSection } from "./delete-account-section";
+import { WelcomePrefs } from "./welcome-prefs";
 
 export default async function AccountSettingsPage({ searchParams }: PageProps<"/profile/konto">) {
   const params = await searchParams;
@@ -27,6 +28,10 @@ export default async function AccountSettingsPage({ searchParams }: PageProps<"/
         <p className="mb-4 rounded-md bg-surface-2 px-3 py-2 text-sm text-fg-soft">Gespeichert.</p>
       )}
       <ProfileForm profile={profile} />
+      <section className="mt-10 border-t border-line pt-6">
+        <h2 className="mb-3 font-serif text-xl text-fg">Sichtbarkeit</h2>
+        <WelcomePrefs announceJoins={profile.announce_joins !== false} introPublic={profile.intro_public === true} />
+      </section>
       <section className="mt-10 border-t border-line pt-6">
         <h2 className="mb-3 font-serif text-xl text-fg">Passwort</h2>
         <PasswordForm />

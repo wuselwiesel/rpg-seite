@@ -4,6 +4,9 @@ export type Profile = {
   nickname: string | null;
   avatar_url: string | null;
   created_at: string;
+  // Beitritte in Welten ankündigen (Willkommens-Karte) und App-weite Vorstellung
+  announce_joins?: boolean;
+  intro_public?: boolean;
 };
 
 export type World = {

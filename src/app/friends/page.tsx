@@ -6,6 +6,8 @@ import { AddFriendForm } from "./add-friend-form";
 import { FriendRequestActions } from "./friend-request-actions";
 import { NameBadge } from "@/components/name-badge";
 import { getOfficialAccountId } from "@/lib/account-marks";
+import { FriendSuggestions } from "./friend-suggestions";
+import { getFriendSuggestions } from "@/lib/welcome-data";
 
 export default async function FriendsPage() {
   const supabase = await createClient();
@@ -30,6 +32,7 @@ export default async function FriendsPage() {
   );
   const accepted = (friendships ?? []).filter((f) => f.status === "accepted");
   const officialId = await getOfficialAccountId();
+  const suggestions = await getFriendSuggestions(user.id);
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
@@ -41,6 +44,8 @@ export default async function FriendsPage() {
       <div className="mb-8 rounded-2xl bg-surface p-4">
         <AddFriendForm />
       </div>
+
+      <FriendSuggestions suggestions={suggestions} />
 
       {incoming.length > 0 && (
         <section className="mb-8">

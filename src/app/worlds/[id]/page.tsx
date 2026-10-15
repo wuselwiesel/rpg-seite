@@ -17,6 +17,8 @@ import { WorldAdminTabs } from "@/components/world-admin-tabs";
 import { AdminHint } from "@/components/admin-hint";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { RolesPanel } from "./roles-panel";
+import { FriendButton } from "@/components/friend-button";
+import { myFriendships } from "@/lib/welcome-data";
 import { getWorldRoles } from "@/lib/character-claims-data";
 import type { Profile, World } from "@/lib/types";
 
@@ -112,6 +114,8 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
   const memberNames = new Map((members ?? []).map((m) => [m.user_id, m.profiles.nickname || m.profiles.username]));
   const { roles, offersForMe } = isMember ? await getWorldRoles(id, user.id, memberNames) : { roles: [], offersForMe: [] };
 
+  const friendStatus = isMember ? await myFriendships(user.id) : new Map();
+
   const officialId = isAdmin ? await getOfficialAccountId() : null;
   const friends = isAdmin ? (await getAcceptedFriends(user.id)).filter((f) => f.id !== officialId) : [];
   const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
@@ -188,6 +192,11 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
             )}
             {member.user_id !== world.created_by && member.role === "admin" && (
               <span className="ml-2 rounded-full bg-accent-strong/15 px-2 py-0.5 text-xs font-medium text-accent">Admin</span>
+            )}
+            {isMember && member.user_id !== user.id && (
+              <span className="ml-auto pl-3">
+                <FriendButton username={member.profiles.username} status={friendStatus.get(member.user_id) ?? "none"} />
+              </span>
             )}
             {isAdmin && member.user_id !== world.created_by && member.user_id !== user.id && (
               <MemberActions

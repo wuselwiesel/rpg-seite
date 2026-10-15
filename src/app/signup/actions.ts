@@ -31,7 +31,7 @@ export async function signup(_prevState: string | null, formData: FormData) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { username } },
+    options: { data: { username, intro_public: formData.get("intro_public") === "on" } },
   });
 
   if (error) {

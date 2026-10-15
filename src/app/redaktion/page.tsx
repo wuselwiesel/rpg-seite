@@ -8,6 +8,8 @@ import { SearchFilterBar } from "@/components/search-filter-bar";
 import { RedaktionFeedList } from "./redaktion-feed-list";
 import { RedaktionSidebar } from "./redaktion-sidebar";
 import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
+import { WelcomeStrip } from "@/components/welcome-strip";
+import { getWelcomeCards } from "@/lib/welcome-data";
 
 export default async function RedaktionPage({ searchParams }: PageProps<"/redaktion">) {
   const params = await searchParams;
@@ -25,6 +27,7 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
   const filters = { q, from, to, tag };
   const initialPosts = await fetchRedaktionPage(filters);
   const extraManageId = (await isAppAdmin()) ? await getOfficialAccountId() : null;
+  const welcomeCards = await getWelcomeCards(user.id);
 
   return (
     <PullToRefresh>
@@ -35,6 +38,8 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
             <div className="mb-3 h-[44px]" />
             <SearchFilterBar basePath="/redaktion" q={q} from={from} to={to} tag={tag} iconOnly />
           </div>
+
+          {!q && !tag && !from && !to && <WelcomeStrip cards={welcomeCards} />}
 
           <RedaktionFeedList
             initialPosts={initialPosts}

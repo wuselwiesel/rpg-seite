@@ -49,6 +49,11 @@ export default function SignupPage() {
           />
         </label>
 
+        <label className="flex items-start gap-3 text-sm text-fg-soft">
+          <input type="checkbox" name="intro_public" className="mt-0.5 h-4 w-4 accent-[var(--accent-strong)]" />
+          <span>Mich in der Redaktion allen vorstellen (&bdquo;Willkommen&ldquo;-Karte)</span>
+        </label>
+
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button

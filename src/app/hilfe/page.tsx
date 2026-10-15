@@ -434,6 +434,9 @@ export default function HelpPage() {
             <strong>Rollen zu vergeben:</strong> Admins legen einen NPC an und setzen den Haken „Zu vergeben“ (beim Anlegen oder unter „Bearbeiten“ des NPCs). Die Figur erscheint dann auf der Weltseite unter „Zu vergeben“. Mitglieder können sie dort anfragen, ein Admin entscheidet. Admins können eine Rolle auch einem Mitglied anbieten, das Angebot muss die Person annehmen. Bei der Übergabe wechselt der Charakter samt Beiträgen, Bogen, Geheimem und Verlauf auf das Konto der neuen Besitzer:in und ist kein NPC mehr. Wer einen Charakter nicht mehr spielen möchte, gibt ihn unter „Bearbeiten“ → „An die Welt zurückgeben“ zurück. Alle Admins der Welt dürfen NPCs und freie Rollen bearbeiten.
           </li>
           <li>
+            <strong>Freund:innen finden:</strong> Tritt jemand einer Welt bei, sehen die Mitglieder dieser Welt oben in der Redaktion eine Karte „Willkommen, Name!“ mit „Befreunden“ und „Begrüßen“. In der Mitgliederliste einer Welt steht neben jedem Namen „Befreunden“, und auf der Freunde-Seite schlägt „Kennst du schon?“ Mitglieder deiner Welten vor. Unter „Konto“ → „Sichtbarkeit“ schaltest du die Ankündigung deines Beitritts aus, oder du stellst dich allen in der Redaktion vor.
+          </li>
+          <li>
             <strong>Rollen schon vor dem Beitritt:</strong> Ist „Erkunden“ eingeschaltet, erscheint in der Vorschau der Reiter „Zu vergeben“ mit den freien Rollen. In offenen Welten klickst du „Beitreten und anfragen“, bei „Auf Anfrage“ schickst du mit dem Beitrittsantrag gleich die Rolle mit. Die Admins sehen die gewünschte Rolle beim Antrag und wählen „Aufnehmen und Rolle geben“ oder „Nur aufnehmen“ (dann bleibt die Rolle als Rollenanfrage vorgemerkt).
           </li>
         </ul>
