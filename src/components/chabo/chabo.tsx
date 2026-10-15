@@ -198,6 +198,8 @@ export function Chabo({
   const startSheet = () => initial ?? { ...emptySheet(), ...(talentDefs ? { talentDefs } : {}), ...(natureDefs ? { natureDefs } : {}) };
   const [data, setData] = useState<SheetData>(() => withDerived(startSheet()));
   const [editing, setEditing] = useState(canEdit && !initial);
+  // „Bearbeiten“ erscheint erst beim Darüberfahren oder Antippen des Kopfes
+  const [revealEdit, setRevealEdit] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -335,7 +337,7 @@ export function Chabo({
 
   return (
     <div className="@container flex shrink-0 flex-col gap-5">
-      <header className={`${card} @xl:flex-row @xl:items-start`}>
+      <header onClick={() => setRevealEdit((v) => !v)} className={`group/hdr ${card} @xl:flex-row @xl:items-start`}>
         {editing ? (
           <div key={portraitKey} className="shrink-0">
             <AvatarUpload name="portrait_url" initialUrl={data.portraitUrl} displayName={characterName} variant="portrait" onChange={(url) => commit({ ...data, portraitUrl: url || null })} />
@@ -368,13 +370,13 @@ export function Chabo({
                     Fertig
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setEditing(true)} className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-3">
+                  <button type="button" onClick={() => setEditing(true)} className={`flex items-center gap-1.5 rounded-lg bg-surface-2 px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-3 ${revealEdit ? "opacity-100" : "pointer-events-none opacity-0 group-hover/hdr:pointer-events-auto group-hover/hdr:opacity-100"} focus-visible:pointer-events-auto focus-visible:opacity-100`}>
                     <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                     Bearbeiten
                   </button>
                 ))}
               {variant === "panel" && editable && (
-                <Link href={`/characters/${characterId}/chabo`} className="flex items-center gap-1.5 rounded-lg bg-surface-2 px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-3">
+                <Link href={`/characters/${characterId}/chabo`} className={`flex items-center gap-1.5 rounded-lg bg-surface-2 px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-3 ${revealEdit ? "opacity-100" : "pointer-events-none opacity-0 group-hover/hdr:pointer-events-auto group-hover/hdr:opacity-100"} focus-visible:pointer-events-auto focus-visible:opacity-100`}>
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                   Bearbeiten
                 </Link>
