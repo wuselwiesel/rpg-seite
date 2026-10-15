@@ -437,6 +437,9 @@ export default function HelpPage() {
             <strong>Ohne Charakter erkunden:</strong> Nach dem Beitritt musst du nicht gleich einen Charakter anlegen. Du kannst Feed, Story, Wiki, Figuren und die Weltseite ansehen. Zum Schreiben, Liken und Chatten brauchst du einen Charakter; ein Hinweis mit „Charakter anlegen“ und „Freie Rollen ansehen“ begleitet dich, bis du einen hast.
           </li>
           <li>
+            <strong>Alle Charaktere der Welt:</strong> Im Story-Bereich steht oben neben „Szenen“ der Reiter „Charaktere“ (am Computer auch in der Seitenleiste). Er listet jeden Charakter der Welt mit seinem Stand: frei, gespielt von …, dein Charakter oder NPC. Du kannst nach Namen, Spieler:in und Wesen suchen und nach Stand und Wesen filtern. Admins sehen zusätzlich, wie viele Mitglieder noch keinen Charakter haben, und können freie Charaktere direkt anbieten. Die Liste lädt in Schritten, auch bei vielen Mitgliedern.
+          </li>
+          <li>
             <strong>Freund:innen finden:</strong> Tritt jemand einer Welt bei, sehen die Mitglieder dieser Welt oben in der Redaktion eine Karte „Willkommen, Name!“ mit „Befreunden“ und „Begrüßen“. In der Mitgliederliste einer Welt steht neben jedem Namen „Befreunden“, und auf der Freunde-Seite schlägt „Kennst du schon?“ Mitglieder deiner Welten vor. Unter „Konto“ → „Sichtbarkeit“ schaltest du die Ankündigung deines Beitritts aus, oder du stellst dich allen in der Redaktion vor.
           </li>
           <li>

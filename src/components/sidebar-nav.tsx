@@ -5,7 +5,7 @@ import { useDiceEnabled } from "./dice-context";
 import { useWorldRights } from "./rights-context";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { BarChart3, Users, House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { useAppMode } from "@/components/mode-context";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -74,8 +74,11 @@ export function SidebarNav({
     return (
       <>
         <nav className="flex flex-col gap-1">
-          <NavLink href="/story" icon={<BookOpen className={ICON} strokeWidth={2} />} exclude="/story/wuerfe">
+          <NavLink href="/story" icon={<BookOpen className={ICON} strokeWidth={2} />} exclude={["/story/wuerfe", "/story/charaktere"]}>
             Story
+          </NavLink>
+          <NavLink href="/story/charaktere" icon={<Users className={ICON} strokeWidth={2} />}>
+            Charaktere
           </NavLink>
           <NavLink href="/wiki" icon={<Library className={ICON} strokeWidth={2} />} also={["/characters/relationships"]}>
             Wiki

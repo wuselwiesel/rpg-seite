@@ -10,6 +10,7 @@ import { RecapToggle } from "@/components/recap-toggle";
 import { recapToHtml } from "@/lib/recap-html";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { NoCharacterBanner } from "@/components/no-character-banner";
+import { StorySections } from "@/components/story-sections";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { MessageHits, type MessageHit } from "./message-hits";
 import { snippetAround } from "@/lib/snippet";
@@ -198,6 +199,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
           </Link>
         </div>
       </div>
+
+      <StorySections current="szenen" />
 
       <details className="group mb-4" open={filterCount > 0}>
         <summary data-tour="story-filter" className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
