@@ -12,6 +12,7 @@ import { RelationshipForm } from "./relationship-form";
 import { RelationshipList } from "./relationship-list";
 import { RelationshipTimeline } from "./relationship-timeline";
 import { FamilyTree } from "./family-tree";
+import { WorldSecretsProvider } from "@/components/world-secrets-context";
 import { canonicalLabel } from "@/lib/family-sync";
 import type { RelationshipConflict } from "./relationship-list";
 
@@ -41,7 +42,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
   const [{ data: characters }, { data: relationships }, { data: worldRow }, { data: history }] = await Promise.all([
     supabase.from("characters").select("*").eq("world_id", activeWorld.id).order("name").returns<Character[]>(),
     supabase.from("character_relationships").select("*").eq("world_id", activeWorld.id).returns<CharacterRelationship[]>(),
-    supabase.from("worlds").select("created_by").eq("id", activeWorld.id).maybeSingle(),
+    supabase.from("worlds").select("created_by, allow_secrets").eq("id", activeWorld.id).maybeSingle<{ created_by: string; allow_secrets: boolean | null }>(),
     supabase
       .from("relationship_history")
       .select("*")
@@ -112,6 +113,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
     }`;
 
   return (
+    <WorldSecretsProvider allowed={worldRow?.allow_secrets !== false}>
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
         <Network className="h-6 w-6 text-accent" strokeWidth={2} />
@@ -229,5 +231,6 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
         </div>
       </details>
     </div>
+    </WorldSecretsProvider>
   );
 }

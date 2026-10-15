@@ -12,6 +12,7 @@ import type { TalentDef } from "@/lib/talents";
 import type { NatureDef } from "@/lib/natures";
 import { TalentEditor } from "./talent-editor";
 import { NatureEditor } from "./nature-editor";
+import { WORLD_ADMIN_EVENTS, type WorldAdminEvent } from "@/lib/world-admin-events";
 
 // Alle Einstellungen einer Welt in einem Formular mit einem Speichern-Knopf, der am unteren Rand mitläuft.
 // listsSlot: der (serverseitig gerenderte) Abschnitt „Auswahllisten“, der zwischen Willkommen und Talenten steht.
@@ -20,12 +21,15 @@ export function EditWorldForm({
   welcomeInitial,
   talentsInitial,
   naturesInitial,
+  mutedEventsInitial,
   listsSlot,
 }: {
   world: World;
   welcomeInitial: string;
   talentsInitial: TalentDef[];
   naturesInitial: NatureDef[];
+  // Admin-Meldungen, die die angemeldete Person in dieser Welt ausgeschaltet hat
+  mutedEventsInitial: WorldAdminEvent[];
   listsSlot: ReactNode;
 }) {
   const [dirty, setDirty] = useState(false);
@@ -155,7 +159,7 @@ export function EditWorldForm({
         Würfeln
       </label>
 
-      <PermissionFields value={parsePermissions(world.permissions)} />
+      <PermissionFields value={parsePermissions(world.permissions)} allowSecrets={world.allow_secrets !== false} />
 
       <section className="mt-4 border-t border-line pt-6">
         <h2 data-tour="welt-willkommen" className="mb-3 font-serif text-xl text-fg">
@@ -172,6 +176,22 @@ export function EditWorldForm({
       </section>
 
       {listsSlot}
+
+      <fieldset data-tour="welt-admin-meldungen" className="mt-4 flex flex-col gap-3 rounded-xl border border-line p-4">
+        <legend className="px-1 text-sm font-medium text-fg">Meine Admin-Meldungen</legend>
+        <input type="hidden" name="admin_notify_present" value="1" />
+        {WORLD_ADMIN_EVENTS.map((e) => (
+          <label key={e.key} className="flex items-center gap-3 text-sm text-fg-soft">
+            <input
+              type="checkbox"
+              name={`admin_notify_${e.key}`}
+              defaultChecked={!mutedEventsInitial.includes(e.key)}
+              className="h-4 w-4 accent-[var(--accent-strong)]"
+            />
+            {e.label}
+          </label>
+        ))}
+      </fieldset>
 
       {dice && (
         <section className="mt-4 border-t border-line pt-6">

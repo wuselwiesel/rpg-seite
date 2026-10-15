@@ -291,6 +291,17 @@ export function hasSecrets(s: SheetSecrets): boolean {
   return s.personalFields.length + s.family.length + s.notesBlocks.length > 0;
 }
 
+// Kommt im Bogen mehr Geheimes vor, als schon gespeichert war? (Für Welten, in denen Geheimes nicht mehr neu angelegt werden darf:
+// Bereits Geheimes darf bleiben, bearbeitet oder offengelegt werden, aber nichts Neues kommt dazu.)
+export function addsSecrets(next: SheetData, prev: SheetSecrets): boolean {
+  const count = (list: { secret?: boolean }[]) => list.filter((x) => x.secret).length;
+  return (
+    count(next.personalFields) > prev.personalFields.length ||
+    count(next.family) > prev.family.length ||
+    count(next.notesBlocks) > prev.notesBlocks.length
+  );
+}
+
 function splitList<T extends { secret?: boolean }>(list: T[]): { open: T[]; secret: Positioned<T>[] } {
   const open: T[] = [];
   const secret: Positioned<T>[] = [];

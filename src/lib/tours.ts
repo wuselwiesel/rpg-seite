@@ -491,7 +491,7 @@ export const TOURS: Tour[] = [
   {
     id: "welt-verwalten",
     title: "Eine Welt verwalten",
-    summary: "Mitglieder, Einladungen, Einstellungen, Rechte, Auswahllisten und Talente für Besitzer:innen und Admins.",
+    summary: "Mitglieder, Einladungen, Einstellungen, Rechte, Auswahllisten, Admin-Meldungen und Übersicht für Besitzer:innen und Admins.",
     steps: [
       {
         title: "Eigene Welt verwalten",
@@ -548,6 +548,12 @@ export const TOURS: Tour[] = [
         match: { attr: "welt-rechte" },
       },
       {
+        title: "Geheime Felder erlauben",
+        text: "Mit diesem Haken legst du fest, ob Mitglieder in ihren Bögen und Beziehungen etwas geheim halten dürfen. Schaltest du es aus, kann niemand mehr Neues geheim machen. Bereits Geheimes bleibt gespeichert und nur für die jeweilige Besitzer:in sichtbar, bis sie es offenlegt oder löscht.",
+        route: "@worldEdit|/worlds",
+        match: { attr: "welt-geheimes" },
+      },
+      {
         title: "Willkommenstext",
         text: "Der Willkommenstext steht auf der Weltseite und in der Vorschau für Außenstehende. Er lässt sich formatieren und mit Bildern, Links und Emojis füllen. Gespeichert wird er zusammen mit den übrigen Einstellungen.",
         route: "@worldEdit|/worlds",
@@ -594,6 +600,18 @@ export const TOURS: Tour[] = [
         text: "Nur bei eingeschaltetem Würfeln: Hier legst du fest, welche besonderen Naturen es in deiner Welt gibt, zum Beispiel Werwolf, Vampir oder etwas ganz Eigenes. Jede Natur bekommt einen Namen und feste Boni oder Abzüge bei den Attributen. Wer im ChaBo eine Natur wählt, bekommt diese Boni eingetragen. Mit „Natur hinzufügen“ legst du beliebig viele an.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-naturen" },
+      },
+      {
+        title: "Meine Admin-Meldungen",
+        text: "Als Besitzer:in oder Admin erfährst du, wenn jemand beitritt, einen Charakter oder NPC erstellt, geht oder einen Charakter löscht und wenn ein Eintrag seine Höchstzahl erreicht. Standardmäßig ist alles an. Hier schaltest du einzelne Meldungen für dich und diese Welt aus. Anderen Admins ändert das nichts.",
+        route: "@worldEdit|/worlds",
+        match: { attr: "welt-admin-meldungen" },
+      },
+      {
+        title: "Übersicht der Welt",
+        text: "Die Übersicht zeigt dir Mitglieder (auch neue und offene Anfragen), wie viele Charaktere es je Wesen, Haus oder Fraktion gibt (mit Höchstzahl und „voll“), die Aktivität der letzten 7 Tage und die Inhalte der Welt. Du erreichst sie über „Übersicht“ auf der Weltseite oder über den Link oben auf der Bearbeiten-Seite.",
+        route: "@worldOverview|/worlds",
+        match: { attr: "uebersicht-mitglieder" },
       },
       {
         title: "Löschen",

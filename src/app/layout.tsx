@@ -72,6 +72,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ModeTheme } from "@/components/mode-theme";
 import { ModeProvider } from "@/components/mode-context";
 import { DiceProvider } from "@/components/dice-context";
+import { WorldSecretsProvider } from "@/components/world-secrets-context";
 import { RightsProvider } from "@/components/rights-context";
 import { getWorldRights } from "@/lib/world-rights";
 import { FULL_RIGHTS } from "@/lib/world-permissions";
@@ -319,11 +320,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"} initialEmoji={ownPresence?.emoji ?? null} initialText={ownPresence?.text ?? null}>
           <CustomEmojiProvider map={emojiMap}>
             <DiceProvider enabled={diceEnabled}>
+            <WorldSecretsProvider allowed={activeWorld ? activeWorld.allow_secrets !== false : true}>
             <RightsProvider rights={rights}>
             <AppFrame sidebar={<Sidebar />}>
               <MobileMain>{children}</MobileMain>
             </AppFrame>
             </RightsProvider>
+            </WorldSecretsProvider>
             </DiceProvider>
             <ChatBubbleLoader />
             <SpoilerReveal />

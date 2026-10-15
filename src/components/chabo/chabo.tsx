@@ -1,5 +1,6 @@
 "use client";
 
+import { useAllowSecrets } from "@/components/world-secrets-context";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -88,6 +89,9 @@ const uid = () => `b${blockCounter++}`;
 const SECRET_REVEAL =
   "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/sec:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100";
 function LockToggle({ secret, onToggle }: { secret: boolean; onToggle: () => void }) {
+  // Ist Geheimes in der Welt ausgeschaltet, bleibt der Knopf nur bei bereits Geheimem (zum Offenlegen)
+  const allowSecrets = useAllowSecrets();
+  if (!allowSecrets && !secret) return null;
   return (
     <button
       type="button"

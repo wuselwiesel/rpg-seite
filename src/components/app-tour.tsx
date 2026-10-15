@@ -17,8 +17,9 @@ type Refs = {
   world: string | null;
   worldEdit: string | null;
   worldLists: string | null;
+  worldOverview: string | null;
 };
-const NO_REFS: Refs = { thread: null, chabo: null, profile: null, chat: null, world: null, worldEdit: null, worldLists: null };
+const NO_REFS: Refs = { thread: null, chabo: null, profile: null, chat: null, world: null, worldEdit: null, worldLists: null, worldOverview: null };
 
 function isVisible(el: Element): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false;
@@ -85,11 +86,12 @@ function scanRefs(): Partial<Refs> {
     found.world = `/worlds/${worldId}`;
     found.worldEdit = `/worlds/${worldId}/edit`;
     found.worldLists = `/worlds/${worldId}/listen`;
+    found.worldOverview = `/worlds/${worldId}/uebersicht`;
   }
   return found;
 }
 
-// Platzhalter ("@thread", "@chabo", "@profile", "@chat", "@world", "@worldEdit", "@worldLists") werden zur gefundenen Seite; "@platzhalter|/seite" springt zunächst
+// Platzhalter ("@thread", "@chabo", "@profile", "@chat", "@world", "@worldEdit", "@worldLists", "@worldOverview") werden zur gefundenen Seite; "@platzhalter|/seite" springt zunächst
 // auf /seite, wo er sich finden lässt. Eine feste Route bleibt, wie sie ist.
 function resolveRoute(route: string | undefined, refs: Refs): string | null {
   if (!route) return null;

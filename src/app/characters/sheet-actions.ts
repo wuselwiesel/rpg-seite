@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizePostHtml } from "@/lib/sanitize";
-import { hasErrors, hasSecrets, mergeSecrets, normalizeSheet, parseSecrets, splitSecrets, stripSecrets, validateSheet } from "@/lib/sheet-rules";
+import { addsSecrets, hasErrors, hasSecrets, mergeSecrets, normalizeSheet, parseSecrets, splitSecrets, stripSecrets, validateSheet } from "@/lib/sheet-rules";
 import { getCharacterTalents } from "@/lib/world-talents";
 import { getCharacterNatures } from "@/lib/world-natures";
 import { syncFamilyRows } from "@/lib/family-sync";
+import { characterWorldAllowsSecrets, SECRETS_NOT_ALLOWED } from "@/lib/world-secrets";
 import { diffSheets, mergeWithRecent, type SheetChange } from "@/lib/sheet-diff";
 
 // Speichert den Charakterbogen (nur die Besitzer:in des Charakters, dafür sorgt zusätzlich die RLS).
@@ -58,6 +59,8 @@ export async function saveCharacterSheet(characterId: string, raw: unknown): Pro
   const { data: prevRow } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
   const prev = prevRow ? stripSecrets(normalizeSheet(prevRow.data, talentDefs, natureDefs)) : null;
   const { data: prevSecretRow } = await supabase.from("character_sheet_secrets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
+  // Ist Geheimes in der Welt ausgeschaltet, darf nichts Neues geheim werden (Bestehendes bleibt und lässt sich offenlegen)
+  if (!(await characterWorldAllowsSecrets(characterId)) && addsSecrets(data, parseSecrets(prevSecretRow?.data))) return SECRETS_NOT_ALLOWED;
   const prevFamily = prevRow ? (prevSecretRow ? mergeSecrets(normalizeSheet(prevRow.data, talentDefs, natureDefs), parseSecrets(prevSecretRow.data)) : normalizeSheet(prevRow.data, talentDefs, natureDefs)).family : [];
   // Beziehungen im ChaBo und im Beziehungsnetz gleichen sich ab (auch geheime Zeilen: die werden zu geheimen Beziehungen)
   data.family = await syncFamilyRows(supabase, user.id, characterId, data.family, prevFamily);

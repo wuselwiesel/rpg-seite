@@ -16,6 +16,9 @@ import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
 import { createNotification } from "@/lib/notifications";
 import { getChoiceUsage, getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { activeLists, limitError, parseChoices, speciesFromLabel } from "@/lib/choice-lists";
+import { SECRETS_NOT_ALLOWED, worldAllowsSecrets } from "@/lib/world-secrets";
+import { newlyFullEntries } from "@/lib/world-admin-events";
+import { notifyFullEntries, notifyWorldAdmins } from "@/lib/world-admin-notify";
 
 const USERNAME_PATTERN = /^[a-z0-9._]{3,30}$/;
 const GENDERS = ["maennlich", "weiblich", "divers"] as const;
@@ -99,7 +102,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const choiceLists = await getWorldChoiceLists(activeWorld.id);
   const choices = parseChoices((k) => (formData.has(k) ? String(formData.get(k)) : null), choiceLists);
   // Höchstzahl je Eintrag (z. B. höchstens 2 Vampire in der Welt)
-  const createLimit = limitError(choiceLists, choices, await getChoiceUsage(activeWorld.id));
+  const createUsage = await getChoiceUsage(activeWorld.id);
+  const createLimit = limitError(choiceLists, choices, createUsage);
   if (createLimit) return createLimit;
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
   const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
@@ -152,6 +156,10 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       return `Der Bogen konnte nicht gespeichert werden: ${sheetError.message}`;
     }
   }
+
+  // Admins der Welt erfahren von neuen Charakteren und NPCs und davon, dass ein Eintrag seine Höchstzahl erreicht hat
+  await notifyWorldAdmins(supabase, activeWorld.id, isNpc ? "npc_new" : "character_new", user.id, `hat ${isNpc ? "einen neuen NPC" : "einen neuen Charakter"} erstellt: ${name}`, `/characters/${data.id}`);
+  await notifyFullEntries(supabase, activeWorld.id, user.id, newlyFullEntries(choiceLists, choices, createUsage));
 
   revalidatePath("/", "layout");
   // Ein NPC wird nicht zum aktiven Charakter (er hat keine:n Spieler:in); man landet in seinem ChaBo
@@ -221,7 +229,8 @@ export async function updateCharacter(
     else delete choices[list.id];
   }
   // Höchstzahl je Eintrag: Behält der Charakter seinen Eintrag, zählt er nicht gegen die Grenze
-  const updateLimit = limitError(choiceLists, choices, await getChoiceUsage(own.world_id), (own.choices ?? {}) as Record<string, string>);
+  const updateUsage = await getChoiceUsage(own.world_id);
+  const updateLimit = limitError(choiceLists, choices, updateUsage, (own.choices ?? {}) as Record<string, string>);
   if (updateLimit) return updateLimit;
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
   const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
@@ -275,6 +284,8 @@ export async function updateCharacter(
     return "Gespeichert, aber das Zeichen neben dem Namen nicht: Die Datenbank-Spalte name_symbol fehlt noch (supabase/migration_name_symbol.sql).";
   }
 
+  await notifyFullEntries(supabase, own.world_id, user.id, newlyFullEntries(choiceLists, choices, updateUsage, (own.choices ?? {}) as Record<string, string>));
+
   revalidatePath("/", "layout");
   redirect(`/characters/${characterId}`);
 }
@@ -286,7 +297,7 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
 
-  const { data: target } = await supabase.from("characters").select("owner_id, is_npc, world_id").eq("id", characterId).maybeSingle<{ owner_id: string; is_npc: boolean; world_id: string }>();
+  const { data: target } = await supabase.from("characters").select("owner_id, is_npc, world_id, name").eq("id", characterId).maybeSingle<{ owner_id: string; is_npc: boolean; world_id: string; name: string }>();
   if (!target) return "Charakter konnte nicht gelöscht werden. Bitte später erneut versuchen.";
   if (!(await getCharacterAccess(target, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter löschen.";
 
@@ -299,6 +310,8 @@ export async function deleteCharacter(characterId: string): Promise<string | nul
 
   if (error) return error.message;
   if (!count) return "Charakter konnte nicht gelöscht werden. Bitte später erneut versuchen.";
+
+  await notifyWorldAdmins(supabase, target.world_id, "leave", user.id, `hat ${target.is_npc ? "den NPC" : "den Charakter"} ${target.name} gelöscht`);
 
   const cookieStore = await cookies();
   if (cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value === characterId) {
@@ -360,9 +373,10 @@ export async function setCharacterNpc(characterId: string, isNpc: boolean): Prom
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const { data, error } = await supabase.from("characters").update({ is_npc: isNpc }).eq("id", characterId).eq("owner_id", user.id).select("id");
+  const { data, error } = await supabase.from("characters").update({ is_npc: isNpc }).eq("id", characterId).eq("owner_id", user.id).select("id, world_id, name");
   if (error) return error.message;
   if (!data?.length) return "Nur die Person, die den Charakter angelegt hat, kann ihn umwandeln.";
+  if (isNpc) await notifyWorldAdmins(supabase, data[0].world_id as string, "npc_new", user.id, `hat ${data[0].name} zum NPC gemacht`, `/characters/${characterId}`);
   // Ein NPC ist kein aktiver Charakter mehr
   if (isNpc) {
     const cookieStore = await cookies();
@@ -506,6 +520,7 @@ export async function createRelationship(_prevState: string | null, formData: Fo
     .eq("id", characterAId)
     .maybeSingle();
   if (!character) return "Charakter nicht gefunden.";
+  if (isSecret && !(await worldAllowsSecrets(character.world_id))) return SECRETS_NOT_ALLOWED;
 
   const { data: created, error } = await supabase.from("character_relationships").insert({
     world_id: character.world_id,

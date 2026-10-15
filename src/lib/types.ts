@@ -26,6 +26,8 @@ export type World = {
   join_mode?: "open" | "request" | "invite";
   // Erkunden vor dem Beitritt: aus, Info (Willkommen, Wiki, Figuren) oder alles (auch Szenen)
   preview?: "none" | "info" | "full";
+  // Geheime Felder in Bögen und Beziehungen erlaubt (Standard) oder in dieser Welt nicht mehr neu anlegbar
+  allow_secrets?: boolean;
   // Rechte-Tabelle (siehe lib/world-permissions.ts); fehlende Schlüssel gelten als „alle Mitglieder“
   permissions?: Record<string, string> | null;
 };

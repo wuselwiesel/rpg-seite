@@ -1,7 +1,7 @@
 import { LEVEL_LABELS, PERMISSION_DEFS, type WorldPermissions } from "@/lib/world-permissions";
 
 // Rechte-Tabelle einer Welt: je Aktion eine Auswahl (alle Mitglieder / nur eigene / nur Admins).
-export function PermissionFields({ value }: { value: WorldPermissions }) {
+export function PermissionFields({ value, allowSecrets = true }: { value: WorldPermissions; allowSecrets?: boolean }) {
   return (
     <fieldset data-tour="welt-rechte" className="flex flex-col gap-3 rounded-xl border border-line p-4">
       <legend className="px-1 text-sm font-medium text-fg">Rechte der Mitglieder</legend>
@@ -21,6 +21,10 @@ export function PermissionFields({ value }: { value: WorldPermissions }) {
           </select>
         </label>
       ))}
+      <label data-tour="welt-geheimes" className="flex items-center gap-3 text-sm text-fg-soft">
+        <input type="checkbox" name="allow_secrets" defaultChecked={allowSecrets} className="h-4 w-4 accent-[var(--accent-strong)]" />
+        Geheime Felder erlauben
+      </label>
     </fieldset>
   );
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ATTR_TABLE, getStatOptions } from "./charakterbogen-stats";
 import {
+  addsSecrets,
   applyRace,
   attrRows,
   budgets,
@@ -187,6 +188,14 @@ describe("Geheimes", () => {
       ],
     });
 
+  it("addsSecrets: erkennt nur Neues, nicht Bestehendes", () => {
+    const d = mk();
+    const prev = splitSecrets(d).secrets;
+    expect(addsSecrets(d, prev)).toBe(false);
+    expect(addsSecrets({ ...d, personalFields: [...d.personalFields, { label: "Neu", value: "x", secret: true }] }, prev)).toBe(true);
+    expect(addsSecrets({ ...d, personalFields: d.personalFields.map((f) => ({ ...f, secret: undefined })) }, prev)).toBe(false);
+    expect(addsSecrets(d, parseSecrets({}))).toBe(true);
+  });
   it("normalizeSheet behält das Geheim-Zeichen", () => {
     const d = mk();
     expect(d.personalFields[1].secret).toBe(true);

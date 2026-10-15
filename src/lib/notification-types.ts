@@ -14,5 +14,6 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "relationship", label: "Beziehungen", types: ["relationship"] },
   { key: "badge", label: "Badges", types: ["badge"] },
   { key: "world_join", label: "Welt-Beitritt", types: ["world_request", "world_request_result"] },
+  { key: "world_admin", label: "Welt-Verwaltung (als Admin)", types: ["world_admin_member", "world_admin_character", "world_admin_npc", "world_admin_leave", "world_admin_full"] },
   { key: "redaktion", label: "Redaktion", types: ["redaktion_post", "redaktion_comment", "redaktion_reaction"] },
 ];

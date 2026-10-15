@@ -418,6 +418,15 @@ export default function HelpPage() {
           <li>
             <strong>Rechte in der Welt:</strong> Besitzer:in und ernannte Admins dürfen immer alles. Für alle anderen stellen die Admins unter „Welt bearbeiten“ ein, wer Wiki-Seiten anlegen oder bearbeiten, Ordner, Karten und Seitenarten ändern, Szenen starten und Handlungsstränge anlegen darf. Neue Welten starten streng: Mitglieder bearbeiten nur ihre eigenen Wiki-Seiten und ändern keine Ordner oder Karten.
           </li>
+          <li>
+            <strong>Geheime Felder:</strong> Admins können unter „Welt bearbeiten“ bei den Rechten „Geheime Felder erlauben“ ausschalten. Dann kann in dieser Welt niemand mehr Neues geheim halten, weder in Steckbrief und ChaBo noch bei Beziehungen. Was schon geheim ist, bleibt gespeichert und nur für die Besitzer:in des Charakters sichtbar; sie kann es offenlegen oder löschen.
+          </li>
+          <li>
+            <strong>Admin-Meldungen:</strong> Besitzer:in und Admins bekommen eine Benachrichtigung, wenn jemand der Welt beitritt, einen Charakter oder NPC erstellt, die Welt verlässt oder einen Charakter löscht und wenn ein Eintrag seine Höchstzahl erreicht. Das ist standardmäßig an. Unter „Welt bearbeiten“ → „Meine Admin-Meldungen“ schaltest du einzelne Meldungen für dich und diese Welt aus; die anderen Admins behalten ihre Einstellung. Die ganze Gruppe lässt sich auch in den Benachrichtigungs-Einstellungen ausschalten.
+          </li>
+          <li>
+            <strong>Übersicht der Welt:</strong> Admins sehen über „Übersicht“ auf der Weltseite die Zahlen ihrer Welt: Mitglieder und offene Anfragen, wie viele Charaktere es je Wesen oder Liste gibt (mit Höchstzahl), die Aktivität der letzten 7 Tage sowie Wiki-Seiten, Handlungsstränge und Beziehungen. Zu Geheimem zeigt sie nur eine Gesamtzahl, nie Inhalt oder Besitzer:in.
+          </li>
         </ul>
       </Section>
       <Section id="verlassen" title="16. Welt verlassen, Besitz übertragen, Konto löschen">

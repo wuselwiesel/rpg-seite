@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
 import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
+import { parseMutedEvents } from "@/lib/world-admin-events";
 
 export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/edit">) {
   const { id } = await params;
@@ -32,6 +33,8 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
   }
 
   const lists = await getWorldChoiceLists(id);
+  const { data: notifyPrefs } = await supabase.from("world_admin_notify_prefs").select("muted_events").eq("world_id", id).eq("user_id", user.id).maybeSingle<{ muted_events: string[] }>();
+  const mutedEvents = parseMutedEvents(notifyPrefs?.muted_events);
 
   const talentsInitial = (world as unknown as { talent_config?: unknown }).talent_config
     ? parseTalentConfig((world as unknown as { talent_config?: unknown }).talent_config)
@@ -76,10 +79,13 @@ export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/
       </Link>
       <h1 className="mb-1 font-serif text-3xl text-fg">Welt bearbeiten</h1>
       <p className="mb-6 text-sm text-muted">
-        Titelbild, Name und Beschreibung von {world.name}.
+        Titelbild, Name und Beschreibung von {world.name}.{" "}
+        <Link href={`/worlds/${world.id}/uebersicht`} className="text-accent hover:underline">
+          Zur Übersicht
+        </Link>
       </p>
 
-      <EditWorldForm world={world} welcomeInitial={world.welcome_html ?? ""} talentsInitial={talentsInitial} naturesInitial={naturesInitial} listsSlot={listsSlot} />
+      <EditWorldForm world={world} welcomeInitial={world.welcome_html ?? ""} talentsInitial={talentsInitial} naturesInitial={naturesInitial} mutedEventsInitial={mutedEvents} listsSlot={listsSlot} />
 
       {isOwner && (
         <div data-tour="welt-loeschen" className="mt-8 border-t border-line pt-6">

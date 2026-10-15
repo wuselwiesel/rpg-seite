@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowLeftRight, Eye, EyeOff } from "lucide-react";
 import { FAMILY_ROLES, REL_CATEGORIES, categoryInfo, guessRelation } from "@/lib/relationships";
+import { useAllowSecrets } from "@/components/world-secrets-context";
 import type { Character, CharacterRelationship, RelationshipCategory } from "@/lib/types";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent";
@@ -35,6 +36,8 @@ export function RelationshipFields({
   const [role, setRole] = useState<string>(initial?.family_role ?? "verwandt");
   const [touched, setTouched] = useState(editing);
   const [secret, setSecret] = useState(!!initial?.is_secret);
+  // Ist Geheimes in der Welt ausgeschaltet, gibt es den Schalter nur noch für bereits geheime Beziehungen (zum Offenlegen)
+  const allowSecrets = useAllowSecrets();
   const [more, setMore] = useState(editing);
   const [ended, setEnded] = useState(!!initial?.ended_on || !!initial?.ended_label);
 
@@ -162,6 +165,7 @@ export function RelationshipFields({
         <button type="button" onClick={() => setMore((v) => !v)} className="text-xs text-accent hover:underline">
           {more ? "Weniger" : "Mehr"}
         </button>
+        {(allowSecrets || secret) && (
         <button
           type="button"
           onClick={() => setSecret((v) => !v)}
@@ -171,6 +175,7 @@ export function RelationshipFields({
           {secret ? <EyeOff className="h-3.5 w-3.5" strokeWidth={2} /> : <Eye className="h-3.5 w-3.5" strokeWidth={2} />}
           Geheim halten
         </button>
+        )}
         {secret && <input type="hidden" name="is_secret" value="on" />}
       </div>
 

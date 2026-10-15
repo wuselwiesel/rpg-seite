@@ -9,6 +9,8 @@ import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS 
 import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
 import { isDefaultNatures, parseNatureConfig } from "@/lib/natures";
 import { sanitizePostHtml } from "@/lib/sanitize";
+import { notifyWorldAdmins } from "@/lib/world-admin-notify";
+import { WORLD_ADMIN_EVENTS } from "@/lib/world-admin-events";
 
 // Beitrittsart aus dem Formular: offen (Standard), auf Anfrage oder nur Einladung
 function parseJoinMode(raw: FormDataEntryValue | null): "open" | "request" | "invite" {
@@ -34,7 +36,7 @@ export async function createWorld(_prevState: string | null, formData: FormData)
 
   const { data: world, error } = await supabase
     .from("worlds")
-    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", dice_enabled: formData.get("dice_enabled") === "on", join_mode: parseJoinMode(formData.get("join_mode")), preview: parsePreview(formData.get("preview")), permissions: permissionsFromForm(formData, strictPermissions()) })
+    .insert({ name, description: description || null, created_by: user.id, is_public: formData.get("is_public") === "on", dice_enabled: formData.get("dice_enabled") === "on", join_mode: parseJoinMode(formData.get("join_mode")), preview: parsePreview(formData.get("preview")), permissions: permissionsFromForm(formData, strictPermissions()), allow_secrets: formData.get("allow_secrets") === "on" })
     .select("id")
     .single();
 
@@ -110,6 +112,7 @@ export async function joinWorld(worldId: string): Promise<string | null> {
       .insert({ world_id: worldId, user_id: user.id });
 
     if (error) return error.message;
+    await notifyWorldAdmins(supabase, worldId, "member_join", user.id, "ist der Welt beigetreten");
   }
 
   const cookieStore = await cookies();
@@ -136,11 +139,18 @@ export async function addWorldMember(
   if (!friendUserId) return "Bitte eine Freundin oder einen Freund auswählen.";
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { error } = await supabase
     .from("world_members")
     .insert({ world_id: worldId, user_id: friendUserId });
 
   if (error) return error.message;
+  if (user) {
+    const { data: added } = await supabase.from("profiles").select("username, nickname").eq("id", friendUserId).maybeSingle<{ username: string; nickname: string | null }>();
+    await notifyWorldAdmins(supabase, worldId, "member_join", user.id, `hat ${added?.nickname || added?.username || "jemanden"} zur Welt hinzugefügt`);
+  }
 
   revalidatePath(`/worlds/${worldId}`);
   return null;
@@ -164,6 +174,7 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
     join_mode: parseJoinMode(formData.get("join_mode")),
     preview: parsePreview(formData.get("preview")),
     permissions: permissionsFromForm(formData, parsePermissions({})),
+    allow_secrets: formData.get("allow_secrets") === "on",
   };
 
   if (formData.has("welcome")) {
@@ -206,6 +217,15 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
   const { error, count } = await supabase.from("worlds").update(patch, { count: "exact" }).eq("id", worldId);
   if (error) return error.message;
   if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
+
+  // Eigene Admin-Meldungen (nur für dich, je Welt): Häkchen = an, ausgeschaltete werden gemerkt
+  if (formData.has("admin_notify_present")) {
+    const muted = WORLD_ADMIN_EVENTS.filter((e) => formData.get(`admin_notify_${e.key}`) !== "on").map((e) => e.key);
+    const { error: prefsError } = await supabase
+      .from("world_admin_notify_prefs")
+      .upsert({ world_id: worldId, user_id: user.id, muted_events: muted, updated_at: new Date().toISOString() });
+    if (prefsError) return prefsError.message;
+  }
 
   revalidatePath(`/worlds/${worldId}`);
   revalidatePath(`/worlds/${worldId}/edit`);
@@ -274,9 +294,11 @@ export async function removeWorldMember(worldId: string, userId: string): Promis
   if (!user) return "Nicht angemeldet.";
   if (userId === user.id) return "Zum Verlassen der Welt gibt es „Welt verlassen“.";
 
+  const { data: removed } = await supabase.from("profiles").select("username, nickname").eq("id", userId).maybeSingle<{ username: string; nickname: string | null }>();
   const { error, count } = await supabase.from("world_members").delete({ count: "exact" }).eq("world_id", worldId).eq("user_id", userId);
   if (error) return error.message;
   if (!count) return "Dieses Mitglied kannst du nicht entfernen.";
+  await notifyWorldAdmins(supabase, worldId, "leave", user.id, `hat ${removed?.nickname || removed?.username || "ein Mitglied"} aus der Welt entfernt`);
 
   revalidatePath(`/worlds/${worldId}`);
   revalidatePath("/", "layout");
@@ -326,6 +348,8 @@ export async function leaveWorld(worldId: string): Promise<string | null> {
   const { data: world } = await supabase.from("worlds").select("created_by").eq("id", worldId).maybeSingle<{ created_by: string }>();
   if (world?.created_by === user.id) return "Als Besitzer:in überträgst du erst den Besitz an ein anderes Mitglied oder löschst die Welt.";
 
+  // Erst melden, solange die Person noch Mitglied ist (sonst darf sie die Admins nicht abfragen)
+  await notifyWorldAdmins(supabase, worldId, "leave", user.id, "hat die Welt verlassen");
   const { error } = await supabase.from("world_members").delete().eq("world_id", worldId).eq("user_id", user.id);
   if (error) return error.message;
 
