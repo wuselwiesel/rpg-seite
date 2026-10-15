@@ -102,6 +102,13 @@ export function MobileNav({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <MobileOnline members={worldMembers} selfId={userId} />
+          <Link
+            href="/search"
+            aria-label="Suche"
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 hover:text-fg ${pathname?.startsWith("/search") ? "bg-surface-2 text-fg" : "text-fg-soft"}`}
+          >
+            <Search className="h-[18px] w-[18px]" strokeWidth={2} />
+          </Link>
           <NotificationBell
             key={`${activeWorld.id}-${worldFilter}`}
             userId={userId}
@@ -181,7 +188,16 @@ export function MobileNav({
         ) : (
           <>
             <MobileTabLink href="/" icon={<House className="h-[26px] w-[26px]" strokeWidth={2} />} label="Feed" exact showLabel={false} />
-            <MobileTabLink href="/search" icon={<Search className="h-[26px] w-[26px]" strokeWidth={2} />} label="Suche" showLabel={false} />
+            {activeCharacter ? (
+              <MobileTabLink
+                href={`/characters/${activeCharacter.id}/chabo`}
+                icon={<IdCard className="h-[26px] w-[26px]" strokeWidth={2} />}
+                label={chaboLabel(diceEnabled)}
+                showLabel={false}
+              />
+            ) : (
+              <MobileTabLink href="/search" icon={<Search className="h-[26px] w-[26px]" strokeWidth={2} />} label="Suche" showLabel={false} />
+            )}
             <MobileCreateTab href="/posts/new" label="Neuer Beitrag" />
             <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
           </>

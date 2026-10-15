@@ -38,6 +38,7 @@ import { getWikiTypes } from "@/lib/wiki-data";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { choiceEntries } from "@/lib/choice-lists";
 import type { Character, Highlight, Post, Story } from "@/lib/types";
+import { NameBadge } from "@/components/name-badge";
 
 export default async function CharacterProfilePage({
   params,
@@ -276,6 +277,7 @@ export default async function CharacterProfilePage({
           </div>
 
           <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}
+            <span className="ml-1.5 inline-flex align-middle"><NameBadge characterId={character.id} sealOnly /></span>
             {isNpcProfile && <NpcBadge className="ml-2" />}
             {gone && <span className="ml-2 text-sm font-normal text-muted">Gelöscht</span>}
             {character.name_symbol && (

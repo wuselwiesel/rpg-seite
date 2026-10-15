@@ -43,6 +43,9 @@ export function SidebarNav({
           <NavLink href="/redaktion/chat" icon={<MessageCircle className={ICON} strokeWidth={2} />}>
             Chat
           </NavLink>
+          <NavLink href="/search" icon={<Search className={ICON} strokeWidth={2} />}>
+            Suche
+          </NavLink>
           <NavLink href="/redaktion/verlauf" icon={<History className={ICON} strokeWidth={2} />}>
             Verlauf
           </NavLink>
@@ -108,9 +111,15 @@ export function SidebarNav({
         <NavLink href="/" icon={<House className={ICON} strokeWidth={2} />} exact>
           Feed
         </NavLink>
-        <NavLink href="/search" icon={<Search className={ICON} strokeWidth={2} />}>
-          Suche
-        </NavLink>
+        {activeCharacter ? (
+          <NavLink href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
+            {chaboLabel(diceEnabled)}
+          </NavLink>
+        ) : (
+          <NavLink href="/search" icon={<Search className={ICON} strokeWidth={2} />}>
+            Suche
+          </NavLink>
+        )}
         <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
       </nav>
       <Link

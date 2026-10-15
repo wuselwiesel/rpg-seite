@@ -7,6 +7,7 @@ import { getUnreadCounts } from "@/lib/chat-reads";
 import { messagePreview } from "@/lib/chat-preview";
 import type { Character, Chat } from "@/lib/types";
 import { ChatListItem } from "./chat-list-item";
+import { NameBadge } from "@/components/name-badge";
 
 type ChatWithParticipants = Chat & {
   chat_participants: { muted: boolean; characters: Character }[];
@@ -109,6 +110,7 @@ export async function ChatList() {
                 participantCount={chat.chat_participants.length}
                 lastMessage={last ? { text: messagePreview(last), at: last.created_at, sender: senderName } : null}
                 unreadCount={unreadCounts[chat.id] ?? 0}
+                sealCharacterId={chat.is_group ? null : (others[0]?.id ?? null)}
                 muted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
               />
             </li>

@@ -110,8 +110,8 @@ export function CreatedList({
             const isOpen = open === c.id;
             return (
               <li key={c.id} className="rounded-2xl border border-line bg-surface p-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Link href={`/characters/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex flex-col gap-3">
+                  <Link href={`/characters/${c.id}`} className="flex min-w-0 items-center gap-3">
                     <CharacterAvatar name={c.name} avatarUrl={c.avatarUrl} size={44} />
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-fg">{c.name}</span>
@@ -121,7 +121,7 @@ export function CreatedList({
                       </span>
                     </span>
                   </Link>
-                  <span className="flex shrink-0 flex-wrap items-center gap-2">
+                  <span className="flex flex-wrap items-center gap-2">
                     {c.requestCount > 0 && (
                       <Link href={`/worlds/${worldId}`} className="rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
                         {c.requestCount} {c.requestCount === 1 ? "Anfrage" : "Anfragen"}
@@ -135,11 +135,11 @@ export function CreatedList({
                           </button>
                         ) : (
                           <button type="button" onClick={() => setOpen(isOpen ? null : c.id)} className={primary}>
-                            Anbieten
+                            Einer Person anbieten
                           </button>
                         )}
                         <button type="button" disabled={pending} onClick={() => run(() => setCharacterClaimable(c.id, false))} className={quiet}>
-                          Nicht mehr frei
+                          Nicht mehr zu vergeben
                         </button>
                       </>
                     )}
@@ -150,7 +150,7 @@ export function CreatedList({
                         </button>
                         {!c.offer && (
                           <button type="button" onClick={() => setOpen(isOpen ? null : c.id)} className={quiet}>
-                            Anbieten
+                            Einer Person anbieten
                           </button>
                         )}
                       </>
@@ -176,7 +176,7 @@ export function CreatedList({
                     <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} rows={2} placeholder="Nachricht (optional)" className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent" />
                     <div className="flex gap-2">
                       <button type="submit" disabled={pending || !target} className={primary}>
-                        Anbieten
+                        Angebot senden
                       </button>
                       <button type="button" onClick={() => setOpen(null)} className={quiet}>
                         Abbrechen

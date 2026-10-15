@@ -157,7 +157,7 @@ export function RolesPanel({
                           </>
                         ) : (
                           <button type="button" onClick={() => setOpen(isOpen ? null : r.id)} className={quiet}>
-                            Anbieten
+                            Einer Person anbieten
                           </button>
                         )
                       )}
@@ -168,7 +168,7 @@ export function RolesPanel({
                           onClick={() => run(() => setCharacterClaimable(r.id, false))}
                           className="text-xs text-muted underline decoration-dotted underline-offset-2 hover:text-fg"
                         >
-                          Nicht mehr anbieten
+                          Nicht mehr zu vergeben
                         </button>
                       )}
                     </span>
@@ -202,7 +202,7 @@ export function RolesPanel({
                       />
                       <div className="flex gap-2">
                         <button type="submit" disabled={pending || (canManage(r) && !target)} className={primary}>
-                          {canManage(r) ? "Anbieten" : "Anfrage senden"}
+                          {canManage(r) ? "Angebot senden" : "Anfrage senden"}
                         </button>
                         <button type="button" onClick={() => setOpen(null)} className={quiet}>
                           Abbrechen

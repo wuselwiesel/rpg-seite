@@ -21,6 +21,7 @@ import { formatDateTime } from "@/lib/format";
 import { splitSegments } from "@/lib/segments";
 import { BundleBuilder } from "./bundle-builder";
 import type { Character, StoryEntry } from "@/lib/types";
+import { NameBadge } from "@/components/name-badge";
 
 // Flagge, Stift und Papierkorb: mit Maus erst beim Darüberfahren, am Handy erst nach einmal Antippen der Nachricht
 const REVEAL =
@@ -264,6 +265,7 @@ export function StoryEntryItem({
                 {firstName}
               </Link>
             )}
+            {!isNarrator && firstId && <span className="inline-flex self-center"><NameBadge characterId={firstId} sealOnly /></span>}
             <p className="text-xs text-muted">
               {formatDateTime(entry.created_at)}
               {entry.updated_at && " · bearbeitet"}

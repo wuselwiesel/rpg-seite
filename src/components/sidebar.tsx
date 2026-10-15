@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAltAccountLabel } from "@/lib/account-switch";
 import { SwitchAccountButton } from "./switch-account-button";
-import { CircleHelp, UserRound } from "lucide-react";
+import { CircleHelp, Search, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
@@ -130,6 +130,14 @@ export async function Sidebar() {
             <Wordmark height={40} />
           </Link>
           <div className="flex items-center gap-1">
+            <Link
+              href="/search"
+              aria-label="Suche"
+              title="Suche"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <Search className="h-[18px] w-[18px]" strokeWidth={2} />
+            </Link>
             <NotificationBell
               key={`${activeWorld.id}-${worldFilter}`}
               userId={user.id}

@@ -40,6 +40,7 @@ import { SceneMarkFlag } from "./scene-mark-flag";
 import { getWorldMembers } from "@/lib/world-members";
 import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { WorldSwitchRedirect } from "@/components/world-switch-redirect";
+import { NameBadge } from "@/components/name-badge";
 
 const ENTRY_WINDOW = 80;
 
@@ -331,6 +332,7 @@ export default async function StoryPostDetailPage({
                 {storyPost.characters?.name}
               </Link>
             )}
+            {!storyPost.narrator && <span className="ml-1 inline-flex align-middle"><NameBadge characterId={storyPost.character_id} sealOnly /></span>}
             <p className="text-xs text-muted">{formatDateTime(storyPost.created_at)}</p>
           </div>
           {(myCharacterIds.size > 0 || isWorldOwner) && (

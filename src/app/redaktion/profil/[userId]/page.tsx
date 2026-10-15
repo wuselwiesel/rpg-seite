@@ -39,7 +39,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
   const badges = isOwn ? accountBadges : visibleBadges(accountBadges);
   const displayName = profile.nickname || profile.username;
   // Ein Konto mit Siegel zeigt nur das Siegel, kein zusätzliches selbst gewähltes Zeichen
-  const { data: sealRows } = await supabase.from("account_marks").select("kind").eq("user_id", profile.id).in("kind", ["builder", "verified", "official"]);
+  const { data: sealRows } = await supabase.from("account_marks").select("kind").eq("user_id", profile.id).in("kind", ["builder", "official"]);
   const sealed = (sealRows ?? []).length > 0;
   const fields = redProfile?.custom_fields ?? [];
 

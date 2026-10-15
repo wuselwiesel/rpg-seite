@@ -26,6 +26,7 @@ import { usePageBackground } from "@/lib/use-page-background";
 import { useIsDark } from "@/lib/use-dark";
 import { keepScrollAnchor } from "@/lib/keep-scroll";
 import type { Character, Message } from "@/lib/types";
+import { NameBadge } from "@/components/name-badge";
 
 const OLDER_PAGE = 100;
 
@@ -546,7 +547,13 @@ export function ChatRoom({
             <div className="flex items-center gap-2">
               {isGroup && <CharacterAvatar name={title} avatarUrl={avatarUrl} size={36} />}
               <div className="flex min-w-0 flex-col">
-                <h1 className="truncate font-serif text-2xl leading-tight text-fg">{title}</h1>
+                <h1 className="flex items-center gap-1.5 truncate font-serif text-2xl leading-tight text-fg">
+                  <span className="truncate">{title}</span>
+                  {!isGroup && (() => {
+                    const other = participants.find((p) => p.id !== activeCharacter.id);
+                    return other ? <NameBadge characterId={other.id} sealOnly /> : null;
+                  })()}
+                </h1>
                 {isGroup ? (
                   <GroupOnline online={participants.filter((p) => p.id !== activeCharacter.id && p.presence_online).length} />
                 ) : (

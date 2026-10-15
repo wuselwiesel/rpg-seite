@@ -87,7 +87,13 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
           <h1 className="font-serif text-3xl text-fg">{showNpcs ? "NPCs" : showCreated ? "Von mir angelegt" : "Deine Charaktere"}</h1>
           <p className="truncate text-sm text-muted">in {activeWorld.name}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={showNpcs ? "/characters/new?npc=1" : "/characters/new"}
+            className="whitespace-nowrap rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+          >
+            {showNpcs ? "+ Neuer NPC" : "+ Neuer Charakter"}
+          </Link>
           {(deletedCount ?? 0) > 0 && (
             <Link
               href="/characters/geloescht"
@@ -101,12 +107,6 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
             className="rounded-md border border-line px-4 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
           >
             Beziehungsnetz
-          </Link>
-          <Link
-            href={showNpcs ? "/characters/new?npc=1" : "/characters/new"}
-            className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
-          >
-            {showNpcs ? "+ Neuer NPC" : "+ Neuer Charakter"}
           </Link>
         </div>
       </div>

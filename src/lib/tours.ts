@@ -56,7 +56,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Ingame, Story und Redaktion",
-        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit Feed, Chats und Suche. „Story“ ist das eigentliche Rollenspiel: Szenen, Wiki und ChaBo (Steckbrief). „Redaktion“ ist für euch als Spieler:innen, außerhalb der Rolle, mit eigenem Feed und Chat.",
+        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit Feed, ChaBo (Steckbrief) und Chats. Die Suche erreichst du über die Lupe oben. „Story“ ist das eigentliche Rollenspiel: Szenen, Wiki und ChaBo (Steckbrief). „Redaktion“ ist für euch als Spieler:innen, außerhalb der Rolle, mit eigenem Feed und Chat.",
         route: "/",
         match: { attr: "mode-switch" },
       },
@@ -109,9 +109,9 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Suche",
-        text: "Die Suche findet Charaktere, Welten und Beiträge, auch über Hashtags. Tippe auf ein Ergebnis, um das Profil oder den Beitrag zu öffnen.",
+        text: "Die Suche (Lupe oben, in der Redaktion auch in der Navigation) findet Charaktere, Welten und Beiträge, auch über Hashtags. Tippe auf ein Ergebnis, um das Profil oder den Beitrag zu öffnen.",
         route: "/",
-        match: { name: "Suche" },
+        match: { any: [{ name: "Suche" }, { attr: "search" }] },
       },
       {
         title: "Profile und Folgen",
