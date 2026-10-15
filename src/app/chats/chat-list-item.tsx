@@ -6,7 +6,6 @@ import { BellOff } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { PresenceDot } from "@/components/character-presence";
 import { chatTime } from "@/lib/chat-preview";
-import { NameBadge } from "@/components/name-badge";
 
 export function ChatListItem({
   id,
@@ -17,7 +16,6 @@ export function ChatListItem({
   lastMessage = null,
   unreadCount,
   muted = false,
-  sealCharacterId = null,
   groupMembers = [],
 }: {
   id: string;
@@ -29,8 +27,6 @@ export function ChatListItem({
   lastMessage?: { text: string; at: string; sender: string | null } | null;
   unreadCount: number;
   muted?: boolean;
-  // Zweier-Chat: Charakter der Gegenseite, damit ihr Konto-Siegel neben dem Namen steht
-  sealCharacterId?: string | null;
   // Gruppe ohne eigenes Bild: Bilder und Namen der Mitglieder (bis zu zwei werden übereinander gezeigt)
   groupMembers?: { name: string; avatarUrl: string | null }[];
 }) {
@@ -61,14 +57,7 @@ export function ChatListItem({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <p className={`min-w-0 flex-1 truncate text-[15px] text-fg ${unread ? "font-semibold" : "font-medium"}`}>
-            {title}
-            {sealCharacterId && (
-              <span className="ml-1 inline-flex align-middle">
-                <NameBadge characterId={sealCharacterId} sealOnly />
-              </span>
-            )}
-          </p>
+          <p className={`min-w-0 flex-1 truncate text-[15px] text-fg ${unread ? "font-semibold" : "font-medium"}`}>{title}</p>
           {lastMessage && (
             <time
               dateTime={lastMessage.at}

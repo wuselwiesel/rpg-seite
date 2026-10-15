@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
-import { NameBadge } from "@/components/name-badge";
 import { NpcRoleActions } from "@/app/characters/npc-role-actions";
 
 export type RosterStatus = "free" | "npc" | "taken" | "mine";
@@ -185,10 +184,7 @@ export function WorldRoster({
                 <Link href={`/characters/${c.id}`} className="flex min-w-0 items-center gap-3">
                   <CharacterAvatar name={c.name} avatarUrl={c.avatarUrl} size={44} />
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate font-medium text-fg">{c.name}</span>
-                      <NameBadge characterId={c.id} sealOnly />
-                    </span>
+                    <span className="block truncate font-medium text-fg">{c.name}</span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <StatusChip c={c} />
                       {c.species && <span className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">{c.species}</span>}

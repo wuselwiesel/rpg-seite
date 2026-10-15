@@ -222,32 +222,19 @@ export async function getFeaturedBadges(
     symbols: { characters: {} as Record<string, string>, users: {} as Record<string, string> },
     marks: {} as Record<string, string>,
   };
-  // Konto-Siegel: tolerant (ohne die Tabelle einfach keine Siegel). Auch Charaktere tragen das Siegel ihres Kontos
-  // (außer NPCs, die gehören keinem Spieler); ihr Eintrag steht unter der Charakter-ID.
-  const ownerOf = new Map<string, string>();
-  if (characterIds.length) {
-    const { data: ownerRows } = await supabase
-      .from("characters")
-      .select("id, owner_id, is_npc")
-      .in("id", characterIds.slice(0, 100))
-      .returns<{ id: string; owner_id: string; is_npc: boolean | null }[]>();
-    for (const r of ownerRows ?? []) if (!r.is_npc) ownerOf.set(r.id, r.owner_id);
-  }
-  const markUserIds = [...new Set([...userIds.slice(0, 100), ...ownerOf.values()])];
-  if (markUserIds.length) {
+  // Konto-Siegel: tolerant (ohne die Tabelle einfach keine Siegel). Nur Konten (Redaktion, Konto-Chats, Freunde) tragen es,
+  // Charaktere bewusst nicht.
+  if (userIds.length) {
     const { data: markRows } = await supabase
       .from("account_marks")
       .select("user_id, kind")
-      .in("user_id", markUserIds)
+      .in("user_id", userIds.slice(0, 100))
       .in("kind", [...VISIBLE_SEAL_KINDS]);
     const rank: string[] = [...VISIBLE_SEAL_KINDS];
-    const byUser: Record<string, string> = {};
     for (const r of (markRows ?? []) as { user_id: string; kind: string }[]) {
-      const cur = byUser[r.user_id];
-      if (!cur || rank.indexOf(r.kind) < rank.indexOf(cur)) byUser[r.user_id] = r.kind;
+      const cur = out.marks[r.user_id];
+      if (!cur || rank.indexOf(r.kind) < rank.indexOf(cur)) out.marks[r.user_id] = r.kind;
     }
-    for (const id of userIds) if (byUser[id]) out.marks[id] = byUser[id];
-    for (const [charId, owner] of ownerOf) if (byUser[owner]) out.marks[charId] = byUser[owner];
   }
   // Frei gewähltes Zeichen neben dem Namen (eigene, tolerante Abfragen: ohne die Spalte einfach keine Zeichen).
   const [charSymbols, userSymbols] = await Promise.all([

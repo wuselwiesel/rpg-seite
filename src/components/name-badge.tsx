@@ -26,7 +26,7 @@ function flush() {
   pending = { characters: new Set(), users: new Set() };
   getFeaturedBadges([...batch.characters], [...batch.users])
     .then((res) => {
-      for (const id of batch.characters) cache.characters.set(id, toDecor(res.characters[id], res.symbols.characters[id], res.marks?.[id]));
+      for (const id of batch.characters) cache.characters.set(id, toDecor(res.characters[id], res.symbols.characters[id]));
       for (const id of batch.users) cache.users.set(id, toDecor(res.users[id], res.symbols.users[id], res.marks?.[id]));
     })
     .catch(() => {

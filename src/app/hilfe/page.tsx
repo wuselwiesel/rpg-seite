@@ -495,7 +495,7 @@ export default function HelpPage() {
       <Section id="siegel" title="19. Siegel und das Wortwinkel-Konto">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Siegel am Namen:</strong> Ein kleiner Haken neben einem Namen bedeutet: Dieses Konto ist das offizielle Wortwinkel-Konto, gehört der Bastlerin der App oder wurde von uns bestätigt. Das Siegel vergibt nur die Betreiberin, man kann es sich nicht selbst geben, auch nicht über ein Badge oder ein Zeichen. Es steht überall neben dem Namen, auch in Chats, bei Beiträgen und Szenen, und ebenso bei den Charakteren, die zu einem dieser Konten gehören. NPCs tragen es nicht.
+            <strong>Siegel am Namen:</strong> Ein kleiner Haken neben einem Konto-Namen bedeutet: Dieses Konto ist das offizielle Wortwinkel-Konto, gehört der Bastlerin der App oder wurde von uns bestätigt. Das Siegel vergibt nur die Betreiberin, man kann es sich nicht selbst geben, auch nicht über ein Badge oder ein Zeichen. Es steht an Konto-Namen, etwa in der Redaktion, in Konto-Chats und in der Freundesliste. Charaktere tragen kein Siegel.
           </li>
           <li>
             <strong>Wortwinkel-Konto:</strong> Das offizielle Konto „Wortwinkel“ ist mit allen Konten befreundet. Dort stehen Neuigkeiten in deinem Redaktions-Feed, und du kannst ihm schreiben, wenn etwas hakt. Die Freundschaft lässt sich nicht beenden, das Konto sieht über sie aber nichts von dir: nicht deine Beiträge und nicht deine Charaktere.

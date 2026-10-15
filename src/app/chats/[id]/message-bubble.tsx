@@ -14,7 +14,6 @@ import { storyBackground } from "@/lib/stories";
 import type { ReactionSummary } from "@/lib/reactions";
 import type { Character, Message } from "@/lib/types";
 import { isVideoUrl } from "@/lib/chat-media-url";
-import { NameBadge } from "@/components/name-badge";
 
 const SWIPE_TRIGGER = 56;
 
@@ -155,13 +154,7 @@ export function MessageBubble({
           )}
           <div className="mb-0.5 flex items-center gap-1.5">
             <p className="text-xs">
-              {message.characters?.name}
-              {message.characters?.id && (
-                <span className="ml-1 inline-flex align-middle">
-                  <NameBadge characterId={message.characters.id} sealOnly />
-                </span>
-              )}{" "}
-              · {formatDateTime(message.created_at)}
+              {message.characters?.name} · {formatDateTime(message.created_at)}
               {message.updated_at && " · bearbeitet"}
             </p>
             {!editing && !message.pending && (
