@@ -12,7 +12,8 @@ async function actor(supabase: Supabase, userId: string) {
 }
 
 // Beitritt anfragen (Welten mit „Auf Anfrage“): die Admins bekommen eine Benachrichtigung
-export async function requestWorldJoin(worldId: string, message: string, characterId?: string | null): Promise<string | null> {
+// viaLink: Anfrage über einen alten Einladungslink (ohne Schlüssel) in einer Welt „Nur auf Einladung“; die Admins entscheiden
+export async function requestWorldJoin(worldId: string, message: string, characterId?: string | null, viaLink = false): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,7 +22,8 @@ export async function requestWorldJoin(worldId: string, message: string, charact
 
   const { data: world } = await supabase.from("worlds").select("name, created_by, join_mode").eq("id", worldId).maybeSingle<{ name: string; created_by: string; join_mode: string }>();
   if (!world) return "Diese Welt gibt es nicht.";
-  if (world.join_mode !== "request") return world.join_mode === "invite" ? "In diese Welt kommt man nur auf Einladung." : "Du kannst dieser Welt direkt beitreten.";
+  if (world.join_mode === "open") return "Du kannst dieser Welt direkt beitreten.";
+  if (world.join_mode === "invite" && !viaLink) return "In diese Welt kommt man nur auf Einladung.";
 
   // Gewünschte Rolle: muss in der Vorschau dieser Welt als frei geführt sein
   let roleName: string | null = null;

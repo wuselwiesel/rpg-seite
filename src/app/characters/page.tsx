@@ -13,6 +13,7 @@ import { RevealRow } from "@/components/reveal-row";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { cookies } from "next/headers";
+import { NpcRoleActions } from "./npc-role-actions";
 
 export default async function CharactersPage({ searchParams }: PageProps<"/characters">) {
   const sp = await searchParams;
@@ -34,6 +35,16 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
     .select("id", { count: "exact", head: true })
     .eq("owner_id", user.id)
     .not("deleted_at", "is", null);
+  // Offene Anfragen und Angebote zu NPCs (eigene bzw. für Admins alle) und die Mitglieder zum Anbieten
+  const isWorldAdmin = worldAdminIds.includes(user.id);
+  const [{ data: claimRows }, { data: memberRows }] = await Promise.all([
+    supabase.from("character_claims").select("id, character_id, user_id, kind").eq("world_id", activeWorld.id).eq("status", "pending").returns<{ id: string; character_id: string; user_id: string; kind: "request" | "offer" }[]>(),
+    isWorldAdmin
+      ? supabase.from("world_members").select("user_id, profiles(username, nickname)").eq("world_id", activeWorld.id).returns<{ user_id: string; profiles: { username: string; nickname: string | null } | null }[]>()
+      : Promise.resolve({ data: [] as { user_id: string; profiles: { username: string; nickname: string | null } | null }[] }),
+  ]);
+  const memberOptions = (memberRows ?? []).map((m) => ({ id: m.user_id, name: m.profiles?.nickname || m.profiles?.username || "?" }));
+  const nameOf = new Map(memberOptions.map((m) => [m.id, m.name]));
   const cookieStore = await cookies();
   const activeId = cookieStore.get(ACTIVE_CHARACTER_COOKIE)?.value ?? characters[0]?.id;
 
@@ -117,6 +128,19 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                 <Link href={`/characters/${npc.id}/chabo`} className="shrink-0 rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-fg-soft transition hover:text-fg">
                   ChaBo
                 </Link>
+                {(isWorldAdmin || npc.claimable) && (
+                  <NpcRoleActions
+                    characterId={npc.id}
+                    claimable={Boolean(npc.claimable)}
+                    isAdmin={isWorldAdmin}
+                    myRequestId={(claimRows ?? []).find((c) => c.character_id === npc.id && c.kind === "request" && c.user_id === user.id)?.id ?? null}
+                    offer={(() => {
+                      const o = (claimRows ?? []).find((c) => c.character_id === npc.id && c.kind === "offer");
+                      return o ? { claimId: o.id, toName: nameOf.get(o.user_id) ?? "?" } : null;
+                    })()}
+                    members={memberOptions}
+                  />
+                )}
                 {canEditCharacter(npc, user.id, worldAdminIds) && (
                   <Link href={`/characters/${npc.id}/edit`} className="shrink-0 rounded-lg bg-surface-2 px-3 py-1.5 text-sm text-fg-soft transition hover:text-fg">
                     Bearbeiten

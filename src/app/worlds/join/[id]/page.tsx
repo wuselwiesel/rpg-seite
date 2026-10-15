@@ -5,6 +5,7 @@ import { WorldCover } from "@/components/world-cover";
 import type { World } from "@/lib/types";
 import { JoinOrRequestButton } from "../../join-or-request-button";
 import { JoinWithInviteButton } from "./join-with-invite-button";
+import { StaleLinkRequest } from "./stale-link-request";
 
 export default async function JoinWorldPage({ params, searchParams }: PageProps<"/worlds/join/[id]">) {
   const { id } = await params;
@@ -60,9 +61,7 @@ export default async function JoinWorldPage({ params, searchParams }: PageProps<
       {invited ? (
         <JoinWithInviteButton worldId={world.id} token={token!} />
       ) : staleLink ? (
-        <p className="max-w-xs rounded-xl bg-surface-2 px-4 py-3 text-sm text-fg-soft">
-          Dieser Link ist veraltet oder unvollständig. Bitte die Admins der Welt um einen neuen Einladungslink.
-        </p>
+        <StaleLinkRequest worldId={world.id} hasRequest={!!pendingRequest} />
       ) : (
         <JoinOrRequestButton worldId={world.id} joinMode={world.join_mode ?? "open"} hasRequest={!!pendingRequest} ownerId={world.created_by} />
       )}

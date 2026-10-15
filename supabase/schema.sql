@@ -7309,3 +7309,11 @@ revoke execute on function public.join_world_by_invite(uuid, text) from public, 
 grant execute on function public.join_world_by_invite(uuid, text) to authenticated;
 
 notify pgrst, 'reload schema';
+
+-- Beitrittsanfragen auch für Welten „Nur auf Einladung“ (über alte Links ohne Schlüssel)
+alter policy world_join_requests_insert on public.world_join_requests with check (
+  user_id = (select auth.uid())
+  and status = 'pending'
+  and not public.is_world_member(world_id)
+  and exists (select 1 from public.worlds w where w.id = world_id and w.join_mode in ('request', 'invite'))
+);
