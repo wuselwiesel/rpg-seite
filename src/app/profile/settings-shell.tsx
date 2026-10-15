@@ -44,7 +44,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
   },
 ];
 
-const OFFICIAL_ITEM: Item = { href: "/profile/wortwinkel", label: "Wortwinkel-Konto", hint: "Zum offiziellen Konto wechseln", Icon: ArrowLeftRight };
+const OFFICIAL_ITEM: Item = { href: "/profile/wortwinkel", label: "Konto wechseln", hint: "Zwischen Streuselschnecke und Wortwinkel", Icon: ArrowLeftRight };
 
 const row =
   "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-surface-2";

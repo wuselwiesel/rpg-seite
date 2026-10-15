@@ -15,7 +15,7 @@ export function LinkOfficialAccountForm() {
   return (
     <form action={formAction} className="flex max-w-sm flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
-        E-Mail des Wortwinkel-Kontos
+        E-Mail des anderen Kontos
         <input
           type="email"
           name="email"

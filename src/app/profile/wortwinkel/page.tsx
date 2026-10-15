@@ -6,9 +6,9 @@ import { SwitchAccountButton } from "@/components/switch-account-button";
 import { LinkOfficialAccountForm } from "./link-form";
 import { unlinkAccount } from "./actions";
 
-export const metadata = { title: "Wortwinkel-Konto" };
+export const metadata = { title: "Konto wechseln" };
 
-// Zwischen deinem Konto und dem offiziellen Wortwinkel-Konto wechseln, ohne dich abzumelden (nur für App-Admins).
+// Zwischen deinem Konto und dem Wortwinkel-Konto wechseln (in beide Richtungen), ohne dich abzumelden (nur für App-Admins).
 export default async function OfficialAccountPage() {
   const supabase = await createClient();
   const {
@@ -21,7 +21,7 @@ export default async function OfficialAccountPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="font-serif text-2xl text-fg">Wortwinkel-Konto</h2>
+      <h2 className="font-serif text-2xl text-fg">Konto wechseln</h2>
       {altLabel ? (
         <div className="flex flex-col gap-4">
           <SwitchAccountButton

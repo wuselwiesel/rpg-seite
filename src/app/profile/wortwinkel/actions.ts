@@ -3,10 +3,11 @@
 import { cookies } from "next/headers";
 import { createClient as createJsClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
+import { isAppAdmin } from "@/lib/account-marks";
 import { clearAltSession, readAltSession, writeAltSession } from "@/lib/account-switch";
 
-// Das offizielle Konto einmal verknüpfen (E-Mail und Passwort, nur für App-Admins). Danach genügt ein Tipp zum Wechseln.
+// Das zweite Konto einmal verknüpfen (E-Mail und Passwort, nur für App-Admins; das andere Konto muss ebenfalls App-Admin sein,
+// also Streuselschnecke und Wortwinkel). Danach genügt ein Tipp zum Wechseln, in beide Richtungen.
 export async function linkOfficialAccount(_prev: string | null, formData: FormData): Promise<string | null> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -18,16 +19,15 @@ export async function linkOfficialAccount(_prev: string | null, formData: FormDa
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
   if (!(await isAppAdmin())) return "Das dürfen nur App-Admins.";
-  const officialId = await getOfficialAccountId();
-  if (!officialId) return "Es gibt noch kein offizielles Konto.";
-
   // Eigener Client ohne Cookies: Die aktuelle Sitzung bleibt unberührt
   const temp = createJsClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data, error } = await temp.auth.signInWithPassword({ email, password });
   if (error || !data.session || !data.user) return "E-Mail oder Passwort stimmt nicht.";
-  if (data.user.id !== officialId) return "Das ist nicht das offizielle Wortwinkel-Konto.";
+  if (data.user.id === user.id) return "Das ist das Konto, in dem du gerade bist. Trage die Zugangsdaten des anderen Kontos ein.";
+  const { data: otherIsAdmin } = await temp.rpc("is_app_admin");
+  if (otherIsAdmin !== true) return "Dieses Konto lässt sich nicht verknüpfen.";
 
   const { data: profile } = await temp.from("profiles").select("username, nickname").eq("id", data.user.id).maybeSingle<{ username: string; nickname: string | null }>();
   await writeAltSession({ a: data.session.access_token, r: data.session.refresh_token, u: profile?.nickname || profile?.username || "Wortwinkel" });
