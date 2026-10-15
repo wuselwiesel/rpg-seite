@@ -167,6 +167,7 @@ export function Chabo({
   diceEnabled,
   talentDefs,
   natureDefs,
+  choices = [],
 }: {
   characterId: string;
   characterName: string;
@@ -185,6 +186,8 @@ export function Chabo({
   // Talente und Naturen der Welt für einen noch leeren Bogen (ein gespeicherter bringt sie selbst mit)
   talentDefs?: TalentDef[];
   natureDefs?: NatureDef[];
+  // Angaben aus den Auswahllisten der Welt (Wesen, Fraktion …), werden im Steckbrief mit angezeigt; geändert werden sie im Profil
+  choices?: { label: string; value: string }[];
 }) {
   const worldDice = useDiceEnabled();
   const dice = diceEnabled ?? worldDice;
@@ -402,6 +405,17 @@ export function Chabo({
             </div>
           )}
           {importError && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{importError}</p>}
+
+          {choices.length > 0 && (
+            <dl aria-label="Angaben der Welt" className="flex flex-wrap gap-2">
+              {choices.map((c) => (
+                <div key={c.label} className="rounded-full bg-surface-2 px-3 py-1 text-sm">
+                  <dt className="mr-1.5 inline text-xs font-medium text-muted">{c.label}</dt>
+                  <dd className="inline text-fg">{c.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
 
           {(editing || seen(data.personalFields).some((f) => f.value.trim())) && (
             <div>
