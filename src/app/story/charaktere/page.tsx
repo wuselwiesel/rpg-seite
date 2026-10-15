@@ -8,7 +8,9 @@ import { WorldRoster } from "./world-roster";
 export const metadata = { title: "Charaktere der Welt" };
 
 // Alle Charaktere der Welt auf einen Blick: wer spielt wen, was ist frei, was ist ein NPC
-export default async function WorldCharactersPage() {
+export default async function WorldCharactersPage({ searchParams }: PageProps<"/story/charaktere">) {
+  const sp = await searchParams;
+  const stand = Array.isArray(sp.stand) ? sp.stand[0] : sp.stand;
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,7 +29,7 @@ export default async function WorldCharactersPage() {
         <p className="truncate text-sm text-muted">{world.name}</p>
       </div>
       <StorySections current="charaktere" />
-      <WorldRoster characters={characters} members={members} offerTargets={offerTargets} isAdmin={isAdmin} />
+      <WorldRoster initialFilter={stand === "free" ? "free" : "all"} characters={characters} members={members} offerTargets={offerTargets} isAdmin={isAdmin} />
     </div>
   );
 }
