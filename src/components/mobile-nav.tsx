@@ -1,5 +1,6 @@
 "use client";
 
+import { SwitchAccountButton } from "./switch-account-button";
 import { chaboLabel } from "@/lib/chabo-label";
 import { useState } from "react";
 import Link from "next/link";
@@ -42,6 +43,7 @@ export function MobileNav({
   activeWorld,
   canManage,
   appAdmin = false,
+  altAccount = null,
   activeCharacter,
   characters,
   profile,
@@ -57,6 +59,8 @@ export function MobileNav({
   activeWorld: World;
   canManage: boolean;
   appAdmin?: boolean;
+  // Name des verknüpften zweiten Kontos (offizielles Wortwinkel-Konto) für den schnellen Wechsel
+  altAccount?: string | null;
   activeCharacter: Character | null;
   characters: Character[];
   profile: Profile | null | undefined;
@@ -270,6 +274,12 @@ export function MobileNav({
               <IdCard className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
               {chaboLabel(diceEnabled)}
             </Link>
+          )}
+          {altAccount && (
+            <SwitchAccountButton
+              label={altAccount}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+            />
           )}
           <Link
             href="/friends"

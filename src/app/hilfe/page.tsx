@@ -237,7 +237,7 @@ export default function HelpPage() {
       <Section id="bogen" title="9. ChaBo (Steckbrief) bearbeiten und speichern">
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
           <li>
-            <strong>ChaBo oder Steckbrief:</strong> Es ist dasselbe Blatt deines Charakters. In Welten, in denen gewürfelt wird, heißt es <strong>ChaBo</strong> (Charakterbogen) und hat zusätzlich Attribute, Talente und die besondere Natur. In Welten ohne Würfeln heißt es <strong>Steckbrief</strong> und zeigt nur Bild, persönliche Angaben, Familie und Notizen. Wo in dieser Hilfe „ChaBo“ steht, ist in solchen Welten der Steckbrief gemeint.
+            <strong>ChaBo oder Steckbrief:</strong> Es ist dasselbe Blatt deines Charakters. In Welten, in denen gewürfelt wird, heißt es <strong>ChaBo</strong> (Charakterbogen) und hat zusätzlich Attribute, Talente und die besondere Natur. In Welten ohne Würfeln heißt es <strong>Steckbrief</strong> und zeigt Bild, persönliche Angaben mit allen eigenen Feldern, die du hinzufügst, Familie und Notizen, nur ohne Attribute, Talente und Natur. Wo in dieser Hilfe „ChaBo“ steht, ist in solchen Welten der Steckbrief gemeint.
           </li>
           <li>Du findest ihn in der Seitenleiste unter „ChaBo“ bzw. „Steckbrief“, im Profil eines Charakters als Reiter und in jeder Szene über das Bogen-Symbol neben „Würfeln“.</li>
           <li>Bearbeiten kann nur, wem der Charakter gehört. Alle anderen in der Welt können ihn ansehen.</li>

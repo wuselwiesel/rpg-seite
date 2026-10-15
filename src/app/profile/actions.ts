@@ -1,5 +1,6 @@
 "use server";
 
+import { isReservedAccountName } from "@/lib/reserved-account-names";
 import { pwnedPasswordError } from "@/lib/pwned-password";
 import { redirect } from "next/navigation";
 import { cleanPresenceEmoji, cleanPresenceText } from "@/lib/presence-emoji";
@@ -23,6 +24,11 @@ export async function updateProfile(_prevState: string | null, formData: FormDat
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
+
+  // Namen, die nach dem offiziellen Konto klingen, sind reserviert (wer sie schon trägt, etwa das offizielle Konto selbst, darf sie behalten)
+  const { data: current } = await supabase.from("profiles").select("username, nickname").eq("id", user.id).maybeSingle<{ username: string; nickname: string | null }>();
+  if (isReservedAccountName(username) && username !== current?.username) return "Dieser Benutzername ist dem offiziellen Konto vorbehalten. Bitte wähle einen anderen.";
+  if (nickname && isReservedAccountName(nickname) && nickname !== current?.nickname) return "Dieser Anzeigename ist dem offiziellen Konto vorbehalten. Bitte wähle einen anderen.";
 
   const { data: available } = await supabase.rpc("username_available", {
     p_username: username,

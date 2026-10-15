@@ -317,7 +317,7 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "ChaBo oder Steckbrief",
-        text: "Das ist der Charakterbogen deiner Figur. In Welten, in denen gewürfelt wird, heißt er ChaBo und enthält Bild, Name, Natur, persönliche Angaben, Familie, Attribute, Talente und Notizen. In Welten ohne Würfeln heißt er Steckbrief und hat nur Bild, persönliche Angaben, Familie und Notizen. Du öffnest ihn in der Navigation unter „ChaBo“ bzw. „Steckbrief“.",
+        text: "Das ist der Charakterbogen deiner Figur. In Welten, in denen gewürfelt wird, heißt er ChaBo und enthält Bild, Name, Natur, persönliche Angaben, Familie, Attribute, Talente und Notizen. In Welten ohne Würfeln heißt er Steckbrief und hat Bild, persönliche Angaben mit allen eigenen Feldern, die du hinzufügst, Familie und Notizen, nur keine Attribute, Talente und Natur. Du öffnest ihn in der Navigation unter „ChaBo“ bzw. „Steckbrief“.",
         route: "@chabo|/story",
         match: { any: [{ name: "ChaBo" }, { name: "Steckbrief" }] },
       },

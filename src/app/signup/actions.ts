@@ -1,5 +1,6 @@
 "use server";
 
+import { isReservedAccountName } from "@/lib/reserved-account-names";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { pwnedPasswordError } from "@/lib/pwned-password";
@@ -12,6 +13,8 @@ export async function signup(_prevState: string | null, formData: FormData) {
   if (username.length < 2) {
     return "Bitte einen Benutzernamen mit mindestens 2 Zeichen angeben.";
   }
+
+  if (isReservedAccountName(username)) return "Dieser Benutzername ist dem offiziellen Konto vorbehalten. Bitte wähle einen anderen.";
 
   const pwned = await pwnedPasswordError(password);
   if (pwned) return pwned;

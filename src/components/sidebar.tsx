@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getAltAccountLabel } from "@/lib/account-switch";
+import { SwitchAccountButton } from "./switch-account-button";
 import { CircleHelp, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
@@ -118,6 +120,7 @@ export async function Sidebar() {
   // Besitzer:in oder Admin: darf die Welt bearbeiten
   const canManage = activeWorld.created_by === user.id || myMembership?.role === "admin";
   const appAdmin = await isAppAdmin();
+  const altAccount = await getAltAccountLabel();
 
   return (
     <>
@@ -183,6 +186,13 @@ export async function Sidebar() {
           <CircleHelp className="h-3.5 w-3.5" strokeWidth={2} />
           Hilfe
         </Link>
+        {altAccount && (
+          <SwitchAccountButton
+            label={altAccount}
+            iconClassName="h-3.5 w-3.5 shrink-0"
+            className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+          />
+        )}
       </div>
     </aside>
     <MobileNav
@@ -190,6 +200,7 @@ export async function Sidebar() {
       activeWorld={activeWorld}
       canManage={canManage}
       appAdmin={appAdmin}
+      altAccount={altAccount}
       activeCharacter={activeCharacter}
       characters={characters}
       profile={profile}
