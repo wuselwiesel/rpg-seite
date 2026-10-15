@@ -22,6 +22,7 @@ import { PresenceBadge } from "@/components/character-presence";
 import { MessageBubble } from "./message-bubble";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
+import { usePageBackground } from "@/lib/use-page-background";
 import { useIsDark } from "@/lib/use-dark";
 import { keepScrollAnchor } from "@/lib/keep-scroll";
 import type { Character, Message } from "@/lib/types";
@@ -94,6 +95,8 @@ export function ChatRoom({
   const [muted, setMuted] = useState(initialMuted);
   const [theme, setTheme] = useState(initialTheme);
   const dark = useIsDark();
+  const themeStyle = chatThemeStyle(theme, dark);
+  usePageBackground(themeStyle?.backgroundColor as string | undefined);
   const [gifOpen, setGifOpen] = useState(false);
   // Handy: Bild, GIF und Emoji liegen hinter einem „+“
   const [plusOpen, setPlusOpen] = useState(false);
@@ -497,7 +500,7 @@ export function ChatRoom({
 
   return (
     <div
-      style={chatThemeStyle(theme, dark)}
+      style={themeStyle}
       className="mx-auto flex h-dvh max-w-2xl xl:max-w-3xl 2xl:max-w-4xl flex-col px-4 text-fg lg:h-dvh lg:max-w-none lg:px-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line py-3 lg:py-4">

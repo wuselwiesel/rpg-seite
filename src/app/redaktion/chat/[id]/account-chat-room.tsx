@@ -17,6 +17,7 @@ import { EmojiPickerDialog } from "@/components/emoji-picker-dialog";
 import { splitMentions } from "@/lib/account-mentions";
 import { ChatThemePicker } from "@/components/chat-theme-picker";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
+import { usePageBackground } from "@/lib/use-page-background";
 import { useIsDark } from "@/lib/use-dark";
 import { keepScrollAnchor } from "@/lib/keep-scroll";
 import { parseWikiShare } from "@/lib/wiki-share";
@@ -98,6 +99,8 @@ export function AccountChatRoom({
   const [muted, setMuted] = useState(initialMuted);
   const [theme, setTheme] = useState(initialTheme);
   const dark = useIsDark();
+  const themeStyle = chatThemeStyle(theme, dark);
+  usePageBackground(themeStyle?.backgroundColor as string | undefined);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -223,7 +226,7 @@ export function AccountChatRoom({
 
   return (
     <div
-      style={chatThemeStyle(theme, dark)}
+      style={themeStyle}
       className="mx-auto flex h-dvh max-w-2xl xl:max-w-3xl 2xl:max-w-4xl flex-col px-4 text-fg lg:max-w-none lg:px-6"
     >
       <div className="flex items-center justify-between gap-3 border-b border-line py-3 lg:py-4">
