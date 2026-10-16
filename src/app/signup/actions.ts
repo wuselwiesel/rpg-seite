@@ -10,6 +10,9 @@ export async function signup(_prevState: string | null, formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const username = String(formData.get("username") ?? "").trim();
 
+  const code = String(formData.get("signup_code") ?? "");
+  if (!code.replace(/[^A-Za-z0-9]/g, "")) return "Bitte gib deinen Einladungscode ein.";
+
   if (username.length < 2) {
     return "Bitte einen Benutzernamen mit mindestens 2 Zeichen angeben.";
   }
@@ -21,6 +24,9 @@ export async function signup(_prevState: string | null, formData: FormData) {
 
   const supabase = await createClient();
 
+  const { data: codeValid } = await supabase.rpc("signup_code_valid", { p_code: code });
+  if (codeValid !== true) return "Der Einladungscode ist ungültig oder aufgebraucht.";
+
   const { data: available } = await supabase.rpc("username_available", {
     p_username: username,
   });
@@ -31,10 +37,12 @@ export async function signup(_prevState: string | null, formData: FormData) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { username, intro_public: formData.get("intro_public") === "on" } },
+    options: { data: { username, intro_public: formData.get("intro_public") === "on", signup_code: code } },
   });
 
   if (error) {
+    // Die Datenbank lehnt Anmeldungen ohne gültigen Code ab (z. B. wenn der letzte Platz gerade vergeben wurde)
+    if (/database error/i.test(error.message)) return "Der Einladungscode ist ungültig oder aufgebraucht.";
     return error.message;
   }
 

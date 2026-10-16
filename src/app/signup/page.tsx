@@ -9,6 +9,7 @@ export default function SignupPage() {
   const [error, formAction, pending] = useActionState(signup, null);
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "";
+  const code = searchParams.get("code") ?? "";
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-sm flex-col justify-center px-4">
@@ -19,6 +20,19 @@ export default function SignupPage() {
 
       <form action={formAction} className="flex flex-col gap-4">
         {next && <input type="hidden" name="next" value={next} />}
+        <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          Einladungscode
+          <input
+            type="text"
+            name="signup_code"
+            required
+            defaultValue={code}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            className="rounded-md border border-line bg-surface px-3 py-2 font-mono tracking-wider text-fg outline-none focus:border-accent"
+          />
+        </label>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Benutzername
           <input
@@ -69,6 +83,11 @@ export default function SignupPage() {
         Schon dabei?{" "}
         <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="text-accent hover:underline">
           Anmelden
+        </Link>
+      </p>
+      <p className="mt-3 text-xs text-muted">
+        <Link href="/datenschutz" className="hover:underline">
+          Datenschutz
         </Link>
       </p>
     </div>

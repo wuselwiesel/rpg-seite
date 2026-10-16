@@ -64,6 +64,11 @@ export default function LoginPage() {
           Konto erstellen
         </Link>
       </p>
+      <p className="mt-3 text-xs text-muted">
+        <Link href="/datenschutz" className="hover:underline">
+          Datenschutz
+        </Link>
+      </p>
     </div>
   );
 }

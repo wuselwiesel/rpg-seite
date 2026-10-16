@@ -4,6 +4,11 @@ import { getAltAccountLabel } from "@/lib/account-switch";
 
 export default async function ProfileLayout({ children }: LayoutProps<"/profile">) {
   // Der Eintrag „Wortwinkel-Konto“ erscheint nur für App-Admins (und solange ein zweites Konto verknüpft ist)
-  const showOfficial = (await isAppAdmin()) || Boolean(await getAltAccountLabel());
-  return <SettingsShell showOfficialAccount={showOfficial}>{children}</SettingsShell>;
+  const admin = await isAppAdmin();
+  const showOfficial = admin || Boolean(await getAltAccountLabel());
+  return (
+    <SettingsShell showOfficialAccount={showOfficial} showInviteCodes={admin}>
+      {children}
+    </SettingsShell>
+  );
 }
