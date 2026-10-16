@@ -451,6 +451,7 @@ function AccountThread({
   members,
   quoteDraft,
   onQuoteChange,
+  alwaysNames = false,
 }: {
   chatId: string;
   userId: string;
@@ -459,9 +460,11 @@ function AccountThread({
   members: AccountMember[];
   quoteDraft?: QuoteDraft | null;
   onQuoteChange?: (draft: QuoteDraft | null) => void;
+  // Namen der Absender:innen auch im Zweier-Chat zeigen (Szenen-Chat)
+  alwaysNames?: boolean;
 }) {
   const names = new Map(members.map((m) => [m.id, m]));
-  const grouped = members.length > 2;
+  const grouped = alwaysNames || members.length > 2;
   const { messages, reactions, error, send, edit, remove, toggleReaction } = useAccountChat(
     chatId,
     userId,
@@ -520,12 +523,15 @@ export function AccountMiniRoom({
   userId,
   quoteDraft,
   onQuoteChange,
+  alwaysNames = false,
 }: {
   chatId: string;
   userId: string;
   // Zitat aus der Szene für die nächste Nachricht (nur im Chat einer Szene)
   quoteDraft?: QuoteDraft | null;
   onQuoteChange?: (draft: QuoteDraft | null) => void;
+  // Absender:innen immer mit Namen zeigen, auch wenn nur zwei im Chat sind (Szenen-Chat)
+  alwaysNames?: boolean;
 }) {
   const [initial, setInitial] = useState<AccountMessage[] | null>(null);
   const [initialReactions, setInitialReactions] = useState<AccountReaction[] | null>(null);
@@ -569,7 +575,7 @@ export function AccountMiniRoom({
     return <p className="p-6 text-center text-xs text-muted">Lädt…</p>;
   return (
     <div style={themeStyle} className="flex min-h-0 flex-1 flex-col text-fg">
-      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} initialReactions={initialReactions} members={members} quoteDraft={quoteDraft} onQuoteChange={onQuoteChange} />
+      <AccountThread key={chatId} chatId={chatId} userId={userId} initial={initial} initialReactions={initialReactions} members={members} quoteDraft={quoteDraft} onQuoteChange={onQuoteChange} alwaysNames={alwaysNames} />
     </div>
   );
 }

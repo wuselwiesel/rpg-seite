@@ -51,7 +51,7 @@ export function SceneChatPanel({
   if (!state.chatId) return <p className="rounded-xl border border-line bg-surface px-4 py-6 text-center text-sm text-muted">Lädt…</p>;
   return (
     <div ref={panelRef} className="flex h-[min(26rem,55dvh)] scroll-mb-32 lg:scroll-mb-6 flex-col overflow-hidden rounded-xl border border-line bg-surface">
-      <AccountMiniRoom chatId={state.chatId} userId={userId} quoteDraft={quoteDraft} onQuoteChange={onQuoteChange} />
+      <AccountMiniRoom chatId={state.chatId} userId={userId} alwaysNames quoteDraft={quoteDraft} onQuoteChange={onQuoteChange} />
     </div>
   );
 }
