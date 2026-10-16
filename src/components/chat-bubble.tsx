@@ -9,6 +9,7 @@ import { OnlineAnyDot } from "@/components/online-status";
 import { PresenceDot } from "@/components/character-presence";
 import { getBubbleChats, getBubbleUnread, type BubbleChat, type BubbleData } from "@/app/bubble-actions";
 import { chatTime, messagePreview } from "@/lib/chat-preview";
+import { NameBadge } from "@/components/name-badge";
 import { CharacterAvatar } from "./character-avatar";
 import { AccountMiniRoom, RpMiniRoom } from "./bubble-rooms";
 
@@ -407,7 +408,10 @@ function BubbleInner({
                     <CharacterAvatar name={current.title} avatarUrl={current.avatarUrl} size={28} />
                     {current.kind === "rp" ? <PresenceDot online={current.online} overlay /> : <OnlineAnyDot userIds={current.otherUserIds} overlay />}
                   </span>
-                  <span className="truncate text-sm font-semibold text-fg">{current.title}</span>
+                  <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-fg">
+                    <span className="truncate">{current.title}</span>
+                    {current.kind === "account" && current.accountKind === "direct" && current.otherUserIds[0] && <NameBadge userId={current.otherUserIds[0]} symbolOnly />}
+                  </span>
                 </div>
               ) : (
                 <span className="font-serif text-lg text-fg">Chats</span>
@@ -510,6 +514,11 @@ function BubbleInner({
                         <span className="flex items-baseline gap-2">
                           <span className={`min-w-0 flex-1 truncate text-sm text-fg ${unread ? "font-semibold" : "font-medium"}`}>
                             {c.title}
+                            {c.kind === "account" && c.accountKind === "direct" && c.otherUserIds[0] && (
+                              <span className="ml-1 inline-flex align-middle">
+                                <NameBadge userId={c.otherUserIds[0]} symbolOnly />
+                              </span>
+                            )}
                           </span>
                           {c.lastAt && (
                             <time dateTime={c.lastAt} suppressHydrationWarning className="shrink-0 text-[11px] text-muted">

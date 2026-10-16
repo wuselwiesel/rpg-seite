@@ -1,6 +1,7 @@
 "use client";
 
 import { confirmDialog } from "@/components/confirm-dialog";
+import { NameBadge } from "@/components/name-badge";
 import { EmojiText } from "./custom-emoji-provider";
 import { SpoilerText } from "./spoiler-text";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
@@ -49,6 +50,8 @@ type ThreadItem = {
   id: string;
   mine: boolean;
   name: string;
+  // Konto der Absender:in (für Zeichen/Haken neben dem Namen), nur in Konto-Chats
+  senderId?: string;
   avatarUrl: string | null;
   text: string;
   imageUrl?: string | null;
@@ -172,8 +175,9 @@ function MiniThread({
                 className={`flex flex-col ${m.mine ? "items-end" : "items-start"}`}
               >
                 {showNames && !m.mine && newSender && (
-                  <span className="mb-0.5 px-1 text-[10px] text-muted">
+                  <span className="mb-0.5 flex items-center gap-1 px-1 text-[10px] text-muted">
                     {m.name}
+                    {m.senderId && <NameBadge userId={m.senderId} symbolOnly />}
                   </span>
                 )}
                 {editingId === m.id ? (
@@ -477,6 +481,7 @@ function AccountThread({
     id: m.id,
     mine: m.sender_id === userId,
     name: grouped ? (names.get(m.sender_id)?.name ?? "Ehemaliges Mitglied") : "",
+    senderId: grouped ? m.sender_id : undefined,
     avatarUrl: null,
     text: m.content,
     imageUrl: m.image_url,
