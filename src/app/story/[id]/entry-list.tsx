@@ -10,6 +10,7 @@ import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
 import { EarlierEntries } from "./earlier-entries";
 import { StoryEntryItem } from "./story-entry-item";
 import { loadEarlierEntries, type LoadedEntry } from "../entries-actions";
+import { GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
 
 export type EntryListItem = {
   id: string;
@@ -139,6 +140,49 @@ export function EntryList({
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storyPostId]);
+
+  // „Zum Anfang“: alle früheren Beiträge nachladen (in Etappen) und nach oben scrollen
+  useEffect(() => {
+    let running = false;
+    async function goStart() {
+      if (running) return;
+      running = true;
+      try {
+        for (let round = 0; cursor.current && round < 80; round++) {
+          const res = await loadEarlierEntries(storyPostId, cursor.current);
+          if ("error" in res) {
+            setLoadError(res.error);
+            break;
+          }
+          if (res.items.length === 0) {
+            cursor.current = null;
+            setRemaining(0);
+            break;
+          }
+          for (const it of res.items) {
+            known.current.add(it.entry.id);
+            seenIds.current.add(it.entry.id);
+          }
+          cursor.current = res.items[0].entry.created_at;
+          setOlder((prev) => [...res.items, ...prev]);
+          setRemaining(res.remaining);
+          if (res.remaining <= 0) {
+            cursor.current = null;
+            break;
+          }
+        }
+      } finally {
+        running = false;
+        window.setTimeout(() => {
+          document.getElementById("beitragsliste")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          window.dispatchEvent(new Event(GO_START_DONE_EVENT));
+        }, 120);
+      }
+    }
+    window.addEventListener(GO_START_EVENT, goStart);
+    return () => window.removeEventListener(GO_START_EVENT, goStart);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storyPostId]);
 
@@ -369,7 +413,7 @@ export function EntryList({
         </div>
       )}
 
-      <div className="mb-6 flex flex-col gap-4">
+      <div id="beitragsliste" className="mb-6 flex scroll-mt-24 flex-col gap-4">
         {filter && shown.length === 0 && (
           <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">
             Keine Beiträge{" "}

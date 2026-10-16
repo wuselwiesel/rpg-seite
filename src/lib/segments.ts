@@ -33,3 +33,30 @@ export function buildSegments(segments: Segment[]): string {
 export function segmentCharacterIds(html: string): string[] {
   return Array.from(new Set((splitSegments(html) ?? []).map((s) => s.id)));
 }
+
+const plain = (html: string) =>
+  html
+    .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, " ")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+
+// Eine Nachricht als Liste aus Name und Klartext: gebündelte Nachrichten ergeben je Figur einen Eintrag, alle anderen genau einen
+// (mit dem Namen der Verfasser:in `fallbackName`). Für Vorschauen, Zusammenfassungen und Suchtreffer.
+export function segmentsToPlain(html: string, fallbackName: string): { name: string; text: string }[] {
+  const parts = splitSegments(html);
+  if (!parts) return [{ name: fallbackName, text: plain(html) }];
+  return parts.map((s) => ({ name: s.name || fallbackName, text: plain(s.html) })).filter((p) => p.text);
+}
+
+// Eine Zeile Klartext, bei gebündelten Nachrichten mit den Namen davor („Ada: … Ben: …“)
+export function plainWithNames(html: string, fallbackName = ""): string {
+  const parts = segmentsToPlain(html, fallbackName);
+  return parts.length === 1 && !splitSegments(html) ? parts[0].text : parts.map((p) => `${p.name}: ${p.text}`).join(" ");
+}

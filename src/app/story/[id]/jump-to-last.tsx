@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
+import { GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
 
 function scrollToLast() {
   document.getElementById("letzter-beitrag")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -46,6 +47,30 @@ export function JumpToLast({ variant }: { variant: "inline" | "floating" }) {
     >
       <ArrowDown className="h-4 w-4" strokeWidth={2.25} />
       Zur letzten Nachricht
+    </button>
+  );
+}
+
+// Springt zum ersten Beitrag der Szene; lange Szenen laden dafür alle früheren Beiträge nach.
+export function JumpToStart() {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        setBusy(true);
+        const done = () => {
+          setBusy(false);
+          window.removeEventListener(GO_START_DONE_EVENT, done);
+        };
+        window.addEventListener(GO_START_DONE_EVENT, done);
+        window.dispatchEvent(new Event(GO_START_EVENT));
+      }}
+      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-60"
+    >
+      <ArrowUp className="h-4 w-4" strokeWidth={2} />
+      {busy ? "Lade …" : "Zum Anfang"}
     </button>
   );
 }

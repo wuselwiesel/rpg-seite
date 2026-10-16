@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { SceneSummary } from "./scene-summary";
 import { recapToHtml } from "@/lib/recap-html";
+import { segmentsToPlain } from "@/lib/segments";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getMentionableCharacters, getOwnCharacters, getOwnNpcs, getWorldCharacters } from "@/lib/active-character";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -25,7 +26,7 @@ import { TurnTitle } from "@/components/turn-title";
 import { ClipSelectionProvider } from "./clip-selection";
 import { ScrollToLast } from "./scroll-to-last";
 import { ScrollToEntry } from "./scroll-to-entry";
-import { JumpToLast } from "./jump-to-last";
+import { JumpToLast, JumpToStart } from "./jump-to-last";
 import { SceneSearch } from "./scene-search";
 import { SceneNote } from "./scene-note";
 import { ChapterJump } from "./chapter-jump";
@@ -222,12 +223,15 @@ export default async function StoryPostDetailPage({
     ? mentionableCharacters.find((c) => c.id === storyPost.turn_character_id) ?? null
     : null;
   const turnIsMine = !!turnCharacter && myCharacterIds.has(turnCharacter.id);
-  const recapItems = writing.map((e) => ({
-    id: e.id,
-    name: e.kind === "narrator" ? "Erzähler:in" : (e.characters?.name ?? "?"),
-    text: stripHtml(e.content),
-    at: e.created_at,
-  }));
+  // „Zuletzt geschah“: gebündelte Nachrichten erscheinen je Figur einzeln statt als ein langer Text der ersten Figur
+  const recapItems = writing.flatMap((e) =>
+    segmentsToPlain(e.content, e.kind === "narrator" ? "Erzähler:in" : (e.characters?.name ?? "?")).map((part, i) => ({
+      id: `${e.id}:${i}`,
+      name: part.name,
+      text: part.text,
+      at: e.created_at,
+    })),
+  );
 
   // Ingame-Beiträge, die mit dieser Story-Szene verknüpft sind ("Aus der Story").
   const { data: linkedPosts } = await supabase
@@ -458,6 +462,7 @@ export default async function StoryPostDetailPage({
         </h2>
         <div className="flex items-center gap-1">
           {(totalCount ?? 0) >= 6 && <SceneSearch storyPostId={storyPost.id} />}
+          {(entries?.length ?? 0) > 5 && <JumpToStart />}
           {(entries?.length ?? 0) > 1 && <JumpToLast variant="inline" />}
         </div>
       </div>

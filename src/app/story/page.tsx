@@ -14,7 +14,7 @@ import { StorySections } from "@/components/story-sections";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { MessageHits, type MessageHit } from "./message-hits";
 import { snippetAround } from "@/lib/snippet";
-import { stripHtml } from "@/lib/strip-html";
+import { segmentsToPlain } from "@/lib/segments";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import type { StoryArc, StoryPost } from "@/lib/types";
@@ -81,12 +81,13 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
         .limit(300)
         .returns<{ id: string; story_post_id: string; content: string; kind: string | null; created_at: string; characters: { name: string } | null }[]>();
       for (const h of hits ?? []) {
-        const text = stripHtml(h.content);
-        if (!text.toLowerCase().includes(q.toLowerCase())) continue; // Treffer nur im Markup
+        // Gebündelte Nachrichten: der Treffer gehört der Figur, in deren Abschnitt der Text steht
+        const parts = segmentsToPlain(h.content, h.kind === "narrator" ? "Erzähler:in" : (h.characters?.name ?? "?"));
+        const part = parts.find((p) => p.text.toLowerCase().includes(q.toLowerCase()));
+        if (!part) continue; // Treffer nur im Markup
         const list = messageHits.get(h.story_post_id) ?? { hits: [], total: 0 };
         list.total++;
-        if (list.hits.length < 3)
-          list.hits.push({ id: h.id, name: h.kind === "narrator" ? "Erzähler:in" : (h.characters?.name ?? "?"), snippet: snippetAround(text, q), at: h.created_at });
+        if (list.hits.length < 3) list.hits.push({ id: h.id, name: part.name, snippet: snippetAround(part.text, q), at: h.created_at });
         messageHits.set(h.story_post_id, list);
       }
       const ids = Array.from(new Set((hits ?? []).map((h) => h.story_post_id as string))).slice(0, 150);
