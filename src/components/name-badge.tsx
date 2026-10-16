@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getFeaturedBadges, type FeaturedBadge } from "@/app/badges/actions";
 import { BADGE_NAMES_KEY, BADGE_PREF_EVENT } from "@/lib/badges";
 import { badgePrefEnabled } from "./badge-row";
+import { NameSymbol } from "./name-symbol";
 import { EmojiText } from "./custom-emoji-provider";
 import { AccountSeal } from "./account-seal";
 
@@ -87,7 +88,7 @@ export function NameBadge({ characterId, userId, symbolOnly = false, sealOnly = 
       {/* Ein Konto mit Siegel zeigt nur das Siegel: ein selbst gewähltes Zeichen daneben sähe wie ein zweites Abzeichen aus */}
       {decor.symbol && !decor.mark && (
         <span className="inline-flex shrink-0 items-center self-center text-[13px] leading-none">
-          <EmojiText text={decor.symbol} />
+          <NameSymbol symbol={decor.symbol} />
         </span>
       )}
       {badge && (

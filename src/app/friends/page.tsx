@@ -87,7 +87,7 @@ export default async function FriendsPage() {
                 >
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-fg">
                     @{friend?.username}
-                    <NameBadge userId={friend?.id} sealOnly />
+                    <NameBadge userId={friend?.id} symbolOnly />
                     <OnlineBadge userId={friend?.id} />
                   </span>
                   {isOfficial ? (

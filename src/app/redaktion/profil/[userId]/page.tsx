@@ -4,6 +4,7 @@ import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
 import { BadgeRow } from "@/components/badge-row";
 import { getAccountBadges, syncAccountBadges, visibleBadges } from "@/lib/badges-server";
 import { EmojiText } from "@/components/custom-emoji-provider";
+import { NameSymbol } from "@/components/name-symbol";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Pencil } from "lucide-react";
@@ -85,7 +86,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
             <NameBadge userId={profile.id} sealOnly />
             {redProfile?.name_symbol && !sealed && (
               <span className="ml-1.5 inline-block align-middle">
-                <EmojiText text={redProfile.name_symbol} />
+                <NameSymbol symbol={redProfile.name_symbol} />
               </span>
             )}
           </h1>

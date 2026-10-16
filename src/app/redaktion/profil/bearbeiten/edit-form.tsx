@@ -42,7 +42,7 @@ export function EditRedaktionProfileForm({
 
       <section className="flex flex-col gap-3">
         <h2 className="font-serif text-lg text-fg">Über dich</h2>
-        <NameSymbolField initial={initial?.name_symbol} />
+        <NameSymbolField initial={initial?.name_symbol} allowBlueCheck />
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Status-Zeile
           <input

@@ -349,9 +349,9 @@ export async function saveRedaktionProfile(_prevState: string | null, formData: 
   // Zeichen neben dem Namen separat speichern (siehe updateCharacter).
   const { error: symbolError } = await supabase
     .from("redaktion_profiles")
-    .update({ name_symbol: cleanNameSymbol(String(formData.get("name_symbol") ?? "")) || null })
+    .update({ name_symbol: cleanNameSymbol(String(formData.get("name_symbol") ?? ""), true) || null })
     .eq("user_id", user.id);
-  if (symbolError && /name_symbol/.test(symbolError.message) && cleanNameSymbol(String(formData.get("name_symbol") ?? ""))) {
+  if (symbolError && /name_symbol/.test(symbolError.message) && cleanNameSymbol(String(formData.get("name_symbol") ?? ""), true)) {
     return "Gespeichert, aber das Zeichen neben dem Namen nicht: Die Datenbank-Spalte name_symbol fehlt noch (supabase/migration_name_symbol.sql).";
   }
 
