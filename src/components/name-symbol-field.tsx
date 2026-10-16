@@ -4,7 +4,9 @@ import { useState } from "react";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { EmojiText } from "./custom-emoji-provider";
 import { NameSymbol } from "./name-symbol";
-import { BLUE_CHECK, cleanNameSymbol } from "@/lib/name-symbol";
+import { checkColor, cleanNameSymbol, DEFAULT_CHECK_COLOR, isCheckSymbol, makeCheck } from "@/lib/name-symbol";
+
+const CHECK_COLORS = ["#0ea5e9", "#22c55e", "#a855f7", "#ec4899", "#f59e0b", "#ef4444", "#64748b"];
 
 // Auswahl des Zeichens neben dem Namen (alle Emojis, Symbole und die eigenen der Welt); schreibt `name_symbol` ins Formular.
 // allowBlueCheck: nur beim Konto (Redaktions-Profil) wählbar, nicht bei Charakteren
@@ -27,9 +29,9 @@ export function NameSymbolField({ initial, allowBlueCheck = false }: { initial?:
           className="flex h-10 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
         />
         {allowBlueCheck && (
-          <button type="button" onClick={() => setSymbol(BLUE_CHECK)} aria-pressed={symbol === BLUE_CHECK} className="flex h-10 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg aria-pressed:border-accent aria-pressed:text-fg">
-            <NameSymbol symbol={BLUE_CHECK} />
-            Blauer Haken
+          <button type="button" onClick={() => setSymbol(makeCheck(DEFAULT_CHECK_COLOR))} aria-pressed={isCheckSymbol(symbol)} className="flex h-10 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg aria-pressed:border-accent aria-pressed:text-fg">
+            <NameSymbol symbol={makeCheck(DEFAULT_CHECK_COLOR)} />
+            Haken
           </button>
         )}
         {symbol && (
@@ -38,6 +40,25 @@ export function NameSymbolField({ initial, allowBlueCheck = false }: { initial?:
           </button>
         )}
       </div>
+      {allowBlueCheck && isCheckSymbol(symbol) && (
+        <div role="group" aria-label="Farbe des Hakens" className="flex flex-wrap items-center gap-1.5">
+          {CHECK_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setSymbol(makeCheck(c))}
+              aria-label={`Farbe ${c}`}
+              aria-pressed={checkColor(symbol) === c}
+              className="h-7 w-7 rounded-full border-2 border-transparent ring-1 ring-line transition aria-pressed:border-surface aria-pressed:ring-2 aria-pressed:ring-accent"
+              style={{ backgroundColor: c }}
+            />
+          ))}
+          <label className="flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-line px-2.5 text-xs text-fg-soft hover:bg-surface-2">
+            Eigene
+            <input type="color" value={checkColor(symbol)} onChange={(e) => setSymbol(makeCheck(e.target.value))} aria-label="Eigene Farbe wählen" className="h-5 w-6 cursor-pointer border-0 bg-transparent p-0" />
+          </label>
+        </div>
+      )}
       <span className="text-xs text-muted">Erscheint neben deinem Namen im Profil, bei Beiträgen und Kommentaren.</span>
     </div>
   );
