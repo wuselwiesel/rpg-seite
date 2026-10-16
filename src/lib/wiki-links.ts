@@ -24,6 +24,24 @@ export function titleIndex<T extends { id: string; title: string; aliases?: stri
   return map;
 }
 
+// Mögliche Schreibweisen eines Namens für [[…]]-Links: Einzahl/Mehrzahl (Sirenen → Sirene, Sirene → Sirenen). So findet
+// [[Sirenen]] die Seite „Sirene“, ohne dass jemand den Link umschreiben muss.
+export function nameLookupKeys(name: string): string[] {
+  const k = name.trim().toLowerCase();
+  const out = [k];
+  for (const suf of ["nen", "en", "er", "n", "e", "s"]) if (k.length >= suf.length + 3 && k.endsWith(suf)) out.push(k.slice(0, -suf.length));
+  for (const suf of ["n", "en", "e", "s"]) out.push(k + suf);
+  return out;
+}
+
+export function findByName<T>(map: Map<string, T>, name: string): T | undefined {
+  for (const key of nameLookupKeys(name)) {
+    const hit = map.get(key);
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
 export function bracketTargets(html: string): string[] {
   const text = stripHtml(html);
   return Array.from(text.matchAll(new RegExp(BRACKET_LINK_SOURCE, "g")), (m) => m[1].trim()).filter(Boolean);
@@ -64,7 +82,7 @@ export function findMissingLinks(pages: LinkPage[], knownNames: Iterable<string>
     const seen = new Set<string>();
     for (const t of bracketTargets(p.content)) {
       const key = t.toLowerCase();
-      if (index.has(key) || known.has(key) || seen.has(key)) continue;
+      if (findByName(index, t) || known.has(key) || seen.has(key)) continue;
       seen.add(key);
       const entry = found.get(key) ?? { title: t, count: 0, from: [] };
       entry.count += 1;
@@ -90,7 +108,7 @@ export function buildLinkEdges(pages: (LinkPage & { parent_page_id?: string | nu
   for (const p of pages) {
     const targets = new Set<string>();
     for (const t of bracketTargets(p.content)) {
-      const hit = index.get(t.toLowerCase());
+      const hit = findByName(index, t);
       if (hit) targets.add(hit.id);
     }
     if (mention) {
