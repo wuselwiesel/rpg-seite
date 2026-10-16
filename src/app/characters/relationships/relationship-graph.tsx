@@ -368,11 +368,11 @@ export function RelationshipGraph({
       )}
       {canTravel && timelineOpen && (
         <div className="flex flex-col gap-1.5 rounded-xl bg-surface px-3 py-2.5">
-          <div className="flex items-center justify-between gap-2 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-medium text-fg">
               {asOf == null ? "Stand: heute" : `Stand: ${new Date(asOf).toLocaleDateString("de-DE")}`}
             </span>
-            <span className="flex gap-1.5">
+            <span className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => {

@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { genericStubs } from "../_shared/generic-stubs.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +31,8 @@ export const createClient = () => ({
 );
 fs.writeFileSync(path.join(out, "stub-actions.ts"), `export async function setPresenceMode() { return null; }\nexport async function setPresenceStatus(e: string, t: string) { (window as any).__saved.push([e, t]); return null; }`);
 
+fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useRouter = () => ({ push() {}, refresh() {}, replace() {} }); export const useSearchParams = () => new URLSearchParams();`);
+fs.writeFileSync(path.join(out, "shim-link.tsx"), `import React from "react"; export default function Link({href, children, ...rest}: any){ return <a href={href} onClick={(e)=>e.preventDefault()} {...rest}>{children}</a>; }`);
 const stubs = {
   name: "stubs",
   setup(b) {
@@ -39,7 +42,7 @@ const stubs = {
 };
 await build({
   entryPoints: [path.join(here, "harness.tsx")], bundle: true, outfile: path.join(out, "out.js"), format: "iife", jsx: "automatic",
-  alias: { "@": path.join(root, "src") }, nodePaths: [path.join(root, "node_modules")], plugins: [stubs],
+  alias: { "@": path.join(root, "src"), "next/navigation": path.join(out, "shim-nav.ts"), "next/link": path.join(out, "shim-link.tsx") }, nodePaths: [path.join(root, "node_modules")], plugins: [stubs, genericStubs(root)],
   banner: { js: "var process = { env: {} };" }, logLevel: "error",
 });
 const cssFile = path.join(root, "src", "app", "globals.css");

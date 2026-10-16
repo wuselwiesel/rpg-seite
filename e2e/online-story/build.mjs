@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { genericStubs } from "../_shared/generic-stubs.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -39,7 +40,7 @@ const stubs = {
 };
 await build({
   entryPoints: [path.join(here, "harness.tsx")], bundle: true, outfile: path.join(out, "out.js"), format: "iife", jsx: "automatic",
-  alias: { "@": path.join(root, "src") }, nodePaths: [path.join(root, "node_modules")], plugins: [stubs],
+  alias: { "@": path.join(root, "src") }, nodePaths: [path.join(root, "node_modules")], plugins: [stubs, genericStubs(root)],
   banner: { js: "var process = { env: {} };" }, logLevel: "error",
 });
 const cssFile = path.join(root, "src", "app", "globals.css");

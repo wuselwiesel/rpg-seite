@@ -40,7 +40,7 @@ for (const [w, h, label] of [[1280, 800, "Laptop"], [375, 740, "Handy"]]) {
   const tracked = await page.evaluate(() => window.__tracked.at(-1));
   check(`${label}: Anmeldung im Kanal trägt Emoji und Text`, tracked?.emoji === "🎲" && tracked?.text === "würfelt", JSON.stringify(tracked));
 
-  await page.getByRole("textbox", { name: "Emoji" }).fill("abc");
+  await page.getByPlaceholder("🌙").fill("abc");
   check(`${label}: Text statt Emoji ist ungültig, Speichern gesperrt`, await save.isDisabled());
   await page.getByRole("button", { name: "Emoji entfernen" }).click();
   await page.getByRole("radio", { name: "Offline" }).click();

@@ -36,6 +36,8 @@ for (const [w, h, label] of [[1280, 800, "Laptop"], [375, 740, "Handy"]]) {
 
   await page.getByRole("tab", { name: /Hobbys/ }).click();
   check(`${label}: Reiter wechselt die Liste`, (await items.count()) === 1 && (await items.first().textContent()).includes("Angeln"));
+  // Die Knöpfe einer Zeile erscheinen erst beim Darüberfahren
+  await items.first().click({ position: { x: 6, y: 6 } });
   await page.getByRole("button", { name: /löschen/ }).first().click();
   check(`${label}: Löschen ruft die Aktion auf`, (await page.evaluate(() => window.__deleted.at(-1))) === "3");
   check(`${label}: langer Eintrag ohne seitliches Scrollen`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));

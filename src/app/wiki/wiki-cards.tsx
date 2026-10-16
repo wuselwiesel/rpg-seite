@@ -27,7 +27,7 @@ export function FolderCard({ folder, index }: { folder: TreeFolder; index: numbe
         style={hex ? { backgroundColor: hex } : undefined}
       />
       <div className="flex items-start justify-between gap-3">
-        <h3 className="flex min-w-0 items-center gap-2 font-serif text-2xl leading-tight text-fg">
+        <h3 className="flex min-w-0 flex-1 items-center gap-2 font-serif text-2xl leading-tight text-fg">
           <FolderGlyph icon={folder.icon} color={folder.color} className="h-5 w-5" textClass="text-xl" />
           <span className="truncate">{folder.name}</span>
         </h3>

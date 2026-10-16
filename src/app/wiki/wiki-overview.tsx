@@ -193,7 +193,7 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
           <h2 id="karten" className={sectionTitle}>
             Karten
           </h2>
-          <ul className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
             {maps.slice(0, 3).map((m) => (
               <li key={m.id}>
                 <Link href={`/wiki/karten/${m.id}`} className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-accent/50">
@@ -239,7 +239,7 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
           <h2 id="ordner" className="mb-4 font-serif text-2xl text-fg">
             Ordner
           </h2>
-          <ul className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
             {tree.folders.map((f, i) => (
               <li key={f.id}>
                 <FolderCard folder={f} index={i} />

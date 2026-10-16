@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { genericStubs } from "../_shared/generic-stubs.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,13 +28,12 @@ const stubs = {
     b.onResolve({ filter: /supabase\/client$/ }, () => ({ path: path.join(out, "stub-supabase.ts") }));
     b.onResolve({ filter: /^@supabase\// }, () => ({ path: path.join(out, "stub-supabase.ts") }));
     b.onResolve({ filter: /app\/bubble-actions$/ }, () => ({ path: path.join(out, "stub-bubble-actions.ts") }));
-    b.onResolve({ filter: /(chats\/actions|redaktion\/chat\/actions|profile\/emojis\/actions|profile\/actions|chat-theme-actions|app\/[a-z-]+\/actions)$/ }, () => ({ path: path.join(out, "stub-any-actions.ts") }));
   },
 };
 await build({
   entryPoints: [path.join(here, "harness.tsx")], bundle: true, outfile: path.join(out, "out.js"), format: "iife", jsx: "automatic",
   alias: { "@": path.join(root, "src"), "next/link": path.join(out, "shim-link.tsx"), "next/navigation": path.join(out, "shim-nav.ts"), "next/dynamic": path.join(out, "shim-dynamic.tsx") },
-  nodePaths: [path.join(root, "node_modules")], plugins: [stubs], banner: { js: "var process = { env: {} };" }, loader: { ".svg": "dataurl", ".png": "dataurl" }, logLevel: "error",
+  nodePaths: [path.join(root, "node_modules")], plugins: [stubs, genericStubs(root)], banner: { js: "var process = { env: {} };" }, loader: { ".svg": "dataurl", ".png": "dataurl" }, logLevel: "error",
 });
 const cssFile = path.join(root, "src", "app", "globals.css");
 const css = await postcss([tailwind()]).process(fs.readFileSync(cssFile, "utf8"), { from: cssFile });

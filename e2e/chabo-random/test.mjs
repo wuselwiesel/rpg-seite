@@ -19,6 +19,8 @@ async function fresh(query = "?gefuellt=1", opts = {}) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.goto(url + query);
+  // „Bearbeiten“ erscheint erst beim Darüberfahren oder Antippen des Kopfes
+  await page.locator("header").first().click({ position: { x: 6, y: 6 } });
   await page.getByRole("button", { name: "Bearbeiten" }).first().click();
   const attrs = () =>
     page.locator('section[aria-label="Attribute"] input[aria-invalid]').evaluateAll((els) => els.filter((e) => e.closest("label")?.textContent?.startsWith("Basis")).map((e) => e.value));
@@ -241,15 +243,16 @@ const sum = (xs) => xs.reduce((s, x) => s + (Number(x) || 0), 0);
   await row("klettern").tap({ position: { x: 20, y: 12 } });
   check("Erneutes Tippen verbirgt sie", (await page.getByRole("tooltip").count()) === 0);
   await row("klettern").tap({ position: { x: 20, y: 12 } });
-  await row("schwimmen").tap({ position: { x: 20, y: 12 } });
-  check("Anderes Talent wechselt die Karte", (await page.getByRole("tooltip").count()) === 1 && (await page.locator("[data-attr][data-highlight]").evaluateAll((e) => e.map((x) => x.getAttribute("data-attr")).sort().join())) === "KK,KO");
+  await row("tanzen").tap({ position: { x: 20, y: 12 } });
+  check("Anderes Talent wechselt die Karte", (await page.getByRole("tooltip").count()) === 1 && (await page.locator("[data-attr][data-highlight]").evaluateAll((e) => e.map((x) => x.getAttribute("data-attr")).sort().join())) === "GE,KO");
   await ctx.close();
 }
 {
   // Im Bearbeiten: Fokus im Bonusfeld zeigt die Attribute, Tippen ins Feld schaltet nichts um
   const { ctx, page } = await fresh();
   await page.locator('input[aria-label="Bonus Klettern"]').click();
-  check("Im Bearbeiten: Fokus im Bonusfeld zeigt die Attribute", (await page.getByRole("tooltip").count()) === 1);
+  // Die Schloss-Knöpfe („Geheim halten“) haben ebenfalls role=tooltip: nur die Talent-Karte (mit „Ø“) zählt
+  check("Im Bearbeiten: Fokus im Bonusfeld zeigt die Attribute", (await page.getByRole("tooltip").filter({ hasText: "Ø" }).count()) === 1);
   await page.locator('input[aria-label="Bonus Klettern"]').fill("6");
   check("Eingabe funktioniert weiter", (await page.locator('input[aria-label="Bonus Klettern"]').inputValue()) === "6");
   await ctx.close();
