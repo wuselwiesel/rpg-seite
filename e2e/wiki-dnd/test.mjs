@@ -166,7 +166,7 @@ for (const [w, h, label, mobile] of [[1280, 700, "Laptop", false], [375, 800, "H
   if (mobile) await page.getByRole("button", { name: "Ordner und Suche" }).click();
   const group = mobile ? page.getByRole("group", { name: "Wiki-Werkzeuge" }) : page.getByRole("navigation", { name: "Wiki-Werkzeuge" });
   const names = await group.getByRole("link").allTextContents();
-  check(`Wiki-Werkzeuge (${label}): alle sechs ausgeschrieben`, ["Karten", "Graph", "Zeitleiste", "Kalender", "Beziehungen", "Einstellungen"].every((n, i) => names[i]?.trim() === n) && names.length === 6, names.join("|"));
+  check(`Wiki-Werkzeuge (${label}): alle sieben ausgeschrieben`, ["Übersicht", "Karten", "Graph", "Zeitleiste", "Kalender", "Beziehungen", "Einstellungen"].every((n, i) => names[i]?.trim() === n) && names.length === 7, names.join("|"));
   const clipped = await group.getByRole("link").evaluateAll((els) => els.filter((el) => { const t = el.lastChild; const r = document.createRange(); r.selectNodeContents(t); return r.getBoundingClientRect().width > el.getBoundingClientRect().width - 2 || el.scrollWidth > el.clientWidth + 1; }).length);
   check(`Wiki-Werkzeuge (${label}): nichts abgeschnitten`, clipped === 0, String(clipped));
   check(`Wiki-Werkzeuge (${label}): kein seitliches Scrollen`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));

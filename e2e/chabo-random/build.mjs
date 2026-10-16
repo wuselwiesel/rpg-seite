@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { genericStubs } from "../_shared/generic-stubs.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,7 +33,7 @@ await build({
   jsx: "automatic",
   alias: { "@": path.join(root, "src"), "next/link": path.join(out, "shim-link.tsx"), "next/navigation": path.join(out, "shim-nav.ts") },
   nodePaths: [path.join(root, "node_modules")],
-  plugins: [stubs],
+  plugins: [stubs, genericStubs(root)],
   banner: { js: "var process = { env: {} };" },
   loader: { ".svg": "dataurl", ".png": "dataurl" },
   logLevel: "error",

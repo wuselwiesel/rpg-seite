@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { genericStubs } from "../_shared/generic-stubs.mjs";
 import postcss from "postcss";
 import tailwind from "@tailwindcss/postcss";
 import fs from "node:fs";
@@ -13,7 +14,7 @@ fs.writeFileSync(path.join(out, "shim-link.tsx"), `import React from "react"; ex
 await build({
   entryPoints: [path.join(here, "harness.tsx")], bundle: true, outfile: path.join(out, "out.js"), format: "iife", jsx: "automatic",
   alias: { "@": path.join(root, "src"), "next/link": path.join(out, "shim-link.tsx") },
-  nodePaths: [path.join(root, "node_modules")], define: { "process.env.NODE_ENV": '"development"' }, logLevel: "error",
+  nodePaths: [path.join(root, "node_modules")], define: { "process.env.NODE_ENV": '"development"' }, plugins: [genericStubs(root)], logLevel: "error",
 });
 const cssFile = path.join(root, "src", "app", "globals.css");
 const css = await postcss([tailwind()]).process(fs.readFileSync(cssFile, "utf8"), { from: cssFile });

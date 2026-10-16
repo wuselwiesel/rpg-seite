@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { genericStubs } from "../_shared/generic-stubs.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,13 +15,14 @@ fs.writeFileSync(
   path.join(out, "stub-actions.ts"),
   `import { parseEntries } from "@/lib/random-lists";
 export async function addRandomEntries(kind: string, raw: string) { (window as any).__added.push([kind, raw]); const n = parseEntries(raw).length; return (window as any).__fail ? { error: "Pro Liste sind höchstens 500 Einträge möglich." } : { added: n, skipped: 0 }; }
+export async function updateRandomEntry(id: string, value: string) { (window as any).__updated = ((window as any).__updated ?? []); (window as any).__updated.push([id, value]); return null; }
 export async function deleteRandomEntry(id: string) { (window as any).__deleted.push(id); return null; }`,
 );
 const stubs = { name: "stubs", setup(b) { b.onResolve({ filter: /^\.\/actions$/ }, (a) => (a.importer.includes("random-list-manager") ? { path: path.join(out, "stub-actions.ts") } : undefined)); } };
 await build({
   entryPoints: [path.join(here, "harness.tsx")], bundle: true, outfile: path.join(out, "out.js"), format: "iife", jsx: "automatic",
   alias: { "@": path.join(root, "src"), "next/navigation": path.join(out, "shim-nav.ts") },
-  nodePaths: [path.join(root, "node_modules")], plugins: [stubs], banner: { js: "var process = { env: {} };" }, logLevel: "error",
+  nodePaths: [path.join(root, "node_modules")], plugins: [stubs, genericStubs(root)], banner: { js: "var process = { env: {} };" }, logLevel: "error",
 });
 const cssFile = path.join(root, "src", "app", "globals.css");
 const css = await postcss([tailwind()]).process(fs.readFileSync(cssFile, "utf8"), { from: cssFile });
