@@ -289,7 +289,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
               </Link>
             )}
           </h2>
-          <ul className="grid gap-3 @3xl:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 @3xl:grid-cols-2">
             {node.children.map((c) => (
               <li key={c.id}>
                 <PageCard page={c} />

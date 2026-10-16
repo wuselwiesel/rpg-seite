@@ -29,7 +29,7 @@ export default async function WikiMapsPage() {
       </header>
 
       {maps.length > 0 && (
-        <ul className="grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
           {maps.map((m) => (
             <li key={m.id} className="relative">
               <MapMenu map={m} canDelete={m.created_by === user.id || world.created_by === user.id} variant="card" />

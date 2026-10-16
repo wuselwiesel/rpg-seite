@@ -1,7 +1,7 @@
 "use client";
 
 import { Folder, FolderOpen } from "lucide-react";
-import { EmojiText } from "./custom-emoji-provider";
+import { EmojiText, useEmojiMap } from "./custom-emoji-provider";
 import { folderColorHex } from "@/lib/wiki-folder-style";
 
 // Symbol eines Wiki-Ordners: das gewählte Emoji, sonst ein Ordner in der gewählten Farbe.
@@ -20,7 +20,10 @@ export function FolderGlyph({
   textClass?: string;
 }) {
   const hex = folderColorHex(color);
-  if (icon) {
+  const emojiMap = useEmojiMap();
+  // Ein eigenes Emoji (:name:), das es in dieser Welt nicht gibt (z. B. aus einer anderen Welt), zeigt den normalen Ordner statt des rohen Textes
+  const known = !icon || !/^:[a-z0-9_]{2,32}:$/.test(icon) || Boolean(emojiMap[icon.slice(1, -1)]);
+  if (icon && known) {
     return (
       <span aria-hidden className={`${textClass} inline-flex shrink-0 items-center justify-center leading-none`}>
         <EmojiText text={icon} />

@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import { Folder } from "lucide-react";
 import { FolderGlyph } from "@/components/folder-glyph";
 import { folderColorHex } from "@/lib/wiki-folder-style";
 import { createClient } from "@/lib/supabase/server";
@@ -45,7 +44,7 @@ export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner
             className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${hex ? "" : "bg-surface-3 text-accent"}`}
             style={hex ? { backgroundColor: `color-mix(in srgb, ${hex} 22%, transparent)`, color: hex } : undefined}
           >
-            {folder.icon ? <FolderGlyph icon={folder.icon} textClass="text-4xl" /> : <Folder className="h-8 w-8" strokeWidth={1.5} />}
+            <FolderGlyph icon={folder.icon} color={folder.color} className="h-8 w-8" textClass="text-4xl" />
           </span>
           <div className="min-w-0">
             <h1 className="font-serif text-4xl leading-none text-fg @xl:text-5xl">{folder.name}</h1>
@@ -60,7 +59,7 @@ export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner
           <h2 id="unterordner" className="mb-4 font-serif text-2xl text-fg">
             Unterordner
           </h2>
-          <ul className="grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
             {folder.children.map((c, i) => (
               <li key={c.id}>
                 <FolderCard folder={c} index={i} />
@@ -77,7 +76,7 @@ export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner
           </h2>
         )}
         {folder.pages.length > 0 ? (
-          <ul className="grid gap-3 @3xl:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 @3xl:grid-cols-2">
             {folder.pages.map((p) => (
               <li key={p.id}>
                 <PageCard page={p} />
