@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Compass,
   Dices,
+  KeyRound,
   Newspaper,
   Palette,
   SmilePlus,
@@ -44,13 +45,15 @@ const GROUPS: { title: string; items: Item[] }[] = [
   },
 ];
 
+const INVITE_ITEM: Item = { href: "/profile/einladungscodes", label: "Einladungscodes", hint: "Wer sich registrieren darf", Icon: KeyRound };
+
 const OFFICIAL_ITEM: Item = { href: "/profile/wortwinkel", label: "Konto wechseln", hint: "Zwischen Streuselschnecke und Wortwinkel", Icon: ArrowLeftRight };
 
 const row =
   "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-surface-2";
 
 // Instagram-artige Einstellungen: Auf dem Handy erst die Liste, dann die Unterseite; am Desktop Liste links, Inhalt rechts.
-export function SettingsShell({ children, showOfficialAccount = false }: { children: React.ReactNode; showOfficialAccount?: boolean }) {
+export function SettingsShell({ children, showOfficialAccount = false, showInviteCodes = false }: { children: React.ReactNode; showOfficialAccount?: boolean; showInviteCodes?: boolean }) {
   const pathname = usePathname();
   const isHub = pathname === "/profile";
 
@@ -59,7 +62,7 @@ export function SettingsShell({ children, showOfficialAccount = false }: { child
       <nav className={`${isHub ? "" : "hidden lg:block"} lg:w-72 lg:shrink-0`} aria-label="Einstellungen">
         <h1 className="mb-4 font-serif text-3xl text-fg">Einstellungen</h1>
         <div className="flex flex-col gap-5">
-          {GROUPS.map((g) => (showOfficialAccount && g.title === "Dein Konto" ? { ...g, items: [...g.items, OFFICIAL_ITEM] } : g)).map((group) => (
+          {GROUPS.map((g) => (g.title === "Dein Konto" ? { ...g, items: [...g.items, ...(showOfficialAccount ? [OFFICIAL_ITEM] : []), ...(showInviteCodes ? [INVITE_ITEM] : [])] } : g)).map((group) => (
             <div key={group.title}>
               <p className="mb-1 px-3 text-xs font-medium text-muted">{group.title}</p>
               {group.items.map(({ href, label, hint, Icon }) => {

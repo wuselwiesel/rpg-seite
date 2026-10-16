@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
 // Offen für alle, auch für Angemeldete (Passwort vergessen und der Link aus der Mail)
-const OPEN_PATHS = ["/passwort-vergessen", "/passwort-neu"];
+const OPEN_PATHS = ["/passwort-vergessen", "/passwort-neu", "/datenschutz"];
 // Läuft ohne Anmeldung, prüft aber selbst das Cron-Geheimnis.
 const SELF_AUTHED_PATHS = ["/api/cron/"];
 
