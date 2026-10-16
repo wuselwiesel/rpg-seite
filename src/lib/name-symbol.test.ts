@@ -20,4 +20,10 @@ describe("cleanNameSymbol", () => {
     expect(cleanNameSymbol("   ")).toBe("");
     expect(cleanNameSymbol(":a:")).toBe(":");
   });
+  it("blauer Haken nur, wenn erlaubt", () => {
+    expect(cleanNameSymbol("#haken", true)).toBe("#haken");
+    expect(cleanNameSymbol(" #haken ", true)).toBe("#haken");
+    expect(cleanNameSymbol("#haken")).toBe("");
+    expect(cleanNameSymbol("#hakenx", true)).toBe("#");
+  });
 });

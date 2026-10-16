@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { EmojiText } from "./custom-emoji-provider";
-import { cleanNameSymbol } from "@/lib/name-symbol";
+import { NameSymbol } from "./name-symbol";
+import { BLUE_CHECK, cleanNameSymbol } from "@/lib/name-symbol";
 
 // Auswahl des Zeichens neben dem Namen (alle Emojis, Symbole und die eigenen der Welt); schreibt `name_symbol` ins Formular.
-export function NameSymbolField({ initial }: { initial?: string | null }) {
+// allowBlueCheck: nur beim Konto (Redaktions-Profil) wählbar, nicht bei Charakteren
+export function NameSymbolField({ initial, allowBlueCheck = false }: { initial?: string | null; allowBlueCheck?: boolean }) {
   const [symbol, setSymbol] = useState(initial ?? "");
   return (
     <div className="flex flex-col gap-1 text-sm text-fg-soft">
@@ -17,13 +19,19 @@ export function NameSymbolField({ initial }: { initial?: string | null }) {
           className="flex h-10 min-w-10 items-center justify-center rounded-md border border-line bg-surface px-2 text-xl text-fg"
           aria-label={symbol ? "Gewähltes Zeichen" : "Kein Zeichen gewählt"}
         >
-          {symbol ? <EmojiText text={symbol} /> : <span className="text-sm text-muted">–</span>}
+          {symbol ? <NameSymbol symbol={symbol} /> : <span className="text-sm text-muted">–</span>}
         </span>
         <CustomEmojiPicker
           direction="down"
-          onPick={(token) => setSymbol(cleanNameSymbol(token))}
+          onPick={(token) => setSymbol(cleanNameSymbol(token, allowBlueCheck))}
           className="flex h-10 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
         />
+        {allowBlueCheck && (
+          <button type="button" onClick={() => setSymbol(BLUE_CHECK)} aria-pressed={symbol === BLUE_CHECK} className="flex h-10 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg aria-pressed:border-accent aria-pressed:text-fg">
+            <NameSymbol symbol={BLUE_CHECK} />
+            Blauer Haken
+          </button>
+        )}
         {symbol && (
           <button type="button" onClick={() => setSymbol("")} className="text-xs text-muted hover:text-fg">
             Entfernen
