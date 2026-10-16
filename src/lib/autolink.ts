@@ -1,7 +1,7 @@
 // Verlinkt Wiki-Begriffe und #Hashtags im (bereits bereinigten) HTML eines Beitrags.
 // Arbeitet nur auf Textknoten und lässt Links und @-Erwähnungen unangetastet.
 
-import { BRACKET_LINK_SOURCE, escapeRegex, nameVariants } from "@/lib/wiki-links";
+import { BRACKET_LINK_SOURCE, escapeRegex, findByName, nameVariants } from "@/lib/wiki-links";
 import { characterAnchor, characterIndex, type CharacterTerm } from "@/lib/character-links";
 
 // `category` ist die Beschriftung für die Vorschau (heute der Ordnername); ältere Schlüssel werden übersetzt.
@@ -43,7 +43,7 @@ export function linkWikiBrackets(html: string, wiki: WikiTerm[] = [], characters
       return segment.replace(re, (_m, target: string, label?: string) => {
         const name = target.trim();
         const shown = (label ?? name).trim();
-        const entry = byName.get(name.toLowerCase());
+        const entry = findByName(byName, name);
         if (entry) return wikiAnchor(entry, shown);
         // Keine Seite mit diesem Namen: ein Charakter der Welt
         const character = charByName.get(name.toLowerCase());

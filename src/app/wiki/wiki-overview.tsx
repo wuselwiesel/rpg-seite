@@ -306,9 +306,9 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
             {plural(missing.length, "fehlender Artikel", "fehlende Artikel")} anzeigen
           </summary>
           <p className="mt-2 px-2">Mit [[…]] verlinkt, aber noch ohne eigene Seite.{rights.wikiCreate ? " Ein Klick legt sie an." : ""}</p>
-          <ul className="mt-3 flex flex-wrap gap-2 px-2">
+          <ul className="mt-3 flex flex-col gap-2 px-2">
             {missing.map((m) => (
-              <li key={m.title}>
+              <li key={m.title} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {rights.wikiCreate ? (
                   <Link
                     href={`/wiki/new?title=${encodeURIComponent(m.title)}`}
@@ -324,6 +324,21 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
                     <span className="text-xs text-muted">{m.count}×</span>
                   </span>
                 )}
+                <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted">
+                  in
+                  {m.from.slice(0, 4).map((id, i) => {
+                    const page = pageRows.find((p) => p.id === id);
+                    return page ? (
+                      <span key={id}>
+                        <Link href={`/wiki/${id}`} className="text-fg-soft underline decoration-dotted underline-offset-2 hover:text-accent">
+                          {page.title}
+                        </Link>
+                        {i < Math.min(m.from.length, 4) - 1 ? "," : ""}
+                      </span>
+                    ) : null;
+                  })}
+                  {m.from.length > 4 && <span>und {m.from.length - 4} weiteren</span>}
+                </span>
               </li>
             ))}
           </ul>

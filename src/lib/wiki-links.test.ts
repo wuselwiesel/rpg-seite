@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bracketTargets, buildLinkEdges, findBacklinks, findMissingLinks, titleIndex, type LinkPage } from "./wiki-links";
+import { bracketTargets, buildLinkEdges, findBacklinks, findByName, findMissingLinks, nameLookupKeys, titleIndex, type LinkPage } from "./wiki-links";
 
 const page = (id: string, title: string, content: string, aliases: string[] = []): LinkPage => ({ id, title, content, aliases });
 const pages = [
@@ -70,5 +70,25 @@ describe("buildLinkEdges", () => {
   it("lässt Seiten ohne Verbindung außen vor", () => {
     expect(edges.some((e) => e.a === "x" || e.b === "x")).toBe(false);
     expect(buildLinkEdges([])).toEqual([]);
+  });
+});
+
+describe("Einzahl und Mehrzahl in [[…]]", () => {
+  const pages: LinkPage[] = [
+    { id: "s", title: "Sirene", content: "" },
+    { id: "h", title: "Hexen", content: "[[Sirenen]] und [[Hexe]] und [[Drachen]]" },
+  ];
+  it("findet Sirene unter Sirenen und Hexen unter Hexe", () => {
+    const idx = titleIndex(pages);
+    expect(findByName(idx, "Sirenen")?.id).toBe("s");
+    expect(findByName(idx, "Hexe")?.id).toBe("h");
+    expect(findByName(idx, "Drachen")).toBeUndefined();
+  });
+  it("meldet nur wirklich fehlende Seiten", () => {
+    expect(findMissingLinks(pages).map((m) => m.title)).toEqual(["Drachen"]);
+  });
+  it("bildet sinnvolle Schreibweisen", () => {
+    expect(nameLookupKeys("Sirenen")).toContain("sirene");
+    expect(nameLookupKeys("Sirene")).toContain("sirenen");
   });
 });
