@@ -13,12 +13,11 @@ import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene, setE
 import { SpoilerGate } from "@/components/spoiler-gate";
 import { EventDateFields } from "@/components/event-date-fields";
 import { formatDate, type EventDate, type WikiCalendar } from "@/lib/wiki-calendar";
-import { stripHtml } from "@/lib/strip-html";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NarratorAvatar } from "@/components/narrator-avatar";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
-import { splitSegments } from "@/lib/segments";
+import { plainWithNames, splitSegments } from "@/lib/segments";
 import { BundleBuilder } from "./bundle-builder";
 import type { Character, StoryEntry } from "@/lib/types";
 
@@ -364,7 +363,7 @@ export function StoryEntryItem({
         {markOpen && !markedEvent && calendar && (
           <MarkEventForm
             entryId={entry.id}
-            excerpt={stripHtml(entry.content).slice(0, 280)}
+            excerpt={plainWithNames(entry.content, entry.characters?.name ?? "").slice(0, 280)}
             calendar={calendar}
             eventType={eventType}
             defaultDate={sceneDate}
