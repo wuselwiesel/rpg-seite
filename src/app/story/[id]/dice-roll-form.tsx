@@ -259,7 +259,11 @@ export function DiceRollForm({
             min={1}
             max={999}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => {
+              setValue(e.target.value);
+              // Ein von Hand geänderter Wert gehört nicht mehr zum Eintrag im Charakterbogen
+              setStatName("");
+            }}
             placeholder="frei würfeln"
             className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
           />

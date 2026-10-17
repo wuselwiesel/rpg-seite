@@ -19,6 +19,9 @@ import { notifyMentionedCharacterIds, createNotification } from "@/lib/notificat
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import { isRateLimited } from "@/lib/rate-limit";
 import { resolveCondition } from "@/lib/dice-conditions";
+import { getStatOptions } from "@/lib/charakterbogen-stats";
+import { normalizeSheet } from "@/lib/sheet-rules";
+import { parseTalentConfig } from "@/lib/talents";
 import { columnsFromDates, parsePageDates } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 import { permissionError } from "@/lib/world-permissions";
@@ -921,6 +924,18 @@ type RollParams = {
   condition?: string | null;
 };
 
+// Wurde ein Wert aus dem Charakterbogen übernommen (statName), zählt immer der Bogen des schreibenden Charakters,
+// nie ein Wert aus dem Browser (zum Beispiel vom zuvor gewählten Charakter). null = Charakter hat keinen ChaBo (alter Bogen-Link), dann gilt der Wert aus dem Formular.
+async function sheetStatValue(supabase: SupabaseClient, worldId: string, characterId: string, statName: string): Promise<{ value: number } | { error: string } | null> {
+  const { data: sheet } = await supabase.from("character_sheets").select("data").eq("character_id", characterId).maybeSingle<{ data: unknown }>();
+  if (!sheet) return null;
+  const { data: world } = await supabase.from("worlds").select("talent_config").eq("id", worldId).maybeSingle<{ talent_config: unknown }>();
+  const options = getStatOptions(normalizeSheet(sheet.data, world?.talent_config ? parseTalentConfig(world.talent_config) : undefined));
+  const option = options.find((o) => o.name === statName);
+  if (!option) return { error: `„${statName}“ steht nicht im Charakterbogen dieses Charakters.` };
+  return { value: option.value };
+}
+
 // Für die Anzeige im Würfeln-Formular, bevor überhaupt gewürfelt wurde.
 export async function getLuckPointsRemaining(
   storyPostId: string,
@@ -1087,13 +1102,20 @@ export async function createDiceRoll(
     if (!target || target.world_id !== worldId) return { error: "Ungültiges Ziel.", luckRemaining: null };
   }
 
+  let rollValue = value;
+  if (statName) {
+    const fromSheet = await sheetStatValue(supabase, worldId, characterId, statName);
+    if (fromSheet && "error" in fromSheet) return { error: fromSheet.error, luckRemaining: null };
+    if (fromSheet) rollValue = fromSheet.value;
+  }
+
   const luckRemaining = luckMax === null ? null : await getLuckRemaining(supabase, storyPostId, characterId, luckMax);
 
   return performDiceRoll(
     supabase,
     user.id,
     storyPostId,
-    { characterId, label, statName, value, bonus, die, targetCharacterId, condition: condition?.text ?? null },
+    { characterId, label, statName, value: rollValue, bonus, die, targetCharacterId, condition: condition?.text ?? null },
     luckRemaining,
     false,
   );
@@ -1124,7 +1146,14 @@ export async function rerollWithLuck(
   const current = await getLuckRemaining(supabase, storyPostId, characterId, luckMax);
   if (current <= 0) return { error: "Keine Glückspunkte mehr übrig.", luckRemaining: 0 };
 
-  return performDiceRoll(supabase, user.id, storyPostId, { ...rollParams, characterId }, current - 1, true);
+  let rollValue = rollParams.value;
+  if (rollParams.statName) {
+    const fromSheet = await sheetStatValue(supabase, worldId, characterId, rollParams.statName);
+    if (fromSheet && "error" in fromSheet) return { error: fromSheet.error, luckRemaining: null };
+    if (fromSheet) rollValue = fromSheet.value;
+  }
+
+  return performDiceRoll(supabase, user.id, storyPostId, { ...rollParams, characterId, value: rollValue }, current - 1, true);
 }
 
 // Anpinnen/Archivieren: Moderationswerkzeuge für Welt-Owner. Sperren/Entsperren ("Abschließen"/
