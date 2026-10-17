@@ -26,14 +26,16 @@ import {
 const PAGE = 60;
 const primary = "rounded-full bg-accent-strong px-3 py-1 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50";
 const quiet = "rounded-full border border-line px-3 py-1 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent disabled:opacity-50";
+const tool = "rounded-lg border border-line bg-surface px-3 py-2 text-center text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent disabled:opacity-50";
 const field = "rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
 const STATUS_LABEL: Record<CastStatus, string> = { free: "Frei", reserved: "Reserviert", taken: "Vergeben", npc: "NPC" };
-const STATUS_CHIP: Record<CastStatus, string> = {
-  free: "bg-accent/15 text-accent",
-  reserved: "bg-surface-3 text-fg",
-  taken: "bg-surface-2 text-fg-soft",
-  npc: "border border-line text-muted",
+// Stand als ruhiger Punkt mit Beschriftung (Frei trägt die Akzentfarbe, alles andere bleibt neutral)
+const STATUS_DOT: Record<CastStatus, string> = {
+  free: "bg-accent",
+  reserved: "bg-amber-500",
+  taken: "bg-fg-soft",
+  npc: "border border-muted bg-transparent",
 };
 
 function dateLabel(iso: string | null) {
@@ -79,6 +81,7 @@ export function CastView({ worldId, data, folders }: { worldId: string; data: Ca
   const sources = useMemo(() => [...new Set(rows.map((r) => r.source).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b, "de")), [rows]);
   const speciesList = useMemo(() => [...new Set(rows.map((r) => r.species_text).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b, "de")), [rows]);
   const letters = useMemo(() => new Set(rows.map((r) => castLetter(r.name))), [rows]);
+  const castable = rows.length - counts.npc;
   const pendingTotal = rows.reduce((n, r) => n + r.requests.length, 0);
   const advanced = (source ? 1 : 0) + (species ? 1 : 0) + (deadMode !== "all" ? 1 : 0);
 
@@ -97,6 +100,16 @@ export function CastView({ worldId, data, folders }: { worldId: string; data: Ca
       }),
     [rows, status, letter, source, species, deadMode, q],
   );
+  // Nach Anfangsbuchstaben gruppiert (ein Seitenabschnitt je Buchstabe), nach Name sortiert
+  const groups = useMemo(() => {
+    const sorted = [...visible].sort((x, y) => x.name.replace(/^†\s*/, "").localeCompare(y.name.replace(/^†\s*/, ""), "de"));
+    const map = new Map<string, CastRow[]>();
+    for (const r of sorted.slice(0, shown)) {
+      const l = castLetter(r.name);
+      map.set(l, [...(map.get(l) ?? []), r]);
+    }
+    return [...map.entries()];
+  }, [visible, shown]);
   const reset = (fn: () => void) => {
     fn();
     setShown(PAGE);
@@ -116,22 +129,27 @@ export function CastView({ worldId, data, folders }: { worldId: string; data: Ca
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="font-serif text-3xl text-fg">Besetzung</h1>
-        <span className="text-sm text-muted lining-nums tabular-nums">
-          {counts.taken} von {rows.length - counts.npc} vergeben
-        </span>
-      </div>
+      <header className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <h1 className="font-serif text-3xl text-fg">Besetzung</h1>
+          <p className="text-sm text-muted lining-nums tabular-nums">
+            {counts.taken} von {castable} vergeben
+          </p>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface-3" role="img" aria-label={`${counts.taken} von ${castable} Rollen vergeben`}>
+          <div className="h-full rounded-full bg-accent-strong transition-[width]" style={{ width: `${castable > 0 ? Math.round((counts.taken / castable) * 100) : 0}%` }} />
+        </div>
+      </header>
 
       {isAdmin && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setManage((v) => !v)} aria-expanded={manage} className={quiet}>
             Verwalten
           </button>
           {pendingTotal > 0 && (
-            <button type="button" onClick={() => reset(() => setStatus(""))} className="rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
-              {pendingTotal} {pendingTotal === 1 ? "Anfrage" : "Anfragen"}
-            </button>
+            <span className="rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
+              {pendingTotal} {pendingTotal === 1 ? "offene Anfrage" : "offene Anfragen"}
+            </span>
           )}
         </div>
       )}
@@ -146,7 +164,7 @@ export function CastView({ worldId, data, folders }: { worldId: string; data: Ca
               .filter((r) => r.requests.length > 0)
               .flatMap((r) => r.requests.map((rq) => ({ r, rq })))
               .map(({ r, rq }) => (
-                <li key={rq.id} className="flex flex-col gap-1.5 rounded-xl bg-surface p-2.5">
+                <li key={rq.id} className="flex flex-col gap-1.5 rounded-xl bg-surface p-3">
                   <p className="text-sm text-fg">
                     <span className="font-medium">{rq.userName}</span> möchte <span className="font-medium">{r.name}</span>
                   </p>
@@ -165,102 +183,110 @@ export function CastView({ worldId, data, folders }: { worldId: string; data: Ca
         </section>
       )}
 
-      <div className="flex items-center gap-2">
-        <label className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={2} />
-          <input type="search" value={query} onChange={(e) => reset(() => setQuery(e.target.value))} placeholder="Name oder Wesen suchen" aria-label="Rolle suchen" className={`${field} w-full pl-9`} />
-        </label>
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          aria-expanded={filtersOpen}
-          className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition ${filtersOpen || advanced > 0 ? "border-accent bg-accent/10 text-accent" : "border-line bg-surface text-fg-soft hover:border-accent hover:text-accent"}`}
-        >
-          <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />
-          Filtern
-          {advanced > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-strong px-1 text-[10px] font-medium text-on-accent-strong">{advanced}</span>}
-        </button>
-      </div>
-
-      {filtersOpen && (
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-3">
-          {sources.length > 0 && (
-            <label className="flex flex-col gap-1 text-xs text-muted">
-              Serie
-              <select value={source} onChange={(e) => reset(() => setSource(e.target.value))} className={field}>
-                <option value="">Alle</option>
-                {sources.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-          )}
-          {speciesList.length > 0 && (
-            <label className="flex flex-col gap-1 text-xs text-muted">
-              Wesen
-              <select value={species} onChange={(e) => reset(() => setSpecies(e.target.value))} className={field}>
-                <option value="">Alle</option>
-                {speciesList.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-          )}
-          <label className="flex flex-col gap-1 text-xs text-muted">
-            Verstorbene
-            <select value={deadMode} onChange={(e) => reset(() => setDeadMode(e.target.value as "all" | "alive" | "dead"))} className={field}>
-              <option value="all">Alle zeigen</option>
-              <option value="alive">Nur lebende</option>
-              <option value="dead">Nur verstorbene</option>
-            </select>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <label className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={2} />
+            <input type="search" value={query} onChange={(e) => reset(() => setQuery(e.target.value))} placeholder="Name oder Wesen suchen" aria-label="Rolle suchen" className={`${field} w-full pl-9`} />
           </label>
-          {advanced > 0 && (
-            <button type="button" onClick={() => reset(() => { setSource(""); setSpecies(""); setDeadMode("all"); })} className="col-span-2 w-fit text-sm text-accent hover:underline sm:col-span-3">
-              Filter zurücksetzen
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition ${filtersOpen || advanced > 0 ? "border-accent bg-accent/10 text-accent" : "border-line bg-surface text-fg-soft hover:border-accent hover:text-accent"}`}
+          >
+            <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />
+            Filtern
+            {advanced > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-strong px-1 text-[10px] font-medium text-on-accent-strong">{advanced}</span>}
+          </button>
         </div>
-      )}
 
-      <div role="group" aria-label="Stand" className="flex flex-wrap gap-1.5">
-        {(["free", "reserved", "taken", "npc"] as CastStatus[])
-          .filter((s) => counts[s] > 0)
-          .map((s) => (
+        {filtersOpen && (
+          <div className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-3">
+            {sources.length > 0 && (
+              <label className="flex flex-col gap-1 text-xs text-muted">
+                Serie
+                <select value={source} onChange={(e) => reset(() => setSource(e.target.value))} className={field}>
+                  <option value="">Alle</option>
+                  {sources.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {speciesList.length > 0 && (
+              <label className="flex flex-col gap-1 text-xs text-muted">
+                Wesen
+                <select value={species} onChange={(e) => reset(() => setSpecies(e.target.value))} className={field}>
+                  <option value="">Alle</option>
+                  {speciesList.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="flex flex-col gap-1 text-xs text-muted">
+              Verstorbene
+              <select value={deadMode} onChange={(e) => reset(() => setDeadMode(e.target.value as "all" | "alive" | "dead"))} className={field}>
+                <option value="all">Alle zeigen</option>
+                <option value="alive">Nur lebende</option>
+                <option value="dead">Nur verstorbene</option>
+              </select>
+            </label>
+            {advanced > 0 && (
+              <button type="button" onClick={() => reset(() => { setSource(""); setSpecies(""); setDeadMode("all"); })} className="col-span-2 w-fit text-sm text-accent hover:underline sm:col-span-3">
+                Filter zurücksetzen
+              </button>
+            )}
+          </div>
+        )}
+
+        <div role="group" aria-label="Stand" className="grid grid-cols-4 gap-1 rounded-xl bg-surface-2 p-1">
+          {(["free", "reserved", "taken", "npc"] as CastStatus[]).map((s) => (
             <button
               key={s}
               type="button"
               aria-pressed={status === s}
+              disabled={counts[s] === 0}
               onClick={() => reset(() => setStatus(status === s ? "" : s))}
-              className={`rounded-full border px-3 py-1 text-sm transition ${status === s ? "border-accent bg-accent/10 font-medium text-accent" : "border-line text-fg-soft hover:border-accent hover:text-accent"}`}
+              className={`flex flex-col items-center rounded-lg px-1 py-1.5 text-xs transition disabled:opacity-40 ${status === s ? "bg-surface font-medium text-fg shadow-sm" : "text-fg-soft hover:text-fg"}`}
             >
-              {STATUS_LABEL[s]} <span className="text-xs opacity-70">{counts[s]}</span>
+              <span className="text-base font-semibold leading-tight text-fg lining-nums tabular-nums">{counts[s]}</span>
+              {STATUS_LABEL[s]}
             </button>
           ))}
-      </div>
+        </div>
 
-      <div role="group" aria-label="Anfangsbuchstabe" className="flex flex-wrap gap-0.5 text-sm">
-        {"ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("").map((l) => (
-          <button
-            key={l}
-            type="button"
-            disabled={!letters.has(l)}
-            aria-pressed={letter === l}
-            onClick={() => reset(() => setLetter(letter === l ? "" : l))}
-            className={`relative h-7 min-w-7 rounded-md px-1.5 transition before:absolute before:-inset-0.5 ${letter === l ? "bg-accent-strong font-medium text-on-accent-strong" : letters.has(l) ? "font-medium text-fg hover:bg-surface-2 hover:text-accent" : "text-muted/40"}`}
-          >
-            {l}
-          </button>
-        ))}
+        <div role="group" aria-label="Anfangsbuchstabe" className="-mx-4 flex gap-0.5 overflow-x-auto px-4 pb-1 text-sm [scrollbar-width:none]">
+          {[...letters].sort().map((l) => (
+            <button
+              key={l}
+              type="button"
+              aria-pressed={letter === l}
+              onClick={() => reset(() => setLetter(letter === l ? "" : l))}
+              className={`relative h-8 min-w-8 shrink-0 rounded-lg px-2 font-medium transition before:absolute before:-inset-0.5 ${letter === l ? "bg-accent-strong text-on-accent-strong" : "text-fg-soft hover:bg-surface-2 hover:text-accent"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
       </div>
 
       {visible.length === 0 ? (
         <p className="text-sm text-muted">{rows.length === 0 ? "Noch keine Rollen. Unter „Verwalten“ legst du welche an oder übernimmst sie aus dem Wiki." : "Nichts gefunden."}</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-line rounded-2xl border border-line bg-surface">
-          {visible.slice(0, shown).map((r) => (
-            <RoleRow key={r.id} role={r} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} worldId={worldId} data={data} run={run} pending={pending} />
+        <div className="flex flex-col gap-5">
+          {groups.map(([l, list]) => (
+            <section key={l} aria-label={`Rollen mit ${l}`}>
+              <h2 className="sticky top-[57px] z-10 -mx-1 bg-app px-1 py-1.5 text-xs font-medium text-muted lg:top-0">{l}</h2>
+              <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+                {list.map((r) => (
+                  <RoleRow key={r.id} role={r} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} worldId={worldId} data={data} run={run} pending={pending} />
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
       {visible.length > shown && (
         <button type="button" onClick={() => setShown((n) => n + PAGE)} className="mx-auto rounded-full border border-line px-4 py-2 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent">
@@ -300,33 +326,33 @@ function RoleRow({
 
   let chip = STATUS_LABEL[r.status];
   if (r.status === "reserved") {
-    const until = dateLabel(r.holder_until);
-    chip = r.holder_kind === "approved" ? "Zugesagt" : until ? `Reserviert bis ${until}` : "Reserviert";
+    chip = r.holder_kind === "approved" ? "Zugesagt" : r.holder_until ? `Reserviert bis ${new Date(r.holder_until).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}` : "Reserviert";
   }
 
   return (
-    <li className="p-3">
-      <div className="flex items-start gap-2">
-        <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-w-0 flex-1 items-start gap-3 text-left">
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-medium text-fg">
-              {r.deceased && <span className="mr-1 text-muted" title="Verstorben">†</span>}
-              {r.name}
-            </span>
-            <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
-              {r.age_text && <span>{r.age_text}</span>}
-              {r.species_text && <span>{r.species_text}</span>}
-              {r.source && <span className="rounded-full border border-line px-1.5 py-0.5">{r.source}</span>}
-            </span>
+    <li>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-surface-2/60">
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-fg">
+            {r.deceased && (
+              <span className="mr-1 text-muted" title="Verstorben">
+                †
+              </span>
+            )}
+            {r.name}
           </span>
-          <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CHIP[r.status]}`}>{chip}</span>
-          {reqCount > 0 && <span className="mt-0.5 shrink-0 rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong">{reqCount}</span>}
-          <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-fg-soft transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
-        </button>
-      </div>
+          <span className="mt-0.5 block truncate text-xs text-muted">{[r.age_text, r.species_text, r.source].filter(Boolean).join("  ·  ")}</span>
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-fg-soft">
+          <span aria-hidden className={`h-2 w-2 rounded-full ${STATUS_DOT[r.status]}`} />
+          {chip}
+        </span>
+        {reqCount > 0 && <span className="shrink-0 rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong">{reqCount}</span>}
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
+      </button>
 
       {open && (
-        <div className="mt-2 flex flex-col gap-3 text-sm">
+        <div className="flex flex-col gap-4 border-t border-line bg-surface-2/40 px-4 py-4 text-sm">
           {r.description && <p className="text-fg-soft">{r.description}</p>}
 
           {r.character && !r.character.vacant && (
@@ -395,7 +421,8 @@ function RoleRow({
           )}
 
           {data.isAdmin && (
-            <div className="flex flex-col gap-2 border-t border-line pt-3">
+            <div className="flex flex-col gap-3 border-t border-line pt-4">
+              <p className="text-xs font-medium text-muted">Verwalten</p>
               {r.requests.map((rq) => (
                 <div key={rq.id} className="flex flex-col gap-1 rounded-xl bg-surface-2 p-2">
                   <p>
@@ -412,37 +439,37 @@ function RoleRow({
                   </div>
                 </div>
               ))}
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {r.holder_kind ? (
-                  <button type="button" disabled={pending} onClick={() => run(() => setRoleHolder(r.id, null, "", null))} className={quiet}>
+                  <button type="button" disabled={pending} onClick={() => run(() => setRoleHolder(r.id, null, "", null))} className={tool}>
                     Reservierung aufheben
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setMode(mode === "reserve" ? "" : "reserve")} className={quiet}>
+                  <button type="button" onClick={() => setMode(mode === "reserve" ? "" : "reserve")} className={tool}>
                     Reservieren
                   </button>
                 )}
-                <button type="button" disabled={pending} onClick={() => run(() => setRoleState(r.id, r.state === "npc" ? "open" : "npc"))} className={quiet}>
+                <button type="button" disabled={pending} onClick={() => run(() => setRoleState(r.id, r.state === "npc" ? "open" : "npc"))} className={tool}>
                   {r.state === "npc" ? "Wieder besetzbar" : "Als NPC markieren"}
                 </button>
-                <button type="button" onClick={() => setMode(mode === "link" ? "" : "link")} className={quiet}>
+                <button type="button" onClick={() => setMode(mode === "link" ? "" : "link")} className={tool}>
                   {r.character ? "Verknüpfung ändern" : "Mit Charakter verknüpfen"}
                 </button>
-                <button type="button" onClick={() => setMode(mode === "edit" ? "" : "edit")} className={quiet}>
+                <button type="button" onClick={() => setMode(mode === "edit" ? "" : "edit")} className={tool}>
                   Bearbeiten
                 </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={async () => {
-                    if (!(await confirmDialog({ message: `Die Rolle „${r.name}“ aus der Besetzung entfernen? Ein verknüpfter Charakter bleibt bestehen.`, confirmLabel: "Entfernen", danger: true }))) return;
-                    run(() => deleteRole(r.id));
-                  }}
-                  className="rounded-full border border-red-500/40 px-3 py-1 text-sm font-medium text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
-                >
-                  Entfernen
-                </button>
               </div>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={async () => {
+                  if (!(await confirmDialog({ message: `Die Rolle „${r.name}“ aus der Besetzung entfernen? Ein verknüpfter Charakter bleibt bestehen.`, confirmLabel: "Entfernen", danger: true }))) return;
+                  run(() => deleteRole(r.id));
+                }}
+                className="w-fit text-sm text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+              >
+                Rolle entfernen
+              </button>
 
               {mode === "reserve" && (
                 <form
