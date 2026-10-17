@@ -38,15 +38,15 @@ for (const [label, w, h, m] of [["Handy", 375, 740, true], ["Laptop", 1280, 800,
   await page.waitForTimeout(100);
   check(`${label}/Admin: Ablehnen sendet den Hinweis`, JSON.stringify((await calls(page)).at(-1)) === JSON.stringify(["review", "c1", "rejected", "Hintergrund fehlt"]));
 
-  await page.getByLabel("Feld", { exact: true }).selectOption({ label: "Name" });
+  const body = await page.locator("section[aria-label='Angaben']").innerText();
+  check(`${label}/Admin: alle Angaben stehen gleich auf der Seite (Profil, Bogen, Attribute, Talente, Notizen)`, ["Name", "Lyra Nachtfeder", "Kurzbeschreibung", "Mut: Basiswert", "Notizen"].every((x) => body.includes(x)) && /Bonus/.test(body), body.length + " Zeichen");
+  await page.getByRole("button", { name: "Name ändern", exact: true }).click();
   check(`${label}/Admin: Feld zeigt den aktuellen Wert`, (await page.getByLabel("Neuer Wert").inputValue()) === "Lyra Nachtfeder");
   await page.getByLabel("Neuer Wert").fill("Lyra Dunkelwald");
   await page.getByLabel("Hinweis", { exact: true }).fill("Klingt besser");
   await page.getByRole("button", { name: "Vorschlagen" }).click();
   await page.waitForTimeout(100);
   check(`${label}/Admin: Vorschlag wird gesendet`, JSON.stringify((await calls(page)).at(-1)) === JSON.stringify(["propose", "c1", "p:name", "Lyra Dunkelwald", "Klingt besser"]), JSON.stringify((await calls(page)).at(-1)));
-  const options = await page.getByLabel("Feld", { exact: true }).locator("option").allTextContents();
-  check(`${label}/Admin: alle Bereiche wählbar (Profil, Bogen, Attribute, Talente, Notizen)`, ["Name", "Kurzbeschreibung", "Mut: Basiswert", "Notizen"].every((x) => options.includes(x)) && options.some((o) => /Bonus/.test(o)), options.length + " Felder");
   check(`${label}/Admin: Zurückziehen statt Übernehmen`, (await page.getByRole("button", { name: "Zurückziehen" }).isVisible()) && !(await page.getByRole("button", { name: "Übernehmen" }).count()));
   await page.getByRole("button", { name: "Zurückziehen" }).click();
   await page.waitForTimeout(100);
