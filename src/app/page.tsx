@@ -74,7 +74,8 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
         {noCharacter && <NoCharacterBanner worldId={activeWorld.id} className="mb-4" />}
         {firstSteps.length > 0 && <FirstSteps worldId={activeWorld.id} steps={firstSteps} />}
 
-        <div className="relative">
+        {/* Mindesthöhe: der Filterknopf sitzt oben rechts und darf nie über dem ersten Beitrag liegen, auch wenn es keine Stories gibt */}
+        <div className="relative min-h-11">
           {activeCharacter && (
             <Suspense fallback={<div className="mb-3 h-[84px]" />}>
               <StoriesStrip worldId={activeWorld.id} activeCharacterId={activeCharacter.id} />
