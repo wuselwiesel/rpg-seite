@@ -340,6 +340,7 @@ export function StoryComposer({
         />
       ) : (
         <DiceRollForm
+          key={writerId}
           storyPostId={storyPostId}
           worldId={worldId}
           sheetUrl={writer?.sheet_url}
