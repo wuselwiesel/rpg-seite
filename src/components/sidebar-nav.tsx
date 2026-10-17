@@ -43,9 +43,6 @@ export function SidebarNav({
           <NavLink href="/redaktion/chat" icon={<MessageCircle className={ICON} strokeWidth={2} />}>
             Chat
           </NavLink>
-          <NavLink href="/search" icon={<Search className={ICON} strokeWidth={2} />}>
-            Suche
-          </NavLink>
           <NavLink href="/redaktion/verlauf" icon={<History className={ICON} strokeWidth={2} />}>
             Verlauf
           </NavLink>
