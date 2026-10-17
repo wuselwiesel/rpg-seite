@@ -326,7 +326,7 @@ function RoleRow({
 
   let chip = STATUS_LABEL[r.status];
   if (r.status === "reserved") {
-    chip = r.holder_kind === "approved" ? "Zugesagt" : r.holder_until ? `Reserviert bis ${new Date(r.holder_until).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}` : "Reserviert";
+    chip = r.holder_kind === "approved" ? "Zugesagt, Charakter fehlt noch" : r.holder_until ? `Reserviert bis ${new Date(r.holder_until).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}` : "Reserviert";
   }
 
   return (
@@ -350,6 +350,14 @@ function RoleRow({
         {reqCount > 0 && <span className="shrink-0 rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong">{reqCount}</span>}
         <ChevronDown className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
       </button>
+
+      {!open && r.status === "reserved" && r.holder_kind === "approved" && r.holderIsMe && (
+        <div className="px-4 pb-3">
+          <Link href={`/characters/new?rolle=${r.id}`} className={primary}>
+            Charakter anlegen
+          </Link>
+        </div>
+      )}
 
       {open && (
         <div className="flex flex-col gap-4 border-t border-line bg-surface-2/40 px-4 py-4 text-sm">

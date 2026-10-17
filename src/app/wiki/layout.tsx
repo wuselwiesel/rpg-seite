@@ -23,6 +23,13 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
     getUserWorlds(user.id),
   ]);
 
+  // Offene Rollenanfragen: nur Admins sehen sie, als Zahl am Reiter „Besetzung“
+  const isAdmin = adminIds.includes(user.id);
+  const { count: castRequests } =
+    isAdmin && world.cast_enabled
+      ? await supabase.from("world_role_requests").select("id", { count: "exact", head: true }).eq("world_id", world.id).eq("status", "pending")
+      : { count: 0 };
+
   return (
     <WikiTypesProvider types={types}>
     <WikiShell
@@ -33,7 +40,8 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
       pages={pages}
       userId={user.id}
       isWorldOwner={world.created_by === user.id}
-      showCast={Boolean(world.cast_enabled) || adminIds.includes(user.id)}
+      showCast={Boolean(world.cast_enabled) || isAdmin}
+      castRequests={castRequests ?? 0}
     >
       {children}
     </WikiShell>

@@ -173,6 +173,19 @@ for (const [w, h, label, mobile] of [[1280, 700, "Laptop", false], [375, 800, "H
   await ctx.close();
 }
 
+// Besetzung: offene Anfragen als Zahl am Reiter (Laptop und Handy), ohne Anfragen keine Zahl
+for (const [label, width, mobile] of [["Laptop", 1280, false], ["Handy", 375, true]]) {
+  const ctx = await browser.newContext({ viewport: { width, height: 800 }, hasTouch: mobile, isMobile: mobile });
+  const page = await ctx.newPage();
+  await page.goto(url.replace("index.html", "index-css.html") + "?cast");
+  if (mobile) await page.getByRole("button", { name: "Ordner und Suche" }).click();
+  const group = mobile ? page.getByRole("group", { name: "Wiki-Werkzeuge" }) : page.getByRole("navigation", { name: "Wiki-Werkzeuge" });
+  const link = group.getByRole("link", { name: /Besetzung/ });
+  check(`Besetzung (${label}): Zahl 2 am Reiter`, (await link.innerText()).replace(/\s+/g, " ").trim() === "Besetzung 2", await link.innerText());
+  check(`Besetzung (${label}): kein seitliches Scrollen`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} FEHLGESCHLAGEN` : "ALLE BESTANDEN");
