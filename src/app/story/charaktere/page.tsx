@@ -26,7 +26,6 @@ export default async function WorldCharactersPage({ searchParams }: PageProps<"/
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
       <div className="mb-4 flex items-baseline gap-2">
         <h1 className="font-serif text-3xl text-fg">Story</h1>
-        <p className="truncate text-sm text-muted">{world.name}</p>
       </div>
       <StorySections current="charaktere" />
       <WorldRoster initialFilter={stand === "free" ? "free" : "all"} characters={characters} members={members} offerTargets={offerTargets} isAdmin={isAdmin} />

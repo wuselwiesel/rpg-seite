@@ -177,7 +177,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       <div className="mb-4 flex items-center gap-3">
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
           <h1 className="font-serif text-3xl text-fg">Story</h1>
-          <p className="truncate text-sm text-muted">{activeWorld.name}</p>
         </div>
         <div className="flex shrink-0 rounded-full border border-line bg-surface p-0.5" role="group" aria-label="Ansicht">
           <Link
