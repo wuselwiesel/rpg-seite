@@ -5,7 +5,7 @@ import { chaboLabel } from "@/lib/chabo-label";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CircleHelp, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices, type LucideIcon } from "lucide-react";
+import { BarChart3, CircleHelp, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices, Inbox, type LucideIcon } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { MobileWorldPicker } from "./mobile-world-picker";
 import { MenuCharacterCard } from "./menu-character-card";
@@ -35,11 +35,16 @@ function MenuSection({ title, children }: { title: string; children: React.React
   );
 }
 
-function MenuLink({ href, icon: Icon, onNavigate, children }: { href: string; icon: LucideIcon; onNavigate: () => void; children: React.ReactNode }) {
+function MenuLink({ href, icon: Icon, onNavigate, children, badge }: { href: string; icon: LucideIcon; onNavigate: () => void; children: React.ReactNode; badge?: number }) {
   return (
     <Link href={href} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg">
       <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
       {children}
+      {badge ? (
+        <span className="ml-auto rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong" aria-label={`${badge} ungelesen`}>
+          {badge}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -59,6 +64,7 @@ export function MobileNav({
   activeWorld,
   canManage,
   appAdmin = false,
+  ticketUnread = 0,
   altAccount = null,
   activeCharacter,
   characters,
@@ -75,6 +81,8 @@ export function MobileNav({
   activeWorld: World;
   canManage: boolean;
   appAdmin?: boolean;
+  // Ungelesene Tickets (Zahl am Menüeintrag „Tickets“)
+  ticketUnread?: number;
   // Name des verknüpften zweiten Kontos (offizielles Wortwinkel-Konto) für den schnellen Wechsel
   altAccount?: string | null;
   activeCharacter: Character | null;
@@ -270,6 +278,9 @@ export function MobileNav({
             </MenuLink>
             <MenuLink href="/friends" icon={UserPlus} onNavigate={() => setMoreOpen(false)}>
               Freund:innen
+            </MenuLink>
+            <MenuLink href="/redaktion/tickets" icon={Inbox} onNavigate={() => setMoreOpen(false)} badge={ticketUnread}>
+              Tickets
             </MenuLink>
             {appAdmin && (
               <MenuLink href="/redaktion/ueberblick" icon={BarChart3} onNavigate={() => setMoreOpen(false)}>

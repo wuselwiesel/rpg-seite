@@ -4,6 +4,9 @@ export type TicketStatus = "open" | "working" | "done" | "declined";
 
 export type TicketRow = {
   id: string;
+  number: number;
+  last_actor: string | null;
+  images: string[];
   created_by: string;
   kind: TicketKind;
   title: string;
@@ -15,6 +18,19 @@ export type TicketRow = {
   updated_at: string;
   closed_at: string | null;
 };
+
+export type TicketComment = {
+  id: string;
+  ticket_id: string;
+  author_id: string;
+  body: string;
+  images: string[];
+  internal: boolean;
+  created_at: string;
+};
+
+// Nummer wie in einem Postfach: #12
+export const ticketNumber = (n: number) => `#${n}`;
 
 export const KINDS: { key: TicketKind; label: string }[] = [
   { key: "bug", label: "Fehler" },
@@ -50,8 +66,8 @@ export function pathFromReferrer(referrer: string, origin: string): string {
 }
 
 // Fertiger Text zum Einfügen als Aufgabe
-export function ticketAsTask(t: Pick<TicketRow, "kind" | "title" | "body" | "page_path" | "device"> & { by?: string }): string {
-  const lines = [`${KIND_LABEL[t.kind]}: ${t.title}`];
+export function ticketAsTask(t: Pick<TicketRow, "kind" | "title" | "body" | "page_path" | "device"> & { number?: number; by?: string }): string {
+  const lines = [`${t.number ? `${ticketNumber(t.number)} ` : ""}${KIND_LABEL[t.kind]}: ${t.title}`];
   if (t.body.trim()) lines.push("", t.body.trim());
   const meta = [t.by ? `Von: ${t.by}` : "", t.page_path ? `Seite: ${t.page_path}` : "", t.device ? `Gerät: ${t.device}` : ""].filter(Boolean);
   if (meta.length) lines.push("", ...meta);
@@ -59,7 +75,12 @@ export function ticketAsTask(t: Pick<TicketRow, "kind" | "title" | "body" | "pag
 }
 
 // Text der Benachrichtigung an die Melder:in
-export function statusMessage(status: TicketStatus, title: string): string {
+export function statusMessage(status: TicketStatus, title: string, number?: number): string {
   const what = { open: "hat deine Meldung wieder geöffnet", working: "bearbeitet deine Meldung", done: "hat deine Meldung erledigt", declined: "hat deine Meldung abgelehnt" }[status];
-  return `${what}: ${title}`;
+  return `${what}: ${number ? `${ticketNumber(number)} ` : ""}${title}`;
+}
+
+// Ungelesen: zuletzt hat jemand anderes etwas getan und ich habe das noch nicht geöffnet (gleiche Regel wie `ticket_unread_count` in der Datenbank)
+export function isUnread(t: { last_actor: string | null; updated_at: string }, me: string, readAt: string | null | undefined): boolean {
+  return t.last_actor !== me && (!readAt || readAt < t.updated_at);
 }
