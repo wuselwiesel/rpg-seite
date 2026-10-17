@@ -127,6 +127,14 @@ Einzelheiten stehen als Einträge weiter unten (Suchbegriff jeweils fett markier
 - Betreiberin muss selbst: den ersten Einladungscode erzeugen; Datenschutzerklärung prüfen lassen (nach Wunsch Ansprechperson ergänzen).
 - Offene Ideen: Bündel in der Szene abgrenzen (siehe PR 68); Charaktere „zur Prüfung“ vom Schreiben sperren; Status automatisch „beschäftigt“ in Szenen; Netzwerkfreigabe für `supabase.co` zum Testen mit echtem Konto.
 
+## Meldungen / Ticket-System (17. Oktober, Nacht; PR 1 von 2)
+Mitglieder melden Fehler, Wünsche und Fragen in der App, die Betreiberin (App-Admin) bearbeitet sie. Entscheidungen der Nutzerin: Meldungen gehen nur an sie, jede:r sieht nur die eigenen, erste Version schlank, danach Screenshots und Kommentare (PR 2, **noch nicht gebaut**).
+- **Datenbank** (`migration_tickets.sql`, live, Rechte per Rollback-Test geprüft): `tickets` (Art `bug`/`wish`/`question`, Status `open`/`working`/`done`/`declined`, Titel ≤ 120, Text ≤ 4000, Seite, Gerät). RLS: Melder:in und App-Admins lesen; Schreiben nur über RPCs `create_ticket` (höchstens 10 je Stunde und Konto), `set_ticket_status` (nur App-Admin), `ticket_admin_recipients` (liefert die Admins nur, wenn die aufrufende Person gerade selbst eine Meldung angelegt hat). Kein Löschen; beim Löschen des Kontos kaskadiert es.
+- **Oberfläche:** Einstellungen → Hilfe → „Etwas melden“ (`/profile/meldungen`: Formular und „Meine Meldungen“); Betreiberin → „Meldungs-Eingang“ (`/profile/eingang`, Zahl offener Meldungen am Eintrag, Filter nach Stand und Art, Status setzen, „Als Aufgabe kopieren“ erzeugt einen Text für Claude, `ticketAsTask` in `lib/tickets.ts`). Gerät, Fenstergröße, Touch/Maus und hell/dunkel werden automatisch mitgeschickt, die Seite davor (Referrer) als Vorschlag, wenn das Feld „Seite“ leer bleibt.
+- **Benachrichtigungen:** Typen `ticket_new` (an Admins) und `ticket_status` (an die Melder:in), Gruppe „Meldungen“ in `lib/notification-types.ts`. Hilfe-Abschnitt 19 „Etwas melden“, Datenschutzerklärung um „Meldungen“ ergänzt.
+- **Tests:** `lib/tickets.test.ts`, Browser-Suite `e2e/tickets` (27 Prüfungen, Handy und Laptop, in `npm run test:e2e`).
+- **Bewusst nicht:** GitHub-Issues (öffentliches Repo), gemeinsame Liste, Meldungen an Welt-Admins (mögliche Phase 3: „Betrifft mich auch“, Zusammenführen, Kategorien).
+
 ## Live auf main (Grundlage, Stand 1bf8714)
 - Redaktion als eigener Modus: 3-teiliger Schalter Ingame · Story · Redaktion (`src/components/mode-switch.tsx`, Handy: Menü am Modus-Knopf), eigene Seitenleiste/Tabs (`sidebar-nav.tsx`, `mobile-nav.tsx`), eigenes Farbschema `html[data-mode="redaktion"]` (`globals.css`, `mode-theme.tsx`, Init-Script in `layout.tsx`).
 - Ingame hat links immer „Profil“ (aktiver Charakter).

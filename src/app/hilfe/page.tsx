@@ -43,6 +43,7 @@ const TOC = [
   ["verlassen", "Welt verlassen, Besitz übertragen, Konto löschen"],
   ["benachrichtigungen", "Benachrichtigungen aus mehreren Welten"],
   ["passwort-vergessen", "Passwort vergessen"],
+  ["melden", "Etwas melden"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -533,6 +534,17 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>Link abgelaufen:</strong> Der Link gilt nur kurz und nur einmal. Ist er abgelaufen oder schon benutzt, fordere einfach einen neuen an. Kommt keine Mail an, schau im Spam-Ordner nach.
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="melden" title="19. Etwas melden">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Melden:</strong> Unter Einstellungen → „Etwas melden“ schreibst du einen Fehler, einen Wunsch oder eine Frage auf. Gerät und Browser werden automatisch mitgeschickt, die Seite davor ebenfalls (du kannst sie ändern oder leeren).
+          </li>
+          <li>
+            <strong>Stand:</strong> Unter „Meine Meldungen“ siehst du, ob deine Meldung offen ist, bearbeitet wird, erledigt oder abgelehnt wurde. Bei einer Änderung bekommst du eine Benachrichtigung. Nur du und die Betreiberin sehen deine Meldungen.
           </li>
         </ul>
       </Section>
