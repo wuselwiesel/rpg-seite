@@ -166,6 +166,43 @@ async function fresh() {
   await ctx.close();
 }
 
+// 5. Schwebende Leiste: markierten Text mit [[ ]] verlinken
+{
+  const { ctx, page, ed, out, errors } = await fresh();
+  await ed.pressSequentially("Dort lebt eine Hexe im Wald");
+  await page.keyboard.press("Shift+Control+ArrowLeft");
+  await page.keyboard.press("Shift+Control+ArrowLeft");
+  const bar = page.locator('[role="toolbar"][aria-label="Formatierung der Auswahl"]');
+  await bar.waitFor({ timeout: 2000 });
+  await bar.getByRole("button", { name: "Mit Wiki-Seite verlinken" }).click();
+  const group = page.locator('[role="group"][aria-label="Wiki-Link einfügen"]');
+  await group.waitFor();
+  const input = group.getByLabel("Wiki-Seite suchen");
+  check("Suchfeld ist mit dem markierten Text vorbelegt", (await input.inputValue()).trim() === "im Wald", await input.inputValue());
+  await input.fill("nebel");
+  check("Liste filtert", (await group.locator("li").allInnerTexts()).some((t) => t.includes("Nebelhafen")));
+  await group.getByRole("button", { name: "Nebelhafen" }).click();
+  await page.waitForTimeout(100);
+  check("Markierung wird zum Anzeigetext: [[Nebelhafen|im Wald]]", (await out()).includes("[[Nebelhafen|im Wald]]"), await out());
+  check("Leiste und Auswahl sind danach zu", (await group.count()) === 0);
+  check("keine Seitenfehler (Leiste)", errors.length === 0, errors.join("|"));
+  await ctx.close();
+}
+// 5b. Eigener Titel für eine fehlende Seite
+{
+  const { ctx, page, ed, out } = await fresh();
+  await ed.pressSequentially("Das Hexenzirkel trifft sich");
+  await page.keyboard.press("Shift+Control+ArrowLeft");
+  await page.keyboard.press("Shift+Control+ArrowLeft");
+  await page.locator('[role="toolbar"][aria-label="Formatierung der Auswahl"]').getByRole("button", { name: "Mit Wiki-Seite verlinken" }).click();
+  const group = page.locator('[role="group"][aria-label="Wiki-Link einfügen"]');
+  await group.getByLabel("Wiki-Seite suchen").fill("Hexenzirkel");
+  await group.getByRole("button", { name: /verlinken \(Seite fehlt noch\)/ }).click();
+  await page.waitForTimeout(100);
+  check("Neuer Titel wird zu [[Hexenzirkel|…]]", /\[\[Hexenzirkel\|[^\]]+\]\]/.test(await out()), await out());
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);
