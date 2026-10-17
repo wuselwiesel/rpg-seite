@@ -5,7 +5,7 @@ import { ImagePlus, X } from "lucide-react";
 import { MAX_TICKET_IMAGES, signTicketImages } from "@/lib/ticket-upload";
 
 // Screenshots auswählen (noch nicht hochgeladen); die Eltern-Komponente lädt beim Absenden hoch
-export function ImagePicker({ files, onChange }: { files: File[]; onChange: (files: File[]) => void }) {
+export function ImagePicker({ files, onChange, compact = false }: { files: File[]; onChange: (files: File[]) => void; compact?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const urls = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
@@ -31,7 +31,7 @@ export function ImagePicker({ files, onChange }: { files: File[]; onChange: (fil
           type="button"
           onClick={() => input.current?.click()}
           aria-label="Bild hinzufügen"
-          className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-line text-muted transition hover:border-accent hover:text-accent"
+          className={`flex items-center justify-center text-muted transition hover:text-accent ${compact ? "h-8 w-8 rounded-full hover:bg-surface-2" : "h-16 w-16 rounded-lg border border-dashed border-line hover:border-accent"}`}
         >
           <ImagePlus className="h-5 w-5" strokeWidth={2} />
         </button>

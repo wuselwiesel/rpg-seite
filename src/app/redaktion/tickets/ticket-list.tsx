@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAppAdmin } from "@/lib/account-marks";
-import type { TicketKind, TicketStatus } from "@/lib/tickets";
+import type { TicketCategory, TicketKind, TicketStatus } from "@/lib/tickets";
 import { TicketListView, type ListTicket } from "./ticket-list-view";
 
-type Row = { id: string; number: number; kind: TicketKind; title: string; status: TicketStatus; created_by: string; last_actor: string | null; updated_at: string; profiles: { username: string; nickname: string | null } | null };
+type Row = { id: string; number: number; kind: TicketKind; title: string; status: TicketStatus; created_by: string; last_actor: string | null; updated_at: string; urgent: boolean; category: TicketCategory | null; profiles: { username: string; nickname: string | null } | null };
 
 // Postfach: links die Liste. Eigene Tickets unter „Erstellte Tickets“, für die Betreiberin zusätzlich alle anderen unter „Eingang“.
 export async function TicketList() {
@@ -18,7 +18,7 @@ export async function TicketList() {
   const [{ data: rows }, { data: reads }] = await Promise.all([
     supabase
       .from("tickets")
-      .select("id, number, kind, title, status, created_by, last_actor, updated_at, profiles!tickets_created_by_fkey(username, nickname)")
+      .select("id, number, kind, title, status, created_by, last_actor, updated_at, urgent, category, profiles!tickets_created_by_fkey(username, nickname)")
       .order("updated_at", { ascending: false })
       .limit(300)
       .returns<Row[]>(),
@@ -34,6 +34,8 @@ export async function TicketList() {
     mine: t.created_by === user.id,
     last_actor: t.last_actor,
     updated_at: t.updated_at,
+    urgent: t.urgent,
+    category: t.category,
     read_at: readAt.get(t.id) ?? null,
     by: t.profiles?.nickname || (t.profiles?.username ? `@${t.profiles.username}` : "Unbekannt"),
   }));

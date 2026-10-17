@@ -541,10 +541,10 @@ export default async function HelpPage() {
       <Section id="melden" title="19. Tickets: etwas melden">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Postfach:</strong> In der Redaktion gibt es den Eintrag „Tickets“ (am Handy im Menü). Dort schreibst du mit „Neu“ einen Fehler, einen Wunsch oder eine Frage auf, mit Titel, Beschreibung und bis zu vier Screenshots. Gerät und Browser werden automatisch mitgeschickt, die Seite davor ebenfalls (du kannst sie ändern oder leeren).
+            <strong>Postfach:</strong> In der Redaktion gibt es den Eintrag „Tickets“ (am Handy im Menü). Dort schreibst du mit „Neu“ einen Fehler, einen Wunsch oder eine Frage auf, mit Titel, Beschreibung und bis zu vier Screenshots. Gerät und Browser werden automatisch mitgeschickt, die Seite davor ebenfalls (du kannst sie ändern oder leeren). Eine Kategorie (Szene, Wiki, Chat, Besetzung …) ist optional und passt sich der Seite an.
           </li>
           <li>
-            <strong>Nummer und Verlauf:</strong> Jedes Ticket bekommt eine Nummer (zum Beispiel #12). Im Ticket siehst du den Stand (Offen, In Arbeit, Erledigt, Abgelehnt) und die Antworten. Antworten und Statuswechsel erscheinen sofort, ohne neu zu laden. Ungelesene Tickets sind fett und haben einen Punkt, der Zähler steht am Eintrag „Tickets“.
+            <strong>Nummer und Verlauf:</strong> Jedes Ticket bekommt eine Nummer (zum Beispiel #12). Im Ticket siehst du den Stand (Offen, In Arbeit, Erledigt, Abgelehnt) und die Antworten. Antworten und Statuswechsel erscheinen sofort, ohne neu zu laden. Die Liste ist nach Stand gruppiert (Offen, In Arbeit, Abgeschlossen) und lässt sich durchsuchen. Ungelesene Tickets sind fett und haben einen Punkt, der Zähler steht am Eintrag „Tickets“. Über die drei Punkte im Ticket kopierst du den Link.
           </li>
           <li>
             <strong>Wer sieht was:</strong> Nur du und die Betreiberin sehen deine Tickets. Antwortest du auf ein erledigtes Ticket, wird es wieder geöffnet.

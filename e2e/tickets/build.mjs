@@ -21,6 +21,8 @@ fs.writeFileSync(
 export async function createTicket(input: unknown) { rec("create", input); return (window as any).__fail ? { error: "Zu viele Meldungen." } : { id: "00000000-0000-4000-8000-000000000099" }; }
 export async function addTicketComment(...a: unknown[]) { rec("comment", ...a); return null; }
 export async function setTicketStatus(...a: unknown[]) { rec("status", ...a); return null; }
+export async function setTicketTriage(...a: unknown[]) { rec("triage", ...a); return null; }
+export async function mergeTicket(...a: unknown[]) { rec("merge", ...a); return null; }
 export async function markTicketRead(...a: unknown[]) { rec("read", ...a); }`,
 );
 fs.writeFileSync(

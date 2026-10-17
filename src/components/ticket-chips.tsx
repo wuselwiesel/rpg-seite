@@ -22,3 +22,15 @@ export function ticketDate(iso: string): string {
 export function ticketTime(iso: string): string {
   return new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
+
+const STATUS_DOT: Record<TicketStatus, string> = {
+  open: "bg-accent",
+  working: "bg-amber-500",
+  done: "bg-emerald-500",
+  declined: "bg-fg-soft/50",
+};
+
+// Stand als farbiger Punkt (die Liste nutzt ihn statt eines Chips)
+export function StatusDot({ status, className = "" }: { status: TicketStatus; className?: string }) {
+  return <span aria-hidden className={`inline-block h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[status]} ${className}`} />;
+}

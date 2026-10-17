@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
-import { isKind, isStatus, statusMessage, ticketNumber } from "@/lib/tickets";
+import { isCategory, isKind, isStatus, statusMessage, ticketNumber } from "@/lib/tickets";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -23,7 +23,7 @@ function refresh(id?: string) {
 }
 
 // Neue Meldung; die Betreiberin bekommt eine Benachrichtigung (ein Fehler dabei verhindert die Meldung nicht). Gibt die Id der Meldung zurück.
-export async function createTicket(input: { kind: string; title: string; body: string; page: string; device: string; images: string[] }): Promise<{ id?: string; error?: string }> {
+export async function createTicket(input: { kind: string; title: string; body: string; page: string; device: string; images: string[]; category: string | null }): Promise<{ id?: string; error?: string }> {
   if (!isKind(input.kind)) return { error: "Wähle eine Art." };
   const title = input.title.trim().slice(0, 120);
   if (!title) return { error: "Der Titel fehlt." };
@@ -37,6 +37,7 @@ export async function createTicket(input: { kind: string; title: string; body: s
     p_page: input.page.trim().slice(0, 300),
     p_device: input.device.slice(0, 400),
     p_images: input.images.slice(0, 4),
+    p_category: isCategory(input.category) ? input.category : null,
   });
   if (error) return { error: error.message };
   try {
@@ -118,4 +119,36 @@ export async function setTicketStatus(id: string, status: string): Promise<strin
 export async function markTicketRead(id: string): Promise<void> {
   const supabase = await createClient();
   await supabase.rpc("mark_ticket_read", { p_ticket: id });
+}
+
+// Einordnen (nur die Betreiberin; die Datenbank prüft das): dringend und Kategorie
+export async function setTicketTriage(id: string, urgent: boolean, category: string | null): Promise<string | null> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_ticket_triage", { p_id: id, p_urgent: urgent, p_category: isCategory(category) ? category : null });
+  if (error) return error.message;
+  refresh(id);
+  return null;
+}
+
+// Doppeltes Ticket einem anderen zuordnen (nur die Betreiberin); die Melder:in bekommt eine Benachrichtigung
+export async function mergeTicket(id: string, intoNumber: number): Promise<string | null> {
+  if (!Number.isInteger(intoNumber) || intoNumber < 1) return "Gib die Nummer des Haupttickets ein.";
+  const supabase = await createClient();
+  const who = await actor(supabase);
+  if (!who) return "Nicht angemeldet.";
+  const { data, error } = await supabase.rpc("merge_ticket", { p_id: id, p_into_number: intoNumber });
+  if (error) return error.message;
+  const r = data as { created_by: string; title: string; number: number; into_number: number };
+  if (r.created_by !== who.id) {
+    await createNotification(supabase, {
+      userId: r.created_by,
+      type: "ticket_status",
+      actorName: who.name,
+      actorAvatarUrl: who.avatarUrl,
+      link: `/redaktion/tickets/${id}`,
+      message: `hat deine Meldung mit einer gleichen zusammengeführt: ${ticketNumber(r.number)} ${r.title}`,
+    });
+  }
+  refresh(id);
+  return null;
 }

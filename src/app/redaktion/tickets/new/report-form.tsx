@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { alertDialog } from "@/components/confirm-dialog";
 import { ImagePicker } from "@/components/ticket-images";
-import { KINDS, deviceSummary, pathFromReferrer, type TicketKind } from "@/lib/tickets";
+import { CATEGORIES, KINDS, categoryFromPath, deviceSummary, isCategory, pathFromReferrer, type TicketCategory, type TicketKind } from "@/lib/tickets";
 import { uploadTicketImages } from "@/lib/ticket-upload";
 import { createTicket } from "../actions";
 
@@ -19,6 +19,14 @@ export function ReportForm() {
   const [body, setBody] = useState("");
   const [page, setPage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  // Kategorie: ohne eigene Wahl passend zur Seite davor (oder zur eingetragenen Seite) vorbelegt
+  const [pick, setPick] = useState<TicketCategory | "none" | null>(null);
+  const referrerPath = useSyncExternalStore(
+    () => () => {},
+    () => pathFromReferrer(document.referrer, window.location.origin),
+    () => "",
+  );
+  const category = pick === "none" ? null : (pick ?? categoryFromPath(page.trim() || referrerPath));
 
   function send() {
     startTransition(async () => {
@@ -34,7 +42,7 @@ export function ReportForm() {
         touch: window.matchMedia("(pointer: coarse)").matches,
         dark: window.matchMedia("(prefers-color-scheme: dark)").matches || document.documentElement.dataset.theme === "dark",
       });
-      const res = await createTicket({ kind, title, body, page: page.trim() || pathFromReferrer(document.referrer, window.location.origin), device, images: up.paths });
+      const res = await createTicket({ kind, title, body, page: page.trim() || pathFromReferrer(document.referrer, window.location.origin), device, images: up.paths, category });
       if (res.error || !res.id) {
         void alertDialog(res.error ?? "Das hat nicht geklappt.");
         return;
@@ -69,7 +77,22 @@ export function ReportForm() {
       <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Titel" aria-label="Titel" className={input} />
       <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} rows={6} placeholder="Beschreibung" aria-label="Beschreibung" className={input} />
       <ImagePicker files={files} onChange={setFiles} />
-      <input value={page} onChange={(e) => setPage(e.target.value)} maxLength={300} placeholder="Seite (optional)" aria-label="Seite" className={input} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <input value={page} onChange={(e) => setPage(e.target.value)} maxLength={300} placeholder="Seite (optional)" aria-label="Seite" className={input} />
+        <select
+          value={category ?? ""}
+          onChange={(e) => setPick(isCategory(e.target.value) ? e.target.value : "none")}
+          aria-label="Kategorie"
+          className={input}
+        >
+          <option value="">Kategorie (optional)</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.key} value={c.key}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </div>
       <div>
         <button type="submit" disabled={pending || !title.trim()} className="rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
           Senden

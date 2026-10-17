@@ -18,14 +18,14 @@ export default async function TicketPage({ params }: PageProps<"/redaktion/ticke
 
   const { data: ticket } = await supabase
     .from("tickets")
-    .select("id, number, last_actor, images, created_by, kind, title, body, status, page_path, device, created_at, updated_at, closed_at")
+    .select("id, number, last_actor, images, created_by, kind, title, body, status, page_path, device, created_at, updated_at, closed_at, urgent, category, merged_into")
     .eq("id", id)
     .maybeSingle<TicketRow>();
   if (!ticket) notFound();
 
   const { data: comments } = await supabase
     .from("ticket_comments")
-    .select("id, ticket_id, author_id, body, images, internal, created_at")
+    .select("id, ticket_id, author_id, body, images, internal, system, created_at")
     .eq("ticket_id", id)
     .order("created_at")
     .returns<TicketComment[]>();
