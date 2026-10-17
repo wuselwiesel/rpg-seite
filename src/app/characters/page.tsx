@@ -54,15 +54,16 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
   const speciesList = speciesListOf(await getWorldChoiceLists(activeWorld.id));
   const { data: createdRows } = await supabase
     .from("characters")
-    .select("id, name, avatar_url, owner_id, is_npc, claimable, choices, species, owner:profiles!characters_owner_id_fkey(username, nickname)")
+    .select("id, name, avatar_url, owner_id, is_npc, vacant, claimable, choices, species, owner:profiles!characters_owner_id_fkey(username, nickname)")
     .eq("world_id", activeWorld.id)
     .eq("created_by", user.id)
     .is("deleted_at", null)
     .order("name")
-    .returns<{ id: string; name: string; avatar_url: string | null; owner_id: string; is_npc: boolean | null; claimable: boolean | null; choices: Record<string, unknown> | null; species: string | null; owner: { username: string; nickname: string | null } | null }[]>();
+    .returns<{ id: string; name: string; avatar_url: string | null; owner_id: string; is_npc: boolean | null; vacant: boolean | null; claimable: boolean | null; choices: Record<string, unknown> | null; species: string | null; owner: { username: string; nickname: string | null } | null }[]>();
   const created: CreatedCharacter[] = (createdRows ?? []).map((c) => {
     const isNpcRow = Boolean(c.is_npc);
-    const status = c.claimable ? "free" : isNpcRow ? "npc" : c.owner_id === user.id ? "mine" : "assigned";
+    const isVacant = Boolean(c.vacant);
+    const status = isVacant ? "free" : isNpcRow ? "npc" : c.owner_id === user.id ? "mine" : "assigned";
     const offerRow = (claimRows ?? []).find((q) => q.character_id === c.id && q.kind === "offer");
     return {
       id: c.id,
@@ -72,7 +73,8 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
       status,
       ownerName: c.owner ? c.owner.nickname || c.owner.username : null,
       isMain: !isNpcRow,
-      canManage: isNpcRow ? isWorldAdmin || c.owner_id === user.id : c.owner_id === user.id,
+      claimable: Boolean(c.claimable),
+      canManage: isNpcRow || isVacant ? isWorldAdmin || c.owner_id === user.id : c.owner_id === user.id,
       offer: offerRow ? { claimId: offerRow.id, toName: nameOf.get(offerRow.user_id) ?? "?" } : null,
       requestCount: isWorldAdmin || c.owner_id === user.id ? (claimRows ?? []).filter((q) => q.character_id === c.id && q.kind === "request").length : 0,
     };
@@ -161,7 +163,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                     <p className="truncate font-medium text-fg">{npc.name}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <NpcBadge />
-                      {npc.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Frei</span>}
+                      {npc.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
                     </p>
                     {npc.bio && <p className="line-clamp-1 text-sm text-muted">{npc.bio}</p>}
                   </div>

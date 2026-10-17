@@ -65,9 +65,9 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
   const quote = String(formData.get("quote") ?? "").trim().slice(0, 200);
   const gender = parseGender(formData.get("gender"));
-  // „Frei“: Charakter ohne Spieler:in, zur Vergabe freigegeben (gespeichert als NPC, der bei der Übergabe zum normalen Charakter wird)
-  const free = formData.get("free") === "on";
-  const isNpc = free || formData.get("is_npc") === "on";
+  // „Frei“: normaler Charakter (kein NPC) ohne Spieler:in, zur Vergabe freigegeben; „NPC“ ist davon unabhängig
+  const isNpc = formData.get("is_npc") === "on";
+  const free = !isNpc && formData.get("free") === "on";
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -138,6 +138,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       avatar_url: avatarUrl || null,
       ...(sheetUrl ? { sheet_url: sheetUrl } : {}),
       is_npc: isNpc,
+      vacant: free,
       claimable: free,
     })
     .select("id, review_status")
@@ -161,12 +162,12 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   }
 
   // Admins der Welt erfahren von neuen Charakteren und NPCs und davon, dass ein Eintrag seine Höchstzahl erreicht hat
-  await notifyWorldAdmins(supabase, activeWorld.id, isNpc ? "npc_new" : "character_new", user.id, `hat ${isNpc ? "einen neuen NPC" : "einen neuen Charakter"} erstellt: ${name}${data.review_status === "pending" ? " (zur Prüfung)" : ""}`, data.review_status === "pending" ? `/characters/${data.id}/pruefung` : `/characters/${data.id}`);
+  await notifyWorldAdmins(supabase, activeWorld.id, isNpc ? "npc_new" : "character_new", user.id, `hat ${isNpc ? "einen neuen NPC" : free ? "einen freien Charakter" : "einen neuen Charakter"} erstellt: ${name}${data.review_status === "pending" ? " (zur Prüfung)" : ""}`, data.review_status === "pending" ? `/characters/${data.id}/pruefung` : `/characters/${data.id}`);
   await notifyFullEntries(supabase, activeWorld.id, user.id, newlyFullEntries(choiceLists, choices, createUsage));
 
   revalidatePath("/", "layout");
-  // Ein NPC wird nicht zum aktiven Charakter (er hat keine:n Spieler:in); man landet in seinem ChaBo
-  if (isNpc) redirect(`/characters/${data.id}/chabo`);
+  // Ein NPC oder freier Charakter wird nicht zum aktiven Charakter (keine:n Spieler:in); man landet im ChaBo
+  if (isNpc || free) redirect(`/characters/${data.id}/chabo`);
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_CHARACTER_COOKIE, data.id, SELECTION_COOKIE_OPTIONS);

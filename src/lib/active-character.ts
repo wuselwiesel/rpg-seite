@@ -16,6 +16,7 @@ export const getOwnCharacters = cache(async (userId: string, worldId: string): P
     .eq("owner_id", userId)
     .eq("world_id", worldId)
     .eq("is_npc", false)
+    .eq("vacant", false)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
 

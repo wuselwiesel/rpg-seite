@@ -10,6 +10,7 @@ type Row = {
   avatar_url: string | null;
   owner_id: string;
   is_npc: boolean | null;
+  vacant: boolean | null;
   claimable: boolean | null;
   choices: Record<string, unknown> | null;
   species: string | null;
@@ -27,7 +28,7 @@ export async function loadWorldRoster(supabase: SupabaseClient, worldId: string,
     getWorldChoiceLists(worldId),
     supabase
       .from("characters")
-      .select("id, name, avatar_url, owner_id, is_npc, claimable, choices, species, availability, location, review_status, created_at, owner:profiles!characters_owner_id_fkey(username, nickname)")
+      .select("id, name, avatar_url, owner_id, is_npc, vacant, claimable, choices, species, availability, location, review_status, created_at, owner:profiles!characters_owner_id_fkey(username, nickname)")
       .eq("world_id", worldId)
       .is("deleted_at", null)
       .order("name")
@@ -49,9 +50,10 @@ export async function loadWorldRoster(supabase: SupabaseClient, worldId: string,
   const characters: RosterCharacter[] = (rows ?? []).map((c) => {
     const isNpc = Boolean(c.is_npc);
     const claimable = Boolean(c.claimable);
-    const status = claimable ? "free" : isNpc ? "npc" : c.review_status && c.review_status !== "approved" ? "review" : c.owner_id === userId ? "mine" : "taken";
+    const vacant = Boolean(c.vacant);
+    const status = vacant ? "free" : isNpc ? "npc" : c.review_status && c.review_status !== "approved" ? "review" : c.owner_id === userId ? "mine" : "taken";
     const offerRow = (claimRows ?? []).find((q) => q.character_id === c.id && q.kind === "offer");
-    const canManage = isNpc ? isAdmin || c.owner_id === userId : c.owner_id === userId;
+    const canManage = isNpc || vacant ? isAdmin || c.owner_id === userId : c.owner_id === userId;
     return {
       id: c.id,
       name: c.name,
@@ -72,7 +74,7 @@ export async function loadWorldRoster(supabase: SupabaseClient, worldId: string,
     };
   });
 
-  const playerOwners = new Set((rows ?? []).filter((c) => !c.is_npc).map((c) => c.owner_id));
+  const playerOwners = new Set((rows ?? []).filter((c) => !c.is_npc && !c.vacant).map((c) => c.owner_id));
   const members: RosterMember[] = (memberRows ?? []).map((m) => ({
     id: m.user_id,
     name: m.profiles?.nickname || m.profiles?.username || "?",

@@ -20,6 +20,7 @@ type Overview = {
   characters: {
     total: number;
     npcs: number;
+    vacant: number;
     lists: { id: string; label: string; is_species: boolean; mode: string; options: { label: string; max_count: number | null; used: number }[] }[];
   };
   activity: {
@@ -91,11 +92,11 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
   const [{ data: charRows }, choiceLists] = await Promise.all([
     supabase
       .from("characters")
-      .select("id, owner_id, name, avatar_url, is_npc, claimable, choices, species")
+      .select("id, owner_id, name, avatar_url, is_npc, vacant, claimable, choices, species")
       .eq("world_id", id)
       .is("deleted_at", null)
       .order("name")
-      .returns<{ id: string; owner_id: string; name: string; avatar_url: string | null; is_npc: boolean | null; claimable: boolean | null; choices: Record<string, unknown> | null; species: string | null }[]>(),
+      .returns<{ id: string; owner_id: string; name: string; avatar_url: string | null; is_npc: boolean | null; vacant: boolean | null; claimable: boolean | null; choices: Record<string, unknown> | null; species: string | null }[]>(),
     getWorldChoiceLists(id),
   ]);
   const speciesList = speciesListOf(choiceLists);
@@ -105,11 +106,12 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
     avatarUrl: c.avatar_url,
     ownerId: c.owner_id,
     isNpc: Boolean(c.is_npc),
+    vacant: Boolean(c.vacant),
     claimable: Boolean(c.claimable),
     species: speciesLabelOf(c, speciesList),
   }));
   const avatarByOwner = new Map<string, string | null>();
-  for (const c of chars) if (!c.isNpc && !avatarByOwner.has(c.ownerId)) avatarByOwner.set(c.ownerId, c.avatarUrl);
+  for (const c of chars) if (!c.isNpc && !c.vacant && !avatarByOwner.has(c.ownerId)) avatarByOwner.set(c.ownerId, c.avatarUrl);
   const oMembers: OMember[] = o.members.list.map((m) => ({
     userId: m.user_id,
     name: m.nickname || m.username,
@@ -159,6 +161,7 @@ export default async function WorldOverviewPage({ params }: PageProps<"/worlds/[
         <h2 className="font-serif text-xl text-fg">Charaktere</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Charaktere" value={o.characters.total} />
+          <Stat label="Frei" value={o.characters.vacant} />
           <Stat label="NPCs" value={o.characters.npcs} />
         </div>
         {lists.map((l) => (

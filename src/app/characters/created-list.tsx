@@ -19,6 +19,8 @@ export type CreatedCharacter = {
   ownerName: string | null;
   // Hauptcharakter (kein NPC); canManage: darf freigeben und anbieten
   isMain: boolean;
+  // Zur Vergabe freigegeben (frei = ohne Spieler:in, oder ein NPC bzw. Charakter, den man abgeben will)
+  claimable: boolean;
   canManage: boolean;
   offer: { claimId: string; toName: string } | null;
   requestCount: number;
@@ -43,9 +45,20 @@ function StatusChip({ c }: { c: CreatedCharacter }) {
       <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Frei, ohne Spieler:in</span>
     );
   }
+  const offered = c.claimable ? <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{c.offer ? `Angeboten an ${c.offer.toName}` : "Zu vergeben"}</span> : null;
   if (c.status === "assigned") return <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">Vergeben an {c.ownerName ?? "?"}</span>;
-  if (c.status === "mine") return <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-fg-soft">Eigener Charakter</span>;
-  return <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">NPC</span>;
+  const base =
+    c.status === "mine" ? (
+      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-fg-soft">Eigener Charakter</span>
+    ) : (
+      <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">NPC</span>
+    );
+  return (
+    <>
+      {base}
+      {offered}
+    </>
+  );
 }
 
 // Alle von mir angelegten Charaktere der Welt mit Stand der Vergabe (frei, vergeben, eigen, NPC) und den passenden Aktionen
@@ -127,7 +140,7 @@ export function CreatedList({
                         {c.requestCount} {c.requestCount === 1 ? "Anfrage" : "Anfragen"}
                       </Link>
                     )}
-                    {c.status === "free" && c.canManage && (
+                    {c.canManage && (c.status === "free" || c.claimable) && (
                       <>
                         {c.offer ? (
                           <button type="button" disabled={pending} onClick={() => run(() => withdrawCharacterClaim(c.offer!.claimId))} className={quiet}>
@@ -138,12 +151,14 @@ export function CreatedList({
                             Einer Person anbieten
                           </button>
                         )}
-                        <button type="button" disabled={pending} onClick={() => run(() => setCharacterClaimable(c.id, false))} className={quiet}>
-                          Nicht mehr zu vergeben
-                        </button>
+                        {c.status !== "free" && (
+                          <button type="button" disabled={pending} onClick={() => run(() => setCharacterClaimable(c.id, false))} className={quiet}>
+                            Nicht mehr zu vergeben
+                          </button>
+                        )}
                       </>
                     )}
-                    {(c.status === "npc" || c.status === "mine") && c.canManage && (
+                    {(c.status === "npc" || c.status === "mine") && c.canManage && !c.claimable && (
                       <>
                         <button type="button" disabled={pending} onClick={() => run(() => setCharacterClaimable(c.id, true))} className={primary}>
                           Zur Vergabe freigeben

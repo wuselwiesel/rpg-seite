@@ -20,7 +20,7 @@ export const getWorldAdminIds = cache(async (worldId: string): Promise<string[]>
   return [...new Set([...(ownerId ? [ownerId] : []), ...(data ?? []).map((r) => r.user_id)])];
 });
 
-export async function getCharacterAccess(character: { owner_id: string; is_npc?: boolean | null; world_id: string }, userId: string) {
+export async function getCharacterAccess(character: { owner_id: string; is_npc?: boolean | null; vacant?: boolean | null; world_id: string }, userId: string) {
   const worldAdminIds = await getWorldAdminIds(character.world_id);
   const worldOwnerId = await getWorldOwnerId(character.world_id);
   return {
@@ -28,7 +28,7 @@ export async function getCharacterAccess(character: { owner_id: string; is_npc?:
     canEdit: canEditCharacter(character, userId, worldAdminIds),
     canToggle: canToggleNpc(character, userId),
     // Admins vergeben freie Rollen (NPCs), auch wenn sie sie nicht selbst angelegt haben
-    canOffer: Boolean(character.is_npc) && worldAdminIds.includes(userId),
+    canOffer: Boolean(character.is_npc || character.vacant) && worldAdminIds.includes(userId),
     worldAdminIds,
   };
 }

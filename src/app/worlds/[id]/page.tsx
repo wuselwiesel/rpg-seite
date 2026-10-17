@@ -100,6 +100,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
         .select("id, owner_id, name, avatar_url")
         .eq("world_id", id)
         .eq("is_npc", false)
+        .eq("vacant", false)
         .is("deleted_at", null)
         .order("name")
         .returns<{ id: string; owner_id: string; name: string; avatar_url: string | null }[]>()

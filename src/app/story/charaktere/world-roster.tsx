@@ -56,6 +56,12 @@ function StatusChip({ c }: { c: RosterCharacter }) {
   return <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">NPC</span>;
 }
 
+// „Zu vergeben“ neben dem Stand: NPCs und Charaktere, die ihre Besitzer:in abgeben will
+function OfferedChip({ c }: { c: RosterCharacter }) {
+  if (!c.claimable || c.status === "free") return null;
+  return <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{c.offer ? `Angeboten an ${c.offer.toName}` : "Zu vergeben"}</span>;
+}
+
 // Alle Charaktere einer Welt als Übersicht: suchen, nach Stand und Wesen filtern, sortieren; für Admins mit Mitgliedern ohne Charakter
 export function WorldRoster({
   characters,
@@ -196,6 +202,7 @@ export function WorldRoster({
                     <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <StatusChip c={c} />
                       <AvailabilityBadge availability={c.availability} location={c.location} />
+                      <OfferedChip c={c} />
                       {c.species && <span className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">{c.species}</span>}
                       {c.requestCount > 0 && c.canManage && <span className="rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">{c.requestCount} {c.requestCount === 1 ? "Anfrage" : "Anfragen"}</span>}
                     </span>
@@ -210,6 +217,7 @@ export function WorldRoster({
                   <NpcRoleActions
                     characterId={c.id}
                     claimable={c.claimable}
+                    vacant={c.status === "free"}
                     isAdmin={c.canManage}
                     myRequestId={c.myRequestId}
                     offer={c.offer}

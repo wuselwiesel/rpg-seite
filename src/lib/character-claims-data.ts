@@ -15,7 +15,7 @@ type ClaimRow = {
   creator: { username: string; nickname: string | null } | null;
 };
 
-type CharRow = { id: string; name: string; avatar_url: string | null; bio: string | null; choices: Record<string, unknown> | null; species: string | null; claimable: boolean; is_npc: boolean | null; owner_id: string };
+type CharRow = { id: string; name: string; avatar_url: string | null; bio: string | null; choices: Record<string, unknown> | null; species: string | null; claimable: boolean; is_npc: boolean | null; vacant: boolean | null; owner_id: string };
 
 const name = (p: { username: string; nickname: string | null } | null | undefined) => p?.nickname || p?.username || "Jemand";
 
@@ -41,14 +41,14 @@ export async function getWorldRoles(worldId: string, userId: string, memberNames
   const [{ data: claimable }, { data: offered }] = await Promise.all([
     supabase
       .from("characters")
-      .select("id, name, avatar_url, bio, choices, species, claimable, is_npc, owner_id")
+      .select("id, name, avatar_url, bio, choices, species, claimable, is_npc, vacant, owner_id")
       .eq("world_id", worldId)
       .eq("claimable", true)
       .is("deleted_at", null)
       .order("name")
       .returns<CharRow[]>(),
     ids.length > 0
-      ? supabase.from("characters").select("id, name, avatar_url, bio, choices, species, claimable, is_npc, owner_id").in("id", ids).returns<CharRow[]>()
+      ? supabase.from("characters").select("id, name, avatar_url, bio, choices, species, claimable, is_npc, vacant, owner_id").in("id", ids).returns<CharRow[]>()
       : Promise.resolve({ data: [] as CharRow[] }),
   ]);
 
@@ -61,7 +61,8 @@ export async function getWorldRoles(worldId: string, userId: string, memberNames
       avatarUrl: c.avatar_url,
       bio: c.bio,
       species: speciesLabelOf(c, speciesList),
-      isNpc: Boolean(c.is_npc),
+      // NPCs und freie Charaktere (ohne Spieler:in) vergeben die Admins
+      isNpc: Boolean(c.is_npc) || Boolean(c.vacant),
       mine: c.owner_id === userId,
       myRequestId: mine?.id ?? null,
       offer: offer ? { claimId: offer.id, toName: memberNames.get(offer.user_id) ?? name(offer.requester) } : null,

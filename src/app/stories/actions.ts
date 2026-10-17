@@ -105,6 +105,7 @@ export async function searchCharactersToTag(query: string): Promise<{ id: string
     .eq("world_id", viewer.character.world_id)
     .is("deleted_at", null)
     .eq("is_npc", false)
+    .eq("vacant", false)
     .neq("id", viewer.character.id)
     .order("name")
     .limit(8);

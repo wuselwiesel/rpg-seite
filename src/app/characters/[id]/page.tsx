@@ -73,6 +73,8 @@ export default async function CharacterProfilePage({
     ? await supabase.from("character_change_proposals").select("id", { count: "exact", head: true }).eq("character_id", id).eq("status", "open")
     : { count: 0 };
   const isNpcProfile = character.is_npc === true;
+  // Frei: normaler Charakter, aber noch ohne Spieler:in; folgen und anschreiben ist dann sinnlos
+  const isVacantProfile = character.vacant === true;
   const gone = Boolean(character.deleted_at);
   const tab = tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
   const [sheet, mentionCharacters, randomLists] = await Promise.all([
@@ -257,10 +259,10 @@ export default async function CharacterProfilePage({
                 </Link>
               ) : (
                 <>
-                  {!isNpcProfile && activeCharacter && activeWorld?.id === character.world_id && (
+                  {!isNpcProfile && !isVacantProfile && activeCharacter && activeWorld?.id === character.world_id && (
                     <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
                   )}
-                  {canMessage && !isNpcProfile && (
+                  {canMessage && !isNpcProfile && !isVacantProfile && (
                     <Link href={`/chats/mit/${character.id}`} prefetch={false} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                       <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
                       Nachricht
@@ -278,6 +280,7 @@ export default async function CharacterProfilePage({
 
           <h1 className="mt-3 truncate text-xl font-semibold text-fg sm:text-2xl">{character.name}
             {isNpcProfile && <NpcBadge className="ml-2" />}
+            {isVacantProfile && <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 align-middle text-xs font-medium text-accent">Frei</span>}
             {gone && <span className="ml-2 text-sm font-normal text-muted">Gelöscht</span>}
             {character.name_symbol && (
               <span className="ml-1.5 inline-block align-middle" >
@@ -372,10 +375,10 @@ export default async function CharacterProfilePage({
             </Link>
           ) : (
             <>
-              {!isNpcProfile && activeCharacter && activeWorld?.id === character.world_id && (
+              {!isNpcProfile && !isVacantProfile && activeCharacter && activeWorld?.id === character.world_id && (
                 <FollowButton followerId={activeCharacter.id} followedId={character.id} initialFollowing={Boolean(followRow)} />
               )}
-              {canMessage && !isNpcProfile && (
+              {canMessage && !isNpcProfile && !isVacantProfile && (
                 <Link href={`/chats/mit/${character.id}`} prefetch={false} className={`${buttonBase} bg-surface-2 text-fg hover:bg-surface-3`}>
                   Nachricht
                 </Link>

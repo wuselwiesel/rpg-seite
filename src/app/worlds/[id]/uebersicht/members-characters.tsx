@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 
 export type OMember = { userId: string; name: string; role: "owner" | "admin" | "member"; lastWritten: string; avatarUrl: string | null };
-export type OChar = { id: string; name: string; avatarUrl: string | null; ownerId: string; isNpc: boolean; claimable: boolean; species: string | null };
+export type OChar = { id: string; name: string; avatarUrl: string | null; ownerId: string; isNpc: boolean; vacant: boolean; claimable: boolean; species: string | null };
 
 const ROLE_LABEL = { owner: "Besitzer:in", admin: "Admin", member: "Mitglied" } as const;
 const NO_SPECIES = "Ohne Wesen";
@@ -36,6 +36,7 @@ function CharLine({ c, owner }: { c: OChar; owner?: string }) {
           {owner && <span className="block truncate text-xs text-muted">{owner}</span>}
         </span>
         {c.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
+        {c.vacant && <span className="shrink-0 rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">Frei</span>}
         {c.isNpc && !c.claimable && <span className="shrink-0 rounded-full bg-surface-3 px-2 py-0.5 text-xs text-fg-soft">NPC</span>}
         {c.species && <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">{c.species}</span>}
       </Link>
@@ -50,8 +51,8 @@ export function MembersCharacters({ members, characters }: { members: OMember[];
   const q = norm(query.trim());
 
   const memberName = useMemo(() => new Map(members.map((m) => [m.userId, m.name])), [members]);
-  const players = characters.filter((c) => !c.isNpc);
-  const npcs = characters.filter((c) => c.isNpc);
+  const players = characters.filter((c) => !c.isNpc && !c.vacant);
+  const npcs = characters.filter((c) => c.isNpc || c.vacant);
 
   const matches = (c: OChar, ownerName?: string) => !q || norm(c.name).includes(q) || norm(c.species ?? "").includes(q) || norm(ownerName ?? "").includes(q);
 
@@ -181,7 +182,7 @@ export function MembersCharacters({ members, characters }: { members: OMember[];
               <div className="border-t border-line px-2 py-2">
                 <ul className="flex flex-col">
                   {list.map((c) => (
-                    <CharLine key={c.id} c={{ ...c, species: null }} owner={c.isNpc ? `NPC, angelegt von ${memberName.get(c.ownerId) ?? "?"}` : (memberName.get(c.ownerId) ?? "?")} />
+                    <CharLine key={c.id} c={{ ...c, species: null }} owner={c.isNpc || c.vacant ? `${c.isNpc ? "NPC" : "Frei"}, angelegt von ${memberName.get(c.ownerId) ?? "?"}` : (memberName.get(c.ownerId) ?? "?")} />
                   ))}
                 </ul>
               </div>

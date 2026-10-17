@@ -24,6 +24,7 @@ export default async function DirectChatPage({ params }: PageProps<"/chats/mit/[
     .eq("id", otherId)
     .eq("world_id", activeWorld.id)
     .eq("is_npc", false)
+    .eq("vacant", false)
     .is("deleted_at", null)
     .maybeSingle();
   if (!other) redirect("/chats/new");

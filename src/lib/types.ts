@@ -83,8 +83,10 @@ export type Character = {
   // Prüfung durch Admins: zur Prüfung, genehmigt oder abgelehnt (mit Hinweis)
   review_status?: "pending" | "approved" | "rejected";
   review_note?: string | null;
-  // Freie Rolle: ein NPC, den Admins zur Vergabe freigegeben haben (Mitglieder können ihn anfragen)
+  // Zur Vergabe freigegeben: Mitglieder können den Charakter oder NPC anfragen
   claimable?: boolean;
+  // Frei: normaler Charakter (kein NPC) ohne Spieler:in, angelegt zum Anbieten; zählt nicht zu den spielbaren Charakteren der Anleger:in
+  vacant?: boolean;
   // Online (grüner Punkt) oder offline (grauer Punkt), von der Besitzer:in gesetzt
   presence_online?: boolean;
   relationship_status?: CharacterRelationshipStatus | null;

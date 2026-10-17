@@ -12,6 +12,7 @@ const quiet = "rounded-full border border-line px-3 py-1 text-sm font-medium tex
 export function NpcRoleActions({
   characterId,
   claimable,
+  vacant = false,
   isAdmin,
   myRequestId,
   offer,
@@ -19,6 +20,8 @@ export function NpcRoleActions({
 }: {
   characterId: string;
   claimable: boolean;
+  // Frei (ohne Spieler:in): bleibt zu vergeben, der Haken ist gesperrt
+  vacant?: boolean;
   isAdmin: boolean;
   myRequestId: string | null;
   offer: { claimId: string; toName: string } | null;
@@ -93,7 +96,7 @@ export function NpcRoleActions({
           <input
             type="checkbox"
             checked={claimable}
-            disabled={pending}
+            disabled={pending || vacant}
             onChange={(e) => run(() => setCharacterClaimable(characterId, e.target.checked))}
             className="h-4 w-4 accent-[var(--accent)]"
           />
