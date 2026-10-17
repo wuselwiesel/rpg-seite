@@ -41,7 +41,7 @@ export function AdminHint({ worldId }: { worldId: string }) {
   return (
     <div role="note" className="mb-6 flex items-start gap-3 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-fg">
       <p className="min-w-0 flex-1">
-        Neu für Admins: Die <Link href={`/worlds/${worldId}/uebersicht`} onClick={hide} className="font-medium text-accent hover:underline">Übersicht</Link> zeigt dir Zahlen zu deiner Welt, und du bekommst Meldungen bei neuen Mitgliedern und Charakteren. Die Meldungen schaltest du unter „Bearbeiten“ ein und aus.
+        Neu für Admins: Die <Link href={`/worlds/${worldId}/uebersicht`} onClick={hide} className="font-medium text-accent hover:underline">Übersicht</Link> zeigt dir Zahlen zu deiner Welt, und du bekommst Meldungen bei neuen Mitgliedern und Charakteren. Die Meldungen schaltest du unter „Einstellungen“ ein und aus.
       </p>
       <button type="button" onClick={hide} aria-label="Hinweis ausblenden" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
         <X className="h-4 w-4" strokeWidth={2} />

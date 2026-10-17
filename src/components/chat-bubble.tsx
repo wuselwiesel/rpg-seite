@@ -51,6 +51,9 @@ export function isBubbleEnabled(): boolean {
   }
 }
 
+// Am Handy auch auf Verwaltungs-, Listen- und Formularseiten ausgeblendet: dort verdeckt sie Knöpfe und Karten
+const LIST_PATH = /^\/(worlds|profile|friends|badges|hilfe|story\/charaktere)(\/|$)|^\/characters(\/new|\/[^/]+\/edit)?$/;
+
 export function ChatBubble(props: {
   userId: string;
   myCharacterIds: string[];
@@ -67,7 +70,7 @@ export function ChatBubble(props: {
   // Am Handy verdeckt die Blase die Eingabe in einer Szene; dort gibt es den Reiter „Chat“ direkt in der Szene
   const smallScreen = useSyncExternalStore(subscribeSmallScreen, isSmallScreen, () => false);
   if (!mounted || !enabled || HIDDEN_PATHS.test(pathname ?? "")) return null;
-  if (smallScreen && SCENE_PATH.test(pathname ?? "")) return null;
+  if (smallScreen && (SCENE_PATH.test(pathname ?? "") || LIST_PATH.test(pathname ?? ""))) return null;
   return <BubbleInner {...props} pathname={pathname ?? ""} />;
 }
 
@@ -328,7 +331,7 @@ function BubbleInner({
     <>
       {!open && (
         <div
-          className={`fixed z-[60] transition-[transform,opacity] duration-300 print:hidden ${
+          className={`chat-bubble-root fixed z-[60] transition-[transform,opacity] duration-300 print:hidden ${
             tucked && !drag ? `opacity-40 ${pos.side === "left" ? "-translate-x-[70%]" : "translate-x-[70%]"}` : "opacity-90 hover:opacity-100"
           }`}
           style={bubbleStyle}

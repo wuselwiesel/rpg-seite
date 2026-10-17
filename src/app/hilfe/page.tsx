@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HelpSearch } from "./help-search";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { TourButtons } from "@/components/tour-buttons";
@@ -59,7 +60,7 @@ const example = "rounded-xl bg-surface-2 px-4 py-3 text-sm text-fg-soft";
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="flex scroll-mt-6 flex-col gap-3">
+    <section id={id} data-help-section className="flex scroll-mt-6 flex-col gap-3 [&[hidden]]:hidden">
       <h2 className={h2}>{title}</h2>
       {children}
     </section>
@@ -98,6 +99,7 @@ export default async function HelpPage() {
           </ol>
         </nav>
         <TourButtons />
+        <HelpSearch />
       </header>
 
       <Section id="wuerfeln" title="1. Wie funktioniert das Würfeln?">
@@ -426,7 +428,7 @@ export default async function HelpPage() {
             <strong>Beitritt:</strong> Je Welt gibt es drei Arten. Offene Welten betrittst du mit einem Klick. Bei „Auf Anfrage“ schickst du eine Nachricht an die Admins und wirst benachrichtigt, sobald sie entscheiden; über „Admin anschreiben“ erreichst du sie im privaten Chat. „Nur auf Einladung“ geht nur mit dem Einladungslink der Admins (er enthält einen Schlüssel) oder von Freund:innen. Ein alter Link ohne Schlüssel bietet „Beitritt anfragen“, die Admins entscheiden.
           </li>
           <li>
-            <strong>Auswahllisten:</strong> Admins legen unter „Bearbeiten“ → „Auswahllisten“ Listen wie Wesen, Haus oder Beruf an und tragen die Einträge ein. Je Liste ist einstellbar, ob beim Anlegen und Bearbeiten eines Charakters ein Dropdown oder ein freies Textfeld erscheint. Die Liste „Wesen“ gibt es in jeder Welt: Hat sie Einträge, ersetzt sie die feste Auswahl Mensch / Vampir / Werwolf; heißt der gewählte Eintrag Vampir oder Werwolf, gelten dessen Würfelregeln weiter. Die gewählten Werte stehen im Profil. Bei jedem Eintrag kannst du unter „max“ eine <strong>Höchstzahl</strong> festlegen, zum Beispiel höchstens 2 Vampire in der Welt. Daneben steht, wie viele es schon gibt (z. B. „1/2“). Ist ein Eintrag voll, steht er im Charakterformular als „(voll)“ und lässt sich nicht mehr wählen; wer ihn schon hat, behält ihn. Leer lassen heißt unbegrenzt.
+            <strong>Auswahllisten:</strong> Admins legen unter „Einstellungen“ → „Auswahllisten“ Listen wie Wesen, Haus oder Beruf an und tragen die Einträge ein. Je Liste ist einstellbar, ob beim Anlegen und Bearbeiten eines Charakters ein Dropdown oder ein freies Textfeld erscheint. Die Liste „Wesen“ gibt es in jeder Welt: Hat sie Einträge, ersetzt sie die feste Auswahl Mensch / Vampir / Werwolf; heißt der gewählte Eintrag Vampir oder Werwolf, gelten dessen Würfelregeln weiter. Die gewählten Werte stehen im Profil. Bei jedem Eintrag kannst du unter „max“ eine <strong>Höchstzahl</strong> festlegen, zum Beispiel höchstens 2 Vampire in der Welt. Daneben steht, wie viele es schon gibt (z. B. „1/2“). Ist ein Eintrag voll, steht er im Charakterformular als „(voll)“ und lässt sich nicht mehr wählen; wer ihn schon hat, behält ihn. Leer lassen heißt unbegrenzt.
           </li>
           <li>
             <strong>Rechte in der Welt:</strong> Besitzer:in und ernannte Admins dürfen immer alles. Für alle anderen stellen die Admins unter „Welt bearbeiten“ ein, wer Wiki-Seiten anlegen oder bearbeiten, Ordner, Karten und Seitenarten ändern, Szenen starten und Handlungsstränge anlegen darf. Neue Welten starten streng: Mitglieder bearbeiten nur ihre eigenen Wiki-Seiten und ändern keine Ordner oder Karten.
@@ -444,13 +446,25 @@ export default async function HelpPage() {
             <strong>Mitglieder und ihre Charaktere:</strong> Oben in der Übersicht steht die Mitgliederliste. Ein Klick auf ein Mitglied klappt alle seine Charaktere mit ihrem Wesen auf. „Nach Wesen“ gruppiert dieselben Figuren nach Wesen, die Suche findet Mitglieder, Charaktere und Wesen. NPCs und freie Rollen stehen in einer eigenen Gruppe.
           </li>
           <li>
-            <strong>Frei oder beschäftigt, und wo:</strong> Auf dem Profil deines Charakters tippst du auf „Status setzen“, wählst „Frei“ oder „Beschäftigt“ (zum Beispiel in einer Szene) und trägst ein, wo der Charakter gerade ist. Alle in der Welt sehen das auf dem Profil und in der Charakterliste der Welt. Nochmal auf die Wahl tippen schaltet sie aus, „Löschen“ leert beides.
+            <strong>Verfügbar oder beschäftigt, und wo:</strong> Auf dem Profil deines Charakters tippst du auf „Status setzen“, wählst „Verfügbar“ oder „Beschäftigt“ (zum Beispiel in einer Szene) und trägst ein, wo der Charakter gerade ist. Alle in der Welt sehen das auf dem Profil und in der Charakterliste der Welt. Nochmal auf die Wahl tippen schaltet sie aus, „Löschen“ leert beides.
           </li>
           <li>
             <strong>Charaktere prüfen:</strong> Admins schalten unter „Welt bearbeiten“ → Regeln „Neue Charaktere prüfen“ ein. Neue Charaktere normaler Mitglieder stehen dann zuerst auf „Zur Prüfung“ (Charaktere von Admins und NPCs nicht). Auf der Seite „Prüfung“ eines Charakters genehmigen Admins oder lehnen mit Hinweis ab; wer abgelehnt wurde, ändert den Charakter und reicht ihn erneut ein. Zusätzlich können Admins zu jedem Feld (Profil, Auswahllisten, ChaBo mit Angaben, Attributen, Talenten und Notizen) eine Änderung vorschlagen. Die Besitzer:in sieht alt und neu nebeneinander und übernimmt oder lehnt ab. Geheimes bleibt dabei unsichtbar. Alle Charaktere „Zur Prüfung“ stehen in der Charakterliste der Welt unter dem Filter „Zur Prüfung“.
           </li>
           <li>
-            <strong>Rollen zu vergeben:</strong> Beim Anlegen eines Charakters gibt es den Haken „Frei: noch ohne Spieler:in, zum Anbieten“. Ein freier Charakter ist kein NPC, der Haken „NPC“ bleibt unberührt. Er zählt nicht zu deinen spielbaren Charakteren, erscheint als „Frei“ in den Listen und lässt sich anbieten oder anfragen. Nachträglich geht es mit „Zu vergeben“ unter „Bearbeiten“, bei NPCs auch direkt in der NPC-Liste. Auch Hauptcharaktere lassen sich vergeben: Die Besitzer:in setzt unter „Bearbeiten“ den Haken „Zu vergeben“ oder bietet den Charakter einer Person an; er bleibt ein normaler Charakter und wechselt samt Geschichte das Konto. Über die Liste „Angelegt“ in „Charaktere“ siehst du alle von dir angelegten Charaktere mit Stand (frei, vergeben, eigen, NPC) und gibst sie dort frei oder bietest sie an; die Vergabe-Optionen klappen auf, wenn du den Pfeil rechts an der Karte antippst (in „Story → Charaktere“, „Angelegt“ und der NPC-Liste). Der Filter „Vergeben“ in „Story → Charaktere“ enthält auch deine eigenen Charaktere. Die Figur erscheint dann auf der Weltseite unter „Zu vergeben“. Mitglieder können sie dort anfragen, ein Admin entscheidet. Admins können eine Rolle auch einem Mitglied anbieten, das Angebot muss die Person annehmen. Bei der Übergabe wechselt der Charakter samt Beiträgen, Bogen, Geheimem und Verlauf auf das Konto der neuen Besitzer:in und ist dann ein normaler Charakter (kein NPC, nicht mehr frei). Wer einen Charakter nicht mehr spielen möchte, gibt ihn unter „Bearbeiten“ → „An die Welt zurückgeben“ zurück. Alle Admins der Welt dürfen NPCs und freie Charaktere bearbeiten.
+            <strong>Frei anlegen:</strong> Beim Anlegen eines Charakters gibt es den Haken „Frei: noch ohne Spieler:in, zum Anbieten“. Ein freier Charakter ist kein NPC, der Haken „NPC“ bleibt unberührt. Er zählt nicht zu deinen spielbaren Charakteren und erscheint als „Frei“ in den Listen.
+          </li>
+          <li>
+            <strong>Zu vergeben:</strong> Nachträglich geht es mit „Zu vergeben“ unter „Bearbeiten“, bei NPCs auch direkt in der NPC-Liste. Auch Hauptcharaktere lassen sich vergeben: Die Besitzer:in setzt den Haken oder bietet den Charakter einer Person an; er bleibt ein normaler Charakter und wechselt samt Geschichte das Konto. Die Figur erscheint auf der Weltseite unter „Zu vergeben“.
+          </li>
+          <li>
+            <strong>Anfragen und Angebote:</strong> Mitglieder können eine freie Figur anfragen, ein Admin entscheidet. Admins können eine Rolle auch einem Mitglied anbieten; das Angebot muss die Person annehmen.
+          </li>
+          <li>
+            <strong>Wo du das findest:</strong> Unter „Charaktere“ → „Angelegt“ siehst du alle von dir angelegten Charaktere mit Stand (frei, vergeben, eigen, NPC). Die Vergabe-Optionen klappen auf, wenn du den Pfeil rechts an der Karte antippst (auch in „Story → Charaktere“ und der NPC-Liste). Der Filter „Vergeben“ in „Story → Charaktere“ enthält auch deine eigenen Charaktere.
+          </li>
+          <li>
+            <strong>Übergabe und Zurückgeben:</strong> Bei der Übergabe wechselt der Charakter samt Beiträgen, Bogen, Geheimem und Verlauf auf das Konto der neuen Besitzer:in und ist dann ein normaler Charakter (kein NPC, nicht mehr frei). Wer einen Charakter nicht mehr spielen möchte, gibt ihn unter „Bearbeiten“ → „An die Welt zurückgeben“ zurück. Alle Admins der Welt dürfen NPCs und freie Charaktere bearbeiten.
           </li>
           <li>
             <strong>Kopfleiste am Handy:</strong> Oben links steht die Welt (ein Tipp wechselt sie), rechts folgen Glocke, der Schalter für Ingame, Story und Redaktion und das Menü. Suche, Mitglieder (mit Online-Anzeige) und der Charakterwechsel („Wechseln“ unter deinem Namen) stehen ganz oben im Menü.

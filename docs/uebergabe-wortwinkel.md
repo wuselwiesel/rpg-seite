@@ -11,6 +11,16 @@ Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind
 - Zuerst Desktop testen, dann Handy. Neue Badges/Erfolge sind inzwischen gewünscht und gebaut (siehe unten); weitere Ideen kurz mit der Nutzerin abstimmen.
 - **Vor dem Limit dieses Protokoll aktualisieren. Vor neuer Arbeit `git fetch` und prüfen, ob der andere Agent es schon gebaut hat** (Schrift-Vorschau und Status-Menü wurden doppelt gebaut).
 
+## Aufbau der Oberfläche (Stand 17. Oktober 2026, Ordnungsrunde) – zuerst lesen
+Die Abschnitte weiter unten sind chronologisch; dieser hier sagt, **wo etwas liegt**.
+- **Drei Bereiche** (Schalter oben): Ingame (Feed, ChaBo/Steckbrief, Chats, Profil), Story (Szenen, Wiki, Charaktere), Redaktion (Feed, Chat, Verlauf, Profil). Untere Leiste am Handy hat in allen drei Bereichen **Symbol + Beschriftung**.
+- **Handy-Kopfleiste:** links Welt (Tipp wechselt), rechts Glocke, Bereichs-Schalter, Menü. **Menü** (`mobile-nav.tsx`) in Gruppen: Suche, Charakterkarte mit „Wechseln“ (`menu-character-card.tsx`), „Welt“ (Weltwechsel/-verwaltung, Mitglieder, Würfelverlauf), „Du“ (ChaBo, Meine Charaktere, Freund:innen, Überblick), „App“ (Konto & Einstellungen, Hilfe, Rundgänge, Hell/Dunkel, Installieren). Desktop: `sidebar.tsx`/`sidebar-menu.tsx`.
+- **Charaktere:** `/characters` ist der Ort für die eigenen (Reiter Meine · Angelegt · NPCs · Alle). „Alle“ führt zu **Story → Charaktere** (`story/charaktere`, `world-roster.tsx`), derselbe Roster liegt auch unter `/worlds/[id]/charaktere` und in der Admin-Übersicht. Stände: frei (`vacant`), vergeben, mein, NPC, zur Prüfung; „Verfügbar/Beschäftigt“ ist die Spielverfügbarkeit (früher „Frei/Beschäftigt“, umbenannt, damit „Frei“ nur „ohne Spieler:in“ heißt).
+- **Einstellungen** (`profile/settings-shell.tsx`): Konto · Darstellung und Meldungen · Schreiben · Betreiberin (nur App-Admin), dazu Hilfe, Rundgänge, Abmelden. Charaktere gehören nicht mehr hierher.
+- **Welt verwalten** (`components/world-admin-tabs.tsx`): Welt · Übersicht · Charaktere · Einstellungen (= `edit`, enthält Allgemein, Zugang, Regeln, Willkommen, Auswahllisten, Meldungen, Talente, Naturen; die Listen-Seite `listen` ist Teil davon).
+- **Hilfe** (`/hilfe`): Suchfeld oben (`help-search.tsx`, blendet Punkte per `hidden` aus; Abschnitte tragen `data-help-section`).
+- **Chat-Blase:** am Handy auf Szenen sowie Listen-/Verwaltungs-/Formularseiten ausgeblendet (`LIST_PATH` in `chat-bubble.tsx`) und solange das Menü offen ist (`html[data-menu-open]`).
+
 ## Stand 4. Oktober 2026 – Zusammenfassung (PRs 28–40, alles in `main`)
 **Reihenfolge der Arbeit:** ChaBo-Generator und NPCs (Schritte 1–5 des Plans unten, alle gebaut und live), dazu viele Wünsche der Nutzerin mitten in der Arbeit. Details je Punkt stehen im Abschnitt „Plan: ChaBo-Generator und NPCs“ (Unterabschnitte „Schritt 1…5 gebaut“ und die Liste darunter); hier nur die Übersicht.
 - **PR 28–31:** Werte-Generator, Felder-Generator, Modus (Story/Ingame) bleibt beim Profil, Handy-Story-Leiste (ChaBo statt Beziehungen), Talent-Hover.

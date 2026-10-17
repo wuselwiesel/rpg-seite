@@ -2,10 +2,10 @@
 
 import { SwitchAccountButton } from "./switch-account-button";
 import { chaboLabel } from "@/lib/chabo-label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { BarChart3, CircleHelp, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices, type LucideIcon } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { MobileWorldPicker } from "./mobile-world-picker";
 import { MenuCharacterCard } from "./menu-character-card";
@@ -25,6 +25,24 @@ import { useDiceEnabled } from "./dice-context";
 import { useWorldRights } from "./rights-context";
 import type { AppNotification } from "@/lib/notifications";
 import type { Character, Profile, World } from "@/lib/types";
+
+function MenuSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <p className="mb-1 px-3 text-xs font-medium text-muted">{title}</p>
+      <div className="flex flex-col gap-0.5">{children}</div>
+    </section>
+  );
+}
+
+function MenuLink({ href, icon: Icon, onNavigate, children }: { href: string; icon: LucideIcon; onNavigate: () => void; children: React.ReactNode }) {
+  return (
+    <Link href={href} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+      <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+      {children}
+    </Link>
+  );
+}
 
 function MobileCreateTab({ href, label }: { href: string; label: string }) {
   return (
@@ -78,6 +96,13 @@ export function MobileNav({
   const moreOpen = openAt !== null && openAt === pathname;
   const setMoreOpen = (open: boolean) => setOpenAt(open ? pathname : null);
   const mode = useAppMode();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (moreOpen) root.setAttribute("data-menu-open", "");
+    else root.removeAttribute("data-menu-open");
+    return () => root.removeAttribute("data-menu-open");
+  }, [moreOpen]);
 
   if (isImmersiveChatPath(pathname)) return null;
 
@@ -164,16 +189,15 @@ export function MobileNav({
           </>
         ) : (
           <>
-            <MobileTabLink href="/" icon={<House className="h-[26px] w-[26px]" strokeWidth={2} />} label="Feed" exact showLabel={false} />
+            <MobileTabLink href="/" icon={<House className="h-5 w-5" strokeWidth={2} />} label="Feed" exact />
             {activeCharacter ? (
               <MobileTabLink
                 href={`/characters/${activeCharacter.id}/chabo`}
-                icon={<IdCard className="h-[26px] w-[26px]" strokeWidth={2} />}
+                icon={<IdCard className="h-5 w-5" strokeWidth={2} />}
                 label={chaboLabel(diceEnabled)}
-                showLabel={false}
               />
             ) : (
-              <MobileTabLink href="/search" icon={<Search className="h-[26px] w-[26px]" strokeWidth={2} />} label="Suche" showLabel={false} />
+              <MobileTabLink href="/search" icon={<Search className="h-5 w-5" strokeWidth={2} />} label="Suche" />
             )}
             <MobileCreateTab href="/posts/new" label="Neuer Beitrag" />
             <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
@@ -182,9 +206,8 @@ export function MobileNav({
         {mode === "ingame" && activeCharacter && (
           <MobileTabLink
             href={`/characters/${activeCharacter.id}`}
-            icon={<CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={28} />}
+            icon={<CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={22} />}
             label="Profil"
-            showLabel={false}
           />
         )}
       </nav>
@@ -225,92 +248,69 @@ export function MobileNav({
 
         <MenuCharacterCard characters={characters} activeCharacter={activeCharacter} profile={profile} onNavigate={() => setMoreOpen(false)} />
 
-        <div className="mb-4">
-          <p className="mb-1 px-1 text-xs text-muted">Welt</p>
-          <WorldSwitcher worlds={worlds} activeWorld={activeWorld} canManage={canManage} inline />
-        </div>
+        <div className="flex flex-col gap-4">
+          <MenuSection title="Welt">
+            <WorldSwitcher worlds={worlds} activeWorld={activeWorld} canManage={canManage} inline />
+            <MobileOnline members={worldMembers} selfId={userId} variant="row" onOpen={() => setMoreOpen(false)} />
+            {diceEnabled && (
+              <MenuLink href="/story/wuerfe" icon={Dices} onNavigate={() => setMoreOpen(false)}>
+                Würfelverlauf
+              </MenuLink>
+            )}
+          </MenuSection>
 
-        <div className="flex flex-col gap-1">
-          <MobileOnline members={worldMembers} selfId={userId} variant="row" onOpen={() => setMoreOpen(false)} />
-          {diceEnabled && (
-            <Link
-              href="/story/wuerfe"
-              onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          <MenuSection title="Du">
+            {activeCharacter && (
+              <MenuLink href={`/characters/${activeCharacter.id}/chabo`} icon={IdCard} onNavigate={() => setMoreOpen(false)}>
+                {chaboLabel(diceEnabled)}
+              </MenuLink>
+            )}
+            <MenuLink href="/characters" icon={Users} onNavigate={() => setMoreOpen(false)}>
+              Meine Charaktere
+            </MenuLink>
+            <MenuLink href="/friends" icon={UserPlus} onNavigate={() => setMoreOpen(false)}>
+              Freund:innen
+            </MenuLink>
+            {appAdmin && (
+              <MenuLink href="/redaktion/ueberblick" icon={BarChart3} onNavigate={() => setMoreOpen(false)}>
+                Überblick
+              </MenuLink>
+            )}
+          </MenuSection>
+
+          <MenuSection title="App">
+            <MenuLink href="/profile" icon={Settings} onNavigate={() => setMoreOpen(false)}>
+              Konto &amp; Einstellungen
+            </MenuLink>
+            {altAccount && (
+              <SwitchAccountButton
+                label={altAccount}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+              />
+            )}
+            <MenuLink href="/hilfe" icon={CircleHelp} onNavigate={() => setMoreOpen(false)}>
+              Hilfe
+            </MenuLink>
+            <button
+              type="button"
+              onClick={() => {
+                setMoreOpen(false);
+                startTour();
+              }}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
             >
-              <Dices className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              Würfelverlauf
-            </Link>
-          )}
-          {activeCharacter && (
-            <Link
-              href={`/characters/${activeCharacter.id}/chabo`}
-              onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-            >
-              <IdCard className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              {chaboLabel(diceEnabled)}
-            </Link>
-          )}
-          {altAccount && (
-            <SwitchAccountButton
-              label={altAccount}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+              <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              Rundgänge
+            </button>
+            <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-[15px] font-medium text-fg-soft">
+              Hell / Dunkel
+              <ThemeToggle />
+            </div>
+            <InstallAppButton
+              onDone={() => setMoreOpen(false)}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
             />
-          )}
-          <Link
-            href="/friends"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Freund:innen
-          </Link>
-          {appAdmin && (
-            <Link
-              href="/redaktion/ueberblick"
-              onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-            >
-              <BarChart3 className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              Überblick
-            </Link>
-          )}
-          <Link
-            href="/characters"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Charaktere verwalten
-          </Link>
-          <Link
-            href="/profile"
-            onClick={() => setMoreOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Konto &amp; Einstellungen
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setMoreOpen(false);
-              startTour();
-            }}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          >
-            <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Rundgänge
-          </button>
-          <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-[15px] font-medium text-fg-soft">
-            Hell / Dunkel
-            <ThemeToggle />
-          </div>
-          <InstallAppButton
-            onDone={() => setMoreOpen(false)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-          />
+          </MenuSection>
         </div>
       </div>
     </>

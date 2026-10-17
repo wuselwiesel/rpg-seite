@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getUserWorlds } from "@/lib/worlds";
+import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "./enter-world-button";
 import { LeaveWorldButton } from "./[id]/leave-world-button";
@@ -14,7 +14,7 @@ export default async function WorldsPage() {
 
   if (!user) redirect("/login");
 
-  const worlds = await getUserWorlds(user.id);
+  const [worlds, activeWorld] = await Promise.all([getUserWorlds(user.id), getActiveWorld(user.id)]);
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
@@ -48,10 +48,12 @@ export default async function WorldsPage() {
       )}
 
       <ul className="flex flex-col gap-3">
-        {worlds.map((world) => (
+        {worlds.map((world) => {
+          const isActive = world.id === activeWorld?.id;
+          return (
           <li
             key={world.id}
-            className="group flex items-center justify-between gap-2 rounded-lg border border-line bg-surface p-4 sm:gap-4"
+            className={`group flex items-center justify-between gap-2 rounded-lg border bg-surface p-4 sm:gap-4 ${isActive ? "border-accent/60" : "border-line"}`}
           >
             <Link href={`/worlds/${world.id}`} className="flex min-w-0 flex-1 items-center gap-4">
               <WorldCover
@@ -61,15 +63,23 @@ export default async function WorldsPage() {
               />
               <div className="min-w-0">
                 <p className="truncate font-serif text-xl text-fg hover:text-accent">{world.name}</p>
+                {isActive && <span className="mt-0.5 inline-block rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Aktuelle Welt</span>}
                 {world.description && (
-                  <p className="line-clamp-1 text-sm text-muted">{world.description}</p>
+                  <p className="line-clamp-2 text-sm text-muted">{world.description}</p>
                 )}
               </div>
             </Link>
             {world.created_by !== user.id && <LeaveWorldButton worldId={world.id} worldName={world.name} variant="icon" />}
-            <EnterWorldButton worldId={world.id} />
+            {isActive ? (
+              <Link href="/" className="shrink-0 rounded-full bg-accent-strong px-4 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
+                Zum Feed
+              </Link>
+            ) : (
+              <EnterWorldButton worldId={world.id} />
+            )}
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );

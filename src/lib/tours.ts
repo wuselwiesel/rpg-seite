@@ -74,7 +74,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Menü und Hilfe",
-        text: "Im Menü findest du Konto, Freund:innen, Charaktere verwalten und die Rundgänge. Die Seite „Hilfe“ erklärt Würfeln, Attribute, Talente und Tastenkürzel ausführlicher.",
+        text: "Im Menü findest du Konto, Freund:innen, Meine Charaktere und die Rundgänge. Die Seite „Hilfe“ erklärt Würfeln, Attribute, Talente und Tastenkürzel ausführlicher.",
         route: "/",
         match: { attr: "account-menu" },
       },
@@ -501,9 +501,9 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Die Seite deiner Welt",
-        text: "Auf der Weltseite führt die Leiste „Welt · Übersicht · Bearbeiten · Auswahllisten“ zu allen Verwaltungsseiten. Darunter findest du Willkommenstext, Beitrittsanfragen (falls die Welt auf Anfrage beitritt), Mitglieder und Einladungen.",
+        text: "Auf der Weltseite führt die Leiste „Welt · Übersicht · Charaktere · Einstellungen“ zu allen Verwaltungsseiten. Darunter findest du Willkommenstext, Beitrittsanfragen (falls die Welt auf Anfrage beitritt), Mitglieder und Einladungen.",
         route: "@world|/worlds",
-        match: { name: "Bearbeiten" },
+        match: { name: "Einstellungen" },
       },
       {
         title: "Mitglieder und Rollen",
@@ -519,7 +519,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Titelbild, Name und Beschreibung",
-        text: "Unter „Bearbeiten“ steht alles in einem Formular mit einem Speichern-Knopf, der am unteren Rand mitläuft. Dort legst du das Titelbild fest. Es darf quadratisch, 4:3 oder breit sein und bleibt in seinem Format. Ein Icon ohne Hintergrund funktioniert ebenso. Name und Beschreibung erscheinen in der Weltauswahl und unter „Welten entdecken“.",
+        text: "Unter „Einstellungen“ steht alles in einem Formular mit einem Speichern-Knopf, der am unteren Rand mitläuft. Dort legst du das Titelbild fest. Es darf quadratisch, 4:3 oder breit sein und bleibt in seinem Format. Ein Icon ohne Hintergrund funktioniert ebenso. Name und Beschreibung erscheinen in der Weltauswahl und unter „Welten entdecken“.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-titel" },
       },
@@ -591,7 +591,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Talente",
-        text: "Wenn Würfeln eingeschaltet ist, legst du auf der Bearbeiten-Seite die Talente deiner Welt fest: Name und zwei Attribute, auf die geprobt wird. „Standardliste“ stellt die ursprünglichen Talente wieder her. Gespeichert werden sie mit dem Speichern-Knopf unten.",
+        text: "Wenn Würfeln eingeschaltet ist, legst du unter „Einstellungen“ die Talente deiner Welt fest: Name und zwei Attribute, auf die geprobt wird. „Standardliste“ stellt die ursprünglichen Talente wieder her. Gespeichert werden sie mit dem Speichern-Knopf unten.",
         route: "@worldEdit|/worlds",
         match: { attr: "welt-talente" },
       },

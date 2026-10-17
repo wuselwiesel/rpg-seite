@@ -9,7 +9,7 @@ import { AVAILABILITY_LABEL, type Availability } from "@/lib/availability";
 
 const DOT: Record<Availability, string> = { free: "bg-green-500", busy: "bg-red-500" };
 
-// Anzeige: Punkt mit „Frei“ bzw. „Beschäftigt“ und der Ort; ohne beides nichts
+// Anzeige: Punkt mit „Verfügbar“ bzw. „Beschäftigt“ und der Ort; ohne beides nichts
 export function AvailabilityBadge({ availability, location, className = "" }: { availability: Availability | null; location: string | null; className?: string }) {
   if (!availability && !location) return null;
   return (
@@ -32,7 +32,7 @@ export function AvailabilityBadge({ availability, location, className = "" }: { 
 
 const seg = "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition";
 
-// Für die Besitzer:in: Chip antippen, Frei/Beschäftigt wählen und den Ort eintragen
+// Für die Besitzer:in: Chip antippen, Verfügbar/Beschäftigt wählen und den Ort eintragen
 export function AvailabilityControl({ characterId, availability, location }: { characterId: string; availability: Availability | null; location: string | null }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);

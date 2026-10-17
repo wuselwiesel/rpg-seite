@@ -1308,3 +1308,8 @@ span[data-type="spoiler"].spoiler-open {
   background: color-mix(in srgb, currentColor 12%, transparent);
   outline: 1px dashed color-mix(in srgb, currentColor 40%, transparent);
 }
+
+/* Offenes Handy-Menü: die Chat-Blase liegt nicht darüber */
+html[data-menu-open] .chat-bubble-root {
+  display: none;
+}

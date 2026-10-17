@@ -42,7 +42,7 @@ export function SidebarMenu() {
           </Link>
           <Link href="/characters" onClick={() => setOpen(false)} className={item}>
             <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Charaktere verwalten
+            Meine Charaktere
           </Link>
           <Link href="/profile" onClick={() => setOpen(false)} className={item}>
             <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />

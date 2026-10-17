@@ -86,7 +86,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h1 className="font-serif text-3xl text-fg">{showNpcs ? "NPCs" : showCreated ? "Von mir angelegt" : "Deine Charaktere"}</h1>
+          <h1 className="font-serif text-3xl text-fg">Charaktere</h1>
           <p className="truncate text-sm text-muted">in {activeWorld.name}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -115,9 +115,11 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
 
       <div role="tablist" aria-label="Charaktere und NPCs" className="mb-5 flex gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium">
         {[
-          { id: "charaktere", href: "/characters", label: "Charaktere", count: characters.length, on: showCharacters },
-          { id: "npcs", href: "/characters?tab=npcs", label: "NPCs", count: npcs.length, on: showNpcs },
+          { id: "charaktere", href: "/characters", label: "Meine", count: characters.length, on: showCharacters },
           { id: "angelegt", href: "/characters?tab=angelegt", label: "Angelegt", count: created.length, on: showCreated },
+          { id: "npcs", href: "/characters?tab=npcs", label: "NPCs", count: npcs.length, on: showNpcs },
+          // Alle Charaktere der Welt mit Stand liegen im Story-Bereich
+          { id: "alle", href: "/story/charaktere", label: "Alle", count: null, on: false },
         ].map((t) => (
           <Link
             key={t.id}
@@ -127,7 +129,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 transition ${t.on ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg"}`}
           >
             {t.label}
-            <span className="text-xs text-muted">{t.count}</span>
+            {t.count !== null && <span className="text-xs text-muted">{t.count}</span>}
           </Link>
         ))}
       </div>
@@ -226,10 +228,8 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2 truncate font-medium text-fg hover:text-accent">
-                  <span className="truncate">{character.name}</span>
-                  {character.claimable && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
-                </p>
+                <p className="truncate font-medium text-fg hover:text-accent">{character.name}</p>
+                {character.claimable && <span className="mt-0.5 inline-block rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
                 {character.bio && (
                   <p className="line-clamp-1 text-sm text-muted">{character.bio}</p>
                 )}

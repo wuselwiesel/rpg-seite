@@ -174,11 +174,12 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          <h1 className="font-serif text-3xl text-fg">Story</h1>
-        </div>
-        <div className="flex shrink-0 rounded-full border border-line bg-surface p-0.5" role="group" aria-label="Ansicht">
+      <h1 className="mb-4 font-serif text-3xl text-fg">Story</h1>
+
+      <StorySections current="szenen" />
+
+      <div className="relative mb-4">
+        <div className="absolute right-0 top-0 flex shrink-0 rounded-full border border-line bg-surface p-0.5" role="group" aria-label="Ansicht">
           <Link
             href={viewHref("karten")}
             replace
@@ -198,11 +199,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
             <LayoutList className="h-4 w-4" strokeWidth={2} />
           </Link>
         </div>
-      </div>
-
-      <StorySections current="szenen" />
-
-      <details className="group mb-4" open={filterCount > 0}>
+      <details className="group" open={filterCount > 0}>
         <summary data-tour="story-filter" className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />
           Filter
@@ -311,6 +308,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
         </div>
       </details>
+      </div>
 
       <div className="mb-4 flex items-center gap-2">
         {activeCharacter ? (

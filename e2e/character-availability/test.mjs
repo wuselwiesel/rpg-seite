@@ -46,11 +46,11 @@ for (const [label, w, h, m] of [["Handy", 375, 740, true], ["Laptop", 1280, 800,
   check(`${label}: Löschen leert beides`, JSON.stringify((await calls(page)).at(-1)) === JSON.stringify(["c1", null, ""]));
 
   page = await open("?role=other&a=free&p=Café%20am%20alten%20Hafen%20mit%20sehr%20langem%20Namen%20damit%20es%20umbricht%20oder%20kuerzt", w, h, m);
-  check(`${label}: andere sehen Frei und Ort, keinen Knopf`, (await page.getByText("Frei").isVisible()) && (await page.getByRole("button").count()) === 0);
+  check(`${label}: andere sehen Verfügbar und Ort, keinen Knopf`, (await page.getByText("Verfügbar").isVisible()) && (await page.getByRole("button").count()) === 0);
   check(`${label}: langer Ort bricht nichts`, await noOverflow(page));
   await page.screenshot({ path: path.join(here, ".build", `other-${label}.png`) });
   page = await open("?role=other", w, h, m);
-  check(`${label}: ohne Angabe nichts sichtbar`, (await page.getByText("Frei").count()) === 0);
+  check(`${label}: ohne Angabe nichts sichtbar`, (await page.getByText("Verfügbar").count()) === 0);
 }
 
 const real = errors.filter((e) => !/ERR_FAILED/.test(e));
