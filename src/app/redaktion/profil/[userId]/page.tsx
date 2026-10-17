@@ -1,4 +1,5 @@
 import { OnlineBadge } from "@/components/online-status";
+import { ZoomableImage } from "@/components/zoomable-image";
 import { NameBadge } from "@/components/name-badge";
 import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
 import { BadgeRow } from "@/components/badge-row";
@@ -60,8 +61,11 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
           <div className="-mt-10 flex items-end gap-4 sm:-mt-14">
             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-app bg-surface-2 sm:h-28 sm:w-28">
               {profile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+                // Antippen zeigt das Bild groß
+                <ZoomableImage src={profile.avatar_url} alt={displayName} className="h-full w-full rounded-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={profile.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+                </ZoomableImage>
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-muted sm:text-5xl">
                   {displayName.charAt(0).toUpperCase()}

@@ -229,13 +229,13 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
                 key={p.id}
                 className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3"
               >
-                <div className="flex items-center gap-3">
+                <Link href={`/redaktion/profil/${p.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                   <CharacterAvatar name={p.nickname || p.username} avatarUrl={p.avatar_url} size={40} />
-                  <div>
-                    <p className="text-sm font-medium text-fg">{p.nickname || p.username}</p>
-                    <p className="text-xs text-muted">@{p.username}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-fg hover:text-accent">{p.nickname || p.username}</p>
+                    <p className="truncate text-xs text-muted">@{p.username}</p>
                   </div>
-                </div>
+                </Link>
                 {status?.status === "accepted" ? (
                   <span className="shrink-0 text-xs text-muted">Befreundet</span>
                 ) : status?.status === "pending" && status.direction === "outgoing" ? (
