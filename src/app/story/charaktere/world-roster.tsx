@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { AvailabilityBadge } from "@/components/character-availability";
 import { NpcRoleActions } from "@/app/characters/npc-role-actions";
@@ -33,8 +33,7 @@ export type RosterMember = { id: string; name: string; hasCharacter: boolean };
 
 const PAGE = 40;
 
-const FILTERS: { key: "all" | RosterStatus; label: string }[] = [
-  { key: "all", label: "Alle" },
+const FILTERS: { key: RosterStatus; label: string }[] = [
   { key: "free", label: "Frei" },
   { key: "taken", label: "Vergeben" },
   { key: "review", label: "Zur Prüfung" },
@@ -86,6 +85,9 @@ export function WorldRoster({
   const [filter, setFilter] = useState<"all" | RosterStatus>(initialFilter);
   const [species, setSpecies] = useState("");
   const [sort, setSort] = useState<"name" | "neu">("name");
+  // Weitere Filter (Spieler:in, Wesen, Sortierung) erst nach Tippen auf „Filtern“
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [player, setPlayer] = useState("");
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(PAGE);
   const [showMissing, setShowMissing] = useState(false);
@@ -99,6 +101,12 @@ export function WorldRoster({
     return m;
   }, [characters]);
   const speciesOptions = useMemo(() => [...new Set(characters.map((c) => c.species).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b, "de")), [characters]);
+  // Spieler:innen, die Charaktere haben (NPCs und freie Charaktere gehören niemandem)
+  const playerOptions = useMemo(
+    () => [...new Set(characters.filter((c) => !c.isNpc && c.status !== "free" && c.ownerName).map((c) => c.ownerName as string))].sort((a, b) => a.localeCompare(b, "de")),
+    [characters],
+  );
+  const advancedCount = (player ? 1 : 0) + (species ? 1 : 0) + (sort !== "name" ? 1 : 0);
   const withoutCharacter = members.filter((m) => !m.hasCharacter);
 
   const q = norm(query.trim());
@@ -106,11 +114,12 @@ export function WorldRoster({
     const list = characters.filter((c) => {
       if (!matchesFilter(c, filter)) return false;
       if (species && c.species !== species) return false;
+      if (player && c.ownerName !== player) return false;
       if (q && !norm(c.name).includes(q) && !norm(c.ownerName ?? "").includes(q) && !norm(c.species ?? "").includes(q)) return false;
       return true;
     });
     return [...list].sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name, "de") : b.createdAt.localeCompare(a.createdAt)));
-  }, [characters, filter, species, q, sort]);
+  }, [characters, filter, species, player, q, sort]);
 
   function reset(fn: () => void) {
     fn();
@@ -161,30 +170,71 @@ export function WorldRoster({
             className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm text-fg outline-none focus:border-accent"
           />
         </label>
-        {speciesOptions.length > 0 && (
-          <select value={species} onChange={(e) => reset(() => setSpecies(e.target.value))} aria-label="Nach Wesen filtern" className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
-            <option value="">Alle Wesen</option>
-            {speciesOptions.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        )}
-        <select value={sort} onChange={(e) => setSort(e.target.value as "name" | "neu")} aria-label="Sortierung" className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
-          <option value="name">A bis Z</option>
-          <option value="neu">Neueste zuerst</option>
-        </select>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition ${filtersOpen || advancedCount > 0 ? "border-accent bg-accent/10 text-accent" : "border-line bg-surface text-fg-soft hover:border-accent hover:text-accent"}`}
+        >
+          <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />
+          Filtern
+          {advancedCount > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-strong px-1 text-[10px] font-medium text-on-accent-strong">{advancedCount}</span>}
+        </button>
       </div>
 
-      <div role="tablist" aria-label="Stand" className="flex flex-wrap gap-1.5">
-        {FILTERS.filter((f) => f.key === "all" || (counts.get(f.key) ?? 0) > 0).map((f) => (
+      {filtersOpen && (
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-3">
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Spieler:in
+            <select value={player} onChange={(e) => reset(() => setPlayer(e.target.value))} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
+              <option value="">Alle</option>
+              {playerOptions.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          {speciesOptions.length > 0 && (
+            <label className="flex flex-col gap-1 text-xs text-muted">
+              Wesen
+              <select value={species} onChange={(e) => reset(() => setSpecies(e.target.value))} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
+                <option value="">Alle</option>
+                {speciesOptions.map((sp) => (
+                  <option key={sp} value={sp}>
+                    {sp}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Sortierung
+            <select value={sort} onChange={(e) => setSort(e.target.value as "name" | "neu")} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
+              <option value="name">A bis Z</option>
+              <option value="neu">Neueste zuerst</option>
+            </select>
+          </label>
+          {advancedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => reset(() => { setPlayer(""); setSpecies(""); setSort("name"); })}
+              className="col-span-2 w-fit text-sm text-accent hover:underline sm:col-span-3"
+            >
+              Filter zurücksetzen
+            </button>
+          )}
+        </div>
+      )}
+
+      <div role="group" aria-label="Stand" className="flex flex-wrap gap-1.5">
+        {FILTERS.filter((f) => (counts.get(f.key) ?? 0) > 0).map((f) => (
           <button
             key={f.key}
             type="button"
-            role="tab"
-            aria-selected={filter === f.key}
-            onClick={() => reset(() => setFilter(f.key))}
+            aria-pressed={filter === f.key}
+            // Zweiter Klick auf den gewählten Filter schaltet ihn wieder aus
+            onClick={() => reset(() => setFilter(filter === f.key ? "all" : f.key))}
             className={`rounded-full border px-3 py-1 text-sm transition ${filter === f.key ? "border-accent bg-accent/10 font-medium text-accent" : "border-line text-fg-soft hover:border-accent hover:text-accent"}`}
           >
             {f.label} <span className="text-xs opacity-70">{counts.get(f.key) ?? 0}</span>
