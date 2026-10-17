@@ -1,4 +1,4 @@
-# Übergabe Wortwinkel (rpg-seite) – Stand 17. Oktober 2026 (letzte Code-Änderung = PR 69; Vercel-Deploys nicht einzeln geprüft, siehe „Nicht geprüft“)
+# Übergabe Wortwinkel (rpg-seite) – Stand 17. Oktober 2026, abends (letzte Änderung: Commit `24d8e39` direkt auf `main`; Vercel-Deploys nicht einzeln geprüft, siehe „Nicht geprüft“)
 
 Von: Agent A (Sitzung im Ordner `~/Desktop/coding`) und Agent B (Branch `claude/modest-bardeen-q29kyy`, PRs in `wuselwiesel/rpg-seite`). Der **Wiki-Gesamtüberblick** (Agent B, 3. Oktober) steht im Abschnitt „Wiki: Gesamtüberblick“ unten; die Einzelheiten je Runde folgen weiter hinten unter „Von Agent B“.
 Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind v4, Vercel. Sprache der App und aller Antworten an die Nutzerin: **Deutsch**.
@@ -20,6 +20,26 @@ Die Abschnitte weiter unten sind chronologisch; dieser hier sagt, **wo etwas lie
 - **Welt verwalten** (`components/world-admin-tabs.tsx`): Welt · Übersicht · Charaktere · Einstellungen (= `edit`, enthält Allgemein, Zugang, Regeln, Willkommen, Auswahllisten, Meldungen, Talente, Naturen; die Listen-Seite `listen` ist Teil davon).
 - **Hilfe** (`/hilfe`): Suchfeld oben (`help-search.tsx`, blendet Punkte per `hidden` aus; Abschnitte tragen `data-help-section`).
 - **Chat-Blase:** am Handy auf Szenen sowie Listen-/Verwaltungs-/Formularseiten ausgeblendet (`LIST_PATH` in `chat-bubble.tsx`) und solange das Menü offen ist (`html[data-menu-open]`).
+
+## Stand 17. Oktober 2026 (Abend) – Welt-Verwaltung, Ordnungsrunde, Besetzung (Claude-Sitzung, direkt auf `main`)
+Einzelheiten stehen als Einträge weiter unten (Suchbegriff jeweils fett markiert); hier die Übersicht.
+- **Welt-Admin-Werkzeuge:** Meldungen je Ereignis (an/aus), Schalter „Geheime Felder erlauben“, Übersicht der Welt (`world_overview`, jetzt mit `vacant`-Zahl). Verwaltungsleiste jetzt **Welt · Übersicht · Charaktere · Einstellungen**.
+- **Rollen/Vergabe:** NPCs und Hauptcharaktere lassen sich anbieten/anfragen; **„Frei“ = `characters.vacant`** (kein NPC, zählt nicht zu den spielbaren Charakteren); Story → Charaktere mit Stand-Schaltern (Frei, Vergeben inkl. eigene, Meine, NPCs) und Knopf „Filtern“ (Spieler:in, Wesen, Sortierung); Vergabe-Optionen erst nach Tippen auf den Pfeil.
+- **Einladungslinks mit Schlüssel**, Erkunden ohne Charakter, Willkommens-Karten/„Kennst du schon?“, Konto-Siegel nur an Kontonamen (nicht an Charakteren).
+- **Ordnungsrunde:** schlanke Handy-Kopfleiste (Welt, Glocke, Bereichs-Schalter, Menü), Menü in Gruppen, Einstellungen neu gegliedert, Charaktere-Reiter Meine · Angelegt · NPCs · Alle, Ingame-Leiste mit Beschriftung, „Verfügbar/Beschäftigt“ statt „Frei/Beschäftigt“, Hilfe mit Suchfeld, Welten-Liste markiert die aktuelle Welt, „Suche“ aus der Redaktions-Navigation entfernt, Chat-Blase weicht Listen/Menü, Chat-Farbe nur noch im Chat (Computer).
+- **Besetzung (Rollenliste)** für Serien-Welten, Seite `/wiki/besetzung`: Rollen mit Anfrage → Zusage → Charakter anlegen (Name vorausgefüllt), Reservierung mit Frist, NPC-Markierung, Verknüpfung, Import aus Wiki-Seiten, Vorschau-Reiter für Besucher:innen. Pro Welt einschaltbar (Welt → Einstellungen → Regeln).
+- Kleinteile: Redaktions-Profilbild vergrößerbar, Kontosuche öffnet das Redaktions-Profil, Filterknopf im Feed überlagert das Beitragsmenü nicht mehr.
+
+**Migrationen dieser Sitzung (alle per Supabase-MCP live, jeweils als Datei in `supabase/` und in `schema.sql`):** `migration_world_admin_tools.sql`, `migration_character_claims*.sql`, `migration_world_invites.sql`, `migration_welcome_cards.sql`, `migration_character_vacant.sql` (inkl. neuer `world_overview`), `migration_world_cast.sql`. Beim Anlegen von Testdaten auf `wiki_pages.category` achten (nur `ort|npc|fraktion|sonstiges`).
+
+**Zuletzt grün:** `tsc`, ESLint (0 Fehler), 452 Vitest (neu: `lib/cast.test.ts`). Die Browser-Suiten (`npm run test:e2e`) wurden in dieser Sitzung **nicht** neu gelaufen (nur `e2e/wiki-dnd/harness.tsx` und `e2e/character-availability` wurden angepasst).
+
+**Nicht geprüft / zu tun:**
+- **Sanis Welt „TVD / TO / Legacies“:** Besetzung ist dort **nicht eingeschaltet, nichts importiert**; ihre Wiki-Seiten (Ordner „Charakter der Serien“, A–Z, „1. Besetzte Rollen“) wurden nie verändert. Sie schaltet ein und importiert selbst (Anleitung steht im Eintrag „Besetzung / Rollenliste“). Ihre Seiten haben rund 300 Einträge (209 mit †).
+- Besetzung nicht ausprobiert: Reservierung für ein echtes Mitglied, Vorschau-Reiter für Besucher:innen, Meldungen auf dem Handy (Push). Rollen-RPCs wurden nur über die Oberfläche geprüft, nicht per Rollback-Rechtetest.
+- Chat-Farbe am Computer: nur im Code geprüft, nicht mit dem Chat der Nutzerin nachgestellt.
+- Offene Ideen: eigener Bereich „Mitglieder“ auf der Weltseite (Rollenvergabe/Mitglieder liegen noch dort), Verwalten-Bereich der Besetzung optisch an die neue Liste angleichen, leere Zustände mit nächster Handlung, Hinweis zu „OC“ in der Besetzung, Tutorial-Video zur Besetzung zeigt noch die alte Listenoptik (`video/` ist git-ignoriert, Skripte `video/build_bes.py`, Encoder `video/out/encode`).
+- Test-Konto `logotestuser` (Welt Nebelhafen) wurde nach allen Tests aufgeräumt; die Testwelt Schattenmoor und Übungswelt blieben unberührt.
 
 ## Stand 4. Oktober 2026 – Zusammenfassung (PRs 28–40, alles in `main`)
 **Reihenfolge der Arbeit:** ChaBo-Generator und NPCs (Schritte 1–5 des Plans unten, alle gebaut und live), dazu viele Wünsche der Nutzerin mitten in der Arbeit. Details je Punkt stehen im Abschnitt „Plan: ChaBo-Generator und NPCs“ (Unterabschnitte „Schritt 1…5 gebaut“ und die Liste darunter); hier nur die Übersicht.
