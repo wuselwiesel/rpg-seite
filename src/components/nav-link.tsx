@@ -3,7 +3,7 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 
-function NavInner({ icon, children, isActive }: { icon: React.ReactNode; children: React.ReactNode; isActive: boolean }) {
+function NavInner({ icon, children, isActive, badge }: { icon: React.ReactNode; children: React.ReactNode; isActive: boolean; badge?: number }) {
   const { pending } = useLinkStatus();
   return (
     <span
@@ -13,6 +13,11 @@ function NavInner({ icon, children, isActive }: { icon: React.ReactNode; childre
     >
       {icon}
       {children}
+      {badge ? (
+        <span className={`ml-auto rounded-full px-1.5 text-xs font-semibold ${isActive || pending ? "bg-on-accent-strong text-accent-strong" : "bg-accent text-on-accent-strong"}`} aria-label={`${badge} ungelesen`}>
+          {badge}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -24,6 +29,7 @@ export function NavLink({
   exact,
   exclude,
   also,
+  badge,
 }: {
   href: string;
   icon: React.ReactNode;
@@ -33,6 +39,8 @@ export function NavLink({
   exclude?: string | string[];
   // Weitere Pfade, bei denen der Eintrag ebenfalls aktiv ist (z. B. liegen die Beziehungen im Wiki)
   also?: string[];
+  // Zahl am rechten Rand (z. B. ungelesene Tickets)
+  badge?: number;
 }) {
   const pathname = usePathname();
   const isActive =
@@ -51,7 +59,7 @@ export function NavLink({
         }
       }}
     >
-      <NavInner icon={icon} isActive={!!isActive}>
+      <NavInner icon={icon} isActive={!!isActive} badge={badge}>
         {children}
       </NavInner>
     </Link>

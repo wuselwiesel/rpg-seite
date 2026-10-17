@@ -18,3 +18,7 @@ export function TicketKindChip({ kind }: { kind: TicketKind }) {
 export function ticketDate(iso: string): string {
   return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
+
+export function ticketTime(iso: string): string {
+  return new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}

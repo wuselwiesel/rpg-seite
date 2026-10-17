@@ -28,7 +28,7 @@ export default function PrivacyPage() {
           <li><strong>Profil und Inhalte:</strong> Spitzname, Bilder, Charaktere samt Steckbrief, Beiträge, Kommentare, Chat-Nachrichten, Stories, Wiki-Seiten, Zeichnungen und Medien, Reaktionen, Beziehungen, Badges, Notizen und Einstellungen.</li>
           <li><strong>Nutzung:</strong> Wann du zuletzt aktiv warst, dein Online-Status (Punkt, Emoji, Text), Lesestände, wer eine Story gesehen hat und ob du gerade schreibst.</li>
           <li><strong>Technisches:</strong> Beim Aufruf fallen kurzzeitig technische Daten an (IP-Adresse, Zeitpunkt, Gerät und Browser). Sie dienen dem Betrieb und der Sicherheit.</li>
-          <li><strong>Meldungen:</strong> Wenn du etwas meldest, speichern wir Art, Titel, Text, die angegebene Seite und dein Gerät (Browser-Kennung, Fenstergröße). Nur du und die Betreiberin sehen sie. Sie werden mit deinem Konto gelöscht.</li>
+          <li><strong>Tickets:</strong> Wenn du etwas meldest, speichern wir Art, Titel, Text, Screenshots, Antworten, die angegebene Seite und dein Gerät (Browser-Kennung, Fenstergröße). Die Screenshots liegen in einem privaten Speicher. Nur du und die Betreiberin sehen sie. Sie werden mit deinem Konto gelöscht.</li>
           <li><strong>Push-Benachrichtigungen:</strong> Nur wenn du sie einschaltest, speichern wir die Adresse deines Browsers beim Push-Dienst des Browser-Herstellers.</li>
         </ul>
       </section>

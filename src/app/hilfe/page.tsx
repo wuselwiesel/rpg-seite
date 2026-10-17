@@ -43,7 +43,7 @@ const TOC = [
   ["verlassen", "Welt verlassen, Besitz übertragen, Konto löschen"],
   ["benachrichtigungen", "Benachrichtigungen aus mehreren Welten"],
   ["passwort-vergessen", "Passwort vergessen"],
-  ["melden", "Etwas melden"],
+  ["melden", "Tickets: etwas melden"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -538,13 +538,16 @@ export default async function HelpPage() {
         </ul>
       </Section>
 
-      <Section id="melden" title="19. Etwas melden">
+      <Section id="melden" title="19. Tickets: etwas melden">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Melden:</strong> Unter Einstellungen → „Etwas melden“ schreibst du einen Fehler, einen Wunsch oder eine Frage auf. Gerät und Browser werden automatisch mitgeschickt, die Seite davor ebenfalls (du kannst sie ändern oder leeren).
+            <strong>Postfach:</strong> In der Redaktion gibt es den Eintrag „Tickets“ (am Handy im Menü). Dort schreibst du mit „Neu“ einen Fehler, einen Wunsch oder eine Frage auf, mit Titel, Beschreibung und bis zu vier Screenshots. Gerät und Browser werden automatisch mitgeschickt, die Seite davor ebenfalls (du kannst sie ändern oder leeren).
           </li>
           <li>
-            <strong>Stand:</strong> Unter „Meine Meldungen“ siehst du, ob deine Meldung offen ist, bearbeitet wird, erledigt oder abgelehnt wurde. Bei einer Änderung bekommst du eine Benachrichtigung. Nur du und die Betreiberin sehen deine Meldungen.
+            <strong>Nummer und Verlauf:</strong> Jedes Ticket bekommt eine Nummer (zum Beispiel #12). Im Ticket siehst du den Stand (Offen, In Arbeit, Erledigt, Abgelehnt) und die Antworten. Antworten und Statuswechsel erscheinen sofort, ohne neu zu laden. Ungelesene Tickets sind fett und haben einen Punkt, der Zähler steht am Eintrag „Tickets“.
+          </li>
+          <li>
+            <strong>Wer sieht was:</strong> Nur du und die Betreiberin sehen deine Tickets. Antwortest du auf ein erledigtes Ticket, wird es wieder geöffnet.
           </li>
         </ul>
       </Section>

@@ -5,7 +5,7 @@ import { useDiceEnabled } from "./dice-context";
 import { useWorldRights } from "./rights-context";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices } from "lucide-react";
+import { BarChart3, Users, House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices, Inbox } from "lucide-react";
 import { useAppMode } from "@/components/mode-context";
 import { NavLink } from "./nav-link";
 import { ChatsNavLink } from "./chats-nav-link";
@@ -19,6 +19,7 @@ export function SidebarNav({
   unreadCounts,
   activeCharacter,
   appAdmin = false,
+  ticketUnread = 0,
 }: {
   userId: string;
   myCharacterIds: string[];
@@ -26,6 +27,8 @@ export function SidebarNav({
   activeCharacter: Character | null;
   // App-Admins sehen in der Redaktion zusätzlich den Überblick
   appAdmin?: boolean;
+  // Ungelesene Tickets (Zahl am Eintrag „Tickets“)
+  ticketUnread?: number;
 }) {
   const pathname = usePathname();
   const mode = useAppMode();
@@ -42,6 +45,9 @@ export function SidebarNav({
           </NavLink>
           <NavLink href="/redaktion/chat" icon={<MessageCircle className={ICON} strokeWidth={2} />}>
             Chat
+          </NavLink>
+          <NavLink href="/redaktion/tickets" icon={<Inbox className={ICON} strokeWidth={2} />} badge={ticketUnread}>
+            Tickets
           </NavLink>
           <NavLink href="/redaktion/verlauf" icon={<History className={ICON} strokeWidth={2} />}>
             Verlauf

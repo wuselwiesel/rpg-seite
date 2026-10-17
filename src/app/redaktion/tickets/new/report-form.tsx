@@ -3,12 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { alertDialog } from "@/components/confirm-dialog";
+import { ImagePicker } from "@/components/ticket-images";
 import { KINDS, deviceSummary, pathFromReferrer, type TicketKind } from "@/lib/tickets";
-import { createTicket } from "./actions";
+import { uploadTicketImages } from "@/lib/ticket-upload";
+import { createTicket } from "../actions";
 
 const input = "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
-// Meldeformular: Art, Titel, Beschreibung; Gerät und, ohne eigene Angabe, die Seite davor werden mitgeschickt
+// Neues Ticket: Art, Titel, Beschreibung, Screenshots; Gerät und, ohne eigene Angabe, die Seite davor werden mitgeschickt
 export function ReportForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -16,9 +18,15 @@ export function ReportForm() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [page, setPage] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
 
   function send() {
     startTransition(async () => {
+      const up = await uploadTicketImages(files);
+      if ("error" in up) {
+        void alertDialog(up.error);
+        return;
+      }
       const device = deviceSummary({
         userAgent: navigator.userAgent,
         width: window.innerWidth,
@@ -26,13 +34,12 @@ export function ReportForm() {
         touch: window.matchMedia("(pointer: coarse)").matches,
         dark: window.matchMedia("(prefers-color-scheme: dark)").matches || document.documentElement.dataset.theme === "dark",
       });
-      const error = await createTicket({ kind, title, body, page: page.trim() || pathFromReferrer(document.referrer, window.location.origin), device });
-      if (error) {
-        void alertDialog(error);
+      const res = await createTicket({ kind, title, body, page: page.trim() || pathFromReferrer(document.referrer, window.location.origin), device, images: up.paths });
+      if (res.error || !res.id) {
+        void alertDialog(res.error ?? "Das hat nicht geklappt.");
         return;
       }
-      setTitle("");
-      setBody("");
+      router.push(`/redaktion/tickets/${res.id}`);
       router.refresh();
     });
   }
@@ -60,7 +67,8 @@ export function ReportForm() {
         ))}
       </div>
       <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Titel" aria-label="Titel" className={input} />
-      <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} rows={5} placeholder="Beschreibung" aria-label="Beschreibung" className={input} />
+      <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} rows={6} placeholder="Beschreibung" aria-label="Beschreibung" className={input} />
+      <ImagePicker files={files} onChange={setFiles} />
       <input value={page} onChange={(e) => setPage(e.target.value)} maxLength={300} placeholder="Seite (optional)" aria-label="Seite" className={input} />
       <div>
         <button type="submit" disabled={pending || !title.trim()} className="rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">

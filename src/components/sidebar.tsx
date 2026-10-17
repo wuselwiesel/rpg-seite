@@ -120,6 +120,8 @@ export async function Sidebar() {
   // Besitzer:in oder Admin: darf die Welt bearbeiten
   const canManage = activeWorld.created_by === user.id || myMembership?.role === "admin";
   const appAdmin = await isAppAdmin();
+  const { data: ticketUnreadData } = await supabase.rpc("ticket_unread_count");
+  const ticketUnread = typeof ticketUnreadData === "number" ? ticketUnreadData : 0;
   const altAccount = await getAltAccountLabel();
 
   return (
@@ -170,6 +172,7 @@ export async function Sidebar() {
         unreadCounts={unreadCounts}
         activeCharacter={activeCharacter}
         appAdmin={appAdmin}
+        ticketUnread={ticketUnread}
       />
       </div>
       <SidebarOnline members={worldMembers} selfId={user.id} />
@@ -208,6 +211,7 @@ export async function Sidebar() {
       activeWorld={activeWorld}
       canManage={canManage}
       appAdmin={appAdmin}
+      ticketUnread={ticketUnread}
       altAccount={altAccount}
       activeCharacter={activeCharacter}
       characters={characters}

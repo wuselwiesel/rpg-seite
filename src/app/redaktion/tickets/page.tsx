@@ -1,0 +1,18 @@
+import { Inbox } from "lucide-react";
+import { TicketList } from "./ticket-list";
+
+export const metadata = { title: "Tickets" };
+
+export default function TicketsPage() {
+  return (
+    <>
+      <div className="mx-auto max-w-2xl px-1 py-6 lg:hidden">
+        <TicketList />
+      </div>
+      <div className="hidden h-full min-h-dvh flex-col items-center justify-center gap-3 text-muted lg:flex">
+        <Inbox className="h-10 w-10" strokeWidth={1.5} />
+        <p className="text-sm">Wähle links ein Ticket aus.</p>
+      </div>
+    </>
+  );
+}

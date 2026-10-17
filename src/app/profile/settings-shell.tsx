@@ -9,10 +9,8 @@ import {
   ChevronRight,
   Compass,
   Dices,
-  Inbox,
   KeyRound,
   LifeBuoy,
-  MessageSquareWarning,
   Newspaper,
   Palette,
   SmilePlus,
@@ -53,26 +51,13 @@ const GROUPS: { title: string; items: Item[] }[] = [
 
 const INVITE_ITEM: Item = { href: "/profile/einladungscodes", label: "Einladungscodes", hint: "Wer sich registrieren darf", Icon: KeyRound };
 
-const INBOX_ITEM: Item = { href: "/profile/eingang", label: "Meldungs-Eingang", hint: "Fehler, Wünsche und Fragen der Mitglieder", Icon: Inbox };
-
 const OFFICIAL_ITEM: Item = { href: "/profile/wortwinkel", label: "Konto wechseln", hint: "Zwischen Streuselschnecke und Wortwinkel", Icon: ArrowLeftRight };
 
 const row =
   "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-surface-2";
 
 // Instagram-artige Einstellungen: Auf dem Handy erst die Liste, dann die Unterseite; am Desktop Liste links, Inhalt rechts.
-export function SettingsShell({
-  children,
-  showOfficialAccount = false,
-  showInviteCodes = false,
-  openTickets = null,
-}: {
-  children: React.ReactNode;
-  showOfficialAccount?: boolean;
-  showInviteCodes?: boolean;
-  // Zahl offener Meldungen; null = kein Eingang (nur App-Admins)
-  openTickets?: number | null;
-}) {
+export function SettingsShell({ children, showOfficialAccount = false, showInviteCodes = false }: { children: React.ReactNode; showOfficialAccount?: boolean; showInviteCodes?: boolean }) {
   const pathname = usePathname();
   const isHub = pathname === "/profile";
 
@@ -81,7 +66,7 @@ export function SettingsShell({
       <nav className={`${isHub ? "" : "hidden lg:block"} lg:w-72 lg:shrink-0`} aria-label="Einstellungen">
         <h1 className="mb-4 font-serif text-3xl text-fg">Einstellungen</h1>
         <div className="flex flex-col gap-5">
-          {[...GROUPS, ...(showOfficialAccount || showInviteCodes || openTickets !== null ? [{ title: "Betreiberin", items: [...(showOfficialAccount ? [OFFICIAL_ITEM] : []), ...(showInviteCodes ? [INVITE_ITEM] : []), ...(openTickets !== null ? [INBOX_ITEM] : [])] }] : [])].map((group) => (
+          {[...GROUPS, ...(showOfficialAccount || showInviteCodes ? [{ title: "Betreiberin", items: [...(showOfficialAccount ? [OFFICIAL_ITEM] : []), ...(showInviteCodes ? [INVITE_ITEM] : [])] }] : [])].map((group) => (
             <div key={group.title}>
               <p className="mb-1 px-3 text-xs font-medium text-muted">{group.title}</p>
               {group.items.map(({ href, label, hint, Icon }) => {
@@ -98,11 +83,6 @@ export function SettingsShell({
                       <span className="block text-[15px] font-medium text-fg">{label}</span>
                       <span className="block truncate text-xs text-muted">{hint}</span>
                     </span>
-                    {href === INBOX_ITEM.href && (openTickets ?? 0) > 0 && (
-                      <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong" aria-label={`${openTickets} offene Meldungen`}>
-                        {openTickets}
-                      </span>
-                    )}
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
                   </Link>
                 );
@@ -111,11 +91,6 @@ export function SettingsShell({
           ))}
           <div>
             <p className="mb-1 px-3 text-xs font-medium text-muted">Hilfe</p>
-            <Link href="/profile/meldungen" className={`${row} ${pathname === "/profile/meldungen" ? "bg-surface-2" : ""}`} aria-current={pathname === "/profile/meldungen" ? "page" : undefined}>
-              <MessageSquareWarning className="h-5 w-5 shrink-0 text-fg-soft" strokeWidth={2} />
-              <span className="flex-1 text-[15px] font-medium text-fg">Etwas melden</span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
-            </Link>
             <Link href="/hilfe" className={row}>
               <LifeBuoy className="h-5 w-5 shrink-0 text-fg-soft" strokeWidth={2} />
               <span className="flex-1 text-[15px] font-medium text-fg">Hilfe</span>
