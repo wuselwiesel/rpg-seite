@@ -50,13 +50,13 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Dein Charakter",
-        text: "Du schreibst immer als einer deiner Charaktere. Hier wählst du, wer gerade aktiv ist. Wechselst du, ändern sich Profil, ChaBo (bzw. Steckbrief) und Chats mit. Wie viele Charaktere du hast, bestimmst du selbst.",
+        text: "Du schreibst immer als einer deiner Charaktere. Am Computer wählst du hier, wer gerade aktiv ist; am Handy steht „Wechseln“ ganz oben im Menü. Wechselst du, ändern sich Profil, ChaBo (bzw. Steckbrief) und Chats mit. Wie viele Charaktere du hast, bestimmst du selbst.",
         route: "/",
-        match: { attr: "character" },
+        match: { any: [{ attr: "character" }, { attr: "account-menu" }] },
       },
       {
         title: "Ingame, Story und Redaktion",
-        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit Feed, ChaBo (Steckbrief) und Chats. Die Suche erreichst du über die Lupe oben. „Story“ ist das eigentliche Rollenspiel: Szenen, Wiki und ChaBo (Steckbrief). „Redaktion“ ist für euch als Spieler:innen, außerhalb der Rolle, mit eigenem Feed und Chat.",
+        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit Feed, ChaBo (Steckbrief) und Chats. Die Suche steht am Handy ganz oben im Menü, am Computer in der Seitenleiste. „Story“ ist das eigentliche Rollenspiel: Szenen, Wiki und ChaBo (Steckbrief). „Redaktion“ ist für euch als Spieler:innen, außerhalb der Rolle, mit eigenem Feed und Chat.",
         route: "/",
         match: { attr: "mode-switch" },
       },
@@ -109,9 +109,9 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Suche",
-        text: "Die Suche (Lupe oben, in der Redaktion auch in der Navigation) findet Charaktere, Welten und Beiträge, auch über Hashtags. Tippe auf ein Ergebnis, um das Profil oder den Beitrag zu öffnen.",
+        text: "Die Suche (am Handy ganz oben im Menü, am Computer in der Seitenleiste) findet Charaktere, Welten und Beiträge, auch über Hashtags. Tippe auf ein Ergebnis, um das Profil oder den Beitrag zu öffnen.",
         route: "/",
-        match: { any: [{ name: "Suche" }, { attr: "search" }] },
+        match: { any: [{ name: "Suche" }, { attr: "search" }, { attr: "account-menu" }] },
       },
       {
         title: "Profile und Folgen",

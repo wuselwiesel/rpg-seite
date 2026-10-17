@@ -8,13 +8,11 @@ import { usePathname } from "next/navigation";
 import { BarChart3, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { MobileWorldPicker } from "./mobile-world-picker";
-import { ActiveCharacterMenu } from "./active-character-menu";
+import { MenuCharacterCard } from "./menu-character-card";
 import { InstallAppButton } from "./install-app-button";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { CharacterAvatar } from "./character-avatar";
-import { PresenceControl } from "./character-presence";
-import { Wordmark } from "./wordmark";
 import { MobileTabLink } from "./mobile-tab-link";
 import { MobileChatsTab } from "./mobile-chats-tab";
 import { MobileModeButton } from "./mode-switch";
@@ -86,29 +84,10 @@ export function MobileNav({
   return (
     <>
       <div className="sticky top-0 z-30 border-b border-line bg-app print:hidden lg:hidden">
-      <div className="flex items-center justify-between gap-2 px-4 py-2.5 max-[359px]:px-2">
-        {pathname === "/" && (
-          <Link href="/" aria-label="Wortwinkel" className="hidden shrink-0 min-[440px]:block">
-            <Wordmark height={28} />
-          </Link>
-        )}
-        <div className={pathname === "/" ? "flex min-w-0 flex-1 justify-start min-[440px]:justify-end" : "min-w-0 flex-1"}>
-          <ActiveCharacterMenu
-            characters={characters}
-            activeCharacter={activeCharacter}
-            avatarOnly
-            hideChevron={pathname === "/"}
-          />
-        </div>
+      <div className="flex items-center gap-2 px-4 py-2 max-[359px]:px-2">
+        {/* Links die Welt (ein Tipp wechselt sie); rechts Glocke, Bereich und Menü. Suche, Mitglieder und Charakterwechsel liegen im Menü. */}
+        <MobileWorldPicker worlds={worlds} activeWorld={activeWorld} />
         <div className="flex shrink-0 items-center gap-1">
-          <MobileOnline members={worldMembers} selfId={userId} />
-          <Link
-            href="/search"
-            aria-label="Suche"
-            className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 hover:text-fg ${pathname?.startsWith("/search") ? "bg-surface-2 text-fg" : "text-fg-soft"}`}
-          >
-            <Search className="h-[18px] w-[18px]" strokeWidth={2} />
-          </Link>
           <NotificationBell
             key={`${activeWorld.id}-${worldFilter}`}
             userId={userId}
@@ -117,7 +96,7 @@ export function MobileNav({
             initialNotifications={initialNotifications}
             initialUnreadCount={initialUnreadCount}
           />
-          <MobileModeButton compact={pathname === "/"} />
+          <MobileModeButton />
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
@@ -130,8 +109,6 @@ export function MobileNav({
           </button>
         </div>
       </div>
-      {/* Welt, in der man gerade ist: ein Tipp klappt die Liste der eigenen Welten auf */}
-      <MobileWorldPicker worlds={worlds} activeWorld={activeWorld} />
       </div>
 
       <nav className="mobile-bottom-nav transform-gpu fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
@@ -237,34 +214,16 @@ export function MobileNav({
           </button>
         </div>
 
-        {activeCharacter && (
-          <div className="mb-5 flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3">
-            <div className="relative shrink-0">
-              <Link href={`/characters/${activeCharacter.id}`} onClick={() => setMoreOpen(false)}>
-                <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={48} />
-              </Link>
-              <PresenceControl characterId={activeCharacter.id} online={!!activeCharacter.presence_online} placement="bottom-right" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <Link
-                href={`/characters/${activeCharacter.id}`}
-                onClick={() => setMoreOpen(false)}
-                className="block truncate font-serif text-lg text-fg hover:text-accent"
-              >
-                {activeCharacter.name}
-              </Link>
-              {profile?.username && (
-                <Link
-                  href="/profile"
-                  onClick={() => setMoreOpen(false)}
-                  className="block text-xs text-muted hover:text-accent"
-                >
-                  @{profile.nickname || profile.username}
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
+        <Link
+          href="/search"
+          onClick={() => setMoreOpen(false)}
+          className="mb-4 flex items-center gap-3 rounded-xl bg-surface-2 px-4 py-3 text-[15px] text-muted transition hover:text-fg"
+        >
+          <Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+          Suchen
+        </Link>
+
+        <MenuCharacterCard characters={characters} activeCharacter={activeCharacter} profile={profile} onNavigate={() => setMoreOpen(false)} />
 
         <div className="mb-4">
           <p className="mb-1 px-1 text-xs text-muted">Welt</p>
@@ -272,6 +231,7 @@ export function MobileNav({
         </div>
 
         <div className="flex flex-col gap-1">
+          <MobileOnline members={worldMembers} selfId={userId} variant="row" onOpen={() => setMoreOpen(false)} />
           {diceEnabled && (
             <Link
               href="/story/wuerfe"
