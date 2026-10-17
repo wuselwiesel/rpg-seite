@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { alertDialog } from "@/components/confirm-dialog";
 import { offerCharacter, setCharacterClaimable, withdrawCharacterClaim } from "./claim-actions";
@@ -74,6 +75,8 @@ export function CreatedList({
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | CreatedStatus>("all");
   const [open, setOpen] = useState<string | null>(null);
+  // Welche Karte ihre Vergabe-Aktionen zeigt
+  const [menu, setMenu] = useState<string | null>(null);
   const [target, setTarget] = useState("");
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
@@ -121,10 +124,12 @@ export function CreatedList({
         <ul className="flex flex-col gap-2">
           {visible.map((c) => {
             const isOpen = open === c.id;
+            const menuOpen = menu === c.id;
             return (
               <li key={c.id} className="rounded-2xl border border-line bg-surface p-3">
                 <div className="flex flex-col gap-3">
-                  <Link href={`/characters/${c.id}`} className="flex min-w-0 items-center gap-3">
+                  <div className="flex items-start gap-1">
+                  <Link href={`/characters/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                     <CharacterAvatar name={c.name} avatarUrl={c.avatarUrl} size={44} />
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-fg">{c.name}</span>
@@ -134,13 +139,25 @@ export function CreatedList({
                       </span>
                     </span>
                   </Link>
+                    {c.canManage && (
+                      <button
+                        type="button"
+                        onClick={() => setMenu(menuOpen ? null : c.id)}
+                        aria-expanded={menuOpen}
+                        aria-label={menuOpen ? "Optionen schließen" : "Vergabe-Optionen öffnen"}
+                        className="relative -mr-1 flex h-9 shrink-0 items-center rounded-full px-2 text-fg-soft transition before:absolute before:-inset-1 hover:bg-surface-2 hover:text-accent"
+                      >
+                        <ChevronDown className={`h-5 w-5 transition-transform ${menuOpen ? "rotate-180" : ""}`} strokeWidth={2} />
+                      </button>
+                    )}
+                  </div>
                   <span className="flex flex-wrap items-center gap-2">
                     {c.requestCount > 0 && (
                       <Link href={`/worlds/${worldId}`} className="rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
                         {c.requestCount} {c.requestCount === 1 ? "Anfrage" : "Anfragen"}
                       </Link>
                     )}
-                    {c.canManage && (c.status === "free" || c.claimable) && (
+                    {menuOpen && c.canManage && (c.status === "free" || c.claimable) && (
                       <>
                         {c.offer ? (
                           <button type="button" disabled={pending} onClick={() => run(() => withdrawCharacterClaim(c.offer!.claimId))} className={quiet}>
@@ -158,7 +175,7 @@ export function CreatedList({
                         )}
                       </>
                     )}
-                    {(c.status === "npc" || c.status === "mine") && c.canManage && !c.claimable && (
+                    {menuOpen && (c.status === "npc" || c.status === "mine") && c.canManage && !c.claimable && (
                       <>
                         <button type="button" disabled={pending} onClick={() => run(() => setCharacterClaimable(c.id, true))} className={primary}>
                           Zur Vergabe freigeben

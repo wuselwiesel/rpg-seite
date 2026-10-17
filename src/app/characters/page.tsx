@@ -13,7 +13,7 @@ import { RevealRow } from "@/components/reveal-row";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { cookies } from "next/headers";
-import { NpcRoleActions } from "./npc-role-actions";
+import { RoleOptions } from "./npc-role-actions";
 import { CreatedList, type CreatedCharacter } from "./created-list";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { speciesLabelOf, speciesListOf } from "@/lib/world-species";
@@ -172,7 +172,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
                   ChaBo
                 </Link>
                 {(isWorldAdmin || npc.claimable) && (
-                  <NpcRoleActions
+                  <RoleOptions
                     characterId={npc.id}
                     claimable={Boolean(npc.claimable)}
                     isAdmin={isWorldAdmin}

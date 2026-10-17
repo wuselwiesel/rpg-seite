@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { AvailabilityBadge } from "@/components/character-availability";
 import { NpcRoleActions } from "@/app/characters/npc-role-actions";
@@ -41,6 +41,13 @@ const FILTERS: { key: "all" | RosterStatus; label: string }[] = [
   { key: "mine", label: "Meine" },
   { key: "npc", label: "NPCs" },
 ];
+
+// „Vergeben“ heißt: hat eine:n Spieler:in, also auch die eigenen Charaktere
+function matchesFilter(c: RosterCharacter, filter: "all" | RosterStatus) {
+  if (filter === "all") return true;
+  if (filter === "taken") return c.status === "taken" || c.status === "mine";
+  return c.status === filter;
+}
 
 function norm(s: string) {
   return s.toLocaleLowerCase("de");
@@ -82,10 +89,13 @@ export function WorldRoster({
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(PAGE);
   const [showMissing, setShowMissing] = useState(false);
+  // Welche Karte ihre Vergabe-Optionen zeigt (immer nur eine)
+  const [open, setOpen] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>([["all", characters.length]]);
     for (const c of characters) m.set(c.status, (m.get(c.status) ?? 0) + 1);
+    m.set("taken", (m.get("taken") ?? 0) + (m.get("mine") ?? 0));
     return m;
   }, [characters]);
   const speciesOptions = useMemo(() => [...new Set(characters.map((c) => c.species).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b, "de")), [characters]);
@@ -94,7 +104,7 @@ export function WorldRoster({
   const q = norm(query.trim());
   const visible = useMemo(() => {
     const list = characters.filter((c) => {
-      if (filter !== "all" && c.status !== filter) return false;
+      if (!matchesFilter(c, filter)) return false;
       if (species && c.species !== species) return false;
       if (q && !norm(c.name).includes(q) && !norm(c.ownerName ?? "").includes(q) && !norm(c.species ?? "").includes(q)) return false;
       return true;
@@ -109,14 +119,8 @@ export function WorldRoster({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2 text-sm">
-        <span className="rounded-full border border-line bg-surface px-3 py-1">
-          <span className="font-semibold text-fg lining-nums tabular-nums">{characters.length}</span> <span className="text-fg-soft">Charaktere</span>
-        </span>
-        <span className="rounded-full border border-line bg-surface px-3 py-1">
-          <span className="font-semibold text-fg lining-nums tabular-nums">{counts.get("free") ?? 0}</span> <span className="text-fg-soft">frei</span>
-        </span>
-        {isAdmin && (
+      {isAdmin && (
+        <div className="flex flex-wrap gap-2 text-sm">
           <button
             type="button"
             onClick={() => setShowMissing((v) => !v)}
@@ -125,8 +129,8 @@ export function WorldRoster({
           >
             <span className="font-semibold lining-nums tabular-nums">{withoutCharacter.length}</span> {withoutCharacter.length === 1 ? "Mitglied" : "Mitglieder"} ohne Charakter
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {isAdmin && showMissing && (
         <div className="rounded-2xl border border-line bg-surface p-3">
@@ -192,41 +196,63 @@ export function WorldRoster({
         <p className="text-sm text-muted">Nichts gefunden.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {visible.slice(0, shown).map((c) => (
-            <li key={c.id} className="rounded-2xl border border-line bg-surface p-3">
-              <div className="flex flex-col gap-2">
-                <Link href={`/characters/${c.id}`} className="flex min-w-0 items-center gap-3">
-                  <CharacterAvatar name={c.name} avatarUrl={c.avatarUrl} size={44} />
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium text-fg">{c.name}</span>
-                    <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      <StatusChip c={c} />
-                      <AvailabilityBadge availability={c.availability} location={c.location} />
-                      <OfferedChip c={c} />
-                      {c.species && <span className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">{c.species}</span>}
-                      {c.requestCount > 0 && c.canManage && <span className="rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">{c.requestCount} {c.requestCount === 1 ? "Anfrage" : "Anfragen"}</span>}
+          {visible.slice(0, shown).map((c) => {
+            const hasOptions = c.canManage || (c.claimable && c.status !== "mine");
+            const isOpen = open === c.id;
+            const toggle = () => setOpen(isOpen ? null : c.id);
+            return (
+              <li key={c.id} className="rounded-2xl border border-line bg-surface">
+                <div className="flex items-start gap-1 p-3">
+                  <Link href={`/characters/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                    <CharacterAvatar name={c.name} avatarUrl={c.avatarUrl} size={44} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-fg">{c.name}</span>
+                      <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <StatusChip c={c} />
+                        <AvailabilityBadge availability={c.availability} location={c.location} />
+                        <OfferedChip c={c} />
+                        {c.species && <span className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-soft">{c.species}</span>}
+                      </span>
                     </span>
-                  </span>
-                </Link>
-                {c.status === "review" && (isAdmin || c.canManage) && (
-                  <Link href={`/characters/${c.id}/pruefung`} className="w-fit rounded-full border border-line px-3 py-1 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent">
-                    {isAdmin ? "Prüfen" : "Zur Prüfung"}
                   </Link>
+                  {hasOptions && (
+                    <button
+                      type="button"
+                      onClick={toggle}
+                      aria-expanded={isOpen}
+                      aria-label={isOpen ? "Optionen schließen" : c.canManage ? "Vergabe-Optionen öffnen" : "Rolle anfragen"}
+                      className="relative -mr-1 flex h-9 shrink-0 items-center gap-1 rounded-full px-2 text-fg-soft transition before:absolute before:-inset-1 hover:bg-surface-2 hover:text-accent"
+                    >
+                      {c.requestCount > 0 && c.canManage && (
+                        <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong lining-nums tabular-nums">{c.requestCount}</span>
+                      )}
+                      <ChevronDown className={`h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`} strokeWidth={2} />
+                    </button>
+                  )}
+                </div>
+                {c.status === "review" && (isAdmin || c.canManage) && (
+                  <div className="px-3 pb-3">
+                    <Link href={`/characters/${c.id}/pruefung`} className="inline-block rounded-full border border-line px-3 py-1 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent">
+                      {isAdmin ? "Prüfen" : "Zur Prüfung"}
+                    </Link>
+                  </div>
                 )}
-                {(c.canManage || (c.claimable && c.status !== "mine")) && (
-                  <NpcRoleActions
-                    characterId={c.id}
-                    claimable={c.claimable}
-                    vacant={c.status === "free"}
-                    isAdmin={c.canManage}
-                    myRequestId={c.myRequestId}
-                    offer={c.offer}
-                    members={offerTargets}
-                  />
+                {hasOptions && isOpen && (
+                  <div className="border-t border-line px-3 py-3">
+                    <NpcRoleActions
+                      characterId={c.id}
+                      claimable={c.claimable}
+                      vacant={c.status === "free"}
+                      isAdmin={c.canManage}
+                      myRequestId={c.myRequestId}
+                      offer={c.offer}
+                      members={offerTargets}
+                    />
+                  </div>
                 )}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
 

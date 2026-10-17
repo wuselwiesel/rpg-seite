@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { alertDialog } from "@/components/confirm-dialog";
 import { offerCharacter, requestCharacter, setCharacterClaimable, withdrawCharacterClaim } from "./claim-actions";
 
@@ -142,6 +143,20 @@ export function NpcRoleActions({
           </div>
         </form>
       )}
+    </div>
+  );
+}
+
+// Vergabe erst nach Tippen zeigen, damit Listen ruhig bleiben
+export function RoleOptions(props: React.ComponentProps<typeof NpcRoleActions>) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-fit items-center gap-1 text-sm font-medium text-fg-soft transition hover:text-accent">
+        Vergabe
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
+      </button>
+      {open && <NpcRoleActions {...props} />}
     </div>
   );
 }
