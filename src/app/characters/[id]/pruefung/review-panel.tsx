@@ -179,58 +179,77 @@ export function ReviewPanel({
       )}
 
       {isAdmin && (
-        <section aria-label="Änderung vorschlagen" className="flex flex-col gap-3">
-          <h2 className="font-serif text-xl text-fg">Änderung vorschlagen</h2>
-          <select value={fieldKey} onChange={(e) => pickField(e.target.value)} aria-label="Feld" className={input}>
-            <option value="">Feld wählen</option>
-            {groups.map(([group, list]) => (
-              <optgroup key={group} label={group}>
-                {list.map((f) => (
-                  <option key={f.key} value={f.key}>
-                    {f.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          {field && (
-            <>
-              <Diff oldValue={field.value} newValue={value} />
-              {field.kind === "select" ? (
-                <select value={value} onChange={(e) => setValue(e.target.value)} aria-label="Neuer Wert" className={input}>
-                  {(field.options ?? []).map((o) => (
-                    <option key={o} value={o}>
-                      {o || "leer"}
-                    </option>
-                  ))}
-                </select>
-              ) : field.kind === "long" ? (
-                <textarea value={value} onChange={(e) => setValue(e.target.value)} rows={6} aria-label="Neuer Wert" className={input} />
-              ) : (
-                <input type="text" inputMode={field.kind === "number" ? "numeric" : undefined} value={value} onChange={(e) => setValue(e.target.value)} aria-label="Neuer Wert" className={input} />
-              )}
-              <input type="text" value={proposalNote} onChange={(e) => setProposalNote(e.target.value)} maxLength={500} placeholder="Hinweis (optional)" aria-label="Hinweis" className={input} />
-              <div>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() =>
-                    run(
-                      () => proposeCharacterChange(characterId, field.key, value, proposalNote),
-                      () => {
-                        setFieldKey("");
-                        setValue("");
-                        setProposalNote("");
-                      },
-                    )
-                  }
-                  className={btnPrimary}
-                >
-                  Vorschlagen
-                </button>
-              </div>
-            </>
-          )}
+        <section aria-label="Angaben" className="flex flex-col gap-5">
+          {groups.map(([group, list]) => (
+            <div key={group} className="flex flex-col gap-2">
+              <h2 className="font-serif text-xl text-fg">{group}</h2>
+              <ul className="flex flex-col gap-2">
+                {list.map((f) => {
+                  const editing = f.key === fieldKey;
+                  const proposed = open.some((p) => p.label === f.label);
+                  return (
+                    <li key={f.key} className="flex flex-col gap-2 rounded-xl border border-line bg-surface px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted">
+                            {f.label}
+                            {proposed && <span className="ml-2 rounded-full bg-accent/15 px-1.5 py-0.5 text-accent">Vorschlag offen</span>}
+                          </p>
+                          <p className={`whitespace-pre-wrap break-words text-sm ${f.value ? "text-fg" : "text-muted"} ${editing ? "" : "line-clamp-4"}`}>{f.value || "leer"}</p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-expanded={editing}
+                          aria-label={`${f.label} ändern`}
+                          onClick={() => (editing ? setFieldKey("") : pickField(f.key))}
+                          className="shrink-0 rounded-full border border-line px-3 py-1 text-xs font-medium text-fg-soft transition hover:border-accent hover:text-accent"
+                        >
+                          {editing ? "Schließen" : "Ändern"}
+                        </button>
+                      </div>
+                      {editing && field && (
+                        <div className="flex flex-col gap-2">
+                          {field.kind === "select" ? (
+                            <select value={value} onChange={(e) => setValue(e.target.value)} aria-label="Neuer Wert" className={input}>
+                              {(field.options ?? []).map((o) => (
+                                <option key={o} value={o}>
+                                  {o || "leer"}
+                                </option>
+                              ))}
+                            </select>
+                          ) : field.kind === "long" ? (
+                            <textarea value={value} onChange={(e) => setValue(e.target.value)} rows={6} aria-label="Neuer Wert" className={input} />
+                          ) : (
+                            <input type="text" inputMode={field.kind === "number" ? "numeric" : undefined} value={value} onChange={(e) => setValue(e.target.value)} aria-label="Neuer Wert" className={input} />
+                          )}
+                          <input type="text" value={proposalNote} onChange={(e) => setProposalNote(e.target.value)} maxLength={500} placeholder="Hinweis (optional)" aria-label="Hinweis" className={input} />
+                          <div>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() =>
+                                run(
+                                  () => proposeCharacterChange(characterId, field.key, value, proposalNote),
+                                  () => {
+                                    setFieldKey("");
+                                    setValue("");
+                                    setProposalNote("");
+                                  },
+                                )
+                              }
+                              className={btnPrimary}
+                            >
+                              Vorschlagen
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </section>
       )}
 
