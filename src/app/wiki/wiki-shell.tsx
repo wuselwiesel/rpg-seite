@@ -52,6 +52,8 @@ type Props = {
   isWorldOwner: boolean;
   // Besetzung ist eingeschaltet (Admins sehen den Eintrag immer, um sie einzuschalten)
   showCast: boolean;
+  // Offene Rollenanfragen (nur Admins), Zahl am Reiter „Besetzung“
+  castRequests?: number;
   children: React.ReactNode;
 };
 
@@ -74,7 +76,7 @@ const WIKI_TOOLS = [
   { href: "/wiki/einstellungen", label: "Einstellungen", title: "Wiki-Einstellungen (Seitenarten)", Icon: Settings },
 ] as const;
 
-export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, showCast, children }: Props) {
+export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, showCast, castRequests = 0, children }: Props) {
   const tools = showCast ? WIKI_TOOLS : WIKI_TOOLS.filter((t) => t.href !== "/wiki/besetzung");
   const rights = useWorldRights();
   const pathname = usePathname();
@@ -217,6 +219,11 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
             >
               <t.Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
               {t.label}
+              {t.href === "/wiki/besetzung" && castRequests > 0 && (
+                <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong" aria-label={`${castRequests} offene Anfragen`}>
+                  {castRequests}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -304,6 +311,11 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                   >
                     <t.Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
                     {t.label}
+                    {t.href === "/wiki/besetzung" && castRequests > 0 && (
+                <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong" aria-label={`${castRequests} offene Anfragen`}>
+                  {castRequests}
+                </span>
+              )}
                   </Link>
                 );
               })}
