@@ -63,7 +63,9 @@ function ToolbarButton({
 }
 
 // Schwebende Leiste über (am Handy unter) markiertem Text: die wichtigsten Formate, ohne zur festen Leiste oben zurückzuscrollen.
-function SelectionMenu({ editor }: { editor: Editor }) {
+function SelectionMenu({ editor, wikiPages }: { editor: Editor; wikiPages?: { id: string; title: string }[] }) {
+  const [wikiOpen, setWikiOpen] = useState(false);
+  const [wikiQuery, setWikiQuery] = useState("");
   // Am Handy erscheint über der Auswahl schon das Menü des Systems (Kopieren, Einfügen), deshalb dort darunter.
   const coarse = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
   // Hervorhebung der aktiven Formate folgt der Auswahl.
@@ -99,17 +101,39 @@ function SelectionMenu({ editor }: { editor: Editor }) {
     editor.chain().focus().insertContentAt(to, "«").insertContentAt(from, "»").run();
   }
 
+  // Die Markierung wird zum Anzeigetext: [[Titel|markierter Text]], oder [[Text]], wenn beides gleich ist.
+  function linkToWiki(title: string) {
+    const { from, to } = editor.state.selection;
+    const selected = editor.state.doc.textBetween(from, to, " ").trim();
+    const token = selected && selected.toLowerCase() !== title.toLowerCase() ? `[[${title}|${selected}]]` : `[[${title}]]`;
+    editor.chain().focus().insertContent(token).run();
+    setWikiOpen(false);
+    setWikiQuery("");
+  }
+
+  function toggleWiki() {
+    const { from, to } = editor.state.selection;
+    setWikiQuery(editor.state.doc.textBetween(from, to, " ").trim().slice(0, 60));
+    setWikiOpen((v) => !v);
+  }
+
+  const wikiMatches = wikiPages?.filter((p) => p.title.toLowerCase().includes(wikiQuery.trim().toLowerCase())).slice(0, 6) ?? [];
+  const wikiExact = !!wikiPages?.some((p) => p.title.toLowerCase() === wikiQuery.trim().toLowerCase());
+
   return (
     <BubbleMenu
       editor={editor}
       options={{ placement: coarse ? "bottom" : "top", offset: 8, shift: { padding: 8 } }}
       shouldShow={({ editor: ed, state }) => ed.isEditable && !state.selection.empty && !ed.isActive("image")}
     >
+      <div className="flex max-w-[calc(100vw-1rem)] flex-col gap-1">
       <div
         role="toolbar"
         aria-label="Formatierung der Auswahl"
-        className="flex max-w-[calc(100vw-1rem)] items-center gap-0.5 overflow-x-auto rounded-lg border border-line bg-surface p-1 shadow-lg"
-        onMouseDown={(e) => e.preventDefault()}
+        className="flex max-w-[calc(100vw-1rem)] items-center gap-0.5 overflow-x-auto rounded-lg border border-line bg-surface p-1 shadow-lg [&>button]:shrink-0 [&>button]:whitespace-nowrap"
+        onMouseDown={(e) => {
+          if ((e.target as HTMLElement).tagName !== "INPUT") e.preventDefault();
+        }}
       >
         <ToolbarButton label="Fett" active={on.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
           <strong>F</strong>
@@ -146,6 +170,47 @@ function SelectionMenu({ editor }: { editor: Editor }) {
         <ToolbarButton label="Link" active={on.link} onClick={setLink}>
           🔗
         </ToolbarButton>
+        {wikiPages && (
+          <ToolbarButton label="Mit Wiki-Seite verlinken" active={wikiOpen} onClick={toggleWiki}>
+            [[ ]]
+          </ToolbarButton>
+        )}
+      </div>
+      {wikiOpen && wikiPages && (
+        <div
+          role="group"
+          aria-label="Wiki-Link einfügen"
+          className="flex w-72 max-w-full flex-col gap-1 rounded-lg border border-line bg-surface p-1.5 shadow-lg"
+          onMouseDown={(e) => {
+            if ((e.target as HTMLElement).tagName !== "INPUT") e.preventDefault();
+          }}
+        >
+          <input
+            autoFocus
+            value={wikiQuery}
+            onChange={(e) => setWikiQuery(e.target.value)}
+            placeholder="Seite suchen"
+            aria-label="Wiki-Seite suchen"
+            className="rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
+          />
+          <ul className="flex max-h-44 flex-col overflow-y-auto">
+            {wikiMatches.map((p) => (
+              <li key={p.id}>
+                <button type="button" onClick={() => linkToWiki(p.title)} className="w-full rounded-md px-2 py-1.5 text-left text-sm text-fg transition hover:bg-surface-2">
+                  {p.title}
+                </button>
+              </li>
+            ))}
+            {wikiQuery.trim() && !wikiExact && (
+              <li>
+                <button type="button" onClick={() => linkToWiki(wikiQuery.trim())} className="w-full rounded-md px-2 py-1.5 text-left text-sm text-accent transition hover:bg-surface-2">
+                  „{wikiQuery.trim()}“ verlinken (Seite fehlt noch)
+                </button>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
       </div>
     </BubbleMenu>
   );
@@ -636,7 +701,7 @@ export function RichTextEditor({
     <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
       {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} wikiPages={wikiPages} />}
-      {editor && <SelectionMenu editor={editor} />}
+      {editor && <SelectionMenu editor={editor} wikiPages={wikiPages} />}
       <EditorContent editor={editor} />
     </div>
   );
