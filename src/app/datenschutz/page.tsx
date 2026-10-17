@@ -2,17 +2,8 @@ import Link from "next/link";
 
 export const metadata = { title: "Datenschutz" };
 
-// Verantwortliche Person: kommt aus Umgebungsvariablen (nicht im öffentlichen Code), bis sie gesetzt sind, steht ein Hinweis da.
-const NAME = process.env.PRIVACY_NAME;
-const ADDRESS = process.env.PRIVACY_ADDRESS;
-const EMAIL = process.env.PRIVACY_EMAIL;
-
 const h2 = "font-serif text-xl text-fg";
 const p = "text-fg-soft";
-
-function Missing({ what }: { what: string }) {
-  return <span className="rounded bg-accent/15 px-1.5 py-0.5 text-sm text-accent">[{what} noch eintragen]</span>;
-}
 
 export default function PrivacyPage() {
   return (
@@ -21,17 +12,6 @@ export default function PrivacyPage() {
         <h1 className="font-serif text-3xl text-fg">Datenschutzerklärung</h1>
         <p className="text-sm text-muted">Stand: 16. Oktober 2026</p>
       </header>
-
-      <section className="flex flex-col gap-2">
-        <h2 className={h2}>Verantwortliche</h2>
-        <p className={p}>
-          {NAME ?? <Missing what="Name" />}
-          <br />
-          {ADDRESS ? <span className="whitespace-pre-line">{ADDRESS}</span> : <Missing what="Anschrift" />}
-          <br />
-          E-Mail: {EMAIL ? <a href={`mailto:${EMAIL}`} className="text-accent hover:underline">{EMAIL}</a> : <Missing what="E-Mail" />}
-        </p>
-      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className={h2}>Worum es geht</h2>
@@ -98,7 +78,7 @@ export default function PrivacyPage() {
         <h2 className={h2}>Deine Rechte</h2>
         <p className={p}>
           Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Eine Einwilligung kannst du jederzeit widerrufen. Vieles geht
-          direkt in der Seite: Daten bearbeiten und löschen, Konto löschen und deine Daten herunterladen (Einstellungen → Konto). Für alles andere schreib an die oben genannte E-Mail-Adresse.
+          direkt in der Seite: Daten bearbeiten und löschen, Konto löschen und deine Daten herunterladen (Einstellungen → Konto). Für alles andere wende dich an die Betreiberin oder den Betreiber der Seite.
         </p>
         <p className={p}>
           Du kannst dich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel der in deinem Bundesland zuständigen Landesdatenschutzbehörde.
