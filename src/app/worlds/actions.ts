@@ -171,6 +171,7 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
     permissions: permissionsFromForm(formData, parsePermissions({})),
     allow_secrets: formData.get("allow_secrets") === "on",
     review_characters: formData.get("review_characters") === "on",
+    cast_enabled: formData.get("cast_enabled") === "on",
   };
 
   if (formData.has("welcome")) {

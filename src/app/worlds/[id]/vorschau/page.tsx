@@ -11,10 +11,11 @@ import { previewHtml, type WorldPreviewInfo } from "@/lib/world-preview";
 import { JoinOrRequestButton } from "../../join-or-request-button";
 import { EnterWorldButton } from "../../enter-world-button";
 import { PreviewRoleAction } from "./preview-role-action";
+import { PreviewCast, type PreviewCastRow } from "./preview-cast";
 
 export const metadata = { title: "Welt erkunden" };
 
-type Tab = "info" | "wiki" | "figuren" | "rollen" | "szenen";
+type Tab = "info" | "wiki" | "figuren" | "rollen" | "besetzung" | "szenen";
 type RoleRow = { id: string; name: string; avatar_url: string | null; bio: string | null; species: string | null };
 type WikiRow = { id: string; title: string; page_type: string | null; lead: string | null; cover_image_url: string | null; icon_url: string | null };
 type CharRow = { id: string; name: string; avatar_url: string | null; bio: string | null; is_npc: boolean };
@@ -38,9 +39,13 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
   const { data: roleRows } = await supabase.rpc("world_preview_roles", { p_world: id });
   const roles = (roleRows ?? []) as RoleRow[];
 
+  // Besetzung (Rollenliste) nur, wenn die Welt sie eingeschaltet hat und etwas drinsteht
+  const { data: castRows } = await supabase.rpc("world_preview_cast", { p_world: id });
+  const cast = (castRows ?? []) as PreviewCastRow[];
+
   const wanted = typeof sp.tab === "string" ? sp.tab : "info";
   const tab: Tab =
-    wanted === "wiki" || wanted === "figuren" || (wanted === "rollen" && roles.length > 0) || (wanted === "szenen" && info.preview === "full") ? (wanted as Tab) : "info";
+    wanted === "wiki" || wanted === "figuren" || (wanted === "rollen" && roles.length > 0) || (wanted === "besetzung" && cast.length > 0) || (wanted === "szenen" && info.preview === "full") ? (wanted as Tab) : "info";
 
   const [wiki, characters, scenes] = await Promise.all([
     tab === "wiki" ? supabase.rpc("world_preview_wiki", { p_world: id }) : Promise.resolve({ data: [] }),
@@ -53,6 +58,7 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
     { key: "wiki", label: "Wiki" },
     { key: "figuren", label: "Figuren" },
     ...(roles.length > 0 ? [{ key: "rollen" as Tab, label: `Zu vergeben (${roles.length})` }] : []),
+    ...(cast.length > 0 ? [{ key: "besetzung" as Tab, label: "Besetzung" }] : []),
     ...(info.preview === "full" ? [{ key: "szenen" as Tab, label: "Szenen" }] : []),
   ];
   const welcome = info.welcome_html ? previewHtml(info.welcome_html) : "";
@@ -121,6 +127,8 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
           ))}
         </ul>
       )}
+
+      {tab === "besetzung" && <PreviewCast rows={cast} />}
 
       {tab === "figuren" && (
         <ul className="grid gap-2 sm:grid-cols-2">

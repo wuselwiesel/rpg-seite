@@ -470,6 +470,15 @@ export default async function HelpPage() {
             <strong>Kopfleiste am Handy:</strong> Oben links steht die Welt (ein Tipp wechselt sie), rechts folgen Glocke, der Schalter für Ingame, Story und Redaktion und das Menü. Suche, Mitglieder (mit Online-Anzeige) und der Charakterwechsel („Wechseln“ unter deinem Namen) stehen ganz oben im Menü.
           </li>
           <li>
+            <strong>Besetzung (Rollenliste):</strong> Admins schalten unter „Einstellungen“ die „Besetzung (Rollenliste im Wiki)“ ein, zum Beispiel für Welten nach einer Serie. Im Wiki steht dann „Besetzung“: alle Rollen mit Alter, Wesen, Serie und Stand (Frei, Reserviert, Vergeben, NPC), mit Suche, Anfangsbuchstaben und Filtern. Ein Tipp auf eine Rolle zeigt die Beschreibung.
+          </li>
+          <li>
+            <strong>Rolle anfragen:</strong> Bei einer freien Rolle schickst du „Rolle anfragen“ mit einer Begründung. Die Admins sagen zu oder lehnen ab. Nach der Zusage legst du den Charakter selbst an, der Name ist vorausgefüllt (Meldung oder Besetzung → „Charakter anlegen“). Danach steht die Rolle auf „Vergeben“. Löschst du den Charakter, wird sie wieder frei.
+          </li>
+          <li>
+            <strong>Besetzung pflegen (Admins):</strong> Ein Tipp auf eine Rolle zeigt „Reservieren“ (für ein Mitglied oder einen Namen, mit freiem Enddatum), „Als NPC markieren“ (wird nicht besetzt), „Mit Charakter verknüpfen“ (zum Beispiel für bestehende Charaktere), „Bearbeiten“ und „Entfernen“. Unter „Verwalten“ legst du Rollen an oder übernimmst sie aus einem Wiki-Ordner (Zeilen im Format „Name (Alter) → Wesen (Beschreibung) [Serie]“, † = verstorben). Die Wiki-Seiten bleiben dabei unverändert. Wer die Welt vorab ansehen darf, sieht die Besetzung im Reiter „Besetzung“ der Vorschau, ohne Namen der Spieler:innen.
+          </li>
+          <li>
             <strong>Ohne Charakter erkunden:</strong> Nach dem Beitritt musst du nicht gleich einen Charakter anlegen. Du kannst Feed, Story, Wiki, Figuren und die Weltseite ansehen. Zum Schreiben, Liken und Chatten brauchst du einen Charakter; ein Hinweis mit „Charakter anlegen“ und „Freie Rollen ansehen“ begleitet dich, bis du einen hast.
           </li>
           <li>

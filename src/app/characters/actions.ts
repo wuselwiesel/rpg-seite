@@ -68,6 +68,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   // „Frei“: normaler Charakter (kein NPC) ohne Spieler:in, zur Vergabe freigegeben; „NPC“ ist davon unabhängig
   const isNpc = formData.get("is_npc") === "on";
   const free = !isNpc && formData.get("free") === "on";
+  // Rolle aus der Besetzung (nach Zusage der Admins): der neue Charakter wird mit ihr verbunden
+  const roleId = String(formData.get("role_id") ?? "");
 
   if (name.length < 1) {
     return "Bitte einen Namen für den Charakter angeben.";
@@ -158,6 +160,15 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       // Lieber nichts anlegen als einen Charakter ohne den gewürfelten Bogen: wieder entfernen
       await supabase.from("characters").delete().eq("id", data.id);
       return `Der Bogen konnte nicht gespeichert werden: ${sheetError.message}`;
+    }
+  }
+
+  if (roleId) {
+    const { error: roleError } = await supabase.rpc("link_role_character", { p_role: roleId, p_character: data.id });
+    if (roleError) {
+      // Ohne gültige Zusage keinen Charakter zur Rolle anlegen
+      await supabase.from("characters").delete().eq("id", data.id);
+      return roleError.message;
     }
   }
 

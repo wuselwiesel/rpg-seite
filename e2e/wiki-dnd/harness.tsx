@@ -18,7 +18,7 @@ const pages: PageRow[] = [
 
 (window as unknown as { __moves: unknown[] }).__moves = [];
 createRoot(document.getElementById("root")!).render(
-  <WikiShell worldId="w" worldName="Testwelt" worlds={[]} folders={folders} pages={pages} userId="u" isWorldOwner>
+  <WikiShell worldId="w" worldName="Testwelt" worlds={[]} folders={folders} pages={pages} userId="u" isWorldOwner showCast={false}>
     <p>Inhalt</p>
   </WikiShell>,
 );

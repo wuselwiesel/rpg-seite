@@ -11,12 +11,12 @@ import type { CustomPools } from "@/lib/random-pools";
 import { activeLists, type ChoiceList } from "@/lib/choice-lists";
 import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
 
-export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [] }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[] }) {
+export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [], role = null }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[]; role?: { id: string; name: string } | null }) {
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
   const [error, formAction, pending] = useActionState(createCharacter, null);
   const searchParams = useSearchParams();
   const isWelcome = searchParams.get("welcome") === "1";
-  const [name, setName] = useState("");
+  const [name, setName] = useState(role?.name ?? "");
   const [species, setSpecies] = useState("mensch");
   const [gender, setGender] = useState("");
   const [bio, setBio] = useState("");
@@ -47,8 +47,14 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
 
       <form action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="sheet_json" value={sheetJson} />
+        {role && <input type="hidden" name="role_id" value={role.id} />}
+        {role && (
+          <p className="rounded-lg bg-accent/10 px-3 py-2 text-sm text-accent">
+            Du spielst die Rolle <span className="font-medium">{role.name}</span>
+          </p>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          {!isWelcome && (
+          {!isWelcome && !role && (
             <div className="flex flex-col gap-2">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-soft">
                 <input

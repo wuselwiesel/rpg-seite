@@ -7,7 +7,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings, Theater, Users } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -50,6 +50,8 @@ type Props = {
   pages: PageRow[];
   userId: string;
   isWorldOwner: boolean;
+  // Besetzung ist eingeschaltet (Admins sehen den Eintrag immer, um sie einzuschalten)
+  showCast: boolean;
   children: React.ReactNode;
 };
 
@@ -67,11 +69,13 @@ const WIKI_TOOLS = [
   { href: "/wiki/graph", label: "Graph", Icon: Network },
   { href: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },
   { href: "/wiki/kalender", label: "Kalender", Icon: CalendarDays },
+  { href: "/wiki/besetzung", label: "Besetzung", Icon: Theater },
   { href: "/characters/relationships", label: "Beziehungen", Icon: Users },
   { href: "/wiki/einstellungen", label: "Einstellungen", title: "Wiki-Einstellungen (Seitenarten)", Icon: Settings },
 ] as const;
 
-export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, children }: Props) {
+export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, showCast, children }: Props) {
+  const tools = showCast ? WIKI_TOOLS : WIKI_TOOLS.filter((t) => t.href !== "/wiki/besetzung");
   const rights = useWorldRights();
   const pathname = usePathname();
   const router = useRouter();
@@ -201,7 +205,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
       </header>
 
       <nav aria-label="Wiki-Werkzeuge" className="-mt-2 mb-6 hidden flex-wrap items-center gap-1 lg:flex print:hidden">
-        {WIKI_TOOLS.map((t) => {
+        {tools.map((t) => {
           const active = pathname.startsWith(t.href);
           return (
             <Link
@@ -287,7 +291,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
             </div>
 
             <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1 lg:hidden">
-              {WIKI_TOOLS.map((t) => {
+              {tools.map((t) => {
                 const active = pathname.startsWith(t.href);
                 return (
                   <Link
