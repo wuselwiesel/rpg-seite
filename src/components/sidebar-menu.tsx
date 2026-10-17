@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Compass, Menu, Settings, UserPlus, Users } from "lucide-react";
+import { BarChart3, Compass, Menu, Settings, UserPlus, Users } from "lucide-react";
 import { InstallAppButton } from "./install-app-button";
 import { startTour } from "@/lib/tour";
 
 // Hamburger-Menü in der Desktop-Seitenleiste: seltener genutzte Bereiche: Freund:innen, Charaktere, Konto.
-export function SidebarMenu() {
+export function SidebarMenu({ appAdmin = false }: { appAdmin?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -44,6 +44,12 @@ export function SidebarMenu() {
             <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Meine Charaktere
           </Link>
+          {appAdmin && (
+            <Link href="/redaktion/ueberblick" onClick={() => setOpen(false)} className={item}>
+              <BarChart3 className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              Überblick
+            </Link>
+          )}
           <Link href="/profile" onClick={() => setOpen(false)} className={item}>
             <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Konto &amp; Einstellungen

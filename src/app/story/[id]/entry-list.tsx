@@ -9,6 +9,7 @@ import type { Character, StoryEntry } from "@/lib/types";
 import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
 import { EarlierEntries } from "./earlier-entries";
 import { StoryEntryItem } from "./story-entry-item";
+import { keepScrollAnchor } from "@/lib/keep-scroll";
 import { loadEarlierEntries, type LoadedEntry } from "../entries-actions";
 import { GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
 
@@ -75,6 +76,8 @@ export function EntryList({
 
   async function loadOlder(until?: string): Promise<boolean> {
     if (!cursor.current || loadingOlder) return false;
+    // Per Knopf: Lesestelle halten, die neuen Beiträge erscheinen oberhalb (bei einem Sprung zu einem Beitrag scrollt der Sprung selbst)
+    const restore = until ? null : keepScrollAnchor(Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste [id^='beitrag-']"), (el) => el.id));
     setLoadingOlder(true);
     setLoadError(null);
     const res = await loadEarlierEntries(storyPostId, cursor.current, until);
@@ -90,6 +93,7 @@ export function EntryList({
       }
       cursor.current = res.items[0].entry.created_at;
       setOlder((prev) => [...res.items, ...prev]);
+      restore?.();
     }
     setRemaining(res.remaining);
     return res.items.length > 0;

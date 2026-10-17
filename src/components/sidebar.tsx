@@ -149,7 +149,7 @@ export async function Sidebar() {
               initialUnreadCount={initialUnreadCount}
             />
             <ThemeToggle />
-            <SidebarMenu />
+            <SidebarMenu appAdmin={appAdmin} />
           </div>
         </div>
       <div className="mb-3">
@@ -171,7 +171,6 @@ export async function Sidebar() {
         myCharacterIds={myCharacterIds}
         unreadCounts={unreadCounts}
         activeCharacter={activeCharacter}
-        appAdmin={appAdmin}
         ticketUnread={ticketUnread}
       />
       </div>
