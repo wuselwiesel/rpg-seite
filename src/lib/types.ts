@@ -31,6 +31,8 @@ export type World = {
   preview?: "none" | "info" | "full";
   // Geheime Felder in Bögen und Beziehungen erlaubt (Standard) oder in dieser Welt nicht mehr neu anlegbar
   allow_secrets?: boolean;
+  // Besetzung (Rollenliste im Wiki) eingeschaltet
+  cast_enabled?: boolean;
   // Neue Charaktere normaler Mitglieder starten „zur Prüfung“ (Admins genehmigen)
   review_characters?: boolean;
   // Rechte-Tabelle (siehe lib/world-permissions.ts); fehlende Schlüssel gelten als „alle Mitglieder“
