@@ -934,6 +934,12 @@ span[data-type="mention"][data-id]:hover {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
+/* Chat-Blase und ihr Fenster liegen fest über allem und gehören nicht zur Seite: eigener Name, damit sie beim Seitenwechsel
+   nicht mit dem Seitenabbild überblendet werden und flackern, sondern unverändert und live stehen bleiben. */
+.vt-chat { view-transition-name: chat-bubble; }
+::view-transition-group(chat-bubble) { animation: none; }
+::view-transition-old(chat-bubble) { display: none; }
+::view-transition-new(chat-bubble) { animation: none; }
 /* Während des Rundgangs: harte statt weicher Seitenwechsel, sonst blitzt zwischen den
    automatischen Sprüngen kurz ein weißer Übergangsrahmen auf. */
 html.tour-active ::view-transition-group(*),

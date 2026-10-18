@@ -331,7 +331,7 @@ function BubbleInner({
     <>
       {!open && (
         <div
-          className={`chat-bubble-root fixed z-[60] transition-[transform,opacity] duration-300 print:hidden ${
+          className={`chat-bubble-root vt-chat fixed z-[60] transition-[transform,opacity] duration-300 print:hidden ${
             tucked && !drag ? `opacity-40 ${pos.side === "left" ? "-translate-x-[70%]" : "translate-x-[70%]"}` : "opacity-90 hover:opacity-100"
           }`}
           style={bubbleStyle}
@@ -387,7 +387,7 @@ function BubbleInner({
         <div
           role="dialog"
           aria-label="Chats"
-          className={`fixed z-[60] flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl print:hidden inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+8px)] h-[min(72dvh,560px)] sm:inset-x-auto sm:bottom-4 sm:w-[380px] ${
+          className={`vt-chat fixed z-[60] flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl print:hidden inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+8px)] h-[min(72dvh,560px)] sm:inset-x-auto sm:bottom-4 sm:w-[380px] ${
             pos.side === "left" ? "sm:left-4" : "sm:right-4"
           }`}
         >
