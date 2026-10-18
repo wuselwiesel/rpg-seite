@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
+import { keepScrollAnchor, keepScrollElement } from "@/lib/keep-scroll";
 
 // Frühere Beiträge einer Szene: standardmäßig eingeklappt, damit man direkt bei den neuesten ist.
 export function EarlierEntries({ count, children }: { count: number; children: React.ReactNode }) {
@@ -38,10 +39,31 @@ export function EarlierEntries({ count, children }: { count: number; children: R
     };
   }, []);
 
+  // Beim Ein- und Ausklappen bleibt die Lesestelle, wo sie ist: beim Einblenden das erste sichtbare spätere Beitragsstück,
+  // beim Ausblenden über den oberen Knopf dieser Knopf, über den unteren Knopf (der dabei verschwindet) rückt der obere ins Bild.
+  function flip(e: React.MouseEvent<HTMLButtonElement>) {
+    if (!open) {
+      const restore = keepScrollAnchor(
+        Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste [id^='beitrag-'], #beitragsliste [id^='kapitel-']"))
+          .filter((el) => !ref.current?.contains(el))
+          .map((el) => el.id),
+      );
+      setOpen(true);
+      restore();
+      return;
+    }
+    const topToggle = ref.current?.previousElementSibling as HTMLElement | null;
+    const fromBottom = !!topToggle && topToggle !== e.currentTarget;
+    const restore = fromBottom ? null : keepScrollElement(e.currentTarget);
+    setOpen(false);
+    restore?.();
+    if (fromBottom) window.setTimeout(() => topToggle.scrollIntoView({ block: "center" }), 0);
+  }
+
   const toggle = (
     <button
       type="button"
-      onClick={() => setOpen((v) => !v)}
+      onClick={flip}
       aria-expanded={open}
       className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line bg-surface px-4 py-2.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg active:scale-[0.99]"
     >

@@ -48,3 +48,22 @@ export function keepScrollAnchor(elementIds: string[]): () => void {
     window.setTimeout(step, 0);
   };
 }
+
+// Ein bestimmtes Element (zum Beispiel den angetippten Knopf) an derselben Stelle des Bildschirms halten, wenn sich darüber etwas ein- oder ausklappt.
+export function keepScrollElement(el: HTMLElement): () => void {
+  const top = el.getBoundingClientRect().top;
+  return () => {
+    let tries = 0;
+    const step = () => {
+      if (el.isConnected) {
+        const diff = el.getBoundingClientRect().top - top;
+        if (Math.abs(diff) > 1) {
+          scrollParent(el).scrollTop += diff;
+          return;
+        }
+      }
+      if (++tries < 40) window.setTimeout(step, 25);
+    };
+    window.setTimeout(step, 0);
+  };
+}
