@@ -45,6 +45,7 @@ const TOC = [
   ["passwort-vergessen", "Passwort vergessen"],
   ["melden", "Tickets: etwas melden"],
   ["buch", "Szenen als PDF oder E-Book"],
+  ["chats-archiv", "Chats archivieren und löschen"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -563,6 +564,20 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>PDF und E-Book:</strong> In der Buchansicht speicherst du mit „Als PDF speichern“ (im Druckdialog „Als PDF speichern“ wählen) oder lädst das E-Book (EPUB).
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="chats-archiv" title="21. Chats archivieren und löschen">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Archivieren:</strong> Im Chat die drei Punkte oben antippen und „Archivieren“ wählen. Der Chat verschwindet aus deiner Liste und steht unten unter „Archiv“. Nur du siehst das. Schreibt jemand eine neue Nachricht, kommt der Chat von selbst zurück. Mit „Aus dem Archiv holen“ geht er sofort zurück.
+          </li>
+          <li>
+            <strong>Löschen:</strong> Im selben Menü steht „Chat löschen“. Das löscht den Chat mit allen Nachrichten für alle und lässt sich nicht rückgängig machen. Bei zwei Personen darf jede:r löschen, bei Gruppen nur, wer die Gruppe erstellt hat. Welt-Chats lassen sich archivieren, aber nicht löschen.
+          </li>
+          <li>
+            <strong>Gilt für:</strong> den Redaktions-Chat und die Chats in der Welt.
           </li>
         </ul>
       </Section>

@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   Bell,
   BellOff,
   ChevronDown,
   MoreHorizontal,
   Palette,
+  Trash2,
 } from "lucide-react";
 import { saveChatTheme } from "@/app/chat-theme-actions";
 import {
@@ -71,6 +74,9 @@ export function ChatThemePicker({
   align = "right",
   muted,
   onToggleMute,
+  archived,
+  onToggleArchive,
+  onDelete,
 }: {
   kind: ChatKind;
   chatId: string;
@@ -79,6 +85,10 @@ export function ChatThemePicker({
   align?: "left" | "right";
   muted?: boolean;
   onToggleMute?: () => void;
+  archived?: boolean;
+  onToggleArchive?: () => void;
+  // Chat löschen (nur angeben, wenn es erlaubt ist)
+  onDelete?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [colorsOpen, setColorsOpen] = useState(false);
@@ -237,6 +247,34 @@ export function ChatThemePicker({
                 />
               )}
               {muted ? "Stummschaltung aufheben" : "Stumm schalten"}
+            </button>
+          )}
+          {onToggleArchive && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onToggleArchive();
+                setOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-fg transition hover:bg-surface-2"
+            >
+              {archived ? <ArchiveRestore className="h-[18px] w-[18px] shrink-0 text-accent" strokeWidth={2} /> : <Archive className="h-[18px] w-[18px] shrink-0 text-fg-soft" strokeWidth={2} />}
+              {archived ? "Aus dem Archiv holen" : "Archivieren"}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onDelete();
+                setOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-surface-2 dark:text-red-400"
+            >
+              <Trash2 className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              Chat löschen
             </button>
           )}
         </div>

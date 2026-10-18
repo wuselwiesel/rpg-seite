@@ -15,6 +15,7 @@ export type AccountChatSummary = {
   lastMessage: { content: string; image_url: string | null; sender_id: string; created_at: string } | null;
   unread: number;
   muted: boolean;
+  archived: boolean;
   sortAt: string;
 };
 
@@ -22,6 +23,7 @@ type Row = {
   chat_id: string;
   last_read_at: string;
   muted: boolean;
+  archived: boolean;
   account_chats: {
     id: string;
     created_at: string;
@@ -34,11 +36,12 @@ type Row = {
 };
 
 // Alle Redaktions-Chats des Accounts: Gegenüber, letzte Nachricht und Anzahl ungelesener Nachrichten.
-export async function getAccountChats(userId: string): Promise<AccountChatSummary[]> {
+// Archivierte Chats stehen nur mit `includeArchived` drin (die Chatliste zeigt sie im Archiv, Blase und Zähler nicht).
+export async function getAccountChats(userId: string, includeArchived = false): Promise<AccountChatSummary[]> {
   const supabase = await createClient();
   const { data: rows } = await supabase
     .from("account_chat_participants")
-    .select("chat_id, last_read_at, muted, account_chats(id, created_at, kind, name, avatar_url, worlds(name, cover_image_url), account_chat_participants(user_id, profiles(*)))")
+    .select("chat_id, last_read_at, muted, archived, account_chats(id, created_at, kind, name, avatar_url, worlds(name, cover_image_url), account_chat_participants(user_id, profiles(*)))")
     .eq("user_id", userId)
     .returns<Row[]>();
   if (!rows?.length) return [];
@@ -63,7 +66,7 @@ export async function getAccountChats(userId: string): Promise<AccountChatSummar
 
   // Szenen-Chats leben nur in ihrer Szene (Reiter „Chat“), nicht in der Chatliste oder der Blase
   return rows
-    .filter((r) => r.account_chats?.kind !== "scene")
+    .filter((r) => r.account_chats?.kind !== "scene" && (includeArchived || !r.archived))
     .map((r): AccountChatSummary => {
       const chat = r.account_chats;
       const kind = (chat?.kind ?? "direct") as AccountChatKind;
@@ -87,6 +90,7 @@ export async function getAccountChats(userId: string): Promise<AccountChatSummar
         lastMessage,
         unread: unread.get(r.chat_id) ?? 0,
         muted: r.muted,
+        archived: r.archived,
         sortAt: lastMessage?.created_at ?? r.account_chats?.created_at ?? "",
       };
     })

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SquarePen } from "lucide-react";
+import { Archive, SquarePen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
@@ -27,9 +27,10 @@ export async function ChatList() {
 
   const { data: myParticipantRows } = await supabase
     .from("chat_participants")
-    .select("chat_id")
+    .select("chat_id, archived")
     .eq("character_id", activeCharacter.id);
   const myChatIds = (myParticipantRows ?? []).map((row) => row.chat_id);
+  const archivedIds = new Set((myParticipantRows ?? []).filter((row) => row.archived).map((row) => row.chat_id));
 
   const { data: chats } = myChatIds.length
     ? await supabase
@@ -62,6 +63,34 @@ export async function ChatList() {
       new Date(lastByChat.get(a.id)?.created_at ?? a.created_at).getTime(),
   );
 
+  const renderChat = (chat: (typeof sortedChats)[number]) => {
+    const others = chat.chat_participants.map((p) => p.characters).filter((c) => c.id !== activeCharacter.id);
+    const last = lastByChat.get(chat.id);
+    const senderName = last
+      ? last.character_id === activeCharacter.id
+        ? "Du"
+        : chat.is_group
+          ? (chat.chat_participants.find((p) => p.characters.id === last.character_id)?.characters.name.split(" ")[0] ?? null)
+          : null
+      : null;
+    const title = (chat.is_group ? chat.name : (others[0]?.name ?? chat.name)) ?? "Chat";
+    return (
+      <li key={chat.id}>
+        <ChatListItem
+          id={chat.id}
+          title={title}
+          avatarUrl={chat.is_group ? chat.avatar_url : others[0]?.avatar_url}
+          online={chat.is_group ? null : (others[0]?.presence_online ?? false)}
+          participantCount={chat.chat_participants.length}
+          lastMessage={last ? { text: messagePreview(last), at: last.created_at, sender: senderName } : null}
+          unreadCount={unreadCounts[chat.id] ?? 0}
+          groupMembers={chat.is_group ? others.map((c) => ({ name: c.name, avatarUrl: c.avatar_url ?? null })) : []}
+          muted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
+        />
+      </li>
+    );
+  };
+
   return (
     <div className="flex flex-col">
       <div className="mb-3 flex items-center justify-between gap-3 px-3">
@@ -88,35 +117,16 @@ export async function ChatList() {
         </p>
       )}
 
-      <ul className="flex flex-col">
-        {sortedChats.map((chat) => {
-          const others = chat.chat_participants.map((p) => p.characters).filter((c) => c.id !== activeCharacter.id);
-          const last = lastByChat.get(chat.id);
-          const senderName = last
-            ? last.character_id === activeCharacter.id
-              ? "Du"
-              : chat.is_group
-                ? (chat.chat_participants.find((p) => p.characters.id === last.character_id)?.characters.name.split(" ")[0] ?? null)
-                : null
-            : null;
-          const title = (chat.is_group ? chat.name : (others[0]?.name ?? chat.name)) ?? "Chat";
-          return (
-            <li key={chat.id}>
-              <ChatListItem
-                id={chat.id}
-                title={title}
-                avatarUrl={chat.is_group ? chat.avatar_url : others[0]?.avatar_url}
-                online={chat.is_group ? null : (others[0]?.presence_online ?? false)}
-                participantCount={chat.chat_participants.length}
-                lastMessage={last ? { text: messagePreview(last), at: last.created_at, sender: senderName } : null}
-                unreadCount={unreadCounts[chat.id] ?? 0}
-                groupMembers={chat.is_group ? others.map((c) => ({ name: c.name, avatarUrl: c.avatar_url ?? null })) : []}
-                muted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
-              />
-            </li>
-          );
-        })}
-      </ul>
+      <ul className="flex flex-col">{sortedChats.filter((c) => !archivedIds.has(c.id)).map(renderChat)}</ul>
+      {archivedIds.size > 0 && (
+        <details className="mt-2 border-t border-line px-1 pt-2">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-muted transition hover:text-fg [&::-webkit-details-marker]:hidden">
+            <Archive className="h-3.5 w-3.5" strokeWidth={2} />
+            Archiv ({sortedChats.filter((c) => archivedIds.has(c.id)).length})
+          </summary>
+          <ul className="flex flex-col">{sortedChats.filter((c) => archivedIds.has(c.id)).map(renderChat)}</ul>
+        </details>
+      )}
     </div>
   );
 }

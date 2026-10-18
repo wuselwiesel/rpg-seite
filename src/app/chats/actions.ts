@@ -301,3 +301,19 @@ export async function setChatMuted(chatId: string, muted: boolean): Promise<stri
   revalidatePath("/chats");
   return null;
 }
+
+// Chat archivieren (nur für dich): er verschwindet aus der Liste und steht im Archiv; eine neue Nachricht holt ihn zurück. Gilt für alle eigenen Charaktere im Chat.
+export async function setChatArchived(chatId: string, archived: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: mine } = await supabase.from("characters").select("id").eq("owner_id", user.id);
+  const ids = (mine ?? []).map((c) => c.id);
+  if (ids.length === 0) return null;
+  const { error } = await supabase.from("chat_participants").update({ archived }).eq("chat_id", chatId).in("character_id", ids);
+  if (error) return error.message;
+  revalidatePath("/chats", "layout");
+  return null;
+}

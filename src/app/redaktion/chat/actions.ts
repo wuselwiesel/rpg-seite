@@ -228,3 +228,30 @@ export async function setAccountMessagePin(messageId: string, pin: boolean): Pro
   const { error } = await supabase.rpc("set_account_message_pin", { p_message: messageId, p_pin: pin });
   return error ? error.message : null;
 }
+
+// Chat archivieren (nur für dich): er steht dann im Archiv der Liste; eine neue Nachricht holt ihn zurück.
+export async function setAccountChatArchived(chatId: string, archived: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.from("account_chat_participants").update({ archived }).eq("chat_id", chatId).eq("user_id", user.id);
+  if (error) return error.message;
+  revalidatePath("/redaktion/chat", "layout");
+  return null;
+}
+
+// Chat mit allen Nachrichten für alle löschen: 1:1-Chats jede Teilnehmer:in, Gruppen nur die Ersteller:in (die Datenbank prüft das).
+export async function deleteAccountChat(chatId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error, count } = await supabase.from("account_chats").delete({ count: "exact" }).eq("id", chatId);
+  if (error) return error.message;
+  if (!count) return "Nur wer die Gruppe erstellt hat, kann sie löschen. Du kannst sie verlassen.";
+  revalidatePath("/redaktion/chat", "layout");
+  return null;
+}

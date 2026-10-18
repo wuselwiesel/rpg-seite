@@ -4,7 +4,8 @@ import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Plus, SendHorizontal, Trash2, UserPlus, Users, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Plus, SendHorizontal, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -13,7 +14,7 @@ import { chatImageError, previewUrlFor } from "@/lib/chat-image";
 import { AttachmentPreview } from "@/components/chat-media";
 import { isVideoUrl } from "@/lib/chat-media-url";
 import { aggregateReactions } from "@/lib/reactions";
-import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, setChatMuted, updateMessage } from "../actions";
+import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
 import { GifPicker } from "@/components/gif-picker";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
@@ -55,6 +56,7 @@ export function ChatRoom({
   myCharacterIds,
   initialReads,
   initialMuted,
+  initialArchived = false,
   initialTheme,
 }: {
   chatId: string;
@@ -73,6 +75,7 @@ export function ChatRoom({
   // Lesezeitpunkte der anderen Teilnehmer:innen (für "Gelesen")
   initialReads: { user_id: string; last_read_at: string }[];
   initialMuted: boolean;
+  initialArchived?: boolean;
   initialTheme: ChatTheme;
 }) {
   // Reaktionen gehören dem aktiven Charakter: nur seine zählen als "von mir".
@@ -93,6 +96,8 @@ export function ChatRoom({
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [reads, setReads] = useState(initialReads);
   const [muted, setMuted] = useState(initialMuted);
+  const [archived, setArchived] = useState(initialArchived);
+  const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
   const dark = useIsDark();
   const themeStyle = chatThemeStyle(theme, dark);
@@ -455,6 +460,18 @@ export function ChatRoom({
     }
   }
 
+  async function toggleArchive() {
+    const next = !archived;
+    setArchived(next);
+    const error = await setChatArchived(chatId, next);
+    if (error) {
+      setArchived(!next);
+      void alertDialog(error);
+      return;
+    }
+    if (next) router.push("/chats");
+  }
+
   // @-Vorschläge: die anderen Teilnehmer:innen dieses Chats.
   const mentionCandidates = participants.filter((p) => p.id !== activeCharacter.id);
   const mentionMatches = mentionQuery
@@ -591,6 +608,9 @@ export function ChatRoom({
             onChange={setTheme}
             muted={muted}
             onToggleMute={toggleMute}
+            archived={archived}
+            onToggleArchive={toggleArchive}
+            onDelete={canDelete ? handleDeleteChat : undefined}
           />
           {isGroup && availableCharacters.length > 0 && (
             <button
@@ -614,16 +634,6 @@ export function ChatRoom({
               <Users className="h-4 w-4" strokeWidth={2} />
               Gruppe erstellen
             </Link>
-          )}
-          {canDelete && (
-            <button
-              type="button"
-              onClick={handleDeleteChat}
-              title="Chat löschen"
-              className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-600 dark:hover:text-red-400"
-            >
-              <Trash2 className="h-4 w-4" strokeWidth={2} />
-            </button>
           )}
         </div>
       </div>

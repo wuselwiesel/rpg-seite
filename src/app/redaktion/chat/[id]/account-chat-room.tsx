@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmDialog } from "@/components/confirm-dialog";
+import { alertDialog, confirmDialog } from "@/components/confirm-dialog";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import Link from "next/link";
@@ -10,7 +10,8 @@ import { BookOpen, BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, Imag
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NameBadge } from "@/components/name-badge";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
-import { setAccountChatMuted } from "../actions";
+import { useRouter } from "next/navigation";
+import { deleteAccountChat, setAccountChatArchived, setAccountChatMuted } from "../actions";
 import { useAccountChat, type AccountMessage, type AccountReaction } from "@/lib/use-account-chat";
 import { SpoilerText } from "@/components/spoiler-text";
 import { EmojiPickerDialog } from "@/components/emoji-picker-dialog";
@@ -51,6 +52,7 @@ export function AccountChatRoom({
   initialMessages,
   olderBefore,
   initialMuted,
+  initialArchived = false,
   initialTheme,
 }: {
   chatId: string;
@@ -69,6 +71,7 @@ export function AccountChatRoom({
   initialMessages: AccountMessage[];
   olderBefore: string | null;
   initialMuted: boolean;
+  initialArchived?: boolean;
   initialTheme: ChatTheme;
 }) {
   const { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction, hasOlder, loadingOlder, loadOlder } = useAccountChat(
@@ -97,6 +100,8 @@ export function AccountChatRoom({
   const senderMap = useMemo(() => new Map<string, ChatMember>([...members, ...Object.values(extraSenders)].map((m) => [m.id, m])), [members, extraSenders]);
   const enterSends = useEnterSends();
   const [muted, setMuted] = useState(initialMuted);
+  const [archived, setArchived] = useState(initialArchived);
+  const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
   const dark = useIsDark();
   const themeStyle = chatThemeStyle(theme, dark);
@@ -174,6 +179,29 @@ export function AccountChatRoom({
     setMuted(next);
     const err = await setAccountChatMuted(chatId, next);
     if (err) setMuted(!next);
+  }
+
+  async function toggleArchive() {
+    const next = !archived;
+    setArchived(next);
+    const err = await setAccountChatArchived(chatId, next);
+    if (err) {
+      setArchived(!next);
+      void alertDialog(err);
+      return;
+    }
+    if (next) router.push("/redaktion/chat");
+  }
+
+  async function removeChat() {
+    const text =
+      kind === "group"
+        ? "Diese Gruppe mit allen Nachrichten für alle löschen? Das kann nicht rückgängig gemacht werden."
+        : "Diesen Chat mit allen Nachrichten für beide löschen? Das kann nicht rückgängig gemacht werden.";
+    if (!(await confirmDialog({ message: text, confirmLabel: "Löschen", danger: true }))) return;
+    const err = await deleteAccountChat(chatId);
+    if (err) void alertDialog(err);
+    else router.push("/redaktion/chat");
   }
 
   const lastOwnId = [...messages].reverse().find((m) => m.sender_id === userId)?.id;
@@ -300,6 +328,9 @@ export function AccountChatRoom({
           onChange={setTheme}
           muted={muted}
           onToggleMute={toggleMute}
+          archived={archived}
+          onToggleArchive={toggleArchive}
+          onDelete={kind === "direct" || (kind === "group" && isCreator) ? removeChat : undefined}
         />
         </div>
       </div>

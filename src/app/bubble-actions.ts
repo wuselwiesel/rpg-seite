@@ -59,7 +59,7 @@ export async function getBubbleChats(characterId?: string | null): Promise<Bubbl
   const active = chosen ?? (world ? await getActiveCharacter(user.id, world.id) : null);
   if (world && active) {
     activeCharacterId = active.id;
-    const { data: mine } = await supabase.from("chat_participants").select("chat_id").eq("character_id", active.id);
+    const { data: mine } = await supabase.from("chat_participants").select("chat_id").eq("character_id", active.id).eq("archived", false);
     const ids = (mine ?? []).map((r) => r.chat_id);
     if (ids.length) {
       const own = ownCharacters;

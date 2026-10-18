@@ -7,7 +7,7 @@ import { EMPTY_CHAT_THEME, type ChatTheme } from "@/lib/chat-theme";
 import { ChatRoom } from "./chat-room";
 
 type ChatWithParticipants = Chat & {
-  chat_participants: { muted: boolean; characters: Character }[];
+  chat_participants: { muted: boolean; archived: boolean; characters: Character }[];
 };
 
 // Nur die neuesten Nachrichten laden; frühere lädt der Chat auf Wunsch nach.
@@ -31,7 +31,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
 
   const { data: chat } = await supabase
     .from("chats")
-    .select("*, chat_participants(muted, characters(*))")
+    .select("*, chat_participants(muted, archived, characters(*))")
     .eq("id", id)
     .maybeSingle<ChatWithParticipants>();
 
@@ -111,6 +111,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       initialReads={reads ?? []}
       initialTheme={themeRow ?? EMPTY_CHAT_THEME}
       initialMuted={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.muted)}
+      initialArchived={chat.chat_participants.some((p) => p.characters.owner_id === user.id && p.archived)}
     />
   );
 }

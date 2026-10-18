@@ -20,9 +20,9 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
   const [{ data: participants }, { data: messages }, { data: themeRow }, { data: chat }, { data: reactionRows }] = await Promise.all([
     supabase
       .from("account_chat_participants")
-      .select("user_id, last_read_at, muted, profiles(*)")
+      .select("user_id, last_read_at, muted, archived, profiles(*)")
       .eq("chat_id", id)
-      .returns<{ user_id: string; last_read_at: string; muted: boolean; profiles: Profile | null }[]>(),
+      .returns<{ user_id: string; last_read_at: string; muted: boolean; archived: boolean; profiles: Profile | null }[]>(),
     supabase
       .from("account_messages")
       .select("id, sender_id, content, image_url, reply_to_id, pinned_at, mentioned_user_ids, created_at, updated_at")
@@ -116,6 +116,7 @@ export default async function AccountChatPage({ params }: PageProps<"/redaktion/
       initialMessages={initialMessages}
       olderBefore={hasOlder ? (windowRows[0]?.created_at ?? null) : null}
       initialMuted={me.muted}
+      initialArchived={me.archived}
       initialTheme={themeRow ?? EMPTY_CHAT_THEME}
     />
   );
