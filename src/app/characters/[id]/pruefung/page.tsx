@@ -63,7 +63,7 @@ export default async function CharacterReviewPage({ params }: PageProps<"/charac
         <ChevronLeft className="h-4 w-4" strokeWidth={2} />
         {c.name}
       </Link>
-      <h1 className="mb-5 font-serif text-3xl text-fg">Prüfung</h1>
+      <h1 className="mb-5 font-serif text-3xl text-fg">{c.review_status === "approved" ? "Angaben" : "Prüfung"}</h1>
       <ReviewPanel
         characterId={id}
         status={c.review_status}

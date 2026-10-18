@@ -23,6 +23,13 @@ const calls = (page) => page.evaluate(() => window.__calls);
 const noOverflow = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
 for (const [label, w, h, m] of [["Handy", 375, 740, true], ["Laptop", 1280, 800, false]]) {
+  // ---- Genehmigter Charakter: keine Entscheidung mehr, Vorschläge weiter möglich ----
+  {
+    const page = await open("?role=admin&status=approved", w, h, m);
+    check(`${label}/Genehmigt: Stand „Genehmigt“, kein Genehmigen oder Ablehnen mehr`, (await page.getByText("Genehmigt", { exact: true }).first().isVisible()) && (await page.getByRole("button", { name: "Genehmigen" }).count()) === 0 && (await page.getByRole("button", { name: "Ablehnen", exact: true }).count()) === 0);
+    check(`${label}/Genehmigt: Angaben zum Ändern bleiben`, await page.getByRole("button", { name: "Name ändern", exact: true }).isVisible());
+    await page.context().close();
+  }
   // ---- Admin ----
   let page = await open("?role=admin&status=pending", w, h, m);
   check(`${label}/Admin: Genehmigen und Ablehnen sichtbar`, (await page.getByRole("button", { name: "Genehmigen" }).isVisible()) && (await page.getByRole("button", { name: "Ablehnen", exact: true }).first().isVisible()));

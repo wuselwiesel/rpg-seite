@@ -43,6 +43,11 @@ export async function reviewCharacter(characterId: string, status: "approved" | 
   if (!user) return "Nicht angemeldet.";
   const text = note.trim().slice(0, 500);
   if (status === "rejected" && !text) return "Bitte kurz sagen, was fehlt oder geändert werden soll.";
+  // Ein genehmigter Charakter wird nicht mehr abgelehnt (Änderungen laufen über Vorschläge)
+  if (status === "rejected") {
+    const { data: current } = await supabase.from("characters").select("review_status").eq("id", characterId).maybeSingle<{ review_status: string | null }>();
+    if (current?.review_status === "approved") return "Dieser Charakter ist schon genehmigt. Änderungen gehen über Vorschläge.";
+  }
   const { data, error } = await supabase.rpc("review_character", { p_character: characterId, p_status: status, p_note: status === "rejected" ? text : text || null });
   if (error) return error.message;
   const r = data as { character_id: string; character_name: string; world_id: string; owner_id: string };
