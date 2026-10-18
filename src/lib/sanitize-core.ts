@@ -72,12 +72,13 @@ export function sanitizePostHtmlCore(html: string): string {
       th: (tagName, attribs) => ({ tagName, attribs: spanAttribs(attribs) }),
       td: (tagName, attribs) => ({ tagName, attribs: spanAttribs(attribs) }),
     },
-    // Nur font-family erlaubt, und nur mit einem Wert, der wie eine unserer generierten
-    // Schriftstapel aussieht (siehe PROFILE_FONTS) - verhindert CSS-Injection über das
-    // Inline-Style-Attribut, das die Wort-/Buchstaben-genaue Schriftwahl in Posts braucht.
+    // Nur font-family und font-size erlaubt: Schrift nur mit einem Wert, der wie eine unserer generierten
+    // Schriftstapel aussieht (siehe PROFILE_FONTS), Größe nur als ganze Pixelzahl von 10 bis 48 - verhindert
+    // CSS-Injection über das Inline-Style-Attribut, das die Wort-/Buchstaben-genaue Schrift- und Größenwahl braucht.
     allowedStyles: {
       span: {
         "font-family": [/^var\(--font-[a-z-]+\)(,\s*[a-zA-Z0-9 '"-]+)*$/],
+        "font-size": [/^(?:1[0-9]|[2-3][0-9]|4[0-8])px$/],
       },
     },
   });

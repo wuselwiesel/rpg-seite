@@ -40,6 +40,9 @@ describe("Gefährliches bleibt draußen", () => {
     const html = '<span data-type="mention" data-id="11111111-1111-4111-8111-111111111111" class="mention">@A</span>';
     expect(clean(html)).toBe(html);
     expect(clean('<span style="font-family: var(--font-lora), serif; color: red">a</span>')).toBe('<span style="font-family:var(--font-lora), serif">a</span>');
+    expect(clean('<span style="font-size: 20px; color: red">a</span>')).toBe('<span style="font-size:20px">a</span>');
+    expect(clean('<span style="font-size: 200px">a</span>')).toBe("<span>a</span>");
+    expect(clean('<span style="font-size: 2em">a</span>')).toBe("<span>a</span>");
   });
 
   it("behält Spoiler-Markierungen", () => {

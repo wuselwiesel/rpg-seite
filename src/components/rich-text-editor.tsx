@@ -12,7 +12,7 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import Mention from "@tiptap/extension-mention";
-import { TextStyle } from "@tiptap/extension-text-style";
+import { TextStyle, FontSize } from "@tiptap/extension-text-style";
 import { FontFamily } from "@tiptap/extension-font-family";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
@@ -59,6 +59,43 @@ function ToolbarButton({
     >
       {children}
     </button>
+  );
+}
+
+// Schriftgröße für markierten Text (ohne Markierung für den nächsten getippten Text); „Normal“ nimmt die Größe wieder weg.
+const FONT_SIZES = [
+  { value: "13px", label: "Klein" },
+  { value: "", label: "Normal" },
+  { value: "20px", label: "Groß" },
+  { value: "26px", label: "Sehr groß" },
+  { value: "34px", label: "Riesig" },
+];
+
+function FontSizeSelect({ editor }: { editor: Editor }) {
+  const current = useEditorState({
+    editor,
+    selector: ({ editor: ed }) => (ed.getAttributes("textStyle").fontSize as string | undefined) ?? "",
+  });
+  const known = FONT_SIZES.some((s) => s.value === current);
+  return (
+    <select
+      aria-label="Schriftgröße"
+      title="Schriftgröße"
+      value={current}
+      onChange={(e) => {
+        const chain = editor.chain().focus();
+        if (e.target.value) chain.setFontSize(e.target.value).run();
+        else chain.unsetFontSize().run();
+      }}
+      className="h-8 shrink-0 rounded border border-line bg-surface px-1.5 text-sm text-fg-soft outline-none transition hover:text-fg focus:border-accent"
+    >
+      {!known && <option value={current}>{current}</option>}
+      {FONT_SIZES.map((s) => (
+        <option key={s.label} value={s.value}>
+          {s.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -132,7 +169,8 @@ function SelectionMenu({ editor, wikiPages }: { editor: Editor; wikiPages?: { id
         aria-label="Formatierung der Auswahl"
         className="flex max-w-[calc(100vw-1rem)] items-center gap-0.5 overflow-x-auto rounded-lg border border-line bg-surface p-1 shadow-lg [&>button]:shrink-0 [&>button]:whitespace-nowrap"
         onMouseDown={(e) => {
-          if ((e.target as HTMLElement).tagName !== "INPUT") e.preventDefault();
+          const tag = (e.target as HTMLElement).tagName;
+          if (tag !== "INPUT" && tag !== "SELECT" && tag !== "OPTION") e.preventDefault();
         }}
       >
         <ToolbarButton label="Fett" active={on.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
@@ -157,6 +195,7 @@ function SelectionMenu({ editor, wikiPages }: { editor: Editor; wikiPages?: { id
         <ToolbarButton label="Überschrift klein" active={on.h3} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
           H3
         </ToolbarButton>
+        <FontSizeSelect editor={editor} />
         <ToolbarButton label="Aufzählung" active={on.list} onClick={() => editor.chain().focus().toggleBulletList().run()}>
           • Liste
         </ToolbarButton>
@@ -368,6 +407,7 @@ function Toolbar({
         >
           H3
         </ToolbarButton>
+        <FontSizeSelect editor={editor} />
 
         <span className="mx-1 h-5 w-px bg-line" />
 
@@ -644,7 +684,9 @@ export function RichTextEditor({
       Link.configure({ openOnClick: false, autolink: true }),
       Image,
       Placeholder.configure({ placeholder: placeholder ?? "Schreib deine Geschichte..." }),
-      ...(allowFontSelection ? [TextStyle, FontFamily] : []),
+      TextStyle,
+      FontSize,
+      ...(allowFontSelection ? [FontFamily] : []),
       ...(allowBlocks
         ? [Callout, PdfFile, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
         : []),
