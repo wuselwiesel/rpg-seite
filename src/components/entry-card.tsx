@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, EyeOff, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
+import { BookOpen, Clock, EyeOff, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
 import { RecapToggle } from "./recap-toggle";
 import { CharacterAvatar } from "./character-avatar";
 import { NarratorAvatar } from "./narrator-avatar";
@@ -34,6 +34,7 @@ export function EntryCard({
   locationHrefBase,
   yourTurn,
   narrator = false,
+  bookHref,
 }: {
   id: string;
   title: string;
@@ -42,6 +43,8 @@ export function EntryCard({
   character: Character | null;
   characterHref: string;
   detailHref: string;
+  // Buchansicht der Szene (PDF / E-Book), falls vorhanden
+  bookHref?: string;
   replyCount: number;
   replyLabel?: string;
   replyCta?: string;
@@ -169,6 +172,12 @@ export function EntryCard({
           {replyCount > 0 ? `${replyCount} ${replyLabel}` : replyCta}
         </Link>
         {likeButton}
+        {bookHref && (
+          <Link href={bookHref} title="Szene mit allen Fortsetzungen als PDF oder E-Book speichern" className="ml-auto flex items-center gap-1.5 text-sm text-muted hover:text-fg">
+            <BookOpen className="h-4 w-4" strokeWidth={2} />
+            PDF / E-Book
+          </Link>
+        )}
       </div>
       {recapHtml && <RecapToggle html={recapHtml} className="mt-2" />}
     </article>

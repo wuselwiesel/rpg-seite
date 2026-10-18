@@ -556,7 +556,7 @@ export default async function HelpPage() {
       <Section id="buch" title="20. Szenen als PDF oder E-Book">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Eine Szene:</strong> Oben in der Szene steht „PDF / E-Book“. Das geht für jede Szene, die du sehen darfst, auch wenn du sie nicht angelegt hast.
+            <strong>Eine Szene:</strong> Unten an jeder Szenenkarte in der Story und oben in der Szene steht „PDF / E-Book“. Das Buch enthält die Szene mit allen Fortsetzungen. Das geht für jede Szene, die du sehen darfst, auch wenn du sie nicht angelegt hast.
           </li>
           <li>
             <strong>Alle Szenen:</strong> In der Story steht oben rechts „PDF / E-Book“. Das ist ein Buch mit allen Szenen der Welt, die du sehen darfst, nach Datum geordnet. Einen einzelnen Handlungsstrang findest du unter „Filter“.

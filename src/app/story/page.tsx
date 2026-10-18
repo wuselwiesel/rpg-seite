@@ -379,6 +379,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               character={post.characters}
               characterHref={`/characters/${post.character_id}`}
               detailHref={`/story/${post.id}`}
+              bookHref={`/story/${post.id}/buch`}
               replyCount={post.story_entries?.[0]?.count ?? 0}
               replyLabel="Fortsetzungen"
               replyCta="Weiterschreiben"
