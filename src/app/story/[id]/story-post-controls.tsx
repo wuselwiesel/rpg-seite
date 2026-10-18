@@ -113,14 +113,15 @@ export function StoryPostControls({
         </span>
       )}
 
-      <div className="ml-auto flex items-center gap-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/scene:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:opacity-0 [@media(hover:none)]:group-data-[tapped]/scene:pointer-events-auto [@media(hover:none)]:group-data-[tapped]/scene:opacity-100">
-        <Link
-          href={`/story/${storyPostId}/buch`}
-          title="Als Buch ansehen, als PDF oder E-Book speichern"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
-        >
-          <BookOpen className="h-4 w-4" strokeWidth={2} />
-        </Link>
+      <Link
+        href={`/story/${storyPostId}/buch`}
+        title="Als Buch ansehen, als PDF oder E-Book speichern"
+        className="ml-auto flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+      >
+        <BookOpen className="h-4 w-4" strokeWidth={2} />
+        PDF / E-Book
+      </Link>
+      <div className="flex items-center gap-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/scene:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:opacity-0 [@media(hover:none)]:group-data-[tapped]/scene:pointer-events-auto [@media(hover:none)]:group-data-[tapped]/scene:opacity-100">
         <button
           type="button"
           onClick={handleBookmark}

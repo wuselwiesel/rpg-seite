@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -174,7 +174,17 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
-      <h1 className="mb-4 font-serif text-3xl text-fg">Story</h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="font-serif text-3xl text-fg">Story</h1>
+        <Link
+          href="/story/buch"
+          title="Alle Szenen als Buch ansehen, als PDF oder E-Book speichern"
+          className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+        >
+          <BookOpen className="h-4 w-4" strokeWidth={2} />
+          PDF / E-Book
+        </Link>
+      </div>
 
       <StorySections current="szenen" />
 

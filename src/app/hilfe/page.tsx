@@ -44,6 +44,7 @@ const TOC = [
   ["benachrichtigungen", "Benachrichtigungen aus mehreren Welten"],
   ["passwort-vergessen", "Passwort vergessen"],
   ["melden", "Tickets: etwas melden"],
+  ["buch", "Szenen als PDF oder E-Book"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -548,6 +549,20 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>Wer sieht was:</strong> Nur du und die Betreiberin sehen deine Tickets. Antwortest du auf ein erledigtes Ticket, wird es wieder geöffnet.
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="buch" title="20. Szenen als PDF oder E-Book">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Eine Szene:</strong> Oben in der Szene steht „PDF / E-Book“. Das geht für jede Szene, die du sehen darfst, auch wenn du sie nicht angelegt hast.
+          </li>
+          <li>
+            <strong>Alle Szenen:</strong> In der Story steht oben rechts „PDF / E-Book“. Das ist ein Buch mit allen Szenen der Welt, die du sehen darfst, nach Datum geordnet. Einen einzelnen Handlungsstrang findest du unter „Filter“.
+          </li>
+          <li>
+            <strong>PDF und E-Book:</strong> In der Buchansicht speicherst du mit „Als PDF speichern“ (im Druckdialog „Als PDF speichern“ wählen) oder lädst das E-Book (EPUB).
           </li>
         </ul>
       </Section>

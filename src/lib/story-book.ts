@@ -51,34 +51,61 @@ type EntryRow = {
   characters: { name: string } | null;
 };
 
-export async function loadBook(scope: { sceneId: string } | { arcId: string }): Promise<Book | null> {
+// Alle Zeilen einer Abfrage seitenweise holen (die Datenbank liefert pro Abruf höchstens 1000)
+async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; from < 50000; from += 1000) {
+    const { data } = await page(from, from + 999);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+export async function loadBook(scope: { sceneId: string } | { arcId: string } | { worldId: string }): Promise<Book | null> {
   const supabase = await createClient();
   const select = "id, title, content, location, in_world_time, created_at, characters!story_posts_character_id_fkey(name), worlds(name, cover_image_url), story_arcs!arc_id(name)";
   let rows: SceneRow[] = [];
   let arcName: string | null = null;
+  let wholeWorld = false;
   if ("sceneId" in scope) {
     const { data } = await supabase.from("story_posts").select(select).eq("id", scope.sceneId).returns<SceneRow[]>();
     rows = data ?? [];
+  } else if ("worldId" in scope) {
+    wholeWorld = true;
+    rows = await allRows<SceneRow>((from, to) =>
+      supabase.from("story_posts").select(select).eq("world_id", scope.worldId).order("created_at", { ascending: true }).order("id").range(from, to).returns<SceneRow[]>(),
+    );
   } else {
     const { data: inArc } = await supabase.from("story_post_arcs").select("story_post_id").eq("arc_id", scope.arcId).limit(2000);
-    const { data } = await supabase
-      .from("story_posts")
-      .select(select)
-      .in("id", (inArc ?? []).map((r) => r.story_post_id as string))
-      .order("created_at", { ascending: true })
-      .returns<SceneRow[]>();
-    rows = data ?? [];
+    const ids = (inArc ?? []).map((r) => r.story_post_id as string);
+    for (let i = 0; i < ids.length; i += 100) {
+      const { data } = await supabase.from("story_posts").select(select).in("id", ids.slice(i, i + 100)).returns<SceneRow[]>();
+      rows.push(...(data ?? []));
+    }
+    rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
     const { data: arcRow } = await supabase.from("story_arcs").select("name").eq("id", scope.arcId).maybeSingle<{ name: string }>();
     arcName = arcRow?.name ?? null;
   }
   if (rows.length === 0) return null;
 
-  const { data: entryRows } = await supabase
-    .from("story_entries")
-    .select("story_post_id, content, kind, chapter_title, chapter_summary, roll_label, roll_result, roll_value, roll_die, roll_success, created_at, characters!story_entries_character_id_fkey(name)")
-    .in("story_post_id", rows.map((r) => r.id))
-    .order("created_at", { ascending: true })
-    .returns<EntryRow[]>();
+  // Nachrichten je Szenengruppe seitenweise holen (lange Szenen haben über 1000 Nachrichten)
+  const entryRows: EntryRow[] = [];
+  for (let i = 0; i < rows.length; i += 40) {
+    const ids = rows.slice(i, i + 40).map((r) => r.id);
+    entryRows.push(
+      ...(await allRows<EntryRow>((from, to) =>
+        supabase
+          .from("story_entries")
+          .select("story_post_id, content, kind, chapter_title, chapter_summary, roll_label, roll_result, roll_value, roll_die, roll_success, created_at, characters!story_entries_character_id_fkey(name)")
+          .in("story_post_id", ids)
+          .order("created_at", { ascending: true })
+          .order("id")
+          .range(from, to)
+          .returns<EntryRow[]>(),
+      )),
+    );
+  }
 
   const scenes: BookScene[] = rows.map((r) => ({
     id: r.id,
@@ -88,7 +115,7 @@ export async function loadBook(scope: { sceneId: string } | { arcId: string }): 
     time: r.in_world_time,
     introHtml: r.content,
     coverImage: firstImage(r.content),
-    entries: (entryRows ?? [])
+    entries: entryRows
       .filter((e) => e.story_post_id === r.id)
       .map((e): BookEntry => {
         if (e.kind === "chapter") {
@@ -105,8 +132,8 @@ export async function loadBook(scope: { sceneId: string } | { arcId: string }): 
   const first = rows[0];
   const worldName = first.worlds?.name ?? "";
   return {
-    title: arcName ?? first.title,
-    subtitle: arcName ? `${scenes.length} Szene${scenes.length === 1 ? "" : "n"} aus ${worldName}` : `Eine Geschichte aus ${worldName}`,
+    title: wholeWorld ? `Alle Szenen: ${worldName}` : (arcName ?? first.title),
+    subtitle: arcName || wholeWorld ? `${scenes.length} Szene${scenes.length === 1 ? "" : "n"} aus ${worldName}` : `Eine Geschichte aus ${worldName}`,
     worldName,
     coverImage: scenes.map((s) => s.coverImage).find(Boolean) ?? first.worlds?.cover_image_url ?? null,
     scenes,
