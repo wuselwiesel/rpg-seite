@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
-import { keepScrollAnchor, keepScrollElement } from "@/lib/keep-scroll";
+import { captureScrollAnchor, captureScrollElement } from "@/lib/keep-scroll";
 
 // Frühere Beiträge einer Szene: standardmäßig eingeklappt, damit man direkt bei den neuesten ist.
 export function EarlierEntries({ count, children }: { count: number; children: React.ReactNode }) {
@@ -39,25 +39,30 @@ export function EarlierEntries({ count, children }: { count: number; children: R
     };
   }, []);
 
-  // Beim Ein- und Ausklappen bleibt die Lesestelle, wo sie ist: beim Einblenden das erste sichtbare spätere Beitragsstück,
-  // beim Ausblenden über den oberen Knopf dieser Knopf, über den unteren Knopf (der dabei verschwindet) rückt der obere ins Bild.
+  // Beim Ein- und Ausklappen bleibt die Lesestelle, wo sie ist (wird nach dem Rendern, noch vor dem nächsten Bild, wiederhergestellt):
+  // beim Einblenden der erste sichtbare spätere Beitrag, beim Ausblenden über den oberen Knopf dieser Knopf,
+  // über den unteren Knopf (der dabei verschwindet) rückt der obere ins Bild.
+  const restoreRef = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    restoreRef.current?.();
+    restoreRef.current = null;
+  }, [open]);
+
   function flip(e: React.MouseEvent<HTMLButtonElement>) {
     if (!open) {
-      const restore = keepScrollAnchor(
+      restoreRef.current = captureScrollAnchor(
         Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste [id^='beitrag-'], #beitragsliste [id^='kapitel-']"))
           .filter((el) => !ref.current?.contains(el))
           .map((el) => el.id),
       );
       setOpen(true);
-      restore();
       return;
     }
     const topToggle = ref.current?.previousElementSibling as HTMLElement | null;
-    const fromBottom = !!topToggle && topToggle !== e.currentTarget;
-    const restore = fromBottom ? null : keepScrollElement(e.currentTarget);
+    if (topToggle && topToggle !== e.currentTarget) {
+      restoreRef.current = () => topToggle.scrollIntoView({ block: "center" });
+    } else restoreRef.current = captureScrollElement(e.currentTarget);
     setOpen(false);
-    restore?.();
-    if (fromBottom) window.setTimeout(() => topToggle.scrollIntoView({ block: "center" }), 0);
   }
 
   const toggle = (

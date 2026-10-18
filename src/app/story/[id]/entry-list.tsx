@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AtSign, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -9,7 +9,7 @@ import type { Character, StoryEntry } from "@/lib/types";
 import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
 import { EarlierEntries } from "./earlier-entries";
 import { StoryEntryItem } from "./story-entry-item";
-import { keepScrollAnchor } from "@/lib/keep-scroll";
+import { captureScrollAnchor } from "@/lib/keep-scroll";
 import { loadEarlierEntries, type LoadedEntry } from "../entries-actions";
 import { GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
 
@@ -71,13 +71,17 @@ export function EntryList({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const cursor = useRef<string | null>(olderBefore);
+  // Lesestelle für das Einsetzen nachgeladener Beiträge: wird nach dem Rendern, noch vor dem nächsten Bild, wiederhergestellt
+  const anchorRef = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    anchorRef.current?.();
+    anchorRef.current = null;
+  }, [older]);
   const tried = useRef<Set<string>>(new Set());
   const known = useRef<Set<string>>(new Set(items.map((i) => i.id)));
 
   async function loadOlder(until?: string): Promise<boolean> {
     if (!cursor.current || loadingOlder) return false;
-    // Per Knopf: Lesestelle halten, die neuen Beiträge erscheinen oberhalb (bei einem Sprung zu einem Beitrag scrollt der Sprung selbst)
-    const restore = until ? null : keepScrollAnchor(Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste [id^='beitrag-']"), (el) => el.id));
     setLoadingOlder(true);
     setLoadError(null);
     const res = await loadEarlierEntries(storyPostId, cursor.current, until);
@@ -92,8 +96,8 @@ export function EntryList({
         seenIds.current.add(it.entry.id);
       }
       cursor.current = res.items[0].entry.created_at;
+      if (until === undefined) anchorRef.current = captureScrollAnchor(Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste [id^='beitrag-']"), (el) => el.id));
       setOlder((prev) => [...res.items, ...prev]);
-      restore?.();
     }
     setRemaining(res.remaining);
     return res.items.length > 0;

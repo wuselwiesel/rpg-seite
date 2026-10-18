@@ -74,3 +74,50 @@ export function JumpToStart() {
     </button>
   );
 }
+
+// Schwebender Pfeil nach oben: erscheint, sobald man in einer langen Szene nach oben scrollt (wie unten „Zur letzten Nachricht“)
+// und der Anfang der Liste weit weg ist. Lädt bei Bedarf alle früheren Beiträge nach und springt zum ersten.
+export function JumpToStartFloating() {
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    function onScroll() {
+      const y = window.scrollY;
+      const goingUp = y < lastY - 2;
+      const goingDown = y > lastY + 2;
+      lastY = y;
+      const top = document.getElementById("beitragsliste")?.getBoundingClientRect().top ?? 0;
+      const far = top < -window.innerHeight * 0.6;
+      if (!far) setShow(false);
+      else if (goingUp) setShow(true);
+      else if (goingDown) setShow(false);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  if (!show && !busy) return null;
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        setBusy(true);
+        const done = () => {
+          setBusy(false);
+          setShow(false);
+          window.removeEventListener(GO_START_DONE_EVENT, done);
+        };
+        window.addEventListener(GO_START_DONE_EVENT, done);
+        window.dispatchEvent(new Event(GO_START_EVENT));
+      }}
+      aria-label="Zum Anfang der Szene springen"
+      title="Zum Anfang der Szene"
+      className={`menu-pop pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-accent-strong text-on-accent-strong shadow-lg transition active:scale-95 disabled:opacity-70 ${busy ? "animate-pulse" : ""}`}
+    >
+      <ArrowUp className="h-5 w-5" strokeWidth={2.25} />
+    </button>
+  );
+}

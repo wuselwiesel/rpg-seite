@@ -67,3 +67,32 @@ export function keepScrollElement(el: HTMLElement): () => void {
     window.setTimeout(step, 0);
   };
 }
+
+// Gleiche Idee, aber ohne Warten: `capture…` merkt sich die Lage vor dem Rendern, die zurückgegebene Funktion wird danach
+// synchron aufgerufen (in einem Layout-Effekt, also noch vor dem nächsten Bild), damit die Ansicht gar nicht erst springt.
+export function captureScrollAnchor(elementIds: string[]): () => void {
+  for (const id of elementIds) {
+    const el = visibleById(id);
+    if (!el) continue;
+    const r = el.getBoundingClientRect();
+    if (r.bottom > 0) {
+      const top = r.top;
+      return () => {
+        const now = visibleById(id);
+        if (!now) return;
+        const diff = now.getBoundingClientRect().top - top;
+        if (Math.abs(diff) > 1) scrollParent(now).scrollTop += diff;
+      };
+    }
+  }
+  return () => {};
+}
+
+export function captureScrollElement(el: HTMLElement): () => void {
+  const top = el.getBoundingClientRect().top;
+  return () => {
+    if (!el.isConnected) return;
+    const diff = el.getBoundingClientRect().top - top;
+    if (Math.abs(diff) > 1) scrollParent(el).scrollTop += diff;
+  };
+}
