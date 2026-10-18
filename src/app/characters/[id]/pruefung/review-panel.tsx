@@ -103,14 +103,12 @@ export function ReviewPanel({
         </div>
       )}
 
-      {isAdmin && (
+      {isAdmin && status !== "approved" && (
         <section aria-label="Entscheidung" className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
-            {status !== "approved" && (
-              <button type="button" disabled={pending} onClick={() => run(() => reviewCharacter(characterId, "approved", ""))} className={btnPrimary}>
-                Genehmigen
-              </button>
-            )}
+            <button type="button" disabled={pending} onClick={() => run(() => reviewCharacter(characterId, "approved", ""))} className={btnPrimary}>
+              Genehmigen
+            </button>
             {status !== "rejected" && (
               <button type="button" disabled={pending} onClick={() => setRejecting((v) => !v)} aria-expanded={rejecting} className={btn}>
                 Ablehnen
