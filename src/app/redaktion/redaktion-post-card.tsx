@@ -5,15 +5,17 @@ import { NameBadge } from "@/components/name-badge";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { useState } from "react";
-import { BarChart3, BookOpen, ChevronDown, MessageCircle, Trash2 } from "lucide-react";
+import { BarChart3, BookOpen, ChevronDown, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { deleteRedaktionPost } from "./actions";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { PostMedia } from "@/components/post-media";
 import { MediaCarousel } from "@/components/media-carousel";
 import { autolinkHtml } from "@/lib/autolink";
 import { stripHtml } from "@/lib/strip-html";
+import { extractHashtags } from "@/lib/hashtags";
 import { timeAgoShort } from "@/lib/format";
 import { RedaktionReactionBar } from "./redaktion-reaction-bar";
+import { RedaktionPostEditor } from "./redaktion-post-editor";
 import { RedaktionPoll } from "./[id]/redaktion-poll";
 import type { RedaktionFeedPost } from "@/lib/redaktion-feed-types";
 
@@ -29,6 +31,11 @@ export function RedaktionPostCard({
   priority?: boolean;
 }) {
   const [removed, setRemoved] = useState(false);
+  // Nachträglich geänderter Text (die Karte zeigt ihn sofort, ohne den Feed neu zu laden)
+  const [content, setContent] = useState(post.content);
+  const tags = extractHashtags(stripHtml(content));
+  const [editedAt, setEditedAt] = useState<string | null>(post.updated_at ?? null);
+  const [editing, setEditing] = useState(false);
   // Umfragen sind im Feed direkt sichtbar und lassen sich bei Bedarf einklappen.
   const [pollOpen, setPollOpen] = useState(true);
   const commentCount = post.commentCount;
@@ -37,8 +44,8 @@ export function RedaktionPostCard({
 
   const detailHref = `/redaktion/${post.id}`;
   const profileHref = `/redaktion/profil/${post.author_id}`;
-  const preview = stripHtml(post.content);
-  const contentHtml = autolinkHtml(post.content, { tagHref: "/redaktion" });
+  const preview = stripHtml(content);
+  const contentHtml = autolinkHtml(content, { tagHref: "/redaktion" });
   const authorName = post.author?.nickname || post.author?.username || "Unbekannt";
   const handle = post.author?.username ?? authorName;
   const gallery = post.media_urls && post.media_urls.length > 1 ? post.media_urls : null;
@@ -74,10 +81,22 @@ export function RedaktionPostCard({
               >
                 {timeAgoShort(post.created_at)}
               </time>
+              {editedAt && editedAt !== post.created_at && <span className="shrink-0 text-xs font-normal text-muted">· bearbeitet</span>}
             </p>
             {post.author?.nickname && <p className="truncate text-xs text-muted">{post.author.nickname}</p>}
           </div>
         </Link>
+        {isOwn && (
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            aria-label="Beitrag bearbeiten"
+            aria-pressed={editing}
+            className={`rounded-full p-1.5 transition hover:bg-surface-2 hover:text-fg ${editing ? "text-accent" : "text-muted"}`}
+          >
+            <Pencil className="h-4 w-4" strokeWidth={2} />
+          </button>
+        )}
         {isOwn && (
           <button
             type="button"
@@ -117,10 +136,26 @@ export function RedaktionPostCard({
         />
       ) : null}
 
-      {!hasMedia && preview && (
+      {editing && (
+        <div className="px-3 pt-2 sm:px-1">
+          <RedaktionPostEditor
+            postId={post.id}
+            content={content}
+            hasMedia={hasMedia}
+            onSaved={(next, at) => {
+              setContent(next);
+              setEditedAt(at);
+              setEditing(false);
+            }}
+            onCancel={() => setEditing(false)}
+          />
+        </div>
+      )}
+
+      {!editing && !hasMedia && preview && (
         <EmojiHtml className="post-content px-3 pt-1 text-[15px] text-fg [&_p]:my-1.5 sm:px-1" html={contentHtml} />
       )}
-      {!hasMedia && preview.length > 320 && (
+      {!editing && !hasMedia && preview.length > 320 && (
         <Link href={detailHref} className="mt-1 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1">
           Weiterlesen
         </Link>
@@ -170,7 +205,7 @@ export function RedaktionPostCard({
         />
       </div>
 
-      {hasMedia && preview && (
+      {!editing && hasMedia && preview && (
         <p className="mt-2 px-3 text-sm text-fg sm:px-1">
           <Link href={profileHref} className="font-semibold">
             {handle}
@@ -179,9 +214,9 @@ export function RedaktionPostCard({
         </p>
       )}
 
-      {post.tags.length > 0 && (
+      {tags.length > 0 && (
         <p className="mt-1 flex flex-wrap gap-x-2 px-3 text-sm sm:px-1">
-          {post.tags.map((tag) => (
+          {tags.map((tag) => (
             <Link key={tag} href={`/redaktion?tag=${encodeURIComponent(tag)}`} className="text-accent hover:underline">
               #{tag}
             </Link>

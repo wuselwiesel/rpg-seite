@@ -1,4 +1,3 @@
-import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
@@ -9,6 +8,7 @@ import { MediaCarousel } from "@/components/media-carousel";
 import { autolinkHtml } from "@/lib/autolink";
 import { timeAgoShort } from "@/lib/format";
 import { DeleteRedaktionPostButton } from "./delete-redaktion-post-button";
+import { RedaktionPostBody } from "./redaktion-post-body";
 import { RedaktionPoll } from "./redaktion-poll";
 import { RedaktionCommentThread } from "./redaktion-comment-thread";
 import { RedaktionReactionBar } from "../redaktion-reaction-bar";
@@ -108,7 +108,14 @@ export default async function RedaktionPostPage({ params }: PageProps<"/redaktio
           )
         )}
 
-        <EmojiHtml className="post-content text-fg-soft" html={contentHtml} />
+        <RedaktionPostBody
+          postId={post.id}
+          content={post.content}
+          contentHtml={contentHtml}
+          hasMedia={Boolean(post.media_type)}
+          isOwn={isOwn}
+          edited={Boolean(post.updated_at && post.updated_at !== post.created_at)}
+        />
 
         {hasPoll && (
           <div className="mt-4">

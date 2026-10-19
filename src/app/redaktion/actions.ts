@@ -422,3 +422,49 @@ export async function getRedaktionReactors(postId: string): Promise<RedaktionRea
     .returns<RedaktionReactor[]>();
   return data ?? [];
 }
+
+// Eigenen Beitrag nachträglich ändern (Text bzw. Bildunterschrift; Fotos, Video und Umfrage bleiben). Wie beim Erstellen: Foto-/Video-Beiträge nehmen Klartext,
+// Text-Beiträge das volle RichText. Die Datenbank erlaubt das nur der Autor:in (und App-Admins beim offiziellen Konto).
+export async function updateRedaktionPost(postId: string, rawContent: string): Promise<{ error: string } | { content: string; updatedAt: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+
+  const { data: post } = await supabase
+    .from("redaktion_posts")
+    .select("media_type, poll_character_mode, redaktion_poll_options(count)")
+    .eq("id", postId)
+    .maybeSingle<{ media_type: string | null; poll_character_mode: boolean; redaktion_poll_options: { count: number }[] }>();
+  if (!post) return { error: "Beitrag nicht gefunden." };
+
+  const trimmed = rawContent.trim().slice(0, 20000);
+  const content = post.media_type
+    ? sanitizePostHtml(trimmed ? `<p>${escapeHtml(trimmed.slice(0, 2000)).replace(/\n/g, "<br>")}</p>` : "")
+    : sanitizePostHtml(trimmed);
+  const hasPoll = post.poll_character_mode || (post.redaktion_poll_options?.[0]?.count ?? 0) > 0;
+  if (!post.media_type && !hasPoll && stripHtml(content).length === 0 && !content.includes("<img")) return { error: "Der Beitrag darf nicht leer sein." };
+
+  const updatedAt = new Date().toISOString();
+  const { error, count } = await supabase
+    .from("redaktion_posts")
+    .update({ content, tags: extractHashtags(stripHtml(content)), updated_at: updatedAt }, { count: "exact" })
+    .eq("id", postId);
+  if (error) return { error: error.message };
+  if (!count) return { error: "Keine Berechtigung dafür." };
+
+  revalidatePath("/redaktion");
+  revalidatePath(`/redaktion/${postId}`);
+  return { content, updatedAt };
+}
+
+// Charaktere für @-Erwähnungen beim Bearbeiten (erst beim Öffnen des Editors geladen, nicht für jede Karte im Feed)
+export async function loadRedaktionMentionables() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  return getAllMentionableCharacters(user.id);
+}

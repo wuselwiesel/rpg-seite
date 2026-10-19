@@ -46,6 +46,7 @@ const TOC = [
   ["melden", "Tickets: etwas melden"],
   ["buch", "Szenen als PDF oder E-Book"],
   ["chats-archiv", "Chats archivieren und löschen"],
+  ["redaktion-bearbeiten", "Redaktions-Beiträge bearbeiten"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -581,6 +582,17 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>Gilt für:</strong> den Redaktions-Chat und die Chats in der Welt.
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="redaktion-bearbeiten" title="22. Redaktions-Beiträge bearbeiten">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Bearbeiten:</strong> An deinem eigenen Beitrag steht oben rechts ein Stift (im Feed) bzw. unter dem Text „Bearbeiten“ (in der Detailansicht). Text-Beiträge bearbeitest du im vollen Editor, bei Foto- und Video-Beiträgen änderst du die Bildunterschrift. Danach steht „bearbeitet“ am Beitrag.
+          </li>
+          <li>
+            <strong>Was bleibt:</strong> Fotos, Video und Umfrage ändern sich nicht. Wer Fotos tauschen will, löscht den Beitrag und stellt ihn neu ein.
           </li>
         </ul>
       </Section>
