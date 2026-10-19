@@ -18,15 +18,15 @@ export function QuoteCard({ quote, compact = false, className = "" }: { quote: C
           highlightEntries(quote.entryIds);
         }}
         title="Zur Szene springen"
-        className={`block w-full rounded-lg border-l-4 border-current/60 bg-black/10 px-2.5 py-1.5 text-left ${className}`}
+        className={`block w-full rounded-lg border-l-4 border-current/70 bg-black/15 px-2.5 py-2 text-left ${className}`}
       >
         {items.map((item, i) => (
           <span key={i} className={`block ${i > 0 ? "mt-1.5" : ""}`}>
-            <span className={`block font-serif text-[13px] italic leading-snug ${compact ? "line-clamp-2" : "line-clamp-6"}`}>
-              <Quote className="mr-1 inline h-3 w-3 -translate-y-px opacity-70" strokeWidth={2} aria-hidden />
+            <span className={`block text-sm font-medium italic leading-snug ${compact ? "line-clamp-2" : "line-clamp-6"}`}>
+              <Quote className="mr-1 inline h-3 w-3 -translate-y-px opacity-80" strokeWidth={2.25} aria-hidden />
               „{item.text}“
             </span>
-            <span className="mt-0.5 block text-[11px] font-semibold opacity-80">— {item.author}</span>
+            <span className="mt-0.5 block text-xs font-semibold not-italic opacity-90">— {item.author}</span>
           </span>
         ))}
         {more > 0 && <span className="mt-1 block text-[11px] opacity-70">+ {more} weitere</span>}
