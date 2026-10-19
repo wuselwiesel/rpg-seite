@@ -121,6 +121,22 @@ for (const [w, h] of [[1280, 900], [768, 900], [375, 800]]) {
   await on.ctx.close();
 }
 
+// Schicksalswürfel der Welt aus: im Bearbeiten-Formular entfallen Beziehungsstatus, Partner:in und beste:r Freund:in samt Hinweisen; an: sie sind da
+{
+  const ctx = await browser.newContext({ viewport: { width: 900, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(url + "?edit=1&schicksal=aus");
+  await page.locator('select[name="species"]').waitFor();
+  check("Schicksal aus: keine Felder für den Schicksalswürfel", (await page.locator('select[name="relationship_status"]').count()) === 0 && (await page.locator('select[name="best_friend_character_id"]').count()) === 0 && (await page.getByText("Schicksal", { exact: false }).count()) === 0);
+  await page.goto(url + "?edit=1");
+  await page.locator('select[name="species"]').waitFor();
+  check("Schicksal an: Beziehungsstatus, Partner:in, beste:r Freund:in und Hinweise", (await page.locator('select[name="relationship_status"]').count()) === 1 && (await page.locator('select[name="partner_character_id"]').count()) === 1 && (await page.locator('select[name="best_friend_character_id"]').count()) === 1 && (await page.getByText("Schicksale", { exact: false }).count()) >= 1);
+  await page.goto(url + "?schicksal=aus");
+  await page.getByRole("button", { name: "Komplett würfeln" }).waitFor();
+  check("Neuer Charakter, Schicksal aus: kein Hinweis zum Schicksalswürfel", (await page.getByText("Schicksalswürfels").count()) === 0);
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);

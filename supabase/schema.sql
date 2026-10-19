@@ -8958,4 +8958,7 @@ revoke all on function public._account_chat_unarchive_on_message() from public, 
 -- Schon gewählte Werte bleiben erhalten und kommen beim Wiedereinschalten zurück. Gilt nur für die Wesen-Liste.
 alter table public.world_choice_lists add column if not exists disabled boolean not null default false;
 
+-- Schicksalswürfel je Welt ausschaltbar: kein Würfel, keine eigenen Schicksale, keine Felder dafür im Charakterformular (Standard: an).
+alter table public.worlds add column if not exists fate_enabled boolean not null default true;
+
 notify pgrst, 'reload schema';

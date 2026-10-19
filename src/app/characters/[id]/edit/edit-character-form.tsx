@@ -14,10 +14,13 @@ export function EditCharacterForm({
   character,
   mentionableCharacters,
   choiceLists = [],
+  fateEnabled = true,
 }: {
   character: Character;
   mentionableCharacters: Character[];
   choiceLists?: ChoiceList[];
+  // Schicksalswürfel der Welt an? Aus: die Felder dafür (Beziehungsstatus, Partner:in, beste:r Freund:in) entfallen
+  fateEnabled?: boolean;
 }) {
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
   const speciesOff = isSpeciesOff(choiceLists);
@@ -134,30 +137,48 @@ export function EditCharacterForm({
           </label>
         )}
       </div>
-      {!speciesList && !speciesOff && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
+      {!speciesList && !speciesOff && fateEnabled && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
       <ChoiceFields lists={choiceLists} values={choices} />
 
-      <label className="flex flex-col gap-1 text-sm text-fg-soft">
-        Beziehungsstatus (optional)
-        <select
-          name="relationship_status"
-          value={relationshipStatus}
-          onChange={(e) => setRelationshipStatus(e.target.value)}
-          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-        >
-          <option value="">Keine Angabe</option>
-          <option value="single">Single</option>
-          <option value="beziehung">In einer Beziehung</option>
-          <option value="kompliziert">Es ist kompliziert</option>
-          <option value="verheiratet">Verheiratet</option>
-        </select>
-      </label>
-      {relationshipStatus && relationshipStatus !== "single" && (
+      {fateEnabled && (
+        <>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
-          Partner:in
+          Beziehungsstatus (optional)
           <select
-            name="partner_character_id"
-            defaultValue={character.partner_character_id ?? ""}
+            name="relationship_status"
+            value={relationshipStatus}
+            onChange={(e) => setRelationshipStatus(e.target.value)}
+            className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+          >
+            <option value="">Keine Angabe</option>
+            <option value="single">Single</option>
+            <option value="beziehung">In einer Beziehung</option>
+            <option value="kompliziert">Es ist kompliziert</option>
+            <option value="verheiratet">Verheiratet</option>
+          </select>
+        </label>
+        {relationshipStatus && relationshipStatus !== "single" && (
+          <label className="flex flex-col gap-1 text-sm text-fg-soft">
+            Partner:in
+            <select
+              name="partner_character_id"
+              defaultValue={character.partner_character_id ?? ""}
+              className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
+            >
+              <option value="">Keine Angabe</option>
+              {mentionableCharacters.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label className="flex flex-col gap-1 text-sm text-fg-soft">
+          Beste:r Freund:in (optional)
+          <select
+            name="best_friend_character_id"
+            defaultValue={character.best_friend_character_id ?? ""}
             className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
           >
             <option value="">Keine Angabe</option>
@@ -167,26 +188,12 @@ export function EditCharacterForm({
               </option>
             ))}
           </select>
+          <span className="text-xs text-muted">
+            Wird für logisch stimmige Schicksale genutzt (z. B. &quot;wird von der Partnerin betrogen&quot; zieht die echte Partnerin).
+          </span>
         </label>
+        </>
       )}
-      <label className="flex flex-col gap-1 text-sm text-fg-soft">
-        Beste:r Freund:in (optional)
-        <select
-          name="best_friend_character_id"
-          defaultValue={character.best_friend_character_id ?? ""}
-          className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-        >
-          <option value="">Keine Angabe</option>
-          {mentionableCharacters.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-muted">
-          Wird für logisch stimmige Schicksale genutzt (z. B. &quot;wird von der Partnerin betrogen&quot; zieht die echte Partnerin).
-        </span>
-      </label>
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Zitat (optional)

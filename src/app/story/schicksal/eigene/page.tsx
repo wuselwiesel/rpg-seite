@@ -14,6 +14,8 @@ export default async function EigeneSchicksalePage() {
   if (!user) redirect("/login");
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
+  // Schicksalswürfel in dieser Welt ausgeschaltet
+  if (world.fate_enabled === false) redirect("/story");
 
   const { data } = await supabase
     .from("world_custom_fates")

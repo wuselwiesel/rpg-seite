@@ -190,6 +190,10 @@ export function EditWorldForm({
         Würfeln
       </label>
       <label className="flex items-center gap-3 text-sm text-fg">
+        <input type="checkbox" name="fate_enabled" defaultChecked={world.fate_enabled !== false} className="h-4 w-4 accent-[var(--accent-strong)]" />
+        Schicksalswürfel
+      </label>
+      <label className="flex items-center gap-3 text-sm text-fg">
         <input type="checkbox" name="cast_enabled" defaultChecked={world.cast_enabled === true} className="h-4 w-4 accent-[var(--accent-strong)]" />
         Besetzung (Rollenliste im Wiki)
       </label>
