@@ -194,6 +194,10 @@ export function EditWorldForm({
         Schicksalswürfel
       </label>
       <label className="flex items-center gap-3 text-sm text-fg">
+        <input type="checkbox" name="house_enabled" defaultChecked={world.house_enabled !== false} className="h-4 w-4 accent-[var(--accent-strong)]" />
+        Haus / Familie bei Charakteren
+      </label>
+      <label className="flex items-center gap-3 text-sm text-fg">
         <input type="checkbox" name="cast_enabled" defaultChecked={world.cast_enabled === true} className="h-4 w-4 accent-[var(--accent-strong)]" />
         Besetzung (Rollenliste im Wiki)
       </label>

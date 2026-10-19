@@ -52,7 +52,8 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
   ]);
 
   const isWorldOwner = worldRow?.created_by === user.id;
-  const allChars = characters ?? [];
+  // Ohne „Haus / Familie“ in der Welt gibt es auch keine Haus-Filter und -Farben
+  const allChars = (characters ?? []).map((c) => (activeWorld.house_enabled === false ? { ...c, house: null } : c));
   const allRels = relationships ?? [];
 
   // Widersprüche: Der ChaBo einer beteiligten Figur nennt die Beziehung anders als das Netz

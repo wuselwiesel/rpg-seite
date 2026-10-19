@@ -15,12 +15,15 @@ export function EditCharacterForm({
   mentionableCharacters,
   choiceLists = [],
   fateEnabled = true,
+  houseEnabled = true,
 }: {
   character: Character;
   mentionableCharacters: Character[];
   choiceLists?: ChoiceList[];
   // Schicksalswürfel der Welt an? Aus: die Felder dafür (Beziehungsstatus, Partner:in, beste:r Freund:in) entfallen
   fateEnabled?: boolean;
+  // Feld „Haus / Familie“ der Welt an?
+  houseEnabled?: boolean;
 }) {
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
   const speciesOff = isSpeciesOff(choiceLists);
@@ -207,6 +210,7 @@ export function EditCharacterForm({
         />
       </label>
 
+      {houseEnabled && (
       <label className="flex flex-col gap-1 text-sm text-fg-soft">
         Haus / Familie (optional)
         <input
@@ -219,6 +223,7 @@ export function EditCharacterForm({
         />
         <span className="text-xs text-muted">Für den Stammbaum: Charaktere mit demselben Namen werden gruppiert.</span>
       </label>
+      )}
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <button
