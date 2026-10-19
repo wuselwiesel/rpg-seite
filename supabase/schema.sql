@@ -8964,4 +8964,7 @@ alter table public.worlds add column if not exists fate_enabled boolean not null
 -- „Haus / Familie“ bei Charakteren je Welt ausschaltbar (Standard: an): kein Feld im Formular, keine Haus-Filter in Stammbaum und Beziehungsnetz.
 alter table public.worlds add column if not exists house_enabled boolean not null default true;
 
+-- „Zitat“ und „Status-Zeile“ bei Charakteren je Welt ausschaltbar (Standard: an): kein Feld im Formular, nicht im Profil.
+alter table public.worlds add column if not exists quote_enabled boolean not null default true, add column if not exists status_enabled boolean not null default true;
+
 notify pgrst, 'reload schema';

@@ -56,7 +56,7 @@ export default async function CharacterProfilePage({
 
   const { data: character } = await supabase
     .from("characters")
-    .select("*, worlds(name)")
+    .select("*, worlds(name, quote_enabled, status_enabled)")
     .eq("id", id)
     .maybeSingle<Character>();
 
@@ -289,7 +289,7 @@ export default async function CharacterProfilePage({
             )}
           </h1>
           {showReview && <ReviewChip characterId={character.id} status={reviewStatus} openProposals={openProposals ?? 0} admin={isWorldAdmin} />}
-          {character.quote && <p className="mt-1 font-serif text-base italic text-fg-soft">„{character.quote}“</p>}
+          {character.quote && character.worlds?.quote_enabled !== false && <p className="mt-1 font-serif text-base italic text-fg-soft">„{character.quote}“</p>}
           <p className="text-sm text-muted">
             {character.username ? `@${character.username}` : isOwn ? "kein.nutzername" : null}
             {character.worlds?.name && <>{character.username || isOwn ? " · " : ""}in {character.worlds.name}</>}
@@ -303,7 +303,7 @@ export default async function CharacterProfilePage({
 
           {!gone && (canEdit ? <AvailabilityControl characterId={character.id} availability={character.availability ?? null} location={character.location ?? null} /> : <AvailabilityBadge className="mt-3" availability={character.availability ?? null} location={character.location ?? null} />)}
 
-          {character.status_text && (
+          {character.status_text && character.worlds?.status_enabled !== false && (
             <p className="mt-3 inline-block rounded-full bg-surface-2 px-3 py-1 text-sm text-fg-soft"><EmojiText text={character.status_text} /></p>
           )}
 

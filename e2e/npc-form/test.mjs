@@ -156,6 +156,22 @@ for (const [w, h] of [[1280, 900], [768, 900], [375, 800]]) {
   await ctx.close();
 }
 
+// Zitat und Status-Zeile der Welt aus: die Felder entfallen beim Bearbeiten; an: sie sind da
+{
+  const ctx = await browser.newContext({ viewport: { width: 900, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(url + "?edit=1&zitat=aus&status=aus");
+  await page.locator('select[name="species"]').waitFor();
+  check("Zitat und Status aus: beide Felder entfallen", (await page.locator('input[name="quote"]').count()) === 0 && (await page.locator('input[name="status_text"]').count()) === 0);
+  await page.goto(url + "?edit=1&zitat=aus");
+  await page.locator('select[name="species"]').waitFor();
+  check("Nur Zitat aus: Status bleibt", (await page.locator('input[name="quote"]').count()) === 0 && (await page.locator('input[name="status_text"]').count()) === 1);
+  await page.goto(url + "?edit=1");
+  await page.locator('select[name="species"]').waitFor();
+  check("Zitat und Status an: beide Felder da", (await page.locator('input[name="quote"]').count()) === 1 && (await page.locator('input[name="status_text"]').count()) === 1);
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);

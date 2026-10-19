@@ -8,10 +8,12 @@ const params = new URLSearchParams(location.search);
 (window as unknown as { __created: unknown[] }).__created = [];
 const fateEnabled = params.get("schicksal") !== "aus";
 const houseEnabled = params.get("haus") !== "aus";
+const quoteEnabled = params.get("zitat") !== "aus";
+const statusEnabled = params.get("status") !== "aus";
 const edit = { id: "c1", name: "Lyra", relationship_status: "beziehung", partner_character_id: null, best_friend_character_id: null, species: "mensch" } as unknown as Character;
 createRoot(document.getElementById("root")!).render(
   params.get("edit") === "1" ? (
-    <EditCharacterForm character={edit} mentionableCharacters={[]} fateEnabled={fateEnabled} houseEnabled={houseEnabled} />
+    <EditCharacterForm character={edit} mentionableCharacters={[]} fateEnabled={fateEnabled} houseEnabled={houseEnabled} quoteEnabled={quoteEnabled} statusEnabled={statusEnabled} />
   ) : (
   <NewCharacterForm
     takenNames={["anna", "ben", "lucian", "mia", "noah", "emilia", "felix", "greta", "hannah", "ida", "jonas", "klara", "luca"]}
