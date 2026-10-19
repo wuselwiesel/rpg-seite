@@ -162,6 +162,19 @@ function ListCard({
   const [label, setLabel] = useState(list.label);
   const [adding, setAdding] = useState("");
 
+  // „Wesen“ abgeschaltet: Das Feld entfällt in der Welt ganz (Charaktere, Filter, Profile); wieder einschaltbar
+  if (list.isSpecies && list.disabled) {
+    return (
+      <section id={`liste-${list.id}`} data-tour={first ? "listen-erste" : undefined} aria-label={list.label} className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-line bg-surface p-4">
+        <h2 className="mr-auto font-serif text-xl text-muted">{list.label}</h2>
+        <span className="text-sm text-muted">Entfernt</span>
+        <button type="button" disabled={disabled} onClick={() => run(() => updateChoiceList(worldId, list.id, { disabled: false }))} className="rounded-full border border-line px-3 py-1 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent disabled:opacity-50">
+          Wieder einschalten
+        </button>
+      </section>
+    );
+  }
+
   return (
     <section id={`liste-${list.id}`} data-tour={first ? "listen-erste" : undefined} aria-label={list.label} className="flex scroll-mt-20 flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -187,6 +200,25 @@ function ListCard({
           <option value="dropdown">Als Dropdown</option>
           <option value="text">Freies Textfeld</option>
         </select>
+        {list.isSpecies && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={async () => {
+              const ok = await confirm({
+                message: "Wesen aus dieser Welt entfernen? Das Feld entfällt beim Anlegen und Bearbeiten, im Profil und in den Filtern. Bereits gewählte Werte bleiben erhalten und kommen zurück, wenn du es wieder einschaltest.",
+                confirmLabel: "Wesen entfernen",
+                danger: true,
+              });
+              if (ok) run(() => updateChoiceList(worldId, list.id, { disabled: true }));
+            }}
+            title="Wesen entfernen"
+            aria-label="Wesen entfernen"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-red-500"
+          >
+            <Trash2 className="h-4 w-4" strokeWidth={2} />
+          </button>
+        )}
         {!list.isSpecies && (
           <button
             type="button"

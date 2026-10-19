@@ -8,11 +8,12 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { genderOfSheet } from "@/lib/random-pools";
 import { npcBio, npcName, rollNpcSheet, speciesOfSheet } from "@/lib/npc-random";
 import type { CustomPools } from "@/lib/random-pools";
-import { activeLists, type ChoiceList } from "@/lib/choice-lists";
+import { activeLists, isSpeciesOff, type ChoiceList } from "@/lib/choice-lists";
 import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
 
 export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [], role = null }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[]; role?: { id: string; name: string } | null }) {
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
+  const speciesOff = isSpeciesOff(choiceLists);
   const [error, formAction, pending] = useActionState(createCharacter, null);
   const searchParams = useSearchParams();
   const isWelcome = searchParams.get("welcome") === "1";
@@ -154,7 +155,7 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
               <option value="divers">Divers</option>
             </select>
           </label>
-          {speciesList ? (
+          {speciesOff ? null : speciesList ? (
             <ChoiceField list={speciesList} />
           ) : (
             <label className="flex flex-col gap-1 text-sm text-fg-soft">
@@ -172,7 +173,7 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
             </label>
           )}
         </div>
-        {!speciesList && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
+        {!speciesList && !speciesOff && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
         <ChoiceFields lists={choiceLists} />
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Haus / Familie (optional)

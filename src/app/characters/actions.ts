@@ -15,7 +15,7 @@ import { parseTalentConfig } from "@/lib/talents";
 import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
 import { createNotification } from "@/lib/notifications";
 import { getChoiceUsage, getWorldChoiceLists } from "@/lib/choice-lists-data";
-import { activeLists, limitError, parseChoices, speciesFromLabel } from "@/lib/choice-lists";
+import { activeLists, isSpeciesOff, limitError, parseChoices, speciesFromLabel } from "@/lib/choice-lists";
 import { SECRETS_NOT_ALLOWED, worldAllowsSecrets } from "@/lib/world-secrets";
 import { newlyFullEntries } from "@/lib/world-admin-events";
 import { notifyFullEntries, notifyWorldAdmins } from "@/lib/world-admin-notify";
@@ -110,7 +110,8 @@ export async function createCharacter(_prevState: string | null, formData: FormD
   const createLimit = limitError(choiceLists, choices, createUsage);
   if (createLimit) return createLimit;
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
-  const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
+  // Hat die Welt „Wesen“ abgeschaltet, bleibt die Natur beim Standard (Mensch)
+  const species = isSpeciesOff(choiceLists) ? "mensch" : speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
 
   // Die Talentliste der Welt gilt auch für den gewürfelten Bogen
   let sheet: SheetData | null = null;
@@ -228,9 +229,9 @@ export async function updateCharacter(
   // Wer darf bearbeiten? Besitzer:in, bei NPCs auch die Welt-Besitzerin (die Datenbank erzwingt dasselbe).
   const { data: own } = await supabase
     .from("characters")
-    .select("world_id, owner_id, is_npc, choices")
+    .select("world_id, owner_id, is_npc, choices, species")
     .eq("id", characterId)
-    .maybeSingle<{ world_id: string; owner_id: string; is_npc: boolean; choices: Record<string, string> | null }>();
+    .maybeSingle<{ world_id: string; owner_id: string; is_npc: boolean; choices: Record<string, string> | null; species: string | null }>();
   if (!own) return "Charakter nicht gefunden.";
   if (!(await getCharacterAccess(own, user.id)).canEdit) return "Nur die Besitzer:in kann diesen Charakter bearbeiten.";
 
@@ -248,7 +249,8 @@ export async function updateCharacter(
   const updateLimit = limitError(choiceLists, choices, updateUsage, (own.choices ?? {}) as Record<string, string>);
   if (updateLimit) return updateLimit;
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies);
-  const species = speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
+  // Hat die Welt „Wesen“ abgeschaltet, bleibt die bisherige Natur unverändert
+  const species = isSpeciesOff(choiceLists) ? parseSpecies(own.species) : speciesList ? speciesFromLabel(choices[speciesList.id]) : parseSpecies(formData.get("species"));
 
   // Partner:in / beste:r Freund:in müssen echte, für die Person erreichbare Charaktere sein
   // (Welt-Mitglied), sonst still auf "keine Angabe" zurückfallen statt einen Fehler zu werfen.

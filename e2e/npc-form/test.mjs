@@ -111,6 +111,16 @@ for (const [w, h] of [[1280, 900], [768, 900], [375, 800]]) {
   await ctx.close();
 }
 
+// Wesen abgeschaltet: kein Feld „Wesen“ und kein Hinweis zum Schicksalswürfel; eingeschaltet (feste Auswahl) ist es da
+{
+  const { ctx, page } = await fresh("?wesen=aus");
+  check("Wesen aus: kein Feld Wesen, kein Hinweis", (await page.locator('select[name="species"]').count()) === 0 && (await page.getByText("Schicksalswürfels").count()) === 0 && (await page.getByText("Wesen", { exact: true }).count()) === 0);
+  await ctx.close();
+  const on = await fresh();
+  check("Wesen an: feste Auswahl ist da", (await on.page.locator('select[name="species"]').count()) === 1);
+  await on.ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);
