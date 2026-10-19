@@ -1,6 +1,9 @@
 // Verkleinert Fotos vor dem Hochladen (max. Kantenlänge, JPEG). Handy-Fotos sind oft 4–8 MB groß;
 // das spart Upload-Zeit und macht Feed und Profile deutlich schneller. GIFs/SVGs bleiben unverändert.
-export async function resizeImage(file: File, maxSize = 1600, quality = 0.85): Promise<File> {
+import { normalizeImage } from "@/lib/heic";
+
+export async function resizeImage(input: File, maxSize = 1600, quality = 0.85): Promise<File> {
+  const file = await normalizeImage(input);
   if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/svg+xml") return file;
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });

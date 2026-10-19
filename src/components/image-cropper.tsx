@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { looksHeic, normalizeImage } from "@/lib/heic";
 
 export type CropAspect = { id: string; label: string; ratio: number };
 
@@ -16,12 +17,12 @@ export const ASPECTS = {
 
 // GIFs (Animation) und SVGs werden nie zugeschnitten.
 export function canCrop(file: File): boolean {
-  return file.type.startsWith("image/") && file.type !== "image/gif" && file.type !== "image/svg+xml";
+  return (file.type.startsWith("image/") || looksHeic(file)) && file.type !== "image/gif" && file.type !== "image/svg+xml";
 }
 
 // Zuschneide-Fenster: Bild mit dem Finger/der Maus verschieben, mit Regler oder Zwei-Finger-Geste zoomen.
 export function ImageCropper({
-  file,
+  file: input,
   aspects,
   round = false,
   title = "Bild zuschneiden",
@@ -37,6 +38,8 @@ export function ImageCropper({
   onDone: (file: File) => void;
   onCancel: () => void;
 }) {
+  // HEIC-Fotos (iPhone) werden zuerst in JPEG umgewandelt; bis dahin ist `file` leer
+  const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [aspect, setAspect] = useState<CropAspect>(aspects[0]);
@@ -49,6 +52,15 @@ export function ImageCropper({
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
 
   useEffect(() => {
+    let alive = true;
+    void normalizeImage(input).then((f) => alive && setFile(f));
+    return () => {
+      alive = false;
+    };
+  }, [input]);
+
+  useEffect(() => {
+    if (!file) return;
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => setNatural({ w: img.naturalWidth, h: img.naturalHeight });
@@ -131,7 +143,7 @@ export function ImageCropper({
   }
 
   async function apply() {
-    if (!natural) return;
+    if (!natural || !file) return;
     setBusy(true);
     try {
       const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
@@ -241,7 +253,7 @@ export function ImageCropper({
 
         <div className="flex flex-wrap justify-end gap-2">
           {allowOriginal && (
-            <button type="button" onClick={() => onDone(file)} className="rounded-md px-3 py-2 text-sm text-fg-soft hover:text-fg">
+            <button type="button" onClick={() => onDone(file ?? input)} className="rounded-md px-3 py-2 text-sm text-fg-soft hover:text-fg">
               Original verwenden
             </button>
           )}
