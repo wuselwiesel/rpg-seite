@@ -179,6 +179,21 @@ export function useAccountChat(
     return true;
   }
 
+  // GIF per Link (Giphy/Tenor) senden: kein Hochladen, die Nachricht zeigt gleich die Adresse
+  async function sendGif(url: string): Promise<boolean> {
+    const id = crypto.randomUUID();
+    setError(null);
+    setMessages((prev) => [...prev, { id, sender_id: userId, content: "", image_url: url, reply_to_id: null, quote: null, created_at: new Date().toISOString(), pending: true }]);
+    const err = await sendAccountMessage(chatId, "", id, url, null, null);
+    if (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      setError(err);
+      return false;
+    }
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pending: false } : m)));
+    return true;
+  }
+
   async function remove(messageId: string) {
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
     const err = await deleteAccountMessage(messageId);
@@ -223,5 +238,5 @@ export function useAccountChat(
     }
   }
 
-  return { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction, markRead, hasOlder: cursor !== null, loadingOlder, loadOlder };
+  return { messages, reads, reactions, error, send, sendGif, edit, remove, pin, toggleReaction, markRead, hasOlder: cursor !== null, loadingOlder, loadOlder };
 }
