@@ -8961,4 +8961,7 @@ alter table public.world_choice_lists add column if not exists disabled boolean 
 -- Schicksalswürfel je Welt ausschaltbar: kein Würfel, keine eigenen Schicksale, keine Felder dafür im Charakterformular (Standard: an).
 alter table public.worlds add column if not exists fate_enabled boolean not null default true;
 
+-- „Haus / Familie“ bei Charakteren je Welt ausschaltbar (Standard: an): kein Feld im Formular, keine Haus-Filter in Stammbaum und Beziehungsnetz.
+alter table public.worlds add column if not exists house_enabled boolean not null default true;
+
 notify pgrst, 'reload schema';

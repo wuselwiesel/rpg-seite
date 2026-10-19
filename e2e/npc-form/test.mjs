@@ -137,6 +137,25 @@ for (const [w, h] of [[1280, 900], [768, 900], [375, 800]]) {
   await ctx.close();
 }
 
+// Haus / Familie der Welt aus: das Feld entfällt beim Anlegen und Bearbeiten; an: es ist da
+{
+  const ctx = await browser.newContext({ viewport: { width: 900, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(url + "?haus=aus");
+  await page.getByRole("button", { name: "Komplett würfeln" }).waitFor();
+  check("Haus aus (neu): kein Feld Haus / Familie", (await page.locator('input[name="house"]').count()) === 0 && (await page.getByText("Haus / Familie").count()) === 0);
+  await page.goto(url);
+  await page.getByRole("button", { name: "Komplett würfeln" }).waitFor();
+  check("Haus an (neu): Feld ist da", (await page.locator('input[name="house"]').count()) === 1);
+  await page.goto(url + "?edit=1&haus=aus");
+  await page.locator('select[name="species"]').waitFor();
+  check("Haus aus (bearbeiten): kein Feld Haus / Familie", (await page.locator('input[name="house"]').count()) === 0);
+  await page.goto(url + "?edit=1");
+  await page.locator('select[name="species"]').waitFor();
+  check("Haus an (bearbeiten): Feld ist da", (await page.locator('input[name="house"]').count()) === 1);
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);

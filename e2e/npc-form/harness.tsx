@@ -7,10 +7,11 @@ import type { Character } from "@/lib/types";
 const params = new URLSearchParams(location.search);
 (window as unknown as { __created: unknown[] }).__created = [];
 const fateEnabled = params.get("schicksal") !== "aus";
+const houseEnabled = params.get("haus") !== "aus";
 const edit = { id: "c1", name: "Lyra", relationship_status: "beziehung", partner_character_id: null, best_friend_character_id: null, species: "mensch" } as unknown as Character;
 createRoot(document.getElementById("root")!).render(
   params.get("edit") === "1" ? (
-    <EditCharacterForm character={edit} mentionableCharacters={[]} fateEnabled={fateEnabled} />
+    <EditCharacterForm character={edit} mentionableCharacters={[]} fateEnabled={fateEnabled} houseEnabled={houseEnabled} />
   ) : (
   <NewCharacterForm
     takenNames={["anna", "ben", "lucian", "mia", "noah", "emilia", "felix", "greta", "hannah", "ida", "jonas", "klara", "luca"]}
@@ -18,6 +19,7 @@ createRoot(document.getElementById("root")!).render(
     startAsNpc={params.get("npc") === "1"}
     choiceLists={params.get("wesen") === "aus" ? [{ id: "s", label: "Wesen", mode: "dropdown", isSpecies: true, disabled: true, options: [{ id: "1", label: "Elf" }] }] : undefined}
     fateEnabled={fateEnabled}
+    houseEnabled={houseEnabled}
   />
   ),
 );

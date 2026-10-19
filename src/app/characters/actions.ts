@@ -277,7 +277,8 @@ export async function updateCharacter(
       status_text: statusText || null,
       banner_url: bannerUrl,
       custom_fields: customFields,
-      house: house || null,
+      // Kommt das Feld nicht mit (Welt ohne „Haus / Familie“), bleibt die bisherige Angabe unverändert
+      ...(formData.has("house") ? { house: house || null } : {}),
       ...(formData.has("quote") ? { quote: quote || null } : {}),
       gender,
       species,

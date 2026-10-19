@@ -69,11 +69,11 @@ export function plainToHtml(text: string): string {
     .join("");
 }
 
-export function listCharacterFields(c: ProfileFields, lists: ChoiceList[], sheet: SheetData | null): FieldDef[] {
+export function listCharacterFields(c: ProfileFields, lists: ChoiceList[], sheet: SheetData | null, opts: { house?: boolean } = {}): FieldDef[] {
   const out: FieldDef[] = [
     { key: "p:name", group: "Profil", label: "Name", value: c.name, kind: "text" },
     { key: "p:bio", group: "Profil", label: "Kurzbeschreibung", value: c.bio ?? "", kind: "long" },
-    { key: "p:house", group: "Profil", label: "Haus / Zugehörigkeit", value: c.house ?? "", kind: "text" },
+    ...(opts.house === false ? [] : [{ key: "p:house", group: "Profil", label: "Haus / Zugehörigkeit", value: c.house ?? "", kind: "text" as const }]),
     { key: "p:quote", group: "Profil", label: "Zitat", value: c.quote ?? "", kind: "text" },
     { key: "p:status_text", group: "Profil", label: "Status", value: c.status_text ?? "", kind: "text" },
     { key: "p:gender", group: "Profil", label: "Geschlecht", value: genderLabel(c.gender), kind: "select", options: ["", ...GENDERS.map((g) => g.label)] },

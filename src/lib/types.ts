@@ -24,6 +24,8 @@ export type World = {
   dice_enabled?: boolean;
   // Schicksalswürfel der Welt (Standard: an)
   fate_enabled?: boolean;
+  // Feld „Haus / Familie“ der Charaktere (Standard: an)
+  house_enabled?: boolean;
   // Öffentlich: erscheint in „Welten entdecken“ und der Suche; Übungswelt: gemeinsam genutzte Beispielwelt
   is_public?: boolean;
   is_demo?: boolean;

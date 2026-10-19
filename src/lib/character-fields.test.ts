@@ -66,3 +66,12 @@ describe("applyFieldChange", () => {
     expect(applyFieldChange("p:nix", "1", c, lists, null).ok).toBe(false);
   });
 });
+
+describe("Haus / Zugehörigkeit abschalten", () => {
+  const c = { name: "Lyra", bio: null, house: "Blackwood", quote: null, status_text: null, gender: null, choices: null };
+  it("listet das Feld standardmäßig, ohne Haus nicht", () => {
+    expect(listCharacterFields(c, [], null).some((f) => f.key === "p:house")).toBe(true);
+    expect(listCharacterFields(c, [], null, { house: false }).some((f) => f.key === "p:house")).toBe(false);
+    expect(listCharacterFields(c, [], null, { house: true }).some((f) => f.key === "p:house")).toBe(true);
+  });
+});

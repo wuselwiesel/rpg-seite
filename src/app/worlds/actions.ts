@@ -166,6 +166,7 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
     cover_image_url: coverImageUrl || null,
     dice_enabled: formData.get("dice_enabled") === "on",
     fate_enabled: formData.get("fate_enabled") === "on",
+    house_enabled: formData.get("house_enabled") === "on",
     is_public: formData.get("is_public") === "on",
     join_mode: parseJoinMode(formData.get("join_mode")),
     preview: parsePreview(formData.get("preview")),

@@ -6,6 +6,7 @@ import { getWorldAdminIds } from "@/lib/npc-data";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { getCharacterSheet } from "@/lib/character-sheet-data";
 import { listCharacterFields, type ProfileFields } from "@/lib/character-fields";
+import { getWorldHouseEnabled } from "@/lib/world-dice";
 import { ReviewPanel, type ProposalView } from "./review-panel";
 
 export const metadata = { title: "Prüfung" };
@@ -35,6 +36,7 @@ export default async function CharacterReviewPage({ params }: PageProps<"/charac
   const isOwner = c.owner_id === user.id;
   if (!isAdmin && !isOwner) redirect(`/characters/${id}`);
 
+  const houseEnabled = await getWorldHouseEnabled(c.world_id);
   const [lists, sheet, { data: rows }] = await Promise.all([
     isAdmin ? getWorldChoiceLists(c.world_id) : Promise.resolve([]),
     isAdmin ? getCharacterSheet(id, false) : Promise.resolve(null),
@@ -70,7 +72,7 @@ export default async function CharacterReviewPage({ params }: PageProps<"/charac
         reviewNote={c.review_note}
         isAdmin={isAdmin}
         isOwner={isOwner}
-        fields={isAdmin ? listCharacterFields(c, lists, sheet) : []}
+        fields={isAdmin ? listCharacterFields(c, lists, sheet, { house: houseEnabled }) : []}
         proposals={proposals}
       />
     </div>
