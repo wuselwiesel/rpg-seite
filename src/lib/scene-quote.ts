@@ -2,7 +2,8 @@ import type { ChatQuote } from "@/lib/clips";
 
 // Woher ein Zitat im Szenen-Chat stammt: einzelne Nachrichten der Szene oder ein gespeicherter Ausschnitt.
 // Der Server baut daraus selbst die Kopie des Wortlauts (der Client kann also nichts Falsches unterschieben).
-export type QuoteSource = { storyPostId: string; entryIds: string[] } | { clipId: string };
+// `excerpts`: nur der markierte Textausschnitt je Nachricht (Nachrichten-ID → Text) statt der ganzen Nachricht
+export type QuoteSource = { storyPostId: string; entryIds: string[]; excerpts?: Record<string, string> } | { clipId: string };
 
 // Vorschau fürs Eingabefeld (quote) plus Quelle fürs Senden (source)
 export type QuoteDraft = { source: QuoteSource; quote: ChatQuote };

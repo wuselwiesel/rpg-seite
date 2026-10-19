@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapeHtml } from "@/lib/character-links";
-import { quoteFromItems, type ChatQuote, type Clip, type ClipItem } from "@/lib/clips";
+import { excerptInHtml, quoteFromExcerpts, quoteFromItems, type ChatQuote, type Clip, type ClipItem } from "@/lib/clips";
 import type { QuoteSource } from "@/lib/scene-quote";
 
 import { MAX_CLIP_ENTRIES_CLIENT } from "@/lib/clip-limits";
@@ -35,6 +35,19 @@ export async function loadEntryItems(supabase: SupabaseClient, storyPostId: stri
   }));
 }
 
+// Markierte Textausschnitte (Nachrichten-ID → Text) auf die geladenen Nachrichten anwenden: nur Nachrichten mit Ausschnitt bleiben, und der Text muss
+// wirklich in der Nachricht stehen (der Client kann nichts Falsches unterschieben). Ergebnis: Nachrichten mit dem Ausschnitt als Text.
+export function pickExcerptItems(items: ClipItem[], excerpts: Record<string, string>): { id: string; author: string; at: string; text: string }[] | { error: string } {
+  const picked: { id: string; author: string; at: string; text: string }[] = [];
+  for (const item of items) {
+    const text = excerpts[item.id]?.trim();
+    if (!text) continue;
+    if (!excerptInHtml(item.html, text)) return { error: "Der markierte Text steht so nicht in der Nachricht." };
+    picked.push({ id: item.id, author: item.author, at: item.at, text });
+  }
+  return picked.length ? picked : { error: "Keine Auswahl." };
+}
+
 // Zitat für den Szenen-Chat aus der Quelle bauen
 export async function buildQuote(supabase: SupabaseClient, source: QuoteSource): Promise<ChatQuote | { error: string }> {
   if ("clipId" in source) {
@@ -49,6 +62,11 @@ export async function buildQuote(supabase: SupabaseClient, source: QuoteSource):
   if (!source.entryIds.length) return { error: "Keine Nachrichten gewählt." };
   const items = await loadEntryItems(supabase, source.storyPostId, source.entryIds);
   if (!items.length) return { error: "Die gewählten Nachrichten wurden nicht gefunden." };
+  if (source.excerpts && Object.keys(source.excerpts).length > 0) {
+    const picked = pickExcerptItems(items, source.excerpts);
+    if ("error" in picked) return picked;
+    return quoteFromExcerpts(source.storyPostId, picked);
+  }
   return quoteFromItems(source.storyPostId, items);
 }
 

@@ -48,8 +48,11 @@ export function ClipSelectionProvider({
   const [dialog, setDialog] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  // Markierte Textstellen (statt ganzer Nachrichten), die gespeichert werden sollen
+  const [excerptSave, setExcerptSave] = useState<Record<string, string> | null>(null);
 
   const cancel = useCallback(() => {
+    setExcerptSave(null);
     setAnchor(null);
     setSelected([]);
     setDialog(false);
@@ -108,8 +111,19 @@ export function ClipSelectionProvider({
   return (
     <ClipSelectionContext.Provider value={value}>
       {children}
+      {!anchor && !dialog && (
+        <SelectionActions
+          storyPostId={storyPostId}
+          canQuote={canQuote}
+          onQuoted={() => setToast("Zitat liegt im Chat bereit. Dort abschicken.")}
+          onSave={(excerpts) => {
+            setExcerptSave(excerpts);
+            setDialog(true);
+          }}
+        />
+      )}
       {/* Per Portal an <body>: Der Seitenrahmen bildet einen eigenen Stapel, darin läge alles unter der Kopfzeile */}
-      {(anchor || toast) &&
+      {(anchor || toast || dialog) &&
         createPortal(
           <>
       {anchor && !dialog && (
@@ -152,7 +166,8 @@ export function ClipSelectionProvider({
         <SaveClipDialog
           storyPostId={storyPostId}
           sceneTitle={sceneTitle}
-          entryIds={selected}
+          entryIds={excerptSave ? Object.keys(excerptSave) : selected}
+          excerpts={excerptSave ?? undefined}
           characters={ownCharacters}
           activeCharacterId={activeCharacterId}
           onClose={() => setDialog(false)}
@@ -179,6 +194,7 @@ function SaveClipDialog({
   storyPostId,
   sceneTitle,
   entryIds,
+  excerpts,
   characters,
   activeCharacterId,
   onClose,
@@ -187,13 +203,14 @@ function SaveClipDialog({
   storyPostId: string;
   sceneTitle: string;
   entryIds: string[];
+  excerpts?: Record<string, string>;
   characters: { id: string; name: string }[];
   activeCharacterId: string | null;
   onClose: () => void;
   onSaved: (characterCount: number, message?: string) => void;
 }) {
   const [title, setTitle] = useState(() => {
-    const first = visibleEntryElement(entryIds[0])?.querySelector(".post-content")?.textContent ?? "";
+    const first = (excerpts ? excerpts[entryIds[0]] : visibleEntryElement(entryIds[0])?.querySelector(".post-content")?.textContent) ?? "";
     return defaultClipTitle([{ html: first }], sceneTitle);
   });
   const [note, setNote] = useState("");
@@ -235,7 +252,7 @@ function SaveClipDialog({
     setError(null);
     let result: Awaited<ReturnType<typeof saveSceneClip>>;
     try {
-      result = await saveSceneClip({ storyPostId, entryIds, title, note, characterIds: chosen, collectionName: collection, publishToWiki: wiki });
+      result = await saveSceneClip({ storyPostId, entryIds, title, note, characterIds: chosen, collectionName: collection, publishToWiki: wiki, excerpts });
     } catch {
       setPending(false);
       return setError("Speichern hat nicht geklappt. Bitte noch einmal versuchen.");
@@ -249,7 +266,7 @@ function SaveClipDialog({
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="Ausschnitt speichern">
       <button type="button" aria-label="Schließen" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div className="relative flex max-h-[90dvh] w-full max-w-md flex-col gap-3 overflow-y-auto rounded-t-2xl bg-app p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-2xl">
-        <h2 className="font-serif text-xl text-fg">{entryIds.length === 1 ? "Nachricht speichern" : `${entryIds.length} Nachrichten speichern`}</h2>
+        <h2 className="font-serif text-xl text-fg">{excerpts ? "Textstelle speichern" : entryIds.length === 1 ? "Nachricht speichern" : `${entryIds.length} Nachrichten speichern`}</h2>
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Titel
           <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className={field} />
@@ -324,5 +341,141 @@ function SaveClipDialog({
         </div>
       </div>
     </div>
+  );
+}
+
+type TextSelection = { excerpts: Record<string, string>; rect: { top: number; bottom: number; left: number; width: number } };
+
+// Markierter Text innerhalb der Nachrichten der Szene: je Nachricht nur der markierte Teil
+function readTextSelection(): TextSelection | null {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  const node = range.commonAncestorContainer;
+  const host = node.nodeType === 1 ? (node as Element) : node.parentElement;
+  if (!host || host.closest('[contenteditable="true"], input, textarea, select')) return null;
+  const list = Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste")).find((el) => el.offsetParent !== null);
+  if (!list || !list.contains(host)) return null;
+  const excerpts: Record<string, string> = {};
+  for (const entry of list.querySelectorAll<HTMLElement>('[id^="beitrag-"]')) {
+    if (!range.intersectsNode(entry) || entry.offsetParent === null) continue;
+    const id = entry.id.slice("beitrag-".length);
+    if (!/^[0-9a-f-]{36}$/i.test(id)) continue;
+    const parts: string[] = [];
+    for (const content of entry.querySelectorAll<HTMLElement>(".post-content")) {
+      if (!range.intersectsNode(content)) continue;
+      const r = document.createRange();
+      r.selectNodeContents(content);
+      if (range.compareBoundaryPoints(Range.START_TO_START, r) > 0) r.setStart(range.startContainer, range.startOffset);
+      if (range.compareBoundaryPoints(Range.END_TO_END, r) < 0) r.setEnd(range.endContainer, range.endOffset);
+      const text = r.toString().trim();
+      if (text) parts.push(text);
+    }
+    const text = parts.join("\n").trim();
+    if (text.length >= 2) excerpts[id] = text.slice(0, 1500);
+  }
+  const ids = Object.keys(excerpts);
+  if (ids.length === 0 || ids.length > 6) return null;
+  const rect = range.getBoundingClientRect();
+  return { excerpts, rect: { top: rect.top, bottom: rect.bottom, left: rect.left, width: rect.width } };
+}
+
+// Schwebende Knöpfe an markiertem Text einer Nachricht: im Chat zitieren oder als Ausschnitt in den Charakterbogen speichern
+function SelectionActions({
+  storyPostId,
+  canQuote,
+  onQuoted,
+  onSave,
+}: {
+  storyPostId: string;
+  canQuote: boolean;
+  onQuoted: () => void;
+  onSave: (excerpts: Record<string, string>) => void;
+}) {
+  const [sel, setSel] = useState<TextSelection | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const update = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        setSel(readTextSelection());
+        setError(null);
+      }, 160);
+    };
+    document.addEventListener("selectionchange", update);
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("selectionchange", update);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  if (!sel || typeof document === "undefined") return null;
+  // Am Handy erscheint über der Markierung das Menü des Systems: die Knöpfe stehen darunter
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const width = canQuote ? 230 : 130;
+  const left = Math.min(Math.max(8, sel.rect.left + sel.rect.width / 2 - width / 2), window.innerWidth - width - 8);
+  const top = coarse ? Math.min(sel.rect.bottom + 14, window.innerHeight - 56) : Math.max(8, sel.rect.top - 48);
+  if (sel.rect.bottom < 0 || sel.rect.top > window.innerHeight) return null;
+
+  async function quote() {
+    if (!sel) return;
+    setBusy(true);
+    const draft = await previewSceneQuote({ storyPostId, entryIds: Object.keys(sel.excerpts), excerpts: sel.excerpts });
+    setBusy(false);
+    if ("error" in draft) return setError(draft.error);
+    requestQuote(draft);
+    window.getSelection()?.removeAllRanges();
+    setSel(null);
+    onQuoted();
+  }
+
+  return createPortal(
+    <div
+      role="toolbar"
+      aria-label="Markierte Textstelle"
+      style={{ top, left }}
+      className="fixed z-40 flex flex-col gap-1"
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      <div className="flex items-center gap-1 rounded-full border border-line bg-surface p-1 shadow-lg">
+        {canQuote && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void quote()}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+          >
+            <Quote className="h-3.5 w-3.5" strokeWidth={2} />
+            Im Chat zitieren
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            const excerpts = sel.excerpts;
+            window.getSelection()?.removeAllRanges();
+            setSel(null);
+            onSave(excerpts);
+          }}
+          className="flex items-center gap-1.5 rounded-full bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+        >
+          <Bookmark className="h-3.5 w-3.5" strokeWidth={2} />
+          Speichern
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="max-w-[16rem] rounded-lg bg-surface px-2 py-1 text-xs text-red-600 shadow dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </div>,
+    document.body,
   );
 }

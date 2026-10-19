@@ -8,6 +8,31 @@ import type { ChatQuote } from "@/lib/clips";
 export function QuoteCard({ quote, compact = false, className = "" }: { quote: ChatQuote; compact?: boolean; className?: string }) {
   const items = compact ? quote.items.slice(0, 2) : quote.items;
   const more = quote.entryIds.length - items.length;
+  // Markierter Textausschnitt: wie ein Zitat gesetzt, mit Anführungszeichen und Quellenangabe
+  if (quote.excerpt) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          highlightEntries(quote.entryIds);
+        }}
+        title="Zur Szene springen"
+        className={`block w-full rounded-lg border-l-4 border-current/60 bg-black/10 px-2.5 py-1.5 text-left ${className}`}
+      >
+        {items.map((item, i) => (
+          <span key={i} className={`block ${i > 0 ? "mt-1.5" : ""}`}>
+            <span className={`block font-serif text-[13px] italic leading-snug ${compact ? "line-clamp-2" : "line-clamp-6"}`}>
+              <Quote className="mr-1 inline h-3 w-3 -translate-y-px opacity-70" strokeWidth={2} aria-hidden />
+              „{item.text}“
+            </span>
+            <span className="mt-0.5 block text-[11px] font-semibold opacity-80">— {item.author}</span>
+          </span>
+        ))}
+        {more > 0 && <span className="mt-1 block text-[11px] opacity-70">+ {more} weitere</span>}
+      </button>
+    );
+  }
   return (
     <button
       type="button"

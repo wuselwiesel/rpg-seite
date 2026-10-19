@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendAccountMessage } from "@/app/redaktion/chat/actions";
-import { MAX_CLIP_ENTRIES, buildQuote, loadEntryItems } from "@/lib/clip-server";
+import { MAX_CLIP_ENTRIES, buildQuote, loadEntryItems, pickExcerptItems } from "@/lib/clip-server";
 import type { QuoteDraft, QuoteSource } from "@/lib/scene-quote";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapeHtml } from "@/lib/character-links";
@@ -19,6 +19,8 @@ export async function saveSceneClip(input: {
   collectionName: string;
   // Gleich auch als „Wichtiger Moment“ im Wiki für alle in der Welt zeigen
   publishToWiki?: boolean;
+  // Nur markierte Textstellen statt ganzer Nachrichten (Nachrichten-ID → Text)
+  excerpts?: Record<string, string>;
 }): Promise<{ error: string } | { ok: true; clipId: string; wikiError?: string }> {
   const title = input.title.trim().slice(0, 120);
   const note = input.note.trim().slice(0, 1000);
@@ -35,13 +37,19 @@ export async function saveSceneClip(input: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet." };
 
-  const [items, { data: scene }, { data: owned }] = await Promise.all([
+  const [loaded, { data: scene }, { data: owned }] = await Promise.all([
     loadEntryItems(supabase, input.storyPostId, input.entryIds),
     supabase.from("story_posts").select("title").eq("id", input.storyPostId).maybeSingle<{ title: string }>(),
     supabase.from("characters").select("id").eq("owner_id", user.id).in("id", input.characterIds).is("deleted_at", null),
   ]);
   if (!scene) return { error: "Szene nicht gefunden." };
-  if (!items.length) return { error: "Die gewählten Nachrichten wurden nicht gefunden." };
+  if (!loaded.length) return { error: "Die gewählten Nachrichten wurden nicht gefunden." };
+  let items = loaded;
+  if (input.excerpts && Object.keys(input.excerpts).length > 0) {
+    const picked = pickExcerptItems(loaded, input.excerpts);
+    if ("error" in picked) return picked;
+    items = picked.map((p) => ({ id: p.id, author: p.author, at: p.at, html: `<p>${escapeHtml(p.text.slice(0, 4000)).replace(/\n+/g, "<br>")}</p>` }));
+  }
   const characterIds = (owned ?? []).map((c) => c.id);
   if (characterIds.length === 0) return { error: "Bitte nur eigene Charaktere wählen." };
 

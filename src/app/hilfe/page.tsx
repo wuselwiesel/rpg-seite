@@ -400,6 +400,9 @@ export default async function HelpPage() {
             <strong>Im Wiki für alle:</strong> Beim Speichern „Im Wiki für alle zeigen“ wählen oder später im ChaBo das Wiki-Symbol am Ausschnitt antippen. Es entsteht eine Wiki-Seite der Art „Wichtiger Moment“ mit dem Wortlaut, die alle in der Welt sehen. Das ist eine feste Kopie: Dein privater Ausschnitt bleibt unverändert, spätere Änderungen daran erscheinen nicht im Wiki. Aus geheimen Szenen geht das nicht.
           </li>
           <li>
+            <strong>Nur eine Textstelle:</strong> Markiere in einer Nachricht einen Satz oder ein paar Zeilen. Direkt daneben erscheinen „Im Chat zitieren“ und „Speichern“. Das Zitat steht im Chat mit Anführungszeichen und dem Namen; „Speichern“ legt nur die markierte Stelle in deine Sammlung (Dialog wie oben). Die Markierung kann auch über mehrere Nachrichten gehen.
+          </li>
+          <li>
             <strong>Als Text oder PDF:</strong> Jede Sammlung lässt sich als Textdatei laden oder über die Druckansicht als PDF speichern.
           </li>
           <li>

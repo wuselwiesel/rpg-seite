@@ -22,6 +22,8 @@ export type ChatQuote = {
   entryIds: string[];
   clipId?: string;
   title?: string | null;
+  // Markierter Textausschnitt statt ganzer Nachricht: wird als Zitat mit Anführungszeichen gezeigt
+  excerpt?: boolean;
   items: { author: string; text: string }[];
 };
 
@@ -90,5 +92,31 @@ export function quoteFromItems(storyPostId: string | null, items: ClipItem[], op
     clipId: opts.clipId,
     title: opts.title ?? null,
     items: items.slice(0, 6).map((i) => ({ author: i.author, text: quoteSnippet(i.html) })),
+  };
+}
+
+export const MAX_EXCERPT = 600;
+
+// Klartext einer Nachricht (Entities aufgelöst), zum Prüfen von Textausschnitten
+export function plainText(html: string): string {
+  return stripHtml(html).replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+}
+
+// Nur Buchstaben und Ziffern, klein: damit Satzzeichen, Leerraum und eigene Emojis den Vergleich nicht stören
+const letters = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+
+// Steht der Ausschnitt tatsächlich in der Nachricht?
+export function excerptInHtml(html: string, excerpt: string): boolean {
+  const needle = letters(excerpt);
+  return needle.length > 0 && letters(plainText(html)).includes(needle);
+}
+
+// Chat-Zitat aus markierten Textausschnitten (Autor:in und Text je Nachricht)
+export function quoteFromExcerpts(storyPostId: string | null, items: { id: string; author: string; text: string }[]): ChatQuote {
+  return {
+    storyPostId,
+    entryIds: items.map((i) => i.id),
+    excerpt: true,
+    items: items.slice(0, 6).map((i) => ({ author: i.author, text: i.text.replace(/\s+/g, " ").trim().slice(0, MAX_EXCERPT) })),
   };
 }

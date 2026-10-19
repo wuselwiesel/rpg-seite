@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clipJumpHref, clipToText, collectionToText, defaultClipTitle, quoteFromItems, quoteSnippet, type Clip } from "./clips";
+import { clipJumpHref, clipToText, collectionToText, defaultClipTitle, excerptInHtml, quoteFromExcerpts, quoteFromItems, quoteSnippet, type Clip } from "./clips";
 
 const id1 = "11111111-1111-4111-8111-111111111111";
 const id2 = "22222222-2222-4222-8222-222222222222";
@@ -58,5 +58,27 @@ describe("Titel und Zitat", () => {
     expect(q.items).toHaveLength(6);
     expect(q.entryIds).toHaveLength(9);
     expect(q.title).toBe("T");
+  });
+});
+
+describe("Textausschnitte", () => {
+  const html = "<p>Kapitän Kaelen stand längst am Bug.</p><p>„Du kommst spät“, rief er &amp; lachte.</p>";
+  it("erkennt Ausschnitte, die wirklich in der Nachricht stehen", () => {
+    expect(excerptInHtml(html, "Kaelen stand längst")).toBe(true);
+    expect(excerptInHtml(html, "am Bug.\n\nDu kommst spät")).toBe(true);
+    expect(excerptInHtml(html, "rief er & lachte")).toBe(true);
+    expect(excerptInHtml(html, "KAELEN STAND")).toBe(true);
+  });
+  it("lehnt Fremdes und Leeres ab", () => {
+    expect(excerptInHtml(html, "Kaelen stand nie am Bug")).toBe(false);
+    expect(excerptInHtml(html, "   ")).toBe(false);
+    expect(excerptInHtml(html, "...")).toBe(false);
+  });
+  it("baut ein Zitat mit Markierung und gekürztem Text", () => {
+    const q = quoteFromExcerpts(id1, [{ id: id2, author: "Kaelen", text: `  ${"a ".repeat(500)}  ` }]);
+    expect(q.excerpt).toBe(true);
+    expect(q.entryIds).toEqual([id2]);
+    expect(q.items[0].text.length).toBeLessThanOrEqual(600);
+    expect(q.items[0].author).toBe("Kaelen");
   });
 });
