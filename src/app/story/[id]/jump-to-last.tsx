@@ -18,15 +18,32 @@ function scrollToLast() {
 export function JumpToLast({ variant }: { variant: "inline" | "floating" }) {
   const [below, setBelow] = useState(false);
 
+  // Lage der letzten Nachricht bei jedem Scrollen frisch lesen (nicht an ein einzelnes Element gebunden: bei neuen Nachrichten wechselt das Element mit der ID,
+  // ein Beobachter am alten Element blieb sonst hängen und der Knopf stand weiter da, obwohl man schon unten war)
   useEffect(() => {
     if (variant !== "floating") return;
-    const el = visibleById("letzter-beitrag");
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      setBelow(!entry.isIntersecting && entry.boundingClientRect.top > (entry.rootBounds?.height ?? window.innerHeight));
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
+    let pending: number | undefined;
+    function update() {
+      pending = undefined;
+      const el = visibleById("letzter-beitrag");
+      if (!el) return setBelow(false);
+      const top = el.getBoundingClientRect().top;
+      const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 80;
+      setBelow(top > window.innerHeight && !atBottom);
+    }
+    const schedule = () => {
+      if (pending === undefined) pending = window.setTimeout(update, 60);
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    const timer = window.setInterval(schedule, 600);
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      window.clearInterval(timer);
+      if (pending !== undefined) window.clearTimeout(pending);
+    };
   }, [variant]);
 
   if (variant === "inline") {
