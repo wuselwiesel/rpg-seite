@@ -7,7 +7,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { ProfileThemeFields } from "@/components/profile-theme-fields";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import type { Character } from "@/lib/types";
-import { activeLists, type ChoiceList } from "@/lib/choice-lists";
+import { activeLists, isSpeciesOff, type ChoiceList } from "@/lib/choice-lists";
 import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
 
 export function EditCharacterForm({
@@ -20,6 +20,7 @@ export function EditCharacterForm({
   choiceLists?: ChoiceList[];
 }) {
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
+  const speciesOff = isSpeciesOff(choiceLists);
   const choices = (character.choices ?? {}) as Record<string, string>;
   const action = updateCharacter.bind(null, character.id);
   const [error, formAction, pending] = useActionState(action, null);
@@ -116,7 +117,7 @@ export function EditCharacterForm({
             <option value="divers">Divers</option>
           </select>
         </label>
-        {speciesList ? (
+        {speciesOff ? null : speciesList ? (
           <ChoiceField list={speciesList} value={choices[speciesList.id]} />
         ) : (
           <label className="flex flex-col gap-1 text-sm text-fg-soft">
@@ -133,7 +134,7 @@ export function EditCharacterForm({
           </label>
         )}
       </div>
-      {!speciesList && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
+      {!speciesList && !speciesOff && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
       <ChoiceFields lists={choiceLists} values={choices} />
 
       <label className="flex flex-col gap-1 text-sm text-fg-soft">

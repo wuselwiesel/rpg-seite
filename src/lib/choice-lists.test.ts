@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeLists, choiceEntries, isListActive, limitError, parseChoices, speciesFromLabel, splitOptionLabels, type ChoiceList } from "./choice-lists";
+import { activeLists, choiceEntries, isListActive, isSpeciesOff, limitError, parseChoices, speciesFromLabel, splitOptionLabels, type ChoiceList } from "./choice-lists";
 
 const species: ChoiceList = { id: "s", label: "Wesen", mode: "dropdown", isSpecies: true, options: [{ id: "1", label: "Elf" }, { id: "2", label: "Werwolf" }] };
 const job: ChoiceList = { id: "j", label: "Beruf", mode: "text", isSpecies: false, options: [] };
@@ -57,5 +57,22 @@ describe("limitError", () => {
   it("ohne Wert oder bei Freitext gibt es keine Prüfung", () => {
     expect(limitError(lists, {}, { l1: { Vampir: 9 } })).toBeNull();
     expect(limitError([{ ...lists[0], mode: "text" as const }], { l1: "Vampir" }, { l1: { Vampir: 9 } })).toBeNull();
+  });
+});
+
+describe("Wesen abschalten", () => {
+  const off: ChoiceList = { ...species, disabled: true };
+  it("eine abgeschaltete Liste ist nicht aktiv und erscheint nicht im Profil", () => {
+    expect(isListActive(off)).toBe(false);
+    expect(activeLists([off, job])).toEqual([job]);
+    expect(choiceEntries({ s: "Elf", j: "Bäcker" }, [off, job])).toEqual([{ label: "Beruf", value: "Bäcker" }]);
+  });
+  it("erkennt, ob die Welt Wesen abgeschaltet hat", () => {
+    expect(isSpeciesOff([off, job])).toBe(true);
+    expect(isSpeciesOff([species, job])).toBe(false);
+    expect(isSpeciesOff([job])).toBe(false);
+  });
+  it("übernimmt keinen Wert für ein abgeschaltetes Wesen", () => {
+    expect(parseChoices((k) => (k === "choice_s" ? "Elf" : null), [off])).toEqual({});
   });
 });

@@ -39,17 +39,21 @@ export async function createChoiceList(worldId: string, rawLabel: string, mode: 
   return done(worldId);
 }
 
-export async function updateChoiceList(worldId: string, listId: string, patch: { label?: string; mode?: "dropdown" | "text" }): Promise<string | null> {
+// disabled gilt nur für „Wesen“: Die Welt lässt das Feld ganz weg (keine Liste, keine feste Auswahl)
+export async function updateChoiceList(worldId: string, listId: string, patch: { label?: string; mode?: "dropdown" | "text"; disabled?: boolean }): Promise<string | null> {
   const { supabase, user } = await me();
   if (!user) return "Nicht angemeldet.";
-  const update: { label?: string; mode?: string } = {};
+  const update: { label?: string; mode?: string; disabled?: boolean } = {};
   if (patch.label !== undefined) {
     const label = cleanLabel(patch.label);
     if (!label) return "Bitte einen Namen für die Liste eingeben.";
     update.label = label;
   }
   if (patch.mode) update.mode = patch.mode === "text" ? "text" : "dropdown";
-  const { data, error } = await supabase.from("world_choice_lists").update(update).eq("id", listId).eq("world_id", worldId).select("id");
+  if (patch.disabled !== undefined) update.disabled = patch.disabled === true;
+  let query = supabase.from("world_choice_lists").update(update).eq("id", listId).eq("world_id", worldId);
+  if (patch.disabled !== undefined) query = query.eq("is_species", true);
+  const { data, error } = await query.select("id");
   if (error) return error.code === "23505" ? "Eine Liste mit diesem Namen gibt es schon." : error.message;
   if (!data?.length) return NOT_ALLOWED;
   return done(worldId);

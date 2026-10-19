@@ -23,3 +23,16 @@ describe("speciesListOf", () => {
     expect(speciesListOf([])).toBeNull();
   });
 });
+
+describe("Wesen abgeschaltet", () => {
+  it("zeigt keine Angabe, auch nicht die feste Natur", () => {
+    const off = speciesListOf([{ id: "w", isSpecies: true, mode: "dropdown", options: [{}], disabled: true }]);
+    expect(off).toEqual({ id: "w", hasOptions: true, off: true });
+    expect(speciesLabelOf({ choices: { w: "Elf" }, species: "vampir" }, off)).toBeNull();
+  });
+  it("eingeschaltet bleibt alles wie bisher", () => {
+    const on = speciesListOf([{ id: "w", isSpecies: true, mode: "dropdown", options: [{}] }]);
+    expect(on).toEqual({ id: "w", hasOptions: true });
+    expect(speciesLabelOf({ choices: { w: "Elf" } }, on)).toBe("Elf");
+  });
+});

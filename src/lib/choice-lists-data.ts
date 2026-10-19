@@ -7,6 +7,7 @@ type Row = {
   label: string;
   mode: "dropdown" | "text";
   is_species: boolean;
+  disabled: boolean | null;
   sort_order: number;
   world_choice_options: { id: string; label: string; sort_order: number; max_count: number | null }[];
 };
@@ -18,7 +19,7 @@ export async function getWorldChoiceLists(worldId: string, withUsage = false): P
   const usage = withUsage ? await getChoiceUsage(worldId) : null;
   const { data } = await supabase
     .from("world_choice_lists")
-    .select("id, label, mode, is_species, sort_order, world_choice_options(id, label, sort_order, max_count)")
+    .select("id, label, mode, is_species, disabled, sort_order, world_choice_options(id, label, sort_order, max_count)")
     .eq("world_id", worldId)
     .returns<Row[]>();
   return (data ?? [])
@@ -28,6 +29,7 @@ export async function getWorldChoiceLists(worldId: string, withUsage = false): P
       label: l.label,
       mode: l.mode,
       isSpecies: l.is_species,
+      disabled: l.disabled === true,
       options: [...l.world_choice_options]
         .sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label, "de"))
         .map((o) => ({ id: o.id, label: o.label, maxCount: o.max_count, ...(usage ? { used: usage[l.id]?.[o.label] ?? 0 } : {}) })),

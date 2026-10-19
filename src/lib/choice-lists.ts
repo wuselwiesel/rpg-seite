@@ -4,6 +4,8 @@ export type ChoiceList = {
   label: string;
   mode: "dropdown" | "text";
   isSpecies: boolean;
+  // Die Liste ist abgeschaltet (bei „Wesen“: das Feld entfällt in dieser Welt ganz)
+  disabled?: boolean;
   // maxCount: Höchstzahl der Charaktere mit diesem Eintrag in der Welt (null = unbegrenzt); used: wie viele es schon gibt
   options: { id: string; label: string; maxCount?: number | null; used?: number }[];
 };
@@ -11,9 +13,14 @@ export type ChoiceList = {
 export const MAX_CHOICE_LISTS = 12;
 export const MAX_CHOICE_OPTIONS = 100;
 
-// Eine Liste erscheint beim Anlegen, wenn sie Einträge hat oder ein Textfeld ist.
+// Eine Liste erscheint beim Anlegen, wenn sie Einträge hat oder ein Textfeld ist (und nicht abgeschaltet wurde).
 export function isListActive(list: ChoiceList): boolean {
-  return list.mode === "text" || list.options.length > 0;
+  return !list.disabled && (list.mode === "text" || list.options.length > 0);
+}
+
+// Hat die Welt das Feld „Wesen“ abgeschaltet? Dann gibt es weder Dropdown noch feste Auswahl (Mensch, Vampir, Werwolf).
+export function isSpeciesOff(lists: ChoiceList[]): boolean {
+  return lists.some((l) => l.isSpecies && l.disabled);
 }
 
 export function activeLists(lists: ChoiceList[]): ChoiceList[] {
@@ -60,6 +67,7 @@ export function choiceEntries(choices: unknown, lists: ChoiceList[]): { label: s
   const src = choices && typeof choices === "object" ? (choices as Record<string, unknown>) : {};
   const out: { label: string; value: string }[] = [];
   for (const list of lists) {
+    if (list.disabled) continue;
     const v = src[list.id];
     if (typeof v === "string" && v.trim()) out.push({ label: list.label, value: v });
   }
