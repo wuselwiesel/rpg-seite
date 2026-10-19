@@ -198,6 +198,14 @@ export function EditWorldForm({
         Haus / Familie bei Charakteren
       </label>
       <label className="flex items-center gap-3 text-sm text-fg">
+        <input type="checkbox" name="quote_enabled" defaultChecked={world.quote_enabled !== false} className="h-4 w-4 accent-[var(--accent-strong)]" />
+        Zitat bei Charakteren
+      </label>
+      <label className="flex items-center gap-3 text-sm text-fg">
+        <input type="checkbox" name="status_enabled" defaultChecked={world.status_enabled !== false} className="h-4 w-4 accent-[var(--accent-strong)]" />
+        Status-Zeile bei Charakteren
+      </label>
+      <label className="flex items-center gap-3 text-sm text-fg">
         <input type="checkbox" name="cast_enabled" defaultChecked={world.cast_enabled === true} className="h-4 w-4 accent-[var(--accent-strong)]" />
         Besetzung (Rollenliste im Wiki)
       </label>

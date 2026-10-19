@@ -26,6 +26,9 @@ export type World = {
   fate_enabled?: boolean;
   // Feld „Haus / Familie“ der Charaktere (Standard: an)
   house_enabled?: boolean;
+  // Felder „Zitat“ und „Status-Zeile“ der Charaktere (Standard: an)
+  quote_enabled?: boolean;
+  status_enabled?: boolean;
   // Öffentlich: erscheint in „Welten entdecken“ und der Suche; Übungswelt: gemeinsam genutzte Beispielwelt
   is_public?: boolean;
   is_demo?: boolean;
@@ -99,7 +102,7 @@ export type Character = {
   partner_character_id?: string | null;
   best_friend_character_id?: string | null;
   created_at: string;
-  worlds?: { name: string } | null;
+  worlds?: { name: string; quote_enabled?: boolean | null; status_enabled?: boolean | null } | null;
 };
 
 export type CharacterRelationshipStatus = "single" | "beziehung" | "kompliziert" | "verheiratet";

@@ -75,3 +75,15 @@ describe("Haus / Zugehörigkeit abschalten", () => {
     expect(listCharacterFields(c, [], null, { house: true }).some((f) => f.key === "p:house")).toBe(true);
   });
 });
+
+describe("Zitat und Status abschalten", () => {
+  const c = { name: "Lyra", bio: null, house: null, quote: "Nie wieder", status_text: "unterwegs", gender: null, choices: null };
+  it("lässt die Felder weg, wenn die Welt sie ausschaltet", () => {
+    const keys = (o: { house?: boolean; quote?: boolean; status?: boolean }) => listCharacterFields(c, [], null, o).map((f) => f.key);
+    expect(keys({})).toEqual(expect.arrayContaining(["p:quote", "p:status_text"]));
+    expect(keys({ quote: false })).not.toContain("p:quote");
+    expect(keys({ quote: false })).toContain("p:status_text");
+    expect(keys({ status: false })).not.toContain("p:status_text");
+    expect(keys({ quote: false, status: false, house: false })).toEqual(expect.arrayContaining(["p:name", "p:bio", "p:gender"]));
+  });
+});

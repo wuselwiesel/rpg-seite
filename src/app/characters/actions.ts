@@ -274,7 +274,8 @@ export async function updateCharacter(
       theme_accent: themeAccent || null,
       theme_bg: themeBg || null,
       bio: bio || null,
-      status_text: statusText || null,
+      // Kommen „Status-Zeile“ und „Zitat“ nicht mit (Welt ohne diese Felder), bleiben die bisherigen Angaben unverändert
+      ...(formData.has("status_text") ? { status_text: statusText || null } : {}),
       banner_url: bannerUrl,
       custom_fields: customFields,
       // Kommt das Feld nicht mit (Welt ohne „Haus / Familie“), bleibt die bisherige Angabe unverändert
