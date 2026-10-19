@@ -2,7 +2,8 @@
 
 import { createPortal } from "react-dom";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { BookOpen, Bookmark, Check, Quote, X } from "lucide-react";
+import { BookOpen, Bookmark, Check, Copy, Quote, X } from "lucide-react";
+import { copyEntries } from "@/lib/entry-copy";
 import { createClient } from "@/lib/supabase/client";
 import { defaultClipTitle } from "@/lib/clips";
 import { MAX_CLIP_ENTRIES_CLIENT } from "@/lib/clip-limits";
@@ -140,6 +141,22 @@ export function ClipSelectionProvider({
             </button>
           </div>
           <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                void copyEntries(selected, true).then((ok) => {
+                  if (!ok) return setQuoteError("Kopieren hat nicht geklappt.");
+                  cancel();
+                  setToast(selected.length === 1 ? "Nachricht kopiert" : `${selected.length} Nachrichten kopiert`);
+                })
+              }
+              title="Kopieren"
+              aria-label="Kopieren"
+              className="flex items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <Copy className="h-3.5 w-3.5" strokeWidth={2} />
+              Kopieren
+            </button>
             {canQuote && (
               <button
                 type="button"
