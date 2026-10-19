@@ -11,7 +11,7 @@ import type { CustomPools } from "@/lib/random-pools";
 import { activeLists, isSpeciesOff, type ChoiceList } from "@/lib/choice-lists";
 import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
 
-export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [], role = null }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[]; role?: { id: string; name: string } | null }) {
+export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [], fateEnabled = true, role = null }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[]; fateEnabled?: boolean; role?: { id: string; name: string } | null }) {
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
   const speciesOff = isSpeciesOff(choiceLists);
   const [error, formAction, pending] = useActionState(createCharacter, null);
@@ -173,7 +173,7 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
             </label>
           )}
         </div>
-        {!speciesList && !speciesOff && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
+        {!speciesList && !speciesOff && fateEnabled && <span className="-mt-3 text-xs text-muted">Wird u. a. für die Filter des Schicksalswürfels verwendet.</span>}
         <ChoiceFields lists={choiceLists} />
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Haus / Familie (optional)

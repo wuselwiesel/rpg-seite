@@ -340,14 +340,16 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
             <NoCharacterBanner worldId={activeWorld.id} />
           </div>
         )}
-        <Link
-          href="/story/schicksal"
-          aria-label="Schicksalswürfel"
-          title="Schicksalswürfel"
-          className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg active:bg-surface-3"
-        >
-          <Skull className="h-5 w-5" strokeWidth={2} />
-        </Link>
+        {activeWorld.fate_enabled !== false && (
+          <Link
+            href="/story/schicksal"
+            aria-label="Schicksalswürfel"
+            title="Schicksalswürfel"
+            className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg active:bg-surface-3"
+          >
+            <Skull className="h-5 w-5" strokeWidth={2} />
+          </Link>
+        )}
       </div>
 
       <div data-tour="story-list" className={compact ? "flex flex-col divide-y divide-line" : "flex flex-col gap-4"}>

@@ -293,6 +293,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const rememberedMode = parseRememberedMode(cookieStore.get(MODE_COOKIE)?.value);
   const activeWorld = ownPresence?.userId ? await getActiveWorld(ownPresence.userId) : null;
   const diceEnabled = activeWorld ? activeWorld.dice_enabled !== false : true;
+  const fateEnabled = activeWorld ? activeWorld.fate_enabled !== false : true;
   const rights = activeWorld && ownPresence?.userId ? await getWorldRights(activeWorld.id, ownPresence.userId) : FULL_RIGHTS;
   return (
     <html
@@ -318,7 +319,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <WikiPreviewLayer />
         <KeyboardFix />
         <OfflineBanner />
-        <AppTour diceEnabled={diceEnabled} />
+        <AppTour diceEnabled={diceEnabled} fateEnabled={fateEnabled} />
         <OnlineProvider userId={ownPresence?.userId ?? null} initialMode={ownPresence?.mode ?? "online"} initialEmoji={ownPresence?.emoji ?? null} initialText={ownPresence?.text ?? null}>
           <CustomEmojiProvider map={emojiMap}>
             <DiceProvider enabled={diceEnabled}>

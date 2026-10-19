@@ -15,6 +15,8 @@ export default async function SchicksalPage() {
 
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) redirect("/worlds");
+  // Schicksalswürfel in dieser Welt ausgeschaltet
+  if (activeWorld.fate_enabled === false) redirect("/story");
 
   const [ownCharacters, worlds, friends] = await Promise.all([
     getOwnCharacters(user.id, activeWorld.id),

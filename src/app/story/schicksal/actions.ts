@@ -60,6 +60,7 @@ export async function previewFateAction(
 
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) return { error: "Keine aktive Welt." };
+  if (activeWorld.fate_enabled === false) return { error: FATE_OFF };
 
   const myWorlds = await getUserWorlds(user.id);
   const myWorldIds = new Set(myWorlds.map((w) => w.id));
@@ -115,6 +116,7 @@ function mentionSpan(c: { id: string; name: string }): string {
   return `<span data-type="mention" class="mention" data-id="${c.id}">@${escapeHtml(c.name)}</span>`;
 }
 
+const FATE_OFF = "Der Schicksalswürfel ist in dieser Welt ausgeschaltet.";
 const MAX_THEME_TAGS = 5;
 const MAX_THEME_TAG_LENGTH = 40;
 
@@ -132,6 +134,7 @@ export async function postFateResultAction(
 
   const activeWorld = await getActiveWorld(user.id);
   if (!activeWorld) return { error: "Keine aktive Welt." };
+  if (activeWorld.fate_enabled === false) return { error: FATE_OFF };
 
   // Eingebaut (Zahl) oder ein eigenes Schicksal dieser Welt (UUID)
   let fate = typeof fateId === "number" ? FATES.find((f) => f.id === fateId) : undefined;

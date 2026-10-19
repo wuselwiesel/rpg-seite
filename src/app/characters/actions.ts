@@ -198,6 +198,7 @@ export async function updateCharacter(
   const house = String(formData.get("house") ?? "").trim().slice(0, 60);
   const quote = String(formData.get("quote") ?? "").trim().slice(0, 200);
   const gender = parseGender(formData.get("gender"));
+  const fateFields = formData.has("relationship_status");
   const relationshipStatus = parseRelationshipStatus(formData.get("relationship_status"));
   const partnerCharacterId = String(formData.get("partner_character_id") ?? "").trim() || null;
   const bestFriendCharacterId = String(formData.get("best_friend_character_id") ?? "").trim() || null;
@@ -281,9 +282,14 @@ export async function updateCharacter(
       gender,
       species,
       choices,
-      relationship_status: relationshipStatus,
-      partner_character_id: relationshipStatus && relationshipStatus !== "single" ? validPartnerId : null,
-      best_friend_character_id: validBestFriendId,
+      // Kommen die Felder nicht mit (Schicksalswürfel der Welt aus), bleiben die bisherigen Angaben unverändert
+      ...(fateFields
+        ? {
+            relationship_status: relationshipStatus,
+            partner_character_id: relationshipStatus && relationshipStatus !== "single" ? validPartnerId : null,
+            best_friend_character_id: validBestFriendId,
+          }
+        : {}),
       avatar_url: avatarUrl || null,
       // Der Link zum alten Charakterbogen steht nicht mehr im Formular; ein vorhandener bleibt unangetastet
       ...(formData.has("sheet_url") ? { sheet_url: sheetUrl || null } : {}),

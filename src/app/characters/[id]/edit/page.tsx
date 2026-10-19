@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMentionableCharacters } from "@/lib/active-character";
 import { getCharacterAccess } from "@/lib/npc-data";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
+import { getWorldFateEnabled } from "@/lib/world-dice";
 import { NpcToggle } from "@/components/npc-toggle";
 import { ClaimableToggle } from "@/components/claimable-toggle";
 import { ReleaseCharacterButton } from "@/components/release-character-button";
@@ -35,6 +36,7 @@ export default async function EditCharacterPage({
   // Für Partner:in / beste:r Freund:in: eigene + Freundes-Charaktere derselben Welt, ohne sich selbst.
   const mentionable = (await getMentionableCharacters(user.id, character.world_id)).filter((c) => c.id !== character.id);
   const choiceLists = await getWorldChoiceLists(character.world_id, true);
+  const fateEnabled = await getWorldFateEnabled(character.world_id);
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
@@ -49,7 +51,7 @@ export default async function EditCharacterPage({
           <ClaimableToggle characterId={character.id} initial={Boolean(character.claimable)} />
         </div>
       )}
-      <EditCharacterForm character={character} mentionableCharacters={mentionable} choiceLists={choiceLists} />
+      <EditCharacterForm character={character} mentionableCharacters={mentionable} choiceLists={choiceLists} fateEnabled={fateEnabled} />
 
       {access.canToggle && !character.is_npc && !access.isWorldOwner && (
         <div className="mt-8 border-t border-line pt-6">

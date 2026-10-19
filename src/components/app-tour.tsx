@@ -101,7 +101,7 @@ function resolveRoute(route: string | undefined, refs: Refs): string | null {
   return refs[key] ?? fallback ?? null;
 }
 
-export function AppTour({ diceEnabled = true }: { diceEnabled?: boolean }) {
+export function AppTour({ diceEnabled = true, fateEnabled = true }: { diceEnabled?: boolean; fateEnabled?: boolean }) {
   // Auswahl aller Rundgänge, einzelner Rundgang oder nichts
   const [view, setView] = useState<"closed" | "list" | "tour">("closed");
   const [tourId, setTourId] = useState<string | null>(null);
@@ -118,9 +118,10 @@ export function AppTour({ diceEnabled = true }: { diceEnabled?: boolean }) {
   // Schritt, für den schon einmal zum Ziel gescrollt wurde
   const scrolledFor = useRef<string | null>(null);
 
-  // Ohne Würfeln in der Welt entfällt der Schritt zum Würfelverlauf
+  // Ohne Würfeln in der Welt entfällt der Schritt zum Würfelverlauf, ohne Schicksalswürfel die Schritte dazu
   const baseTour = tourId ? getTour(tourId) : undefined;
-  const tour = baseTour && !diceEnabled ? { ...baseTour, steps: baseTour.steps.filter((s) => s.title !== "Würfelverlauf") } : baseTour;
+  const hiddenSteps = [...(diceEnabled ? [] : ["Würfelverlauf"]), ...(fateEnabled ? [] : ["Schicksalswürfel", "Eigene Schicksale"])];
+  const tour = baseTour && hiddenSteps.length ? { ...baseTour, steps: baseTour.steps.filter((s) => !hiddenSteps.includes(s.title)) } : baseTour;
   const active = view === "tour" && !!tour;
   const step = tour?.steps[stepIndex];
 

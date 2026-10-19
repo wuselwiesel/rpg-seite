@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import postcss from "postcss";
 import tailwind from "@tailwindcss/postcss";
+import { genericStubs } from "../_shared/generic-stubs.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
@@ -11,11 +12,13 @@ const out = path.join(here, ".build");
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/characters/new"; export const useRouter = () => ({ push() {}, refresh() {}, replace() {} }); export const useSearchParams = () => new URLSearchParams(location.search);`);
 fs.writeFileSync(path.join(out, "stub-actions.ts"), `export async function createCharacter(_prev: string | null, fd: FormData) { (window as any).__created.push(Object.fromEntries(fd.entries())); return null; }`);
+fs.writeFileSync(path.join(out, "stub-edit-actions.ts"), `export async function updateCharacter(_id: string, _prev: string | null, fd: FormData) { return null; } export async function deleteCharacter() { return null; }`);
 fs.writeFileSync(path.join(out, "stub-upload.tsx"), `export function AvatarUpload() { return null; }`);
 const stubs = {
   name: "stubs",
   setup(b) {
     b.onResolve({ filter: /^\.\.\/actions$/ }, (a) => (a.importer.includes(path.join("characters", "new")) ? { path: path.join(out, "stub-actions.ts") } : undefined));
+    b.onResolve({ filter: /^\.\.\/\.\.\/actions$/ }, (a) => (a.importer.includes("edit") ? { path: path.join(out, "stub-edit-actions.ts") } : undefined));
     b.onResolve({ filter: /avatar-upload$/ }, () => ({ path: path.join(out, "stub-upload.tsx") }));
   },
 };
@@ -27,7 +30,7 @@ await build({
   jsx: "automatic",
   alias: { "@": path.join(root, "src"), "next/navigation": path.join(out, "shim-nav.ts") },
   nodePaths: [path.join(root, "node_modules")],
-  plugins: [stubs],
+  plugins: [stubs, genericStubs(root)],
   banner: { js: "var process = { env: {} };" },
   logLevel: "error",
 });
