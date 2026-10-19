@@ -727,6 +727,24 @@ function RpThread({
     return true;
   }
 
+  // GIF per Link (Giphy/Tenor) senden: kein Hochladen
+  async function sendGif(url: string): Promise<boolean> {
+    const id = crypto.randomUUID();
+    setError(null);
+    setRows((prev) => [
+      ...prev,
+      { id, character_id: activeCharacterId, content: "", image_url: url, shared_post_id: null, story_id: null, created_at: new Date().toISOString(), pending: true },
+    ]);
+    const err = await sendMessage(chatId, activeCharacterId, "", url, { id });
+    if (err) {
+      setRows((prev) => prev.filter((m) => m.id !== id));
+      setError(err);
+      return false;
+    }
+    setRows((prev) => prev.map((m) => (m.id === id ? { ...m, pending: false } : m)));
+    return true;
+  }
+
   const items: ThreadItem[] = rows.map((m) => ({
     id: m.id,
     mine: m.character_id === activeCharacterId,
@@ -744,6 +762,7 @@ function RpThread({
       typingNames={typing.names}
       onTyping={typing.announce}
       onSend={send}
+      onSendGif={sendGif}
     />
   );
 }
