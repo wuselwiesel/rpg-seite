@@ -11,7 +11,7 @@ import { EarlierEntries } from "./earlier-entries";
 import { StoryEntryItem } from "./story-entry-item";
 import { captureScrollAnchor } from "@/lib/keep-scroll";
 import { loadEarlierEntries, type LoadedEntry } from "../entries-actions";
-import { GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
+import { EXPAND_EARLIER_EVENT, GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
 
 export type EntryListItem = {
   id: string;
@@ -183,10 +183,21 @@ export function EntryList({
         }
       } finally {
         running = false;
+        // Eingeklappte frühere Beiträge aufklappen, dann ohne sanftes Scrollen (das bricht bei langen Strecken ab) an den Listenanfang springen
+        window.dispatchEvent(new Event(EXPAND_EARLIER_EVENT));
+        const toStart = () => {
+          const list = Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste")).find((el) => el.offsetParent !== null);
+          list?.scrollIntoView({ block: "start", behavior: "instant" });
+        };
         window.setTimeout(() => {
-          document.getElementById("beitragsliste")?.scrollIntoView({ behavior: "smooth", block: "start" });
-          window.dispatchEvent(new Event(GO_START_DONE_EVENT));
-        }, 120);
+          toStart();
+          // Nachladende Bilder verschieben die Lage kurz: noch zweimal nachziehen
+          window.setTimeout(toStart, 250);
+          window.setTimeout(() => {
+            toStart();
+            window.dispatchEvent(new Event(GO_START_DONE_EVENT));
+          }, 600);
+        }, 200);
       }
     }
     window.addEventListener(GO_START_EVENT, goStart);

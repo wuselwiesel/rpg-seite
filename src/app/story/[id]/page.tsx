@@ -467,10 +467,13 @@ export default async function StoryPostDetailPage({
         </div>
       </div>
       {/* Schwebende Sprungknöpfe in einer Reihe: Kapitel (nur Symbol) links von „Zur letzten Nachricht“ */}
-      <div className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 flex items-center gap-2 lg:bottom-6">
-        {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content, label: c.chapter_label?.trim() || null }))} />}
+      <div className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 flex flex-col items-end gap-2 lg:bottom-6">
+        {/* Pfeil nach oben über „Zur letzten Nachricht“, damit er in der Szene nichts verdeckt */}
         {(entries?.length ?? 0) > 5 && <JumpToStartFloating />}
-        {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
+        <div className="flex items-center gap-2">
+          {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content, label: c.chapter_label?.trim() || null }))} />}
+          {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
+        </div>
       </div>
 
       <EntryList

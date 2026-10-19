@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
 
+// Next hält die vorige Ansicht versteckt im Hintergrund (gleiche ID zweimal): nur das sichtbare Element zählt
+function visibleById(id: string): HTMLElement | null {
+  return Array.from(document.querySelectorAll<HTMLElement>(`[id="${id}"]`)).find((el) => el.offsetParent !== null) ?? null;
+}
+
 function scrollToLast() {
-  document.getElementById("letzter-beitrag")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  visibleById("letzter-beitrag")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // Springt zur letzten Nachricht der Szene. "inline": Textknopf in der Überschrift;
@@ -15,7 +20,7 @@ export function JumpToLast({ variant }: { variant: "inline" | "floating" }) {
 
   useEffect(() => {
     if (variant !== "floating") return;
-    const el = document.getElementById("letzter-beitrag");
+    const el = visibleById("letzter-beitrag");
     if (!el) return;
     const observer = new IntersectionObserver(([entry]) => {
       setBelow(!entry.isIntersecting && entry.boundingClientRect.top > (entry.rootBounds?.height ?? window.innerHeight));
@@ -88,7 +93,9 @@ export function JumpToStartFloating() {
       const goingUp = y < lastY - 2;
       const goingDown = y > lastY + 2;
       lastY = y;
-      const top = document.getElementById("beitragsliste")?.getBoundingClientRect().top ?? 0;
+      // Next hält die vorige Ansicht versteckt im Hintergrund (gleiche ID zweimal): nur die sichtbare Liste zählt
+      const list = Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste")).find((el) => el.offsetParent !== null);
+      const top = list?.getBoundingClientRect().top ?? 0;
       const far = top < -window.innerHeight * 0.6;
       if (!far) setShow(false);
       else if (goingUp) setShow(true);

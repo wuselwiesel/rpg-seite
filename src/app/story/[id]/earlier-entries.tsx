@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
+import { EXPAND_EARLIER_EVENT } from "@/lib/scene-nav";
 import { captureScrollAnchor, captureScrollElement } from "@/lib/keep-scroll";
 
 // Frühere Beiträge einer Szene: standardmäßig eingeklappt, damit man direkt bei den neuesten ist.
@@ -31,11 +32,17 @@ export function EarlierEntries({ count, children }: { count: number; children: R
       const first = (e as CustomEvent<string[]>).detail?.[0];
       if (first) reveal(`beitrag-${first}`);
     }
+    // „Zum Anfang“: aufklappen, damit die erste Nachricht sichtbar ist (nur die Liste der sichtbaren Szene)
+    function onExpand() {
+      if (ref.current?.parentElement?.offsetParent) setOpen(true);
+    }
     document.addEventListener("click", onClick);
     window.addEventListener(HIGHLIGHT_EVENT, onHighlight);
+    window.addEventListener(EXPAND_EARLIER_EVENT, onExpand);
     return () => {
       document.removeEventListener("click", onClick);
       window.removeEventListener(HIGHLIGHT_EVENT, onHighlight);
+      window.removeEventListener(EXPAND_EARLIER_EVENT, onExpand);
     };
   }, []);
 
