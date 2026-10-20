@@ -7,6 +7,7 @@ import { snippetAround } from "@/lib/search-snippet";
 export type CharacterHit = { id: string; name: string; username: string | null; avatar_url: string | null; world: string | null };
 export type SceneHit = { id: string; title: string; location: string | null; character: string | null; world: string | null; snippet: string };
 export type WikiHit = { id: string; title: string; category: string; world: string | null; snippet: string };
+export type NoteHit = { id: string; title: string; tags: string[]; snippet: string };
 export type PostHit = { id: string; title: string; character: string | null; world: string | null; snippet: string };
 
 type Row = Record<string, unknown>;
@@ -111,5 +112,25 @@ export async function searchPosts(sb: SupabaseClient, q: string, limit: number):
       world: one<{ name: string }>(ch?.worlds)?.name ?? null,
       snippet: snippetAround(stripHtml((r.content as string) ?? ""), q),
     };
+  });
+}
+
+// Eigene Notizen (die Datenbank liefert nur die eigenen): Titel, Text und Tags; „#tag“ sucht nur in Tags
+export async function searchNotes(sb: SupabaseClient, q: string, limit: number): Promise<NoteHit[]> {
+  const raw = q.trim();
+  let query = sb.from("notes").select("id, title, body, tags");
+  if (raw.startsWith("#")) {
+    const tag = raw.slice(1).toLowerCase().replace(/[^\p{L}\p{N}_-]/gu, "");
+    if (!tag) return [];
+    query = query.contains("tags", [tag]);
+  } else {
+    const term = escapePostgrestValue(raw);
+    const tag = raw.toLowerCase().replace(/[^\p{L}\p{N}_-]/gu, "");
+    query = query.or(`title.ilike.%${term}%,body.ilike.%${term}%${tag ? `,tags.cs.{${tag}}` : ""}`);
+  }
+  const { data } = await query.order("updated_at", { ascending: false }).limit(limit);
+  return ((data ?? []) as { id: string; title: string; body: string; tags: string[] | null }[]).map((n) => {
+    const text = stripHtml(n.body ?? "");
+    return { id: n.id, title: n.title?.trim() || text.slice(0, 60) || "Ohne Titel", tags: n.tags ?? [], snippet: snippetAround(text, raw.replace(/^#/, "")) };
   });
 }

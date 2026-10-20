@@ -7,10 +7,12 @@ import { EnterWorldButton } from "@/app/worlds/enter-world-button";
 import { JoinOrRequestButton } from "@/app/worlds/join-or-request-button";
 import {
   searchCharacters,
+  searchNotes,
   searchPosts,
   searchScenes,
   searchWiki,
   type CharacterHit,
+  type NoteHit,
   type PostHit,
   type SceneHit,
   type WikiHit,
@@ -20,15 +22,16 @@ import { AddFriendButton } from "./add-friend-button";
 import { FollowWorldButton } from "./follow-world-button";
 
 type WorldWithCreator = World & { creator: Pick<Profile, "username" | "nickname"> | null };
-type SearchTab = "all" | "characters" | "users" | "worlds" | "scenes" | "wiki" | "posts";
+type SearchTab = "all" | "characters" | "users" | "worlds" | "scenes" | "wiki" | "posts" | "notes";
 const TABS: { key: SearchTab; label: string; placeholder: string }[] = [
-  { key: "all", label: "Alles", placeholder: "Charaktere, Szenen, Wiki, Beiträge durchsuchen..." },
+  { key: "all", label: "Alles", placeholder: "Charaktere, Szenen, Wiki, Beiträge, Notizen durchsuchen..." },
   { key: "characters", label: "Charaktere", placeholder: "Name oder @nutzername..." },
   { key: "users", label: "Nutzer:innen", placeholder: "Benutzername..." },
   { key: "worlds", label: "Welten", placeholder: "Weltname..." },
   { key: "scenes", label: "Szenen", placeholder: "Titel, Text oder Ort..." },
   { key: "wiki", label: "Wiki", placeholder: "Titel oder Text..." },
   { key: "posts", label: "Beiträge", placeholder: "Titel, Text oder #Tag..." },
+  { key: "notes", label: "Notizen", placeholder: "Titel, Text oder #Tag..." },
 ];
 const WIKI_CATEGORY_LABELS: Record<string, string> = { ort: "Ort", npc: "NPC", fraktion: "Fraktion", sonstiges: "Sonstiges" };
 
@@ -56,18 +59,22 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   let sceneResults: SceneHit[] = [];
   let wikiResults: WikiHit[] = [];
   let postResults: PostHit[] = [];
+  let noteResults: NoteHit[] = [];
 
   if (tab === "all") {
     if (q) {
-      [characterResults, sceneResults, wikiResults, postResults] = await Promise.all([
+      [characterResults, sceneResults, wikiResults, postResults, noteResults] = await Promise.all([
         searchCharacters(supabase, q, 5),
         searchScenes(supabase, q, 5),
         searchWiki(supabase, q, 5),
         searchPosts(supabase, q, 5),
+        searchNotes(supabase, q, 5),
       ]);
     }
   } else if (tab === "posts") {
     if (q) postResults = await searchPosts(supabase, q, 30);
+  } else if (tab === "notes") {
+    if (q) noteResults = await searchNotes(supabase, q, 30);
   } else if (tab === "characters") {
 
     if (q) characterResults = await searchCharacters(supabase, q, 30);
@@ -371,7 +378,24 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         </ResultSection>
       )}
 
-      {q && tab === "all" && characterResults.length + sceneResults.length + wikiResults.length + postResults.length === 0 && (
+      {q && (tab === "notes" || tab === "all") && (
+        <ResultSection title={tab === "all" ? "Notizen" : undefined} moreHref={tab === "all" && noteResults.length >= 5 ? tabHref("notes") : undefined} empty={tab !== "all" ? "Keine Notiz gefunden." : undefined} count={noteResults.length}>
+          {noteResults.map((n) => (
+            <li key={n.id}>
+              <Link href={`/notizen/${n.id}`} className="flex flex-col gap-1 rounded-lg border border-line bg-surface px-4 py-3 transition hover:bg-surface-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-fg">{n.title}</p>
+                  <span className="shrink-0 text-xs text-muted">nur für dich</span>
+                </div>
+                {n.snippet && <p className="line-clamp-2 text-xs text-fg-soft">{n.snippet}</p>}
+                {n.tags.length > 0 && <p className="truncate text-xs text-muted">{n.tags.map((t) => `#${t}`).join(" ")}</p>}
+              </Link>
+            </li>
+          ))}
+        </ResultSection>
+      )}
+
+      {q && tab === "all" && characterResults.length + sceneResults.length + wikiResults.length + postResults.length + noteResults.length === 0 && (
         <p className="text-sm text-muted">Nichts gefunden. Probier einen anderen Begriff oder die Reiter für Nutzer:innen und Welten.</p>
       )}
     </div>
