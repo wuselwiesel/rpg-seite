@@ -610,6 +610,18 @@ export default async function HelpPage() {
             <strong>Ordner und Tags:</strong> In der Liste das Ordner-Symbol antippen, um einen Ordner anzulegen. In der Notiz Ordner wählen und unter „#Tag“ Tags eintippen (Komma, Leerzeichen oder Enter). In der Liste filtern die Ordner und Tags; „#tag“ in der Suche geht auch. Wird ein Ordner gelöscht, bleiben die Notizen.
           </li>
           <li>
+            <strong>Wie Bear:</strong> Am Computer steht die Liste links und die Notiz rechts, am Handy erst die Liste und dann die Notiz. Im Text gehen Überschriften, Listen, Tabellen, Code-Blöcke und Aufgabenlisten mit Kästchen („☑ Aufgaben“). Ein „#Wort“ im Text wird von selbst zum Tag.
+          </li>
+          <li>
+            <strong>Offene Fäden:</strong> Der Reiter sammelt alle nicht abgehakten Aufgaben aus allen Notizen. Ein Haken dort hakt sie auch in der Notiz ab.
+          </li>
+          <li>
+            <strong>Welten, Ordner, Vorlagen:</strong> Oben wählst du die Welt (Notizen ohne Welt gelten überall). Ordner lassen sich bis zu drei Ebenen tief verschachteln. Mit „…“ in der Notiz wird sie zur Vorlage; „Aus Vorlage“ legt eine neue Notiz daraus an. Mitgelieferte Vorschläge stehen unter „Vorlagen“.
+          </li>
+          <li>
+            <strong>Export und Suche:</strong> „…“ in der Notiz oder PDF/Text über der Liste speichern eine Notiz oder die gewählte Auswahl (Ordner, Tag, Welt) als PDF (im Druckdialog „Als PDF speichern“) oder als Markdown-Text. Die Suche findet Notizen im Reiter „Notizen“; mit „#tag“ nur nach Tags. Am Charakterprofil zeigt „Verbindungen“, was in deinen Notizen mit ihm zusammenhängt.
+          </li>
+          <li>
             <strong>Faceclaim:</strong> Am eigenen Charakter (Profil unter dem Namen und oben im Charakterbogen) das kleine Gesicht-Symbol antippen: Name der Person, Link (z. B. Pinterest) und bis zu 8 Bilder. Das sieht nur dein Konto, andere sehen es nirgends. In „Meine Charaktere“ steht der Name unter dem Charakter.
           </li>
         </ul>

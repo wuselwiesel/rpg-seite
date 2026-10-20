@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Check, Download, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Printer, Search, Trash2, X } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
 import { NotesTabs } from "./notes-tabs";
@@ -10,6 +10,7 @@ import { TemplateMenu } from "@/components/template-menu";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { createNote, createNoteFolder, deleteNote, deleteNoteFolder, moveNoteFolder, renameNoteFolder } from "./actions";
+import { NOTE_PATCH_EVENT, type NotePatch } from "@/lib/note-events";
 import { MAX_FOLDER_DEPTH, canMoveFolder, descendantIds, flattenFolders, folderPath, noteMatches, noteSnippet, noteTitle, type NoteFolder, type NoteView } from "@/lib/notes";
 
 const dayFormat = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
@@ -19,8 +20,9 @@ type Scope = "all" | "none" | string;
 
 const chip = (on: boolean) => `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
 
-export function NotesList({ notes: initialNotes, folders: initialFolders, openCount, worlds, activeWorldId }: { notes: NoteView[]; folders: NoteFolder[]; openCount: number; worlds: { id: string; name: string }[]; activeWorldId: string | null }) {
+export function NotesList({ notes: initialNotes, folders: initialFolders, openCount, worlds, activeWorldId, pane = false }: { notes: NoteView[]; folders: NoteFolder[]; openCount: number; worlds: { id: string; name: string }[]; activeWorldId: string | null; pane?: boolean }) {
   const router = useRouter();
+  const activeId = /^\/notizen\/([0-9a-f-]{36})/.exec(usePathname())?.[1] ?? null;
   const [notes, setNotes] = useState(initialNotes);
   // Nach Änderungen auf dem Server (z. B. Ordner löschen) kommen neue Daten herein
   const [seen, setSeen] = useState(initialNotes);
@@ -29,6 +31,15 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
     setNotes(initialNotes);
   }
   const [folders, setFolders] = useState(initialFolders);
+  // Änderungen aus dem Editor daneben (Titel, Text, Tags, Ordner …) sofort in der Liste zeigen
+  useEffect(() => {
+    const onPatch = (e: Event) => {
+      const patch = (e as CustomEvent<NotePatch>).detail;
+      setNotes((cur) => cur.map((n) => (n.id === patch.id ? { ...n, ...patch, updatedAt: new Date().toISOString() } : n)));
+    };
+    window.addEventListener(NOTE_PATCH_EVENT, onPatch);
+    return () => window.removeEventListener(NOTE_PATCH_EVENT, onPatch);
+  }, []);
   const [scope, setScope] = useState<Scope>("all");
   // Welt: eine Welt-ID (zeigt ihre Notizen und die ohne Welt) oder „all“ = alle Welten
   const [world, setWorld] = useState<string>(activeWorldId && worlds.some((w) => w.id === activeWorldId) ? activeWorldId : "all");
@@ -44,7 +55,9 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameText, setRenameText] = useState("");
 
-  const inWorld = useMemo(() => (world === "all" ? notes : notes.filter((n) => n.worldId === null || n.worldId === world)), [notes, world]);
+  // Angeheftete zuerst, dann zuletzt geändert
+  const sorted = useMemo(() => [...notes].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt)), [notes]);
+  const inWorld = useMemo(() => (world === "all" ? sorted : sorted.filter((n) => n.worldId === null || n.worldId === world)), [sorted, world]);
   // Notizen je Ordner zählen auch die der Unterordner mit
   const folderCount = useMemo(() => {
     const direct = new Map<string, number>();
@@ -87,7 +100,10 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
     start(async () => {
       const r = await createNote({ folderId: current?.id ?? null });
       if (r.error || !r.id) setError(r.error ?? "Konnte nicht angelegt werden.");
-      else router.push(`/notizen/${r.id}`);
+      else {
+        router.push(`/notizen/${r.id}`);
+        router.refresh();
+      }
     });
   }
 
@@ -142,8 +158,8 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
+    <div className={pane ? "px-3 py-4" : "mx-auto max-w-3xl px-4 py-8 sm:px-6"}>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-serif text-3xl text-fg">Notizen</h1>
         <div className="flex items-center gap-2">
           <TemplateMenu folderId={current?.id ?? null} />
@@ -304,7 +320,7 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
           {shown.map((n) => (
             <RevealRow
               key={n.id}
-              className="items-start gap-0 rounded-2xl border border-line bg-surface transition hover:border-accent/40"
+              className={`items-start gap-0 rounded-2xl border bg-surface transition hover:border-accent/40 ${n.id === activeId ? "border-accent/60 bg-surface-2" : "border-line"}`}
               actions={
                 <button type="button" onClick={() => void removeNote(n)} title="Notiz löschen" aria-label="Notiz löschen" className="m-2 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
                   <Trash2 className="h-4 w-4" strokeWidth={2} />

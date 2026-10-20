@@ -8,8 +8,9 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld } from "../actions";
+import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld } from "@/app/notizen/actions";
 import { stripHtml } from "@/lib/strip-html";
+import { emitNotePatch } from "@/lib/note-events";
 import { MAX_NOTE_TAGS, flattenFolders, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
@@ -55,6 +56,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
       tagsRef.current = r.tags;
       setTags(r.tags);
     }
+    emitNotePatch({ id, title: titleRef.current, body: bodyRef.current, tags: r.tags, ...(r.links ? { links: r.links } : {}) });
     if (!dirty.current) setState("saved");
   }, [id]);
 
@@ -80,12 +82,16 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   async function pick(t: LinkTarget): Promise<string | null> {
     const r = await addNoteLink(id, t.kind, t.id);
     if ("error" in r) return r.error;
-    setLinks((cur) => (cur.some((l) => l.id === r.link.id) ? cur : [...cur, { ...r.link, avatar: r.link.avatar ?? t.avatar }]));
+    const next = links.some((l) => l.id === r.link.id) ? links : [...links, { ...r.link, avatar: r.link.avatar ?? t.avatar }];
+    setLinks(next);
+    emitNotePatch({ id, links: next });
     return null;
   }
 
   async function unlink(l: NoteLinkView) {
-    setLinks((cur) => cur.filter((x) => x !== l));
+    const next = links.filter((x) => x !== l);
+    setLinks(next);
+    emitNotePatch({ id, links: next });
     await removeNoteLink(l.id, id);
   }
 
@@ -105,12 +111,14 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   async function changeFolder(value: string) {
     const next = value || null;
     setFolderId(next);
+    emitNotePatch({ id, folderId: next });
     await moveNote(id, next);
   }
 
   async function changeWorld(value: string) {
     const next = value || null;
     setWorldId(next);
+    emitNotePatch({ id, worldId: next });
     await setNoteWorld(id, next);
     // Wiki-Seiten und Charaktere im Editor gehören zur Welt der Notiz
     router.refresh();
@@ -129,11 +137,13 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     if (err) return setMenuMsg(err);
     setIsTemplate(next);
     setMenuOpen(false);
+    router.refresh();
   }
 
   async function togglePin() {
     const next = !pinned;
     setPinned(next);
+    emitNotePatch({ id, pinned: next });
     await setNotePinned(id, next);
   }
 
@@ -143,6 +153,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     if (timer.current) clearTimeout(timer.current);
     await deleteNote(id);
     router.replace("/notizen");
+    router.refresh();
   }
 
   const taken = new Set(links.map((l) => `${l.kind}:${l.targetId}`));
@@ -151,7 +162,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/notizen" className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
+        <Link href="/notizen" className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg lg:invisible">
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
           Notizen
         </Link>
