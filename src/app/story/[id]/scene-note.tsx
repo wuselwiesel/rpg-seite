@@ -5,7 +5,7 @@ import { ChevronDown, ClipboardList } from "lucide-react";
 import { saveSceneNote } from "../note-actions";
 
 // Eigene Notiz zu dieser Szene: nur für dich sichtbar.
-export function SceneNote({ storyPostId, initial }: { storyPostId: string; initial: string }) {
+export function SceneNote({ storyPostId, initial, notesButton }: { storyPostId: string; initial: string; notesButton?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(initial);
   const [saved, setSaved] = useState(initial);
@@ -24,17 +24,20 @@ export function SceneNote({ storyPostId, initial }: { storyPostId: string; initi
 
   return (
     <section aria-label="Notiz" className="mb-4 rounded-xl border border-line bg-surface">
+      <div className="flex items-center">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-fg-soft transition hover:text-fg"
+        className="flex min-w-0 flex-1 items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-fg-soft transition hover:text-fg"
       >
         <ClipboardList className="h-4 w-4" strokeWidth={2} aria-hidden />
         Notiz
         {saved.trim() && !open && <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />}
         <ChevronDown className={`ml-auto h-4 w-4 transition ${open ? "rotate-180" : ""}`} strokeWidth={2} aria-hidden />
       </button>
+        {notesButton && <div className="shrink-0 pr-2.5">{notesButton}</div>}
+      </div>
       {open && (
         <div className="flex flex-col gap-2 border-t border-line p-3">
           <textarea

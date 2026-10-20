@@ -30,6 +30,8 @@ import { PageCard } from "../wiki-cards";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { DeleteWikiPageButton } from "./delete-wiki-page-button";
 import { FavoriteButton } from "./favorite-button";
+import { TargetNotesButton } from "@/components/target-notes-button";
+import { noteCountForTarget } from "@/lib/notes-data";
 import { PublishButton } from "./publish-button";
 
 export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[id]">) {
@@ -191,6 +193,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           <p className="text-xs text-muted">Zuletzt bearbeitet am {formatDateTime(page.updated_at)}</p>
           <div className="flex flex-wrap items-center gap-1">
             <FavoriteButton wikiPageId={page.id} initial={favoriteIds.includes(page.id)} />
+            <TargetNotesButton kind="wiki" targetId={page.id} targetLabel={page.title} count={await noteCountForTarget(supabase, user.id, "wiki", page.id)} showLabel className="px-3 py-1.5 text-sm" />
             <ShareWikiButton pageId={page.id} title={page.title} />
             <Link
               href={`/wiki/graph?fokus=${page.id}`}

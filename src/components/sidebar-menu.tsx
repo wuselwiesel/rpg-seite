@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BarChart3, Compass, Menu, Settings, UserPlus, Users } from "lucide-react";
+import { BarChart3, Compass, Menu, NotebookPen, Settings, UserPlus, Users } from "lucide-react";
 import { InstallAppButton } from "./install-app-button";
 import { startTour } from "@/lib/tour";
 
@@ -39,6 +39,10 @@ export function SidebarMenu({ appAdmin = false }: { appAdmin?: boolean }) {
           <Link href="/friends" onClick={() => setOpen(false)} className={item}>
             <UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
             Freund:innen
+          </Link>
+          <Link href="/notizen" onClick={() => setOpen(false)} className={item}>
+            <NotebookPen className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            Notizen
           </Link>
           <Link href="/characters" onClick={() => setOpen(false)} className={item}>
             <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />

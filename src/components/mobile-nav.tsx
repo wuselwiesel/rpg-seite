@@ -5,7 +5,7 @@ import { chaboLabel } from "@/lib/chabo-label";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CircleHelp, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices, Inbox, type LucideIcon } from "lucide-react";
+import { BarChart3, CircleHelp, House, BookOpen, Compass, Library, UserPlus, Search, Plus, Menu, X, Settings, Users, Newspaper, UserRound, MessageCircle, IdCard, History, Dices, Inbox, type LucideIcon, NotebookPen } from "lucide-react";
 import { WorldSwitcher } from "./world-switcher";
 import { MobileWorldPicker } from "./mobile-world-picker";
 import { MenuCharacterCard } from "./menu-character-card";
@@ -278,6 +278,9 @@ export function MobileNav({
             </MenuLink>
             <MenuLink href="/friends" icon={UserPlus} onNavigate={() => setMoreOpen(false)}>
               Freund:innen
+            </MenuLink>
+            <MenuLink href="/notizen" icon={NotebookPen} onNavigate={() => setMoreOpen(false)}>
+              Notizen
             </MenuLink>
             <MenuLink href="/redaktion/tickets" icon={Inbox} onNavigate={() => setMoreOpen(false)} badge={ticketUnread}>
               Tickets

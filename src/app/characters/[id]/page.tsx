@@ -32,6 +32,10 @@ import { BookOpen, Plus } from "lucide-react";
 import { getWikiPagesAboutCharacter } from "@/lib/wiki-characters";
 import { getCharacterAccess } from "@/lib/npc-data";
 import { NpcBadge } from "@/components/npc-badge";
+import { FaceclaimButton } from "@/components/faceclaim-button";
+import { getFaceclaim } from "@/lib/faceclaim-data";
+import { TargetNotesButton } from "@/components/target-notes-button";
+import { noteCountForTarget } from "@/lib/notes-data";
 import { ReviewChip } from "@/components/review-chip";
 import { AvailabilityBadge, AvailabilityControl } from "@/components/character-availability";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
@@ -298,6 +302,12 @@ export default async function CharacterProfilePage({
             {character.username ? `@${character.username}` : isOwn ? "kein.nutzername" : null}
             {character.worlds?.name && <>{character.username || isOwn ? " · " : ""}in {character.worlds.name}</>}
           </p>
+          {!gone && (
+            <div className="-ml-1.5 mt-0.5 flex flex-wrap items-center gap-1">
+              {canEdit && <FaceclaimButton characterId={character.id} initial={await getFaceclaim(supabase, character.id, user.id)} />}
+              <TargetNotesButton kind="character" targetId={character.id} targetLabel={character.name} count={await noteCountForTarget(supabase, user.id, "character", character.id)} />
+            </div>
+          )}
 
           <div className="mt-4 flex gap-6 text-sm text-fg-soft">
             <span><b className="font-semibold text-fg">{publishedCount ?? 0}</b> {publishedCount === 1 ? "Beitrag" : "Beiträge"}</span>

@@ -29,6 +29,8 @@ import { ScrollToEntry } from "./scroll-to-entry";
 import { JumpToLast, JumpToStart, JumpToStartFloating } from "./jump-to-last";
 import { SceneSearch } from "./scene-search";
 import { SceneNote } from "./scene-note";
+import { TargetNotesButton } from "@/components/target-notes-button";
+import { noteCountForTarget } from "@/lib/notes-data";
 import { ChapterJump } from "./chapter-jump";
 import { StoryPostControls } from "./story-post-controls";
 import { SceneMeta } from "./scene-meta";
@@ -408,7 +410,7 @@ export default async function StoryPostDetailPage({
         />
       )}
 
-      <SceneNote storyPostId={storyPost.id} initial={sceneNote?.body ?? ""} />
+      <SceneNote storyPostId={storyPost.id} initial={sceneNote?.body ?? ""} notesButton={<TargetNotesButton kind="scene" targetId={storyPost.id} targetLabel={storyPost.title} count={await noteCountForTarget(supabase, user.id, "scene", storyPost.id)} />} />
 
       <SceneSummary
         storyPostId={storyPost.id}

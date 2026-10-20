@@ -46,6 +46,7 @@ const TOC = [
   ["melden", "Tickets: etwas melden"],
   ["buch", "Szenen als PDF oder E-Book"],
   ["chats-archiv", "Chats archivieren und löschen"],
+  ["notizen", "Notizen und Faceclaims (nur für dich)"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -584,6 +585,23 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>Gilt für:</strong> den Redaktions-Chat und die Chats in der Welt.
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="notizen" title="22. Notizen und Faceclaims (nur für dich)">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Notizbuch:</strong> Im Menü (☰) unter „Notizen“. Eine Notiz hat Titel und Text und speichert von selbst. Nur du siehst deine Notizen, auch Weltbesitzer:innen und Admins nicht.
+          </li>
+          <li>
+            <strong>Verknüpfen:</strong> In der Notiz auf „Verknüpfen“ tippen und Charaktere, Wiki-Seiten, Szenen, gespeicherte Ausschnitte oder andere Notizen wählen. Die Marken öffnen das Ziel; andere Notizen zeigen „Verlinkt in“. Wird ein Ziel gelöscht, verschwindet nur die Verknüpfung.
+          </li>
+          <li>
+            <strong>Schnell notieren:</strong> Das kleine Notiz-Symbol am Charakterprofil, an der Wiki-Seite und in der Szene (Zeile „Notiz“) öffnet ein Fenster mit allen Notizen dazu und einem Feld zum schnellen Aufschreiben. Die Notiz ist dann schon verknüpft (Strg/Cmd + Enter speichert).
+          </li>
+          <li>
+            <strong>Faceclaim:</strong> Am eigenen Charakter (Profil unter dem Namen und oben im Charakterbogen) das kleine Gesicht-Symbol antippen: Name der Person, Link (z. B. Pinterest) und bis zu 8 Bilder. Das sieht nur dein Konto, andere sehen es nirgends.
           </li>
         </ul>
       </Section>

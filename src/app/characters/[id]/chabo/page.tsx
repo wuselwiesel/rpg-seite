@@ -14,6 +14,8 @@ import { ChaboSwitcher } from "@/components/chabo/chabo-switcher";
 import { fetchRandomLists } from "@/lib/random-lists";
 import { Chabo } from "@/components/chabo/chabo";
 import { PdfButton } from "@/components/pdf-button";
+import { FaceclaimButton } from "@/components/faceclaim-button";
+import { getFaceclaim } from "@/lib/faceclaim-data";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { choiceEntries } from "@/lib/choice-lists";
 import { getWorldDiceEnabled } from "@/lib/world-dice";
@@ -59,6 +61,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
           Zum Profil
         </Link>
         <div className="flex items-center gap-2">
+          {isOwn && <FaceclaimButton characterId={id} initial={await getFaceclaim(supabase, id, user.id)} />}
           <PdfButton />
           {character.is_npc && <NpcBadge />}
           <ChaboSwitcher currentId={id} characters={ownChars.map((c) => ({ id: c.id, name: c.name }))} npcs={switcherNpcs.map((c) => ({ id: c.id, name: c.name }))} />

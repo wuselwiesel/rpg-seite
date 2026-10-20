@@ -1,0 +1,27 @@
+import { describe, expect, it } from "vitest";
+import { isLinkKind, noteMatches, noteSnippet, noteTitle, type NoteView } from "./notes";
+
+const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
+
+describe("Notizbuch", () => {
+  it("nimmt den Titel, sonst den Anfang des Textes", () => {
+    expect(noteTitle({ title: " Plan ", body: "<p>x</p>" })).toBe("Plan");
+    expect(noteTitle({ title: "", body: "<p>Tilo und <b>Lucian</b> treffen sich</p>" })).toBe("Tilo und Lucian treffen sich");
+    expect(noteTitle({ title: "", body: "" })).toBe("Ohne Titel");
+  });
+  it("kürzt die Vorschau", () => {
+    expect(noteSnippet("<p>" + "a".repeat(200) + "</p>", 10)).toBe("aaaaaaaaa…");
+  });
+  it("findet über Titel, Text und verknüpfte Namen", () => {
+    const n = note({ title: "Idee", body: "<p>Nebelhafen</p>", links: [{ id: "l", kind: "character", targetId: "c", label: "Lucian", href: "/characters/c" }] });
+    expect(noteMatches(n, "idee")).toBe(true);
+    expect(noteMatches(n, "nebel")).toBe(true);
+    expect(noteMatches(n, "lucian")).toBe(true);
+    expect(noteMatches(n, "xyz")).toBe(false);
+    expect(noteMatches(n, "  ")).toBe(true);
+  });
+  it("kennt nur gültige Verknüpfungsarten", () => {
+    expect(isLinkKind("wiki")).toBe(true);
+    expect(isLinkKind("post")).toBe(false);
+  });
+});
