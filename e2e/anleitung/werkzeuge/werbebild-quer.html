@@ -1,0 +1,44 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}
+body{background:#111;font-family:Inter,"Helvetica Neue",Arial,sans-serif}
+.s{width:1600px;height:900px;position:relative;overflow:hidden;background:#17151e;color:#f3eee8}
+.grid{position:absolute;left:0;top:0;bottom:0;width:560px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);opacity:.8}
+.grid img{width:100%;height:100%;object-fit:cover}
+.shade{position:absolute;left:0;top:0;bottom:0;width:700px;background:linear-gradient(90deg,rgba(23,21,30,0) 55%,#17151e 100%)}
+.fog{position:absolute;inset:0;background:radial-gradient(ellipse at 100% 105%,rgba(224,134,154,.16),transparent 55%),radial-gradient(ellipse at 60% 0%,rgba(160,150,190,.14),transparent 50%)}
+.body{position:absolute;left:640px;right:60px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center}
+h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:66px;line-height:1.08;margin-bottom:26px;white-space:nowrap}
+p{font-size:28px;line-height:1.42;color:#ddd6e0;margin-bottom:16px}
+ul{list-style:none;padding:0;margin:8px 0 14px}
+li{align-items:center;display:flex;gap:16px;font-size:27.5px;line-height:1.3;margin-bottom:12px;color:#ece6ee}
+
+.last{font-family:Georgia,serif;font-size:31px;line-height:1.3;color:#f3eee8;border-left:4px solid #e0869a;padding-left:22px;margin-top:20px}
+.light .s{background:#faf5ef;color:#3f3d4a}
+.light .grid{opacity:.95}
+.light .shade{background:linear-gradient(90deg,rgba(250,245,239,0) 55%,#faf5ef 100%)}
+.light .fog{background:radial-gradient(ellipse at 100% 105%,rgba(180,69,92,.12),transparent 55%),radial-gradient(ellipse at 60% 0%,rgba(79,84,112,.10),transparent 50%)}
+.light h1{color:#3a3850}.light p{color:#4f4c5b}.light li{color:#3f3d4a}
+.light .last{color:#3a3850;border-left-color:#b4455c}
+
+.ico{flex:none;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(224,134,154,.16);color:#e0869a}
+.light .ico{background:rgba(180,69,92,.10);color:#b4455c}
+h1 .sp{display:inline-flex;vertical-align:-6px;color:#e0869a;margin:0 14px}
+.light h1 .sp{color:#b4455c}
+</style><body class="BODYCLS">
+<section class="s">
+  <div class="grid"><img src="av11.jpg"><img src="av20.jpg"><img src="av13.jpg"><img src="av14.jpg"><img src="av16.jpg"><img src="av15.jpg"></div>
+  <div class="shade"></div><div class="fog"></div>
+  <div class="body">
+    <h1><span class="sp"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></span>Wortwinkel sucht dich!<span class="sp"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></span></h1>
+    <p>Du liebst es, Figuren zum Leben zu erwecken, Szenen zu spinnen und ganze Welten zu bauen? Dann ist hier dein Platz.</p>
+    <p>Wortwinkel ist ein textbasiertes Rollenspiel für einen kleinen, geschlossenen Kreis. Ohne Werbung, ohne Tracking.</p>
+    <ul>
+      <li><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="31" height="31" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open" aria-hidden="true"><path d="M12 5v16"></path><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"></path></svg></span><div>Szenen schreiben, auch mit mehreren Figuren in einer Nachricht</div></li>
+      <li><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="31" height="31" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-drama" aria-hidden="true"><path d="M10 11h.01"></path><path d="M14 6h.01"></path><path d="M18 6h.01"></path><path d="M6.5 13.1h.01"></path><path d="M22 5c0 9-4 12-6 12s-6-3-6-12c0-2 2-3 6-3s6 1 6 3"></path><path d="M17.4 9.9c-.8.8-2 .8-2.8 0"></path><path d="M10.1 7.1C9 7.2 7.7 7.7 6 8.6c-3.5 2-4.7 3.9-3.7 5.6 4.5 7.8 9.5 8.4 11.2 7.4.9-.5 1.9-2.1 1.9-4.7"></path><path d="M9.1 16.5c.3-1.1 1.4-1.7 2.4-1.4"></path></svg></span><div>Steckbriefe, Beziehungsnetz und Stammbaum</div></li>
+      <li><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="31" height="31" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"></path><path d="M15 5.764v15"></path><path d="M9 3.236v15"></path></svg></span><div>Eigene Welten mit Wiki, Karten und Zeitleiste</div></li>
+      <li><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="31" height="31" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle" aria-hidden="true"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"></path></svg></span><div>Chats, Feed und Besetzungslisten für Serien-Welten</div></li>
+      <li><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="31" height="31" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-library" aria-hidden="true"><path d="m16 6 4 14"></path><path d="M12 6v14"></path><path d="M8 8v12"></path><path d="M4 4v16"></path></svg></span><div>Eure Szenen als PDF oder E-Book</div></li>
+    </ul>
+    <div class="last">Die Tür ist offen, aber nicht für alle: Anmeldung nur mit Einladungscode.</div>
+  </div>
+</section></body></html>
