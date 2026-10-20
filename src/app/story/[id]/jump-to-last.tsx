@@ -97,14 +97,25 @@ export function JumpToStart() {
   );
 }
 
-// Schwebender Pfeil nach oben: erscheint, sobald man in einer langen Szene nach oben scrollt (wie unten „Zur letzten Nachricht“)
-// und der Anfang der Liste weit weg ist. Lädt bei Bedarf alle früheren Beiträge nach und springt zum ersten.
+// Schwebender Pfeil nach oben: erscheint nur, solange man in einer langen Szene selbst nach oben scrollt (wie unten „Zur letzten Nachricht“)
+// und der Anfang der Liste weit weg ist. Verschwindet beim Runterscrollen, kurz nach dem Anhalten und ganz unten. Von der Seite selbst
+// ausgelöste Verschiebungen (Tastatur, neue Beiträge, Eingabefeld) zählen nicht. Lädt bei Bedarf alle früheren Beiträge nach und springt zum ersten.
 export function JumpToStartFloating() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let lastY = window.scrollY;
+    let lastInput = 0;
+    let hideTimer: number | undefined;
+    const touch = () => {
+      lastInput = Date.now();
+    };
+    function hide() {
+      if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+      hideTimer = undefined;
+      setShow(false);
+    }
     function onScroll() {
       const y = window.scrollY;
       const goingUp = y < lastY - 2;
@@ -114,12 +125,28 @@ export function JumpToStartFloating() {
       const list = Array.from(document.querySelectorAll<HTMLElement>("#beitragsliste")).find((el) => el.offsetParent !== null);
       const top = list?.getBoundingClientRect().top ?? 0;
       const far = top < -window.innerHeight * 0.6;
-      if (!far) setShow(false);
-      else if (goingUp) setShow(true);
-      else if (goingDown) setShow(false);
+      const nearEnd = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 400;
+      if (!far || nearEnd || goingDown) return hide();
+      // Nur eigenes Scrollen (Finger, Rad, Tasten, auch das Nachrollen danach) zählt, nicht Verschiebungen durch die Seite selbst
+      if (goingUp && Date.now() - lastInput < 1200) {
+        setShow(true);
+        if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(hide, 2500);
+      }
     }
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("touchstart", touch, { passive: true });
+    window.addEventListener("touchmove", touch, { passive: true });
+    window.addEventListener("wheel", touch, { passive: true });
+    window.addEventListener("keydown", touch);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("touchstart", touch);
+      window.removeEventListener("touchmove", touch);
+      window.removeEventListener("wheel", touch);
+      window.removeEventListener("keydown", touch);
+      if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+    };
   }, []);
 
   if (!show && !busy) return null;
