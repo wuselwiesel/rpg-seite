@@ -156,6 +156,8 @@ export default async function PostDetailPage({
           contentHtml={contentHtml}
           rawContent={post.media_type ? htmlCaptionToPlainText(post.content) : post.content}
           hasMedia={Boolean(post.media_type)}
+          mediaType={post.media_type === "image" || post.media_type === "video" ? post.media_type : null}
+          mediaUrls={post.media_urls && post.media_urls.length > 0 ? post.media_urls : post.media_url ? [post.media_url] : []}
           isOwnPost={isOwnPost}
           mentionable={mentionableCharacters}
         />

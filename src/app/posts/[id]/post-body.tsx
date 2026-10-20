@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { updatePostContent } from "../actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { PostMediaEditor } from "@/components/post-media-editor";
 import type { Character } from "@/lib/types";
 
 // Inhalt/Bildunterschrift eines eigenen Beitrags lässt sich nachträglich bearbeiten - bei Foto-/
@@ -16,6 +17,8 @@ export function PostBody({
   contentHtml,
   rawContent,
   hasMedia,
+  mediaType,
+  mediaUrls,
   isOwnPost,
   mentionable,
 }: {
@@ -23,6 +26,8 @@ export function PostBody({
   contentHtml: string;
   rawContent: string;
   hasMedia: boolean;
+  mediaType: "image" | "video" | null;
+  mediaUrls: string[];
   isOwnPost: boolean;
   mentionable: Character[];
 }) {
@@ -64,6 +69,7 @@ export function PostBody({
 
   return (
     <form action={formAction} className="flex flex-col gap-2">
+      {hasMedia && (mediaType === "image" || mediaType === "video") && <PostMediaEditor type={mediaType} initial={mediaUrls} />}
       {hasMedia ? (
         <textarea
           name="content"

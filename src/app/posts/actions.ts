@@ -477,6 +477,27 @@ export async function updatePostContent(postId: string, _prevState: string | nul
   const { data: post } = await supabase.from("posts").select("media_type").eq("id", postId).maybeSingle<{ media_type: string | null }>();
   if (!post) return "Beitrag nicht gefunden.";
 
+  // Fotos (Reihenfolge, entfernen, ergänzen) bzw. Video tauschen: nur eigener Speicher oder GIF-Adressen, wie beim Erstellen
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const ownStorage = (url: string) => Boolean(supabaseUrl) && url.startsWith(`${supabaseUrl}/storage/`);
+  const mediaChange: { media_url?: string; media_urls?: string[] | null } = {};
+  if (post.media_type === "image" && formData.has("media_urls")) {
+    let urls: string[] = [];
+    try {
+      const parsed = JSON.parse(String(formData.get("media_urls")));
+      if (Array.isArray(parsed)) urls = parsed.map(String).filter((u) => ownStorage(u) || isAllowedGifUrl(u)).slice(0, 10);
+    } catch {
+      /* ungültige Liste */
+    }
+    if (urls.length === 0) return "Bitte lass mindestens ein Foto im Beitrag.";
+    mediaChange.media_url = urls[0];
+    mediaChange.media_urls = urls.length > 1 ? urls : null;
+  } else if (post.media_type === "video" && formData.has("media_url")) {
+    const single = String(formData.get("media_url") ?? "").trim();
+    if (!ownStorage(single)) return "Bitte wähle ein Video aus.";
+    mediaChange.media_url = single;
+  }
+
   const rawContent = String(formData.get("content") ?? "").trim();
   const content = post.media_type
     ? sanitizePostHtml(rawContent ? `<p>${escapeHtml(rawContent).replace(/\n/g, "<br>")}</p>` : "")
@@ -490,7 +511,7 @@ export async function updatePostContent(postId: string, _prevState: string | nul
   // RLS (posts_update_own) lässt nur eigene Beiträge zu; count zeigt, ob wirklich etwas geändert wurde.
   const { error, count } = await supabase
     .from("posts")
-    .update({ content, tags, updated_at: new Date().toISOString() }, { count: "exact" })
+    .update({ content, tags, ...mediaChange, updated_at: new Date().toISOString() }, { count: "exact" })
     .eq("id", postId);
   if (error) return error.message;
   if (!count) return "Beitrag nicht gefunden.";
