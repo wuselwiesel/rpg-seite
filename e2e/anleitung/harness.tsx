@@ -18,6 +18,7 @@ import type { Character, CharacterRelationship, StoryEntry } from "@/lib/types";
 const params = new URLSearchParams(location.search);
 const screen = params.get("screen") ?? "szene";
 const pad = params.get("schmal") ? 8 : 16;
+const nodice = params.has("nodice");
 const av = avatars as Record<string, string>;
 
 const mk = (id: string, name: string, house: string | null = null) =>
@@ -81,7 +82,7 @@ function Scene() {
         <h1 className="font-serif text-2xl text-fg">Die Glocke von Schattenmoor</h1>
         <p className="text-sm text-muted">Schattenmoor · Szene mit 3 Figuren</p>
       </div>
-      {entries.map((e) => <Row key={e.id} e={e} />)}
+      {entries.filter((e) => !(nodice && e.roll_label)).map((e) => <Row key={e.id} e={e} />)}
     </div>
   );
 }
@@ -119,7 +120,7 @@ function RollRows() {
 function ChaboScreen() {
   return (
     <div id="shot" style={{ maxWidth: 1000, padding: pad }}>
-      <Chabo characterId="seraphine" characterName="Seraphine Vael" initial={{ ...normalizeSheet(sheet), portraitUrl: av["Seraphine Vael"] } as never} editable={false} />
+      <Chabo diceEnabled={!nodice} characterId="seraphine" characterName="Seraphine Vael" initial={{ ...normalizeSheet(sheet), portraitUrl: av["Seraphine Vael"] } as never} editable={false} />
     </div>
   );
 }
@@ -152,7 +153,7 @@ function Net() {
 function Composer() {
   return (
     <div id="shot" style={{ maxWidth: 560, padding: pad }}>
-      <StoryComposer storyPostId="s1" worldId="w" ownCharacters={[seraphine, vesper, ysolde]} activeCharacterId="seraphine" characters={all} participantIds={["seraphine", "vesper", "dorian", "ysolde"]} calendar={{ months: [], weekdays: [] } as never} locations={[]} sceneLocation={null} userId="u1" worldMembers={[]} />
+      <StoryComposer diceEnabled={!nodice} storyPostId="s1" worldId="w" ownCharacters={[seraphine, vesper, ysolde]} activeCharacterId="seraphine" characters={all} participantIds={["seraphine", "vesper", "dorian", "ysolde"]} calendar={{ months: [], weekdays: [] } as never} locations={[]} sceneLocation={null} userId="u1" worldMembers={[]} />
     </div>
   );
 }
