@@ -86,6 +86,20 @@ function Scene() {
   );
 }
 
+function Scene2() {
+  const entries: StoryEntry[] = [
+    entry("n1", vesper, "<p>Vesper schob die Tür auf. Drinnen roch es nach Kerzenwachs und frischem Brot. „Du bist spät“, sagte sie, ohne aufzusehen. „Wir haben schon angefangen.“</p>", 90),
+    entry("n2", dorian, "<p>Dorian lächelte und hängte seinen Mantel an den Haken. „Spät, aber nicht zu spät. Ich bringe Neuigkeiten.“</p>", 80),
+    entry("n3", vesper, "", 79, { roll_label: "Eine Lüge durchschauen", ...roll(14, null, 20, 5, true) }),
+    entry("n4", seraphine, "<p>Seraphine lehnte am Fenster und drehte einen Brief zwischen den Fingern. „Neuigkeiten“, wiederholte sie leise. „Dann hoffe ich, es sind gute.“</p>", 60),
+  ];
+  return (
+    <div id="shot" style={{ maxWidth: 720, padding: pad }} className="flex flex-col gap-3">
+      {entries.map((e) => <Row key={e.id} e={e} />)}
+    </div>
+  );
+}
+
 function RollRows() {
   const rows: StoryEntry[] = [
     entry("r1", vesper, "", 30, { roll_label: "Dorians Blick standhalten", ...roll(14, null, 20, 5, true) }),
@@ -203,6 +217,6 @@ function Editor() {
   );
 }
 
-const screens: Record<string, () => React.JSX.Element> = { szene: Scene, wurfzeilen: RollRows, chabo: ChaboScreen, netz: Net, wuerfeln: Composer, schreiben: Composer, karte: MapScreen, tickets: TicketsList, ticket: TicketThread, besetzung: Besetzung, editor: Editor };
+const screens: Record<string, () => React.JSX.Element> = { szene: Scene, szene2: Scene2, wurfzeilen: RollRows, chabo: ChaboScreen, netz: Net, wuerfeln: Composer, schreiben: Composer, karte: MapScreen, tickets: TicketsList, ticket: TicketThread, besetzung: Besetzung, editor: Editor };
 const Screen = screens[screen] ?? Scene;
 createRoot(document.getElementById("root")!).render(<Screen />);
