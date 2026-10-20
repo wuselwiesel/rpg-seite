@@ -156,8 +156,8 @@ function MiniThread({
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       {gifOpen && onSendGif && (
-        // Die Auswahl füllt den ganzen kleinen Chat (er ist oft niedrig: ein Fenster darüber würde oben abgeschnitten)
-        <div className="absolute inset-0 z-20 bg-surface">
+        // Kleines Fenster über der Eingabe, nie höher als der Chat selbst (er ist oft niedrig: sonst würde es oben abgeschnitten)
+        <div className="absolute inset-x-2 bottom-[3.75rem] z-20 h-[min(17rem,calc(100%-4.5rem))]">
           <GifPicker
             fill
             onPick={(url) => {

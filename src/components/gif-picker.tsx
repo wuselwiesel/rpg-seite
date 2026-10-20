@@ -70,7 +70,7 @@ export function GifPicker({ onPick, onClose, fill = false }: { onPick: (url: str
       ref={panelRef}
       role="dialog"
       aria-label="GIF auswählen"
-      className={fill ? "flex h-full w-full flex-col gap-3 bg-surface p-3" : "z-40 flex max-h-[70dvh] w-full flex-col gap-3 rounded-2xl border border-line bg-surface p-3 shadow-lg sm:w-[26rem]"}
+      className={fill ? "flex h-full w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2 shadow-lg" : "z-40 flex max-h-[55dvh] w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2.5 shadow-lg sm:w-[21rem]"}
     >
       <div className="flex items-center gap-2">
         {configured !== false && (
@@ -94,8 +94,8 @@ export function GifPicker({ onPick, onClose, fill = false }: { onPick: (url: str
 
       {configured === true && (
         <div className={`overflow-y-auto ${fill ? "min-h-0 flex-1" : "min-h-24"}`}>
-          {/* Zwei Spalten in natürlichem Seitenverhältnis: nichts wird abgeschnitten. */}
-          <div className="columns-2 gap-1.5 [&>button]:mb-1.5">
+          {/* Drei kleine Spalten in natürlichem Seitenverhältnis: nichts wird abgeschnitten. */}
+          <div className="columns-3 gap-1 [&>button]:mb-1">
             {results.map((g) => (
               <button
                 key={g.id}
