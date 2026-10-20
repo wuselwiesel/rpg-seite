@@ -7,6 +7,7 @@ import { useEditor, useEditorState, EditorContent, type Editor, type Extensions 
 import { BubbleMenu } from "@tiptap/react/menus";
 import { EyeOff } from "lucide-react";
 import StarterKit from "@tiptap/starter-kit";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -259,11 +260,13 @@ function Toolbar({
   editor,
   allowFontSelection,
   allowBlocks,
+  notesTools,
   wikiPages,
 }: {
   editor: Editor;
   allowFontSelection?: boolean;
   allowBlocks?: boolean;
+  notesTools?: boolean;
   wikiPages?: { id: string; title: string }[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -432,6 +435,16 @@ function Toolbar({
         >
           &ldquo;Zitat&rdquo;
         </ToolbarButton>
+        {notesTools && (
+          <>
+            <ToolbarButton label="Aufgabenliste" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}>
+              ☑ Aufgaben
+            </ToolbarButton>
+            <ToolbarButton label="Code-Block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+              {"</>"} Code
+            </ToolbarButton>
+          </>
+        )}
 
         <span className="mx-1 h-5 w-px bg-line" />
 
@@ -638,6 +651,7 @@ export function RichTextEditor({
   wikiPages,
   wikiCharacters,
   allowBlocks = false,
+  notesTools = false,
 }: {
   name: string;
   initialContent?: string;
@@ -657,6 +671,8 @@ export function RichTextEditor({
   wikiCharacters?: { id: string; name: string; avatar_url: string | null }[];
   // Textbausteine (Hinweis-Kasten, Spoiler, Tabelle): bisher nur im Wiki.
   allowBlocks?: boolean;
+  // Notizen: Aufgabenlisten (Kästchen) und Code-Blöcke
+  notesTools?: boolean;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
   const enterSends = useEnterSends();
@@ -687,6 +703,7 @@ export function RichTextEditor({
       TextStyle,
       FontSize,
       ...(allowFontSelection ? [FontFamily] : []),
+      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true })] : []),
       ...(allowBlocks
         ? [Callout, PdfFile, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
         : []),
@@ -742,7 +759,7 @@ export function RichTextEditor({
   return (
     <div className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
-      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} wikiPages={wikiPages} />}
+      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} notesTools={notesTools} wikiPages={wikiPages} />}
       {editor && <SelectionMenu editor={editor} wikiPages={wikiPages} />}
       <EditorContent editor={editor} />
     </div>

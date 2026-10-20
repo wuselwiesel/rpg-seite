@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapePostgrestValue } from "@/lib/postgrest";
-import { LINK_COLUMN, inlineTargets, isLinkKind, noteTitle, normalizeTags, type LinkKind, type LinkTarget, type NoteLinkView } from "@/lib/notes";
+import { LINK_COLUMN, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, type LinkKind, type LinkTarget, type NoteLinkView } from "@/lib/notes";
 import { getFaceclaimNames } from "@/lib/faceclaim-data";
 import { notesForTarget, resolveLinks } from "@/lib/notes-data";
 import { loadEntryItems, pickExcerptItems } from "@/lib/clip-server";
@@ -49,14 +49,16 @@ export async function createNote(input: { title?: string; text?: string; bodyHtm
 
 // Speichert Titel und Text. Im Text genannte Seiten ([[Titel]]) und Charaktere (@Name) werden dabei von selbst verknüpft;
 // Rückgabe: die aktuelle Liste der Verknüpfungen, falls neue dazugekommen sind.
-export async function saveNote(id: string, input: { title: string; body: string; tags?: string[] }): Promise<{ error: string } | { links: NoteLinkView[] | null }> {
+export async function saveNote(id: string, input: { title: string; body: string; tags?: string[] }): Promise<{ error: string } | { links: NoteLinkView[] | null; tags: string[] }> {
   const { supabase, user } = await authed();
   if (!user) return { error: "Nicht angemeldet." };
   const body = sanitizePostHtml(input.body);
   if (body.length > 100000) return { error: "Die Notiz ist zu lang." };
+  // #Tags im Text kommen zu den eingetragenen Tags dazu (nie weniger als vorher)
+  const tags = normalizeTags([...(input.tags ?? []), ...inlineTags(body)]);
   const { data: note, error } = await supabase
     .from("notes")
-    .update({ title: input.title.trim().slice(0, 200), body, ...(input.tags ? { tags: normalizeTags(input.tags) } : {}), updated_at: new Date().toISOString() })
+    .update({ title: input.title.trim().slice(0, 200), body, ...(input.tags ? { tags } : {}), updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("user_id", user.id)
     .select("world_id")
@@ -66,7 +68,7 @@ export async function saveNote(id: string, input: { title: string; body: string;
   revalidatePath("/notizen");
 
   const { wikiTitles, characterIds } = inlineTargets(body);
-  if (wikiTitles.length === 0 && characterIds.length === 0) return { links: null };
+  if (wikiTitles.length === 0 && characterIds.length === 0) return { links: null, tags };
   const wanted: { kind: LinkKind; id: string }[] = [];
   if (wikiTitles.length > 0) {
     let q = supabase.from("wiki_pages").select("id").in("title", wikiTitles);
@@ -78,18 +80,18 @@ export async function saveNote(id: string, input: { title: string; body: string;
     const { data } = await supabase.from("characters").select("id").in("id", characterIds);
     for (const c of (data ?? []) as { id: string }[]) wanted.push({ kind: "character", id: c.id });
   }
-  if (wanted.length === 0) return { links: null };
+  if (wanted.length === 0) return { links: null, tags };
 
   // Nur ergänzen, nie entfernen (von Hand gesetzte Verknüpfungen bleiben); die Eindeutigkeit gilt je Art über Teilindizes, daher einzeln prüfen
   const { data: existing } = await supabase.from("note_links").select("character_id, wiki_page_id").eq("note_id", id);
   const have = new Set(((existing ?? []) as { character_id: string | null; wiki_page_id: string | null }[]).map((l) => (l.character_id ? `character:${l.character_id}` : `wiki:${l.wiki_page_id}`)));
   const missing = wanted.filter((t) => !have.has(`${t.kind}:${t.id}`));
-  if (missing.length === 0) return { links: null };
+  if (missing.length === 0) return { links: null, tags };
   const { error: linkErr } = await supabase.from("note_links").insert(missing.map((t) => ({ note_id: id, user_id: user.id, [LINK_COLUMN[t.kind]]: t.id })));
-  if (linkErr) return { links: null };
+  if (linkErr) return { links: null, tags };
   const { data: all } = await supabase.from("note_links").select("id, note_id, character_id, wiki_page_id, story_post_id, clip_id, linked_note_id").eq("note_id", id).order("created_at");
   const resolved = await resolveLinks(supabase, (all ?? []) as Parameters<typeof resolveLinks>[1]);
-  return { links: resolved.get(id) ?? [] };
+  return { links: resolved.get(id) ?? [], tags };
 }
 
 export async function setNotePinned(id: string, pinned: boolean): Promise<string | null> {

@@ -41,6 +41,11 @@ export function sanitizePostHtmlCore(html: string): string {
       "tr",
       "th",
       "td",
+      // Notizen: Code und Aufgabenlisten
+      "pre",
+      "code",
+      "label",
+      "input",
     ],
     allowedAttributes: {
       a: ["href", "target", "rel"],
@@ -48,6 +53,9 @@ export function sanitizePostHtmlCore(html: string): string {
       span: ["data-type", "data-id", "class", "style"],
       div: ["data-callout", "data-type", "data-id", "data-name", "data-pdf"],
       details: ["open"],
+      ul: ["data-type"],
+      li: ["data-type", "data-checked"],
+      input: ["type", "checked", "disabled"],
       th: ["colspan", "rowspan"],
       td: ["colspan", "rowspan"],
     },
@@ -69,6 +77,13 @@ export function sanitizePostHtmlCore(html: string): string {
         }
         return { tagName, attribs: out };
       },
+      // Aufgabenlisten (Notizen): nur die bekannten Kennzeichnungen, Kästchen immer gesperrt
+      ul: (tagName, attribs) => ({ tagName, attribs: (attribs["data-type"] === "taskList" ? { "data-type": "taskList" } : {}) as Record<string, string> }),
+      li: (tagName, attribs) => ({
+        tagName,
+        attribs: (attribs["data-type"] === "taskItem" ? { "data-type": "taskItem", "data-checked": attribs["data-checked"] === "true" ? "true" : "false" } : {}) as Record<string, string>,
+      }),
+      input: (tagName, attribs) => ({ tagName, attribs: { type: "checkbox", disabled: "disabled", ...(attribs.checked !== undefined ? { checked: "checked" } : {}) } }),
       th: (tagName, attribs) => ({ tagName, attribs: spanAttribs(attribs) }),
       td: (tagName, attribs) => ({ tagName, attribs: spanAttribs(attribs) }),
     },

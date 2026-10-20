@@ -9,6 +9,7 @@ import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, setNotePinned } from "../actions";
+import { stripHtml } from "@/lib/strip-html";
 import { MAX_NOTE_TAGS, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
@@ -22,6 +23,8 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const [tags, setTags] = useState<string[]>(initialTags);
   const [tagInput, setTagInput] = useState("");
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
+  const wordCount = (html: string) => stripHtml(html).split(/\s+/).filter(Boolean).length;
+  const [words, setWords] = useState(() => wordCount(initialBody));
   const [state, setState] = useState<SaveState>("saved");
   const [picker, setPicker] = useState(false);
   const bodyRef = useRef(initialBody);
@@ -43,6 +46,11 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
       return;
     }
     if (r.links) setLinks(r.links);
+    // Im Text getippte #Tags erscheinen als Marken
+    if (r.tags.join() !== tagsRef.current.join()) {
+      tagsRef.current = r.tags;
+      setTags(r.tags);
+    }
     if (!dirty.current) setState("saved");
   }, [id]);
 
@@ -219,14 +227,19 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
         initialContent={initialBody}
         placeholder="Notiz schreiben …"
         minHeight={320}
+        allowBlocks
+        notesTools
         wikiPages={linkPages}
         wikiCharacters={linkCharacters}
         onChange={(html) => {
           if (html === bodyRef.current) return;
           bodyRef.current = html;
+          setWords(wordCount(html));
           schedule();
         }}
       />
+
+      <p className="-mt-2 text-right text-xs tabular-nums text-muted">{words} {words === 1 ? "Wort" : "Wörter"}</p>
 
       {backlinks.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">

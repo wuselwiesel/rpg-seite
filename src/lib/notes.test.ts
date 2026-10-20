@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
+import { inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
 
 const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, tags: [], folderId: null, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
 
@@ -35,5 +35,9 @@ describe("Notizbuch", () => {
     expect(noteMatches(n, "#plot")).toBe(true);
     expect(noteMatches(n, "#idee")).toBe(false);
     expect(noteMatches(n, "plo")).toBe(true);
+  });
+  it("erkennt #Tags im Text, aber keine Zahlen, Farben oder Wortmitten", () => {
+    expect(inlineTags("<p>Idee #Plot und (#Nebelhafen) sowie #2 und a#b und #ff00aa</p>")).toEqual(["plot", "nebelhafen", "ff00aa"]);
+    expect(inlineTags("<p>kein Tag</p>")).toEqual([]);
   });
 });

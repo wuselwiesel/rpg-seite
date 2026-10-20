@@ -95,3 +95,11 @@ export function inlineTargets(html: string): { wikiTitles: string[]; characterId
   }
   return { wikiTitles: [...wikiTitles].slice(0, 40), characterIds: [...characterIds].slice(0, 40) };
 }
+
+// #Tags im Fließtext (wie in Bear): beginnt mit einem Buchstaben, steht am Wortanfang
+export function inlineTags(html: string): string[] {
+  const text = stripHtml(html);
+  const found: string[] = [];
+  for (const m of text.matchAll(/(?:^|[\s(])#([\p{L}][\p{L}\p{N}_-]{0,29})/gu)) found.push(m[1]);
+  return normalizeTags(found);
+}

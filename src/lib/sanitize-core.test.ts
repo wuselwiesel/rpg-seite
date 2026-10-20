@@ -49,3 +49,28 @@ describe("Gefährliches bleibt draußen", () => {
     expect(clean('<p>Das ist <span data-type="spoiler">geheim</span>.</p>')).toBe('<p>Das ist <span data-type="spoiler">geheim</span>.</p>');
   });
 });
+
+describe("Notizen: Aufgabenlisten und Code", () => {
+  it("behält Aufgabenlisten mit gesperrten Kästchen", () => {
+    const html = '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Erledigt</p></div></li></ul>';
+    const out = clean(html);
+    expect(out).toContain('data-type="taskList"');
+    expect(out).toContain('data-checked="true"');
+    expect(out).toMatch(/<input[^>]*type="checkbox"[^>]*checked="checked"/);
+    expect(out).toContain("disabled");
+  });
+  it("lässt fremde Kennzeichnungen und gefährliche Eingaben nicht durch", () => {
+    const out = clean('<ul data-type="evil" onclick="x()"><li data-type="y"><input type="text" value="a" onfocus="x()"></li></ul>');
+    expect(out).not.toContain("evil");
+    expect(out).not.toContain("onclick");
+    expect(out).not.toContain("onfocus");
+    expect(out).not.toContain('type="text"');
+    expect(out).not.toContain('value="a"');
+  });
+  it("behält Code-Blöcke, aber keine Skripte", () => {
+    const out = clean('<pre><code class="language-js">a &lt; b</code></pre><script>x()</script>');
+    expect(out).toContain("<pre><code>");
+    expect(out).not.toContain("script");
+  });
+});
+

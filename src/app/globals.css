@@ -1319,3 +1319,15 @@ span[data-type="spoiler"].spoiler-open {
 html[data-menu-open] .chat-bubble-root {
   display: none;
 }
+
+/* Notizen: Aufgabenlisten und Code */
+.post-content ul[data-type="taskList"] { list-style: none; padding-left: 0.25rem; }
+.post-content ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; }
+.post-content ul[data-type="taskList"] li > label { flex: none; margin-top: 0.3em; user-select: none; }
+.post-content ul[data-type="taskList"] li > label input { width: 1rem; height: 1rem; accent-color: var(--accent); cursor: pointer; }
+.post-content ul[data-type="taskList"] li > div { flex: 1; min-width: 0; }
+.post-content ul[data-type="taskList"] li > div > p { margin: 0; }
+.post-content ul[data-type="taskList"] li[data-checked="true"] > div { color: var(--muted); text-decoration: line-through; }
+.post-content pre { margin: 0.75em 0; overflow-x: auto; border-radius: 0.5rem; background: var(--surface-2); padding: 0.75rem 1rem; font-size: 0.875em; line-height: 1.5; }
+.post-content code { border-radius: 0.25rem; background: var(--surface-2); padding: 0.1em 0.35em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
+.post-content pre code { background: none; padding: 0; }
