@@ -601,7 +601,16 @@ export default async function HelpPage() {
             <strong>Schnell notieren:</strong> Das kleine Notiz-Symbol am Charakterprofil, an der Wiki-Seite und in der Szene (Zeile „Notiz“) öffnet ein Fenster mit allen Notizen dazu und einem Feld zum schnellen Aufschreiben. Die Notiz ist dann schon verknüpft (Strg/Cmd + Enter speichert).
           </li>
           <li>
-            <strong>Faceclaim:</strong> Am eigenen Charakter (Profil unter dem Namen und oben im Charakterbogen) das kleine Gesicht-Symbol antippen: Name der Person, Link (z. B. Pinterest) und bis zu 8 Bilder. Das sieht nur dein Konto, andere sehen es nirgends.
+            <strong>Im Text verlinken:</strong> In der Notiz mit „@“ Charaktere und Wiki-Seiten erwähnen oder mit „[[“ eine Wiki-Seite nennen. Beim Speichern entsteht dazu von selbst eine Verknüpfung (oben bei den Marken).
+          </li>
+          <li>
+            <strong>Aus der Szene:</strong> Markierten Text oder ausgewählte Nachrichten mit „Notiz“ ablegen: Sie landen als Zitat mit Quelle im Notizbuch und sind mit der Szene verknüpft.
+          </li>
+          <li>
+            <strong>Ordner und Tags:</strong> In der Liste das Ordner-Symbol antippen, um einen Ordner anzulegen. In der Notiz Ordner wählen und unter „#Tag“ Tags eintippen (Komma, Leerzeichen oder Enter). In der Liste filtern die Ordner und Tags; „#tag“ in der Suche geht auch. Wird ein Ordner gelöscht, bleiben die Notizen.
+          </li>
+          <li>
+            <strong>Faceclaim:</strong> Am eigenen Charakter (Profil unter dem Namen und oben im Charakterbogen) das kleine Gesicht-Symbol antippen: Name der Person, Link (z. B. Pinterest) und bis zu 8 Bilder. Das sieht nur dein Konto, andere sehen es nirgends. In „Meine Charaktere“ steht der Name unter dem Charakter.
           </li>
         </ul>
       </Section>

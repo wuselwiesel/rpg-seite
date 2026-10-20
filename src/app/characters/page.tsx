@@ -6,11 +6,12 @@ import { getWorldAdminIds } from "@/lib/npc-data";
 import { canEditCharacter } from "@/lib/npc";
 import { NpcBadge } from "@/components/npc-badge";
 import { getActiveWorld } from "@/lib/worlds";
-import { Check } from "lucide-react";
+import { Check, ScanFace } from "lucide-react";
 import { SetActiveButton } from "./set-active-button";
 import { DeleteCharacterIcon } from "./delete-character-icon";
 import { RevealRow } from "@/components/reveal-row";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { getFaceclaimNames } from "@/lib/faceclaim-data";
 import { ACTIVE_CHARACTER_COOKIE } from "@/lib/types";
 import { cookies } from "next/headers";
 import { RoleOptions } from "./npc-role-actions";
@@ -35,6 +36,7 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
   if (!activeWorld) redirect("/worlds");
 
   const [characters, npcs, worldAdminIds] = await Promise.all([getOwnCharacters(user.id, activeWorld.id), getWorldNpcs(activeWorld.id), getWorldAdminIds(activeWorld.id)]);
+  const faceclaims = await getFaceclaimNames(supabase, user.id, characters.map((c) => c.id));
   // Gelöschte, aber noch wiederherstellbare Charaktere (nur eigene)
   const { count: deletedCount = 0 } = await supabase
     .from("characters")
@@ -229,6 +231,12 @@ export default async function CharactersPage({ searchParams }: PageProps<"/chara
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-fg hover:text-accent">{character.name}</p>
+                {faceclaims.get(character.id) && (
+                  <p className="flex items-center gap-1 truncate text-xs text-muted" title="Faceclaim (nur für dich)">
+                    <ScanFace className="h-3 w-3 shrink-0" strokeWidth={2} />
+                    {faceclaims.get(character.id)}
+                  </p>
+                )}
                 {character.claimable && <span className="mt-0.5 inline-block rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">Zu vergeben</span>}
                 {character.bio && (
                   <p className="line-clamp-1 text-sm text-muted">{character.bio}</p>

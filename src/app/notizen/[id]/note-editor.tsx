@@ -3,26 +3,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Link2, Pin, PinOff, Trash2, X } from "lucide-react";
+import { ChevronLeft, Folder, Hash, Link2, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { addNoteLink, deleteNote, removeNoteLink, saveNote, setNotePinned } from "../actions";
-import type { LinkTarget, NoteLinkView } from "@/lib/notes";
+import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, setNotePinned } from "../actions";
+import { MAX_NOTE_TAGS, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
 // Eine Notiz: Titel und Text speichern von selbst, darunter die Verknüpfungen.
-export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, backlinks }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; backlinks: { id: string; title: string }[] }) {
+export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [pinned, setPinned] = useState(initialPinned);
   const [links, setLinks] = useState<NoteLinkView[]>(initialLinks);
+  const [tags, setTags] = useState<string[]>(initialTags);
+  const [tagInput, setTagInput] = useState("");
+  const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const [state, setState] = useState<SaveState>("saved");
   const [picker, setPicker] = useState(false);
   const bodyRef = useRef(initialBody);
   const titleRef = useRef(initialTitle);
+  const tagsRef = useRef(initialTags);
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -32,11 +36,14 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     if (!dirty.current) return;
     dirty.current = false;
     setState("saving");
-    const err = await saveNote(id, { title: titleRef.current, body: bodyRef.current });
-    if (err) {
+    const r = await saveNote(id, { title: titleRef.current, body: bodyRef.current, tags: tagsRef.current });
+    if ("error" in r) {
       dirty.current = true;
       setState("error");
-    } else if (!dirty.current) setState("saved");
+      return;
+    }
+    if (r.links) setLinks(r.links);
+    if (!dirty.current) setState("saved");
   }, [id]);
 
   const schedule = useCallback(() => {
@@ -61,14 +68,32 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   async function pick(t: LinkTarget): Promise<string | null> {
     const r = await addNoteLink(id, t.kind, t.id);
     if ("error" in r) return r.error;
-    const href = t.kind === "character" ? `/characters/${t.id}` : t.kind === "wiki" ? `/wiki/${t.id}` : t.kind === "scene" ? `/story/${t.id}` : t.kind === "note" ? `/notizen/${t.id}` : null;
-    setLinks((cur) => (cur.some((l) => l.id === r.id) ? cur : [...cur, { id: r.id, kind: t.kind, targetId: t.id, label: t.label, href, avatar: t.avatar }]));
+    setLinks((cur) => (cur.some((l) => l.id === r.link.id) ? cur : [...cur, { ...r.link, avatar: r.link.avatar ?? t.avatar }]));
     return null;
   }
 
   async function unlink(l: NoteLinkView) {
     setLinks((cur) => cur.filter((x) => x !== l));
     await removeNoteLink(l.id, id);
+  }
+
+  function commitTags(next: string[]) {
+    tagsRef.current = next;
+    setTags(next);
+    schedule();
+  }
+
+  function addTag(raw: string) {
+    const parts = raw.split(/[,\s]+/).map(normalizeTag).filter(Boolean);
+    if (parts.length === 0) return setTagInput("");
+    commitTags([...new Set([...tags, ...parts])].slice(0, MAX_NOTE_TAGS));
+    setTagInput("");
+  }
+
+  async function changeFolder(value: string) {
+    const next = value || null;
+    setFolderId(next);
+    await moveNote(id, next);
   }
 
   async function togglePin() {
@@ -135,11 +160,67 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
         </button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        {folders.length > 0 && (
+          <label className="flex items-center gap-1.5 text-xs text-muted">
+            <Folder className="h-3.5 w-3.5" strokeWidth={2} />
+            <select value={folderId ?? ""} onChange={(e) => void changeFolder(e.target.value)} aria-label="Ordner" className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-fg-soft outline-none focus:border-accent">
+              <option value="">Ohne Ordner</option>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {tags.map((t) => (
+          <span key={t} className="inline-flex items-center gap-0.5 rounded-full bg-surface-2 py-0.5 pl-2 pr-1 text-xs text-fg-soft">
+            <Hash className="h-3 w-3 text-muted" strokeWidth={2.25} />
+            {t}
+            <button type="button" onClick={() => commitTags(tags.filter((x) => x !== t))} aria-label={`Tag ${t} entfernen`} className="flex h-4 w-4 items-center justify-center rounded-full text-muted hover:text-fg">
+              <X className="h-3 w-3" strokeWidth={2.25} />
+            </button>
+          </span>
+        ))}
+        {tags.length < MAX_NOTE_TAGS && (
+          <>
+            <input
+              value={tagInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (/[,\s]$/.test(v)) addTag(v);
+                else setTagInput(v);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addTag(tagInput);
+                } else if (e.key === "Backspace" && !tagInput && tags.length) commitTags(tags.slice(0, -1));
+              }}
+              onBlur={() => tagInput && addTag(tagInput)}
+              list="note-tag-suggestions"
+              placeholder="#Tag"
+              aria-label="Tag hinzufügen"
+              maxLength={31}
+              className="w-24 rounded-full border border-dashed border-line bg-transparent px-2.5 py-0.5 text-xs text-fg outline-none placeholder:text-muted focus:border-accent"
+            />
+            <datalist id="note-tag-suggestions">
+              {allTags.filter((t) => !tags.includes(t)).map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+          </>
+        )}
+      </div>
+
       <RichTextEditor
         name="body"
         initialContent={initialBody}
         placeholder="Notiz schreiben …"
         minHeight={320}
+        wikiPages={linkPages}
+        wikiCharacters={linkCharacters}
         onChange={(html) => {
           if (html === bodyRef.current) return;
           bodyRef.current = html;

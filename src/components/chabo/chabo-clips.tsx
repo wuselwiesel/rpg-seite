@@ -3,6 +3,7 @@
 import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { BookOpen, Bookmark, Download, FolderPlus, MessageSquareQuote, Pencil, Printer, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
@@ -32,6 +33,8 @@ export function ChaboClips({ characterId }: { characterId: string }) {
   const [collections, setCollections] = useState<Collection[] | null>(null);
   const [newName, setNewName] = useState<string | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  // Von einer Notiz aus verlinkt: dieser Ausschnitt wird aufgeklappt und ins Bild gerückt
+  const focusId = useSearchParams().get("ausschnitt");
 
   // Beim Ändern zählt der Zähler hoch und lädt die Sammlungen neu
   const [reload, setReload] = useState(0);
@@ -62,6 +65,15 @@ export function ChaboClips({ characterId }: { characterId: string }) {
       cancelled = true;
     };
   }, [characterId, reload]);
+
+  useEffect(() => {
+    if (!focusId || collections === null) return;
+    const t = window.setTimeout(() => {
+      const el = [...document.querySelectorAll(`[id="ausschnitt-${focusId}"]`)].find((e) => (e as HTMLElement).offsetParent !== null);
+      el?.scrollIntoView({ block: "center" });
+    }, 150);
+    return () => window.clearTimeout(t);
+  }, [focusId, collections]);
 
   async function run(action: Promise<string | null>, okText?: string) {
     const error = await action;
@@ -123,7 +135,7 @@ export function ChaboClips({ characterId }: { characterId: string }) {
             <Disclosure
               key={c.id}
               group="c"
-              defaultOpen={collections.length === 1}
+              defaultOpen={collections.length === 1 || (!!focusId && c.clips.some((x) => x.id === focusId))}
               className="rounded-xl border border-line px-4 py-3"
               head={
                 <span className="text-sm font-medium text-fg">
@@ -169,9 +181,10 @@ export function ChaboClips({ characterId }: { characterId: string }) {
               ) : (
                 <ul className="mt-2 flex flex-col gap-2">
                   {c.clips.map((clip) => (
-                    <li key={clip.id}>
+                    <li key={clip.id} id={`ausschnitt-${clip.id}`}>
                       <ClipView
                         clip={clip}
+                        defaultOpen={clip.id === focusId}
                         onRemove={() => void run(removeClipFromCollection(c.id, clip.id))}
                         onDelete={async () => {
                           if ((await confirmDialog({ message: `„${clip.title}“ aus allen Sammlungen löschen?`, confirmLabel: "Löschen", danger: true }))) void run(deleteClip(clip.id));
@@ -201,10 +214,11 @@ export function ChaboClips({ characterId }: { characterId: string }) {
   );
 }
 
-function ClipView({ clip, onRemove, onDelete, onEdit, onShare, onWiki }: { clip: Clip; onRemove: () => void; onDelete: () => void; onEdit: () => void; onShare: () => void; onWiki: () => void }) {
+function ClipView({ clip, defaultOpen, onRemove, onDelete, onEdit, onShare, onWiki }: { clip: Clip; defaultOpen: boolean; onRemove: () => void; onDelete: () => void; onEdit: () => void; onShare: () => void; onWiki: () => void }) {
   return (
     <Disclosure
       group="k"
+      defaultOpen={defaultOpen}
       className="rounded-lg bg-surface-2 px-3 py-2"
       head={
         <>

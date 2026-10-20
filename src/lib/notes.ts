@@ -35,10 +35,14 @@ export type NoteView = {
   title: string;
   body: string;
   pinned: boolean;
+  tags: string[];
+  folderId: string | null;
   worldId: string | null;
   updatedAt: string;
   links: NoteLinkView[];
 };
+
+export type NoteFolder = { id: string; name: string };
 
 export type LinkTarget = { kind: LinkKind; id: string; label: string; sub?: string; avatar?: string | null };
 
@@ -57,8 +61,37 @@ export function isLinkKind(v: unknown): v is LinkKind {
   return v === "character" || v === "wiki" || v === "scene" || v === "clip" || v === "note";
 }
 
+export const MAX_NOTE_TAGS = 12;
+
+// Tag: klein, ohne #, nur Buchstaben, Ziffern und _ - (höchstens 30 Zeichen)
+export function normalizeTag(raw: string): string {
+  return raw.trim().replace(/^#+/, "").toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]/gu, "").slice(0, 30);
+}
+
+export function normalizeTags(raw: string[]): string[] {
+  return [...new Set(raw.map(normalizeTag).filter(Boolean))].slice(0, MAX_NOTE_TAGS);
+}
+
+// Suche: „#tag“ filtert nach Tag, sonst Titel, Text, Tags und Namen der Verknüpfungen
 export function noteMatches(n: NoteView, q: string): boolean {
   const term = q.trim().toLowerCase();
   if (!term) return true;
-  return [n.title, stripHtml(n.body), ...n.links.map((l) => l.label)].some((s) => s.toLowerCase().includes(term));
+  if (term.startsWith("#")) return n.tags.includes(normalizeTag(term));
+  return [n.title, stripHtml(n.body), ...n.tags, ...n.links.map((l) => l.label)].some((s) => s.toLowerCase().includes(term));
+}
+
+// Im Text benannte Ziele: [[Titel]] / [[Titel|Anzeigetext]] (Wiki-Seiten) und @-Erwähnungen (Charaktere)
+export function inlineTargets(html: string): { wikiTitles: string[]; characterIds: string[] } {
+  const wikiTitles = new Set<string>();
+  for (const m of html.matchAll(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)) {
+    const t = m[1].trim();
+    if (t) wikiTitles.add(t);
+  }
+  const characterIds = new Set<string>();
+  for (const m of html.matchAll(/<span\b([^>]*)>/g)) {
+    if (!/data-type="mention"/.test(m[1])) continue;
+    const id = /data-id="([0-9a-f-]{36})"/.exec(m[1])?.[1];
+    if (id) characterIds.add(id);
+  }
+  return { wikiTitles: [...wikiTitles].slice(0, 40), characterIds: [...characterIds].slice(0, 40) };
 }

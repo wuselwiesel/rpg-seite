@@ -2,13 +2,14 @@
 
 import { createPortal } from "react-dom";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { BookOpen, Bookmark, Check, Copy, Quote, X } from "lucide-react";
+import { BookOpen, Bookmark, Check, Copy, NotebookPen, Quote, X } from "lucide-react";
 import { copyEntries } from "@/lib/entry-copy";
 import { createClient } from "@/lib/supabase/client";
 import { defaultClipTitle } from "@/lib/clips";
 import { MAX_CLIP_ENTRIES_CLIENT } from "@/lib/clip-limits";
 import { requestQuote, visibleEntryElement, visibleEntryIds } from "@/lib/scene-quote";
 import { previewSceneQuote, saveSceneClip } from "@/app/story/clip-actions";
+import { createNoteFromScene } from "@/app/notizen/actions";
 
 type Ctx = {
   picking: boolean;
@@ -98,6 +99,11 @@ export function ClipSelectionProvider({
 
   const value = useMemo<Ctx>(() => ({ picking: !!anchor, isSelected: (id) => selected.includes(id), pick }), [anchor, selected, pick]);
 
+  async function toNote(entryIds: string[], excerpts?: Record<string, string>): Promise<string | null> {
+    const r = await createNoteFromScene({ storyPostId, entryIds, excerpts });
+    return r.error ?? null;
+  }
+
   async function quote() {
     setSaving(true);
     setQuoteError(null);
@@ -117,6 +123,11 @@ export function ClipSelectionProvider({
           storyPostId={storyPostId}
           canQuote={canQuote}
           onQuoted={() => setToast("Zitat liegt im Chat bereit. Dort abschicken.")}
+          onNote={async (excerpts) => {
+            const err = await toNote(Object.keys(excerpts), excerpts);
+            if (!err) setToast("Als Notiz gespeichert");
+            return err;
+          }}
           onSave={(excerpts) => {
             setExcerptSave(excerpts);
             setDialog(true);
@@ -168,6 +179,22 @@ export function ClipSelectionProvider({
                 Im Chat zitieren
               </button>
             )}
+            <button
+              type="button"
+              title="Als Notiz speichern"
+              aria-label="Als Notiz speichern"
+              onClick={() =>
+                void toNote(selected).then((err) => {
+                  if (err) return setQuoteError(err);
+                  cancel();
+                  setToast("Als Notiz gespeichert");
+                })
+              }
+              className="flex items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <NotebookPen className="h-3.5 w-3.5" strokeWidth={2} />
+              Notiz
+            </button>
             <button
               type="button"
               onClick={() => setDialog(true)}
@@ -402,11 +429,13 @@ function SelectionActions({
   storyPostId,
   canQuote,
   onQuoted,
+  onNote,
   onSave,
 }: {
   storyPostId: string;
   canQuote: boolean;
   onQuoted: () => void;
+  onNote: (excerpts: Record<string, string>) => Promise<string | null>;
   onSave: (excerpts: Record<string, string>) => void;
 }) {
   const [sel, setSel] = useState<TextSelection | null>(null);
@@ -436,7 +465,7 @@ function SelectionActions({
   if (!sel || typeof document === "undefined") return null;
   // Am Handy erscheint über der Markierung das Menü des Systems: die Knöpfe stehen darunter
   const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const width = canQuote ? 230 : 130;
+  const width = canQuote ? 290 : 190;
   const left = Math.min(Math.max(8, sel.rect.left + sel.rect.width / 2 - width / 2), window.innerWidth - width - 8);
   const top = coarse ? Math.min(sel.rect.bottom + 14, window.innerHeight - 56) : Math.max(8, sel.rect.top - 48);
   if (sel.rect.bottom < 0 || sel.rect.top > window.innerHeight) return null;
@@ -473,6 +502,23 @@ function SelectionActions({
             Im Chat zitieren
           </button>
         )}
+        <button
+          type="button"
+          disabled={busy}
+          title="Als Notiz speichern"
+          onClick={async () => {
+            setBusy(true);
+            const err = await onNote(sel.excerpts);
+            setBusy(false);
+            if (err) return setError(err);
+            window.getSelection()?.removeAllRanges();
+            setSel(null);
+          }}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+        >
+          <NotebookPen className="h-3.5 w-3.5" strokeWidth={2} />
+          Notiz
+        </button>
         <button
           type="button"
           onClick={() => {
