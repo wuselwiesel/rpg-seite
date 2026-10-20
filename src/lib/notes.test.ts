@@ -101,3 +101,24 @@ describe("Notizbuch", () => {
     }
   });
 });
+
+import { noteDocument, noteToMarkdown } from "./note-markdown";
+
+describe("Notiz als Markdown", () => {
+  it("wandelt Überschriften, Formatierung, Links und Zitate um", () => {
+    const md = noteToMarkdown('<h2>Plan</h2><p>Ein <strong>wichtiger</strong> und <em>kursiver</em> Text mit <a href="https://x.de">Link</a>.</p><blockquote><p>Zitat</p></blockquote>');
+    expect(md).toBe("## Plan\n\nEin **wichtiger** und *kursiver* Text mit [Link](https://x.de).\n\n> Zitat\n");
+  });
+  it("wandelt Listen, Aufgaben und Verschachtelung um", () => {
+    const md = noteToMarkdown('<ul><li><p>Eins</p><ul><li><p>Unter</p></li></ul></li></ul><ol><li><p>A</p></li><li><p>B</p></li></ol><ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" /><span></span></label><div><p>Fertig</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox" /></label><div><p>Offen</p></div></li></ul>');
+    expect(md).toBe("- Eins\n  - Unter\n\n1. A\n2. B\n\n- [x] Fertig\n- [ ] Offen\n");
+  });
+  it("wandelt Tabellen und Code um", () => {
+    const md = noteToMarkdown("<table><tbody><tr><th>Wer</th><th>Was</th></tr><tr><td>A</td><td>b | c</td></tr></tbody></table><pre><code>x &lt; y</code></pre>");
+    expect(md).toBe("| Wer | Was |\n| --- | --- |\n| A | b \\| c |\n\n```\nx < y\n```\n");
+  });
+  it("baut ein Dokument mit Titel und Tags", () => {
+    expect(noteDocument({ title: "Idee", body: "<p>Text</p>", tags: ["plot", "szene"] })).toBe("# Idee\n\n#plot #szene\n\nText\n");
+    expect(noteDocument({ title: "", body: "<p>x</p>", tags: [] })).toBe("# Ohne Titel\n\nx\n");
+  });
+});

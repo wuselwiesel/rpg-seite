@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, Download, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Printer, Search, Trash2, X } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
 import { NotesTabs } from "./notes-tabs";
 import { TemplateMenu } from "@/components/template-menu";
@@ -75,6 +75,12 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
   const rootFolders = folders.filter((f) => f.parentId === null).sort((a, b) => a.name.localeCompare(b.name, "de"));
   const subFolders = current ? folders.filter((f) => f.parentId === current.id).sort((a, b) => a.name.localeCompare(b.name, "de")) : [];
   const canNest = path.length < MAX_FOLDER_DEPTH;
+  // Auswahl für PDF/Text: aktueller Ordner, Tag und Welt
+  const exportQuery = new URLSearchParams({
+    ...(scope !== "all" ? { ordner: scope } : {}),
+    ...(tag ? { tag } : {}),
+    ...(world !== "all" ? { welt: world } : {}),
+  }).toString();
 
   function add() {
     setError(null);
@@ -273,6 +279,19 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
               {t} <span className="ml-0.5 opacity-60">{n}</span>
             </button>
           ))}
+        </div>
+      )}
+
+      {shown.length > 0 && (
+        <div className="mb-3 flex items-center justify-end gap-1">
+          <a href={`/notizen/druck?${exportQuery}`} target="_blank" rel="noreferrer" title="Auswahl als PDF" aria-label="Auswahl als PDF" className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
+            <Printer className="h-3.5 w-3.5" strokeWidth={2} />
+            PDF
+          </a>
+          <a href={`/notizen/export?${exportQuery}`} download title="Auswahl als Text" aria-label="Auswahl als Text" className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
+            <Download className="h-3.5 w-3.5" strokeWidth={2} />
+            Text
+          </a>
         </div>
       )}
 

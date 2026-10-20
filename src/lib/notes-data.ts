@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { clipJumpHref } from "@/lib/clips";
-import { LINK_COLUMN, noteTitle, type LinkKind, type NoteFolder, type NoteLinkView, type NoteView } from "@/lib/notes";
+import { LINK_COLUMN, descendantIds, noteTitle, type LinkKind, type NoteFolder, type NoteLinkView, type NoteView } from "@/lib/notes";
 
 type LinkRow = {
   id: string;
@@ -165,4 +165,21 @@ export async function connectionsForCharacter(supabase: SupabaseClient, userId: 
 export async function listTemplates(supabase: SupabaseClient, userId: string): Promise<NoteView[]> {
   const { data } = await supabase.from("notes").select(NOTE_COLS).eq("user_id", userId).eq("is_template", true).order("updated_at", { ascending: false }).limit(100);
   return ((data ?? []) as NoteRow[]).map((n) => toView(n, []));
+}
+
+export type NoteSelection = { id?: string | null; folder?: string | null; tag?: string | null; world?: string | null };
+
+// Notizen für Export und Druck: eine Notiz (id) oder Auswahl nach Ordner (samt Unterordnern; „none“ = ohne Ordner), Tag und Welt (inkl. Notizen ohne Welt)
+export async function selectNotes(supabase: SupabaseClient, userId: string, sel: NoteSelection): Promise<NoteView[]> {
+  if (sel.id) {
+    const one = await getNote(supabase, userId, sel.id);
+    return one ? [one] : [];
+  }
+  const [all, folders] = await Promise.all([listNotes(supabase, userId), listFolders(supabase, userId)]);
+  const folderIds = sel.folder && sel.folder !== "none" ? descendantIds(folders, sel.folder) : null;
+  return all
+    .filter((n) => (sel.folder === "none" ? n.folderId === null : folderIds ? !!n.folderId && folderIds.has(n.folderId) : true))
+    .filter((n) => (sel.tag ? n.tags.includes(sel.tag) : true))
+    .filter((n) => (sel.world ? n.worldId === null || n.worldId === sel.world : true))
+    .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
 }

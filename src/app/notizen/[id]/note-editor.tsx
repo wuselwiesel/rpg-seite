@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, FileText, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
+import { ChevronLeft, Download, FileText, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
@@ -179,6 +179,14 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
                   <FileText className="h-4 w-4 text-muted" strokeWidth={2} />
                   {isTemplate ? "Zur normalen Notiz machen" : "Selbst zur Vorlage machen"}
                 </button>
+                <a href={`/notizen/druck?id=${id}`} target="_blank" rel="noreferrer" role="menuitem" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
+                  <Printer className="h-4 w-4 text-muted" strokeWidth={2} />
+                  Als PDF
+                </a>
+                <a href={`/notizen/export?id=${id}`} download role="menuitem" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
+                  <Download className="h-4 w-4 text-muted" strokeWidth={2} />
+                  Als Text (Markdown)
+                </a>
                 {menuMsg && <p className="px-3 py-1.5 text-xs text-muted" role="status">{menuMsg}</p>}
               </div>
             )}
