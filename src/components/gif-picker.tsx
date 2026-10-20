@@ -70,7 +70,7 @@ export function GifPicker({ onPick, onClose, fill = false }: { onPick: (url: str
       ref={panelRef}
       role="dialog"
       aria-label="GIF auswählen"
-      className={fill ? "flex h-full w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2 shadow-lg" : "z-40 flex max-h-[40dvh] w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2.5 shadow-lg sm:w-[26rem]"}
+      className={fill ? "flex h-full w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2 shadow-lg" : "z-40 flex max-h-[55dvh] w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2.5 shadow-lg sm:w-[20rem]"}
     >
       <div className="flex items-center gap-2">
         {configured !== false && (
