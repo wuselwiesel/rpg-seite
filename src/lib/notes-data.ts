@@ -12,10 +12,10 @@ type LinkRow = {
   clip_id: string | null;
   linked_note_id: string | null;
 };
-type NoteRow = { id: string; title: string; body: string; pinned: boolean; tags: string[] | null; folder_id: string | null; is_template: boolean; world_id: string | null; updated_at: string };
+type NoteRow = { id: string; title: string; body: string; pinned: boolean; archived: boolean; deleted_at: string | null; tags: string[] | null; folder_id: string | null; is_template: boolean; world_id: string | null; updated_at: string };
 
 const LINK_COLS = "id, note_id, character_id, wiki_page_id, story_post_id, clip_id, linked_note_id";
-const NOTE_COLS = "id, title, body, pinned, tags, folder_id, is_template, world_id, updated_at";
+const NOTE_COLS = "id, title, body, pinned, archived, deleted_at, tags, folder_id, is_template, world_id, updated_at";
 
 function rowTarget(r: LinkRow): { kind: LinkKind; id: string } {
   if (r.character_id) return { kind: "character", id: r.character_id };
@@ -33,7 +33,7 @@ export async function resolveLinks(supabase: SupabaseClient, rows: LinkRow[]): P
     ids("wiki").length ? supabase.from("wiki_pages").select("id, title").in("id", ids("wiki")) : { data: [] },
     ids("scene").length ? supabase.from("story_posts").select("id, title").in("id", ids("scene")) : { data: [] },
     ids("clip").length ? supabase.from("scene_clips").select("id, title, story_post_id, items").in("id", ids("clip")) : { data: [] },
-    ids("note").length ? supabase.from("notes").select("id, title, body").in("id", ids("note")) : { data: [] },
+    ids("note").length ? supabase.from("notes").select("id, title, body").is("deleted_at", null).in("id", ids("note")) : { data: [] },
     ids("clip").length ? supabase.from("clip_collection_items").select("clip_id, clip_collections(character_id)").in("clip_id", ids("clip")) : { data: [] },
   ]);
   const byId = <T extends { id: string }>(list: unknown) => new Map(((list as T[] | null) ?? []).map((x) => [x.id, x]));
@@ -78,8 +78,11 @@ export async function resolveLinks(supabase: SupabaseClient, rows: LinkRow[]): P
   return out;
 }
 
-export async function listNotes(supabase: SupabaseClient, userId: string): Promise<NoteView[]> {
-  const { data } = await supabase.from("notes").select(NOTE_COLS).eq("user_id", userId).eq("is_template", false).order("pinned", { ascending: false }).order("updated_at", { ascending: false }).limit(500);
+// Standard: nur „lebende“ Notizen (nicht im Papierkorb, nicht archiviert); mit includeHidden auch Archiv und Papierkorb (für das Notizbuch selbst)
+export async function listNotes(supabase: SupabaseClient, userId: string, includeHidden = false): Promise<NoteView[]> {
+  let query = supabase.from("notes").select(NOTE_COLS).eq("user_id", userId).eq("is_template", false);
+  if (!includeHidden) query = query.is("deleted_at", null).eq("archived", false);
+  const { data } = await query.order("pinned", { ascending: false }).order("updated_at", { ascending: false }).limit(500);
   const notes = (data ?? []) as NoteRow[];
   if (notes.length === 0) return [];
   const { data: links } = await supabase.from("note_links").select(LINK_COLS).eq("user_id", userId).in("note_id", notes.map((n) => n.id)).order("created_at");
@@ -100,7 +103,7 @@ export async function notesForTarget(supabase: SupabaseClient, userId: string, k
   const { data: links } = await supabase.from("note_links").select("note_id").eq("user_id", userId).eq(LINK_COLUMN[kind], targetId).limit(100);
   const ids = (links ?? []).map((l) => (l as { note_id: string }).note_id);
   if (ids.length === 0) return [];
-  const { data } = await supabase.from("notes").select(NOTE_COLS).in("id", ids).order("updated_at", { ascending: false });
+  const { data } = await supabase.from("notes").select(NOTE_COLS).in("id", ids).is("deleted_at", null).order("updated_at", { ascending: false });
   return ((data ?? []) as NoteRow[]).map((n) => ({ id: n.id, title: noteTitle(n), body: n.body, updatedAt: n.updated_at }));
 }
 
@@ -115,12 +118,12 @@ export async function backlinks(supabase: SupabaseClient, userId: string, noteId
   const { data: links } = await supabase.from("note_links").select("note_id").eq("user_id", userId).eq("linked_note_id", noteId);
   const ids = (links ?? []).map((l) => (l as { note_id: string }).note_id);
   if (ids.length === 0) return [];
-  const { data } = await supabase.from("notes").select("id, title, body").in("id", ids);
+  const { data } = await supabase.from("notes").select("id, title, body").in("id", ids).is("deleted_at", null);
   return ((data ?? []) as { id: string; title: string; body: string }[]).map((n) => ({ id: n.id, title: noteTitle(n) }));
 }
 
 function toView(n: NoteRow, links: NoteLinkView[]): NoteView {
-  return { id: n.id, title: n.title, body: n.body, pinned: n.pinned, tags: n.tags ?? [], folderId: n.folder_id, isTemplate: n.is_template, worldId: n.world_id, updatedAt: n.updated_at, links };
+  return { id: n.id, title: n.title, body: n.body, pinned: n.pinned, archived: n.archived, deletedAt: n.deleted_at, tags: n.tags ?? [], folderId: n.folder_id, isTemplate: n.is_template, worldId: n.world_id, updatedAt: n.updated_at, links };
 }
 
 export async function listFolders(supabase: SupabaseClient, userId: string): Promise<NoteFolder[]> {
@@ -130,7 +133,7 @@ export async function listFolders(supabase: SupabaseClient, userId: string): Pro
 
 // Alle eigenen Tags (für die Vorschläge in der Notiz)
 export async function listTags(supabase: SupabaseClient, userId: string): Promise<string[]> {
-  const { data } = await supabase.from("notes").select("tags").eq("user_id", userId).limit(1000);
+  const { data } = await supabase.from("notes").select("tags").eq("user_id", userId).is("deleted_at", null).limit(1000);
   return [...new Set(((data ?? []) as { tags: string[] | null }[]).flatMap((n) => n.tags ?? []))].sort((a, b) => a.localeCompare(b, "de"));
 }
 
@@ -182,4 +185,10 @@ export async function selectNotes(supabase: SupabaseClient, userId: string, sel:
     .filter((n) => (sel.tag ? n.tags.includes(sel.tag) : true))
     .filter((n) => (sel.world ? n.worldId === null || n.worldId === sel.world : true))
     .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
+}
+
+// Notizen, die länger als 30 Tage im Papierkorb liegen, endgültig löschen (läuft beim Öffnen des Notizbuchs)
+export async function purgeOldTrash(supabase: SupabaseClient, userId: string): Promise<void> {
+  const cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  await supabase.from("notes").delete().eq("user_id", userId).not("deleted_at", "is", null).lt("deleted_at", cutoff);
 }

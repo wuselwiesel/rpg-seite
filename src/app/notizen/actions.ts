@@ -403,3 +403,38 @@ export async function adoptBuiltinTemplate(builtinId: string): Promise<{ error: 
   revalidatePath("/notizen/vorlagen");
   return { id: data.id };
 }
+
+// ---- Papierkorb und Archiv ----
+
+async function setNoteFlags(id: string, patch: { deleted_at?: string | null; archived?: boolean }): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.from("notes").update(patch).eq("id", id).eq("user_id", user.id);
+  if (error) return error.message;
+  revalidatePath("/notizen");
+  revalidatePath(`/notizen/${id}`);
+  return null;
+}
+
+// In den Papierkorb (30 Tage, danach endgültig weg)
+export async function trashNote(id: string): Promise<string | null> {
+  return setNoteFlags(id, { deleted_at: new Date().toISOString() });
+}
+
+export async function restoreNote(id: string): Promise<string | null> {
+  return setNoteFlags(id, { deleted_at: null });
+}
+
+export async function archiveNote(id: string, archived: boolean): Promise<string | null> {
+  return setNoteFlags(id, { archived });
+}
+
+// Papierkorb leeren: alle eigenen Notizen darin endgültig löschen
+export async function emptyTrash(): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.from("notes").delete().eq("user_id", user.id).not("deleted_at", "is", null);
+  if (error) return error.message;
+  revalidatePath("/notizen");
+  return null;
+}

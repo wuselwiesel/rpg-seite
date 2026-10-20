@@ -35,6 +35,8 @@ export type NoteView = {
   title: string;
   body: string;
   pinned: boolean;
+  archived: boolean;
+  deletedAt: string | null;
   tags: string[];
   folderId: string | null;
   isTemplate: boolean;

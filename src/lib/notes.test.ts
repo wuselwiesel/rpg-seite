@@ -3,7 +3,7 @@ import { BUILTIN_TEMPLATES, uncheckTasks } from "./note-templates";
 import { sanitizePostHtmlCore } from "./sanitize-core";
 import { buildFolderTree, canMoveFolder, descendantIds, flattenFolders, folderPath, noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
 
-const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, tags: [], folderId: null, isTemplate: false, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
+const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, archived: false, deletedAt: null, tags: [], folderId: null, isTemplate: false, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
 
 describe("Notizbuch", () => {
   it("nimmt den Titel, sonst den Anfang des Textes", () => {
