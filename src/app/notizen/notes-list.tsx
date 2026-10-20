@@ -4,9 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Search, Trash2, X } from "lucide-react";
+import { RevealRow } from "@/components/reveal-row";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { createNote, createNoteFolder, deleteNoteFolder, renameNoteFolder } from "./actions";
+import { createNote, createNoteFolder, deleteNote, deleteNoteFolder, renameNoteFolder } from "./actions";
 import { noteMatches, noteSnippet, noteTitle, type NoteFolder, type NoteView } from "@/lib/notes";
 
 const dayFormat = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
@@ -16,8 +17,15 @@ type Scope = "all" | "none" | string;
 
 const chip = (on: boolean) => `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
 
-export function NotesList({ notes, folders: initialFolders }: { notes: NoteView[]; folders: NoteFolder[] }) {
+export function NotesList({ notes: initialNotes, folders: initialFolders }: { notes: NoteView[]; folders: NoteFolder[] }) {
   const router = useRouter();
+  const [notes, setNotes] = useState(initialNotes);
+  // Nach Änderungen auf dem Server (z. B. Ordner löschen) kommen neue Daten herein
+  const [seen, setSeen] = useState(initialNotes);
+  if (seen !== initialNotes) {
+    setSeen(initialNotes);
+    setNotes(initialNotes);
+  }
   const [folders, setFolders] = useState(initialFolders);
   const [scope, setScope] = useState<Scope>("all");
   const [tag, setTag] = useState<string | null>(null);
@@ -82,6 +90,13 @@ export function NotesList({ notes, folders: initialFolders }: { notes: NoteView[
       setRenaming(null);
       router.refresh();
     });
+  }
+
+  async function removeNote(n: NoteView) {
+    if (!(await confirmDialog({ message: `„${noteTitle(n)}“ löschen?`, confirmLabel: "Löschen", danger: true }))) return;
+    const err = await deleteNote(n.id);
+    if (err) return setError(err);
+    setNotes((cur) => cur.filter((x) => x.id !== n.id));
   }
 
   async function removeFolder(f: NoteFolder) {
@@ -198,7 +213,16 @@ export function NotesList({ notes, folders: initialFolders }: { notes: NoteView[
       ) : (
         <ul className="flex flex-col gap-2">
           {shown.map((n) => (
-            <li key={n.id} className="rounded-2xl border border-line bg-surface transition hover:border-accent/40">
+            <RevealRow
+              key={n.id}
+              className="items-start gap-0 rounded-2xl border border-line bg-surface transition hover:border-accent/40"
+              actions={
+                <button type="button" onClick={() => void removeNote(n)} title="Notiz löschen" aria-label="Notiz löschen" className="m-2 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
+                  <Trash2 className="h-4 w-4" strokeWidth={2} />
+                </button>
+              }
+            >
+              <div className="min-w-0 flex-1">
               <Link href={`/notizen/${n.id}`} className="block px-4 pt-3.5">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="min-w-0 truncate text-[15px] font-semibold text-fg">{noteTitle(n)}</h2>
@@ -224,7 +248,8 @@ export function NotesList({ notes, folders: initialFolders }: { notes: NoteView[
                   <span key={t} className="text-xs text-muted">#{t}</span>
                 ))}
               </div>
-            </li>
+              </div>
+            </RevealRow>
           ))}
         </ul>
       )}
