@@ -7,6 +7,11 @@ import { StoryEntryItem } from "@/app/story/[id]/story-entry-item";
 import { StoryComposer } from "@/app/story/[id]/story-composer";
 import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { MapViewer } from "@/app/wiki/karten/[id]/map-viewer";
+import { TicketListView, type ListTicket } from "@/app/redaktion/tickets/ticket-list-view";
+import { Thread } from "@/app/redaktion/tickets/[id]/thread";
+import { CastView } from "@/app/wiki/besetzung/cast-view";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import type { TicketComment, TicketRow } from "@/lib/tickets";
 import avatars from "./avatars.json";
 import type { Character, CharacterRelationship, StoryEntry } from "@/lib/types";
 
@@ -155,6 +160,49 @@ function MapScreen() {
   );
 }
 
-const screens: Record<string, () => React.JSX.Element> = { szene: Scene, wurfzeilen: RollRows, chabo: ChaboScreen, netz: Net, wuerfeln: Composer, schreiben: Composer, karte: MapScreen };
+function TicketsList() {
+  const list: ListTicket[] = [
+    { id: "t12", number: 12, kind: "bug", title: "Bild und Text verschmelzen", status: "open", mine: true, last_actor: "admin", updated_at: "2026-10-17T10:00:00Z", read_at: null, by: "Vesper", urgent: false, category: "scene" },
+    { id: "t11", number: 11, kind: "wish", title: "Dunkler Modus für den Editor", status: "working", mine: true, last_actor: "me", updated_at: "2026-10-16T09:00:00Z", read_at: null, by: "Vesper", urgent: false, category: null },
+    { id: "t10", number: 10, kind: "question", title: "Wie lösche ich mein Konto?", status: "done", mine: false, last_actor: "other", updated_at: "2026-10-15T09:00:00Z", read_at: "2026-10-15T10:00:00Z", by: "Tamsin", urgent: false, category: null },
+    { id: "t9", number: 9, kind: "bug", title: "Chat scrollt nicht", status: "open", mine: false, last_actor: "other", updated_at: "2026-10-14T09:00:00Z", read_at: null, by: "Pia", urgent: true, category: "chat" },
+  ];
+  return <div id="shot" style={{ maxWidth: 420, padding: 16 }}><TicketListView tickets={list} userId="me" admin={false} /></div>;
+}
+function TicketThread() {
+  const T = "t12";
+  const ticket: TicketRow = { id: T, number: 12, last_actor: "admin", images: [], created_by: "me", kind: "bug", title: "Bild und Text verschmelzen", body: "Wenn zwei Figuren in einer Nachricht stehen, wirken Bild und Text fast verbunden.", status: "working", page_path: "/story/glocke", device: "iPhone · Safari · 375×700", created_at: "2026-10-17T09:00:00Z", updated_at: "2026-10-17T10:00:00Z", closed_at: null, urgent: false, category: "scene", merged_into: null } as TicketRow;
+  const comments: TicketComment[] = [
+    { id: "c0", ticket_id: T, author_id: "admin", body: "In Arbeit", images: [], internal: false, system: "status", created_at: "2026-10-17T09:20:00Z" },
+    { id: "c1", ticket_id: T, author_id: "admin", body: "Danke, ich schaue es mir an.", images: [], internal: false, system: null, created_at: "2026-10-17T09:30:00Z" },
+  ];
+  return <div id="shot" style={{ maxWidth: 640, padding: 8 }}><Thread ticket={ticket} comments={comments} names={{ me: "Vesper", admin: "Betreiberin" }} userId="me" admin={false} /></div>;
+}
+function Besetzung() {
+  const R = (i: number, name: string, extra: Record<string, unknown>) => ({ id: `r${i}`, name, age_text: null, species_text: null, source: null, description: null, deceased: false, state: "open", holder_user: null, holder_label: null, holder_kind: null, holder_until: null, character_id: null, status: "free", character: null, holderName: null, holderIsMe: false, myRequestId: null, requests: [], ...extra });
+  const rows = [
+    R(1, "Dorian Blackwood", { species_text: "Vampir", description: "Uralter Gutsherr von Schattenmoor.", status: "taken", character: { id: "dorian", name: "Dorian Blackwood", avatarUrl: av["Dorian Blackwood"], ownerName: "Nadine", vacant: false } }),
+    R(2, "Elowen Lichtwehr", { species_text: "Mensch", description: "Kerzenmacherin der Kapelle.", status: "free" }),
+    R(3, "Iselin Moorfeld", { species_text: "Mensch", description: "Kräuterfrau und Hebamme.", status: "free", myRequestId: "rq1" }),
+    R(4, "Morwenna Krähenhall", { species_text: "Vampir", description: "Letzte Schwester des Klosters Sankt Veyr.", status: "taken", character: { id: "morwenna", name: "Morwenna Krähenhall", avatarUrl: av["Morwenna Krähenhall"], ownerName: "Sani", vacant: false } }),
+    R(5, "Pia Aschenbach", { species_text: "Mensch", description: "Singt auf dem Marktplatz für Brot.", status: "reserved", holder_kind: "approved", holderName: "Mira", holder_label: "Mira" }),
+    R(6, "Seraphine Vael", { species_text: "Moorhexe", description: "Kennt jeden Pfad durch den Nebel.", status: "taken", character: { id: "seraphine", name: "Seraphine Vael", avatarUrl: av["Seraphine Vael"], ownerName: "Emilie", vacant: false } }),
+    R(7, "Tamsin Wermut", { species_text: "Mensch", description: "Nachtwächterin im Orden.", status: "free" }),
+    R(8, "Die Moorwächterin", { species_text: "Wesen", description: "Sitzt auf einem Findling am Moorrand.", state: "npc", status: "npc" }),
+  ];
+  const data = { enabled: true, isAdmin: false, rows, members: [], characters: [] } as never;
+  return <div id="shot" style={{ maxWidth: 760, padding: 16 }}><CastView worldId="w" data={data} folders={[]} /></div>;
+}
+const wikiPages = [{ id: "p1", title: "Das Gutshaus Blackwood" }, { id: "p2", title: "Schattenbibliothek" }, { id: "p3", title: "Die Kapelle von Schattenmoor" }, { id: "p4", title: "Der Orden der Nachtwächter" }, { id: "p5", title: "Das Geschrei" }];
+function Editor() {
+  const html = "<h2>Die Schattenbibliothek</h2><p>Tief unter dem Gutshaus Blackwood liegt ein Archiv, dessen Regale länger sind, als der Raum es erlaubt. Hier lagert alles, was Schattenmoor vergessen wollte. Wer die Stufen hinabsteigt, hört oft das Geschrei, wenn der Nebel dicht wird.</p>";
+  return (
+    <div id="shot" style={{ maxWidth: 760, padding: 16, minHeight: 360 }}>
+      <RichTextEditor name="content" initialContent={html} wikiPages={wikiPages} wikiCharacters={all.map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatar_url }))} allowBlocks minHeight={200} />
+    </div>
+  );
+}
+
+const screens: Record<string, () => React.JSX.Element> = { szene: Scene, wurfzeilen: RollRows, chabo: ChaboScreen, netz: Net, wuerfeln: Composer, schreiben: Composer, karte: MapScreen, tickets: TicketsList, ticket: TicketThread, besetzung: Besetzung, editor: Editor };
 const Screen = screens[screen] ?? Scene;
 createRoot(document.getElementById("root")!).render(<Screen />);

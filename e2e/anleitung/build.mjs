@@ -38,9 +38,27 @@ fs.writeFileSync(
 }
 export const createClient = () => ({ from: (t: string) => q(t), channel: () => q("channel"), removeChannel() {}, rpc: async () => ({ data: null, error: null }), auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) } });`,
 );
+fs.writeFileSync(
+  path.join(out, "stub-ticket-actions.ts"),
+  `export async function createTicket() { return { id: "x" }; }
+export async function addTicketComment() { return null; }
+export async function setTicketStatus() { return null; }
+export async function setTicketTriage() { return null; }
+export async function mergeTicket() { return null; }
+export async function markTicketRead() {}`,
+);
+fs.writeFileSync(
+  path.join(out, "stub-upload.ts"),
+  `export const MAX_TICKET_IMAGES = 4;
+export async function uploadTicketImages(files: File[]) { return { paths: files.map((_, i) => "u/" + i + ".png") }; }
+const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+export async function signTicketImages(paths: string[]) { return Object.fromEntries(paths.map((p) => [p, PNG])); }`,
+);
 const stubs = {
   name: "stubs",
   setup(b) {
+    b.onResolve({ filter: /\.\.\/actions$/ }, (a) => (a.importer.includes("redaktion") && a.importer.includes("tickets") ? { path: path.join(out, "stub-ticket-actions.ts") } : undefined));
+    b.onResolve({ filter: /lib\/ticket-upload$/ }, () => ({ path: path.join(out, "stub-upload.ts") }));
     b.onResolve({ filter: /\.\.\/actions$/ }, (a) => (a.importer.endsWith("dice-roll-form.tsx") ? { path: path.join(out, "stub-dice-actions.ts") } : undefined));
     b.onResolve({ filter: /supabase\/client$/ }, () => ({ path: path.join(out, "stub-client.ts") }));
   },
@@ -61,4 +79,4 @@ await build({
 const cssFile = path.join(root, "src", "app", "globals.css");
 const css = await postcss([tailwind()]).process(fs.readFileSync(cssFile, "utf8"), { from: cssFile });
 fs.writeFileSync(path.join(out, "style.css"), css.css);
-fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><body style="background:var(--app)"><div id="root"></div><script src="out.js"></script>`);
+fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><body style="background:var(--app)"><div id="root"></div><script src="out.js"></script>`);
