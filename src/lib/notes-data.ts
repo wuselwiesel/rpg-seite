@@ -133,3 +133,30 @@ export async function listTags(supabase: SupabaseClient, userId: string): Promis
   const { data } = await supabase.from("notes").select("tags").eq("user_id", userId).limit(1000);
   return [...new Set(((data ?? []) as { tags: string[] | null }[]).flatMap((n) => n.tags ?? []))].sort((a, b) => a.localeCompare(b, "de"));
 }
+
+export type Connection = { link: NoteLinkView; count: number };
+
+// Womit hängt ein Charakter in den eigenen Notizen zusammen? Alles, was in denselben Notizen verknüpft ist, nach Häufigkeit
+export async function connectionsForCharacter(supabase: SupabaseClient, userId: string, characterId: string, limit = 12): Promise<Connection[]> {
+  const { data: own } = await supabase.from("note_links").select("note_id").eq("user_id", userId).eq("character_id", characterId).limit(200);
+  const noteIds = [...new Set((own ?? []).map((r) => (r as { note_id: string }).note_id))];
+  if (noteIds.length === 0) return [];
+  const { data } = await supabase.from("note_links").select(LINK_COLS).eq("user_id", userId).in("note_id", noteIds).limit(1000);
+  const counts = new Map<string, { row: LinkRow; count: number }>();
+  for (const row of (data ?? []) as LinkRow[]) {
+    const t = rowTarget(row);
+    if (t.kind === "character" && t.id === characterId) continue;
+    const key = `${t.kind}:${t.id}`;
+    const hit = counts.get(key);
+    if (hit) hit.count++;
+    else counts.set(key, { row, count: 1 });
+  }
+  const top = [...counts.values()].sort((a, b) => b.count - a.count).slice(0, limit);
+  if (top.length === 0) return [];
+  const resolved = await resolveLinks(supabase, top.map((t) => t.row));
+  const byLink = new Map([...resolved.values()].flat().map((l) => [`${l.kind}:${l.targetId}`, l]));
+  return top.flatMap((t) => {
+    const l = byLink.get(`${rowTarget(t.row).kind}:${rowTarget(t.row).id}`);
+    return l && !l.missing ? [{ link: l, count: t.count }] : [];
+  });
+}

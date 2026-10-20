@@ -35,7 +35,8 @@ import { NpcBadge } from "@/components/npc-badge";
 import { FaceclaimButton } from "@/components/faceclaim-button";
 import { getFaceclaim } from "@/lib/faceclaim-data";
 import { TargetNotesButton } from "@/components/target-notes-button";
-import { noteCountForTarget } from "@/lib/notes-data";
+import { connectionsForCharacter, noteCountForTarget } from "@/lib/notes-data";
+import { CharacterConnections } from "@/components/character-connections";
 import { ReviewChip } from "@/components/review-chip";
 import { AvailabilityBadge, AvailabilityControl } from "@/components/character-availability";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
@@ -308,6 +309,7 @@ export default async function CharacterProfilePage({
               <TargetNotesButton kind="character" targetId={character.id} targetLabel={character.name} count={await noteCountForTarget(supabase, user.id, "character", character.id)} />
             </div>
           )}
+          {!gone && <CharacterConnections connections={await connectionsForCharacter(supabase, user.id, character.id)} />}
 
           <div className="mt-4 flex gap-6 text-sm text-fg-soft">
             <span><b className="font-semibold text-fg">{publishedCount ?? 0}</b> {publishedCount === 1 ? "Beitrag" : "Beiträge"}</span>
