@@ -11,7 +11,7 @@ const root = path.resolve(here, "../..");
 const out = path.join(here, ".build");
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, "shim-link.tsx"), `export default function Link({ children, ...r }: any) { return <a {...r} onClick={(e) => e.preventDefault()}>{children}</a>; }`);
-fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useRouter = () => ({ push() {}, refresh() {}, replace() {} });`);
+fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useSearchParams = () => new URLSearchParams(); export const useRouter = () => ({ push() {}, refresh() {}, replace() {} });`);
 fs.writeFileSync(path.join(out, "shim-dynamic.tsx"), `export default function dynamic() { return function Lazy() { return <div>Katalog</div>; }; }`);
 fs.writeFileSync(path.join(out, "stub-supabase.ts"), `const chain: any = new Proxy(function () {}, { get(_t, k) { if (k === "then") return (res: any) => (typeof res === "function" ? res({ data: [], error: null }) : undefined); if (k === "presenceState") return () => ({}); return () => chain; }, apply() { return chain; } });\nexport const createClient = () => chain;`);
 fs.writeFileSync(

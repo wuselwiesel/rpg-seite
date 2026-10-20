@@ -11,7 +11,7 @@ const root = path.resolve(here, "../..");
 const out = path.join(here, ".build");
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, "shim-link.tsx"), `import React from "react"; export default function Link({href, children, ...rest}: any){ return <a href={href} onClick={(e)=>e.preventDefault()} {...rest}>{children}</a>; }`);
-fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useRouter = () => ({ push() {}, refresh() {}, replace() {} });`);
+fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useSearchParams = () => new URLSearchParams(); export const useRouter = () => ({ push() {}, refresh() {}, replace() {} });`);
 fs.writeFileSync(path.join(out, "shim-dynamic.tsx"), `import React from "react"; export default function dynamic(){ return function Lazy(){ return <div>Emoji-Katalog</div>; }; }`);
 // Würfel-Aktionen: der Aufruf mit allen Formularfeldern wird gemerkt
 fs.writeFileSync(

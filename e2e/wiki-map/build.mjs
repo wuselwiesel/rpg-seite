@@ -10,7 +10,7 @@ const root = path.resolve(here, "../..");
 const out = path.join(here, ".build");
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, "shim-link.tsx"), `import React from "react"; export default function Link({href, children, ...rest}: any){ return <a href={href} onClick={(e)=>e.preventDefault()} {...rest}>{children}</a>; }`);
-fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/wiki"; export const useRouter = () => ({ push(u: string) { (window as any).__calls.push({ push: u }); }, refresh() {}, replace() {} });`);
+fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/wiki"; export const useSearchParams = () => new URLSearchParams(); export const useRouter = () => ({ push(u: string) { (window as any).__calls.push({ push: u }); }, refresh() {}, replace() {} });`);
 fs.writeFileSync(
   path.join(out, "stub-actions.ts"),
   `const log = (e: unknown) => (window as any).__calls.push(e);

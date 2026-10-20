@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 const out = path.join(here, ".build");
 fs.mkdirSync(out, { recursive: true });
-fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const useRouter = () => ({ refresh() {} }); export const usePathname = () => "/";`);
+fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const useRouter = () => ({ refresh() {} }); export const usePathname = () => "/"; export const useSearchParams = () => new URLSearchParams();`);
 fs.writeFileSync(path.join(out, "shim-link.tsx"), `export default function Link({ children, ...r }: any) { return <a {...r}>{children}</a>; }`);
 fs.writeFileSync(path.join(out, "shim-dynamic.tsx"), `export default function dynamic() { return function Lazy() { return <div style={{ height: 360 }}>Katalog</div>; }; }`);
 fs.writeFileSync(path.join(out, "stub-supabase.ts"), `const w = window as any;

@@ -11,7 +11,7 @@ const root = path.resolve(here, "../..");
 const out = path.join(here, ".build");
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, "shim-link.tsx"), `import React from "react"; export default function Link({href, children, ...rest}: any){ return <a href={href} onClick={(e)=>e.preventDefault()} {...rest}>{children}</a>; }`);
-fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useRouter = () => ({ push() {}, refresh() {}, replace() {} });`);
+fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useSearchParams = () => new URLSearchParams(); export const useRouter = () => ({ push() {}, refresh() {}, replace() {} });`);
 fs.writeFileSync(path.join(out, "stub-sheet-actions.ts"), `export async function saveCharacterSheet(id: string, data: unknown) { (window as any).__saves.push(data); return null; }`);
 fs.writeFileSync(path.join(out, "stub-upload.tsx"), `export function AvatarUpload() { return null; }\nexport function GalleryUpload() { return null; }`);
 fs.writeFileSync(path.join(out, "stub-emoji-actions.ts"), `export async function createCustomEmoji() { return null; }\nexport async function deleteCustomEmoji() { return null; }`);

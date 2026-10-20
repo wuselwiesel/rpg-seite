@@ -1,4 +1,4 @@
-# Plan: Notizbuch ausbauen (Stand 20. Oktober 2026)
+# Plan: Notizbuch ausbauen (Stand 20. Oktober 2026) – ALLE SCHRITTE ERLEDIGT, nur noch Handy-Test der Vorlagen/Notiz offen
 
 Zum Weiterarbeiten nach einer Unterbrechung: Diese Datei zuerst lesen, dann `git log --oneline -8` und `git status`, dann beim ersten Schritt mit `[ ]` weitermachen. Jeder Schritt ist **für sich lauffähig, getestet und gepusht** (kleine Commits direkt auf `main`, Trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`). Nach jedem Schritt hier `[x]` setzen, kurz notieren, was abweicht, und committen.
 
@@ -26,9 +26,9 @@ Allgemeine Regeln je Schritt: `npx tsc --noEmit`, `npx eslint <geänderte Dateie
 - [x] **8. Notizen als PDF (und Text).** (erledigt: `/notizen/druck`, `/notizen/export` (Markdown, `lib/note-markdown.ts` mit Tests), „…“-Menü in der Notiz, PDF/Text-Links über der Liste für die gewählte Auswahl (Ordner samt Unterordnern, Tag, Welt)) Muster: `src/app/ausschnitte/druck/page.tsx` (Druckansicht, Browser-Druckdialog) und `ausschnitte/export/route.ts` (Text). Neu: `/notizen/druck?id=…|ordner=…|tag=…|alle=1` (Druckseite mit Titel, Tags, Text, Marken der Verknüpfungen, Seitenumbruch zwischen Notizen, Tabellen/Aufgaben sauber) und `/notizen/export?…` (Markdown-Text: HTML→Markdown einfach per Funktion `noteToMarkdown` in `lib/notes.ts` mit Test: Überschriften, Listen, Aufgaben `- [ ]`, Tabellen als Pipe-Tabelle, Zitate). Knöpfe: in der Notiz („…“-Menü: „Als PDF“, „Als Text“), in der Liste je Ordner/Tag-Auswahl („Ordner als PDF“). `PrintButton`/`PdfButton` (`src/components/print-button.tsx`, `pdf-button.tsx`) wiederverwenden.
 
 ## Danach (Abschluss)
-- [ ] Hilfe `/hilfe` Abschnitt 22 aktualisieren (Bear-Funktionen, Offene Fäden, Welten, Ordner, Vorlagen, PDF, Suche).
-- [ ] Protokoll `docs/uebergabe-wortwinkel.md`: Nachtrag mit allen Schritten, Migrationen, Fallstricken.
-- [ ] Gesamtprüfung: `tsc`, ESLint, Vitest, `next build` (killt den dev server → danach `preview_start` neu), relevante E2E-Suiten (`e2e/`, braucht `PLAYWRIGHT_CHROMIUM`), Supabase-Berater (`get_advisors` security/performance, neue Tabellen/Indizes).
+- [x] Hilfe `/hilfe` Abschnitt 22 aktualisieren (Bear-Funktionen, Offene Fäden, Welten, Ordner, Vorlagen, PDF, Suche).
+- [x] Protokoll `docs/uebergabe-wortwinkel.md`: Nachtrag mit allen Schritten, Migrationen, Fallstricken.
+- [x] Gesamtprüfung (tsc, ESLint, 493 Vitest, `next build`, alle 23 Browser-Suiten grün nach Anpassung der Navigations-Attrappe um `useSearchParams`; Supabase-Berater ohne neue Warnungen): `tsc`, ESLint, Vitest, `next build` (killt den dev server → danach `preview_start` neu), relevante E2E-Suiten (`e2e/`, braucht `PLAYWRIGHT_CHROMIUM`), Supabase-Berater (`get_advisors` security/performance, neue Tabellen/Indizes).
 - [ ] Offene Frage an die Nutzerin wiederholen: Knopf „PDF / E-Book“ oben rechts in der Story entfernen? Chat-Blase beim Seitenwechsel noch glitchy?
 
 ## Entscheidungen / Hinweise
