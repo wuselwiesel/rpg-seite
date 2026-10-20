@@ -3,25 +3,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Folder, Hash, Link2, Pin, PinOff, Trash2, X } from "lucide-react";
+import { ChevronLeft, Folder, Globe, Hash, Link2, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, setNotePinned } from "../actions";
+import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, setNotePinned, setNoteWorld } from "../actions";
 import { stripHtml } from "@/lib/strip-html";
 import { MAX_NOTE_TAGS, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
 // Eine Notiz: Titel und Text speichern von selbst, darunter die Verknüpfungen.
-export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
+export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [pinned, setPinned] = useState(initialPinned);
   const [links, setLinks] = useState<NoteLinkView[]>(initialLinks);
   const [tags, setTags] = useState<string[]>(initialTags);
   const [tagInput, setTagInput] = useState("");
+  const [worldId, setWorldId] = useState<string | null>(initialWorldId);
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const wordCount = (html: string) => stripHtml(html).split(/\s+/).filter(Boolean).length;
   const [words, setWords] = useState(() => wordCount(initialBody));
@@ -104,6 +105,14 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     await moveNote(id, next);
   }
 
+  async function changeWorld(value: string) {
+    const next = value || null;
+    setWorldId(next);
+    await setNoteWorld(id, next);
+    // Wiki-Seiten und Charaktere im Editor gehören zur Welt der Notiz
+    router.refresh();
+  }
+
   async function togglePin() {
     const next = !pinned;
     setPinned(next);
@@ -169,6 +178,19 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        {worlds.length > 0 && (
+          <label className="flex items-center gap-1.5 text-xs text-muted">
+            <Globe className="h-3.5 w-3.5" strokeWidth={2} />
+            <select value={worldId ?? ""} onChange={(e) => void changeWorld(e.target.value)} aria-label="Welt" className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-fg-soft outline-none focus:border-accent">
+              <option value="">Ohne Welt</option>
+              {worlds.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {folders.length > 0 && (
           <label className="flex items-center gap-1.5 text-xs text-muted">
             <Folder className="h-3.5 w-3.5" strokeWidth={2} />

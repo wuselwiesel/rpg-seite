@@ -18,7 +18,7 @@ type Scope = "all" | "none" | string;
 
 const chip = (on: boolean) => `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
 
-export function NotesList({ notes: initialNotes, folders: initialFolders, openCount }: { notes: NoteView[]; folders: NoteFolder[]; openCount: number }) {
+export function NotesList({ notes: initialNotes, folders: initialFolders, openCount, worlds, activeWorldId }: { notes: NoteView[]; folders: NoteFolder[]; openCount: number; worlds: { id: string; name: string }[]; activeWorldId: string | null }) {
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
   // Nach Änderungen auf dem Server (z. B. Ordner löschen) kommen neue Daten herein
@@ -29,6 +29,8 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
   }
   const [folders, setFolders] = useState(initialFolders);
   const [scope, setScope] = useState<Scope>("all");
+  // Welt: eine Welt-ID (zeigt ihre Notizen und die ohne Welt) oder „all“ = alle Welten
+  const [world, setWorld] = useState<string>(activeWorldId && worlds.some((w) => w.id === activeWorldId) ? activeWorldId : "all");
   const [tag, setTag] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [pending, start] = useTransition();
@@ -38,21 +40,22 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameText, setRenameText] = useState("");
 
+  const inWorld = useMemo(() => (world === "all" ? notes : notes.filter((n) => n.worldId === null || n.worldId === world)), [notes, world]);
   const counts = useMemo(() => {
     const m = new Map<string, number>();
-    for (const n of notes) m.set(n.folderId ?? "none", (m.get(n.folderId ?? "none") ?? 0) + 1);
+    for (const n of inWorld) m.set(n.folderId ?? "none", (m.get(n.folderId ?? "none") ?? 0) + 1);
     return m;
-  }, [notes]);
+  }, [inWorld]);
   const withoutFolder = counts.get("none") ?? 0;
   const tags = useMemo(() => {
     const m = new Map<string, number>();
-    for (const n of notes) for (const t of n.tags) m.set(t, (m.get(t) ?? 0) + 1);
+    for (const n of inWorld) for (const t of n.tags) m.set(t, (m.get(t) ?? 0) + 1);
     return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"));
-  }, [notes]);
+  }, [inWorld]);
 
   const shown = useMemo(
-    () => notes.filter((n) => (scope === "all" || (scope === "none" ? n.folderId === null : n.folderId === scope)) && (!tag || n.tags.includes(tag)) && noteMatches(n, q)),
-    [notes, scope, tag, q],
+    () => inWorld.filter((n) => (scope === "all" || (scope === "none" ? n.folderId === null : n.folderId === scope)) && (!tag || n.tags.includes(tag)) && noteMatches(n, q)),
+    [inWorld, scope, tag, q],
   );
   const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name;
   const current = folders.find((f) => f.id === scope);
@@ -118,12 +121,24 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
           Neue Notiz
         </button>
       </div>
-      <NotesTabs active="notizen" openCount={openCount} />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <NotesTabs active="notizen" openCount={openCount} className="mb-0" />
+        {worlds.length > 1 && (
+          <select value={world} onChange={(e) => setWorld(e.target.value)} aria-label="Welt" className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-fg-soft outline-none focus:border-accent">
+            {worlds.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+            <option value="all">Alle Welten</option>
+          </select>
+        )}
+      </div>
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       <div className="-mx-4 mb-3 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
         <button type="button" onClick={() => setScope("all")} aria-pressed={scope === "all"} className={chip(scope === "all")}>
-          Alle <span className="text-xs opacity-70">{notes.length}</span>
+          Alle <span className="text-xs opacity-70">{inWorld.length}</span>
         </button>
         {folders.map((f) => (
           <button key={f.id} type="button" onClick={() => setScope(f.id)} aria-pressed={scope === f.id} className={chip(scope === f.id)}>
@@ -236,6 +251,7 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
                 {n.title.trim() && noteSnippet(n.body) && <p className="mt-1 line-clamp-2 text-sm text-fg-soft">{noteSnippet(n.body)}</p>}
               </Link>
               <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3.5 pt-2.5">
+                {world === "all" && worlds.length > 1 && n.worldId && <span className="text-xs text-muted">{worlds.find((w) => w.id === n.worldId)?.name}</span>}
                 {scope === "all" && n.folderId && (
                   <span className="inline-flex items-center gap-1 text-xs text-muted">
                     <Folder className="h-3 w-3" strokeWidth={2} />

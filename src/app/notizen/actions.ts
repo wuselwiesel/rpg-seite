@@ -285,3 +285,18 @@ export async function setNoteTask(noteId: string, index: number, checked: boolea
   revalidatePath(`/notizen/${noteId}`);
   return null;
 }
+
+// Welt einer Notiz ändern (null = keine Welt, in allen Welten sichtbar)
+export async function setNoteWorld(noteId: string, worldId: string | null): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  if (worldId) {
+    const { data: member } = await supabase.from("world_members").select("world_id").eq("world_id", worldId).eq("user_id", user.id).maybeSingle();
+    if (!member) return "Du bist nicht Mitglied dieser Welt.";
+  }
+  const { error } = await supabase.from("notes").update({ world_id: worldId }).eq("id", noteId).eq("user_id", user.id);
+  if (error) return error.message;
+  revalidatePath("/notizen");
+  revalidatePath(`/notizen/${noteId}`);
+  return null;
+}
