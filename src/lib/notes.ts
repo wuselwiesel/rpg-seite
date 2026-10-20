@@ -103,3 +103,43 @@ export function inlineTags(html: string): string[] {
   for (const m of text.matchAll(/(?:^|[\s(])#([\p{L}][\p{L}\p{N}_-]{0,29})/gu)) found.push(m[1]);
   return normalizeTags(found);
 }
+
+// ---- Aufgaben („Offene Fäden“) ----
+export type NoteTask = { index: number; text: string; checked: boolean };
+
+const TASK_OPEN = /<li data-type="taskItem" data-checked="(true|false)">/g;
+
+// Alle Aufgaben einer Notiz in Textreihenfolge; Text = erster Absatz der Aufgabe
+export function noteTasks(html: string): NoteTask[] {
+  const out: NoteTask[] = [];
+  let i = 0;
+  for (const m of html.matchAll(TASK_OPEN)) {
+    const rest = html.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 4000);
+    const para = /<div>\s*<p>([\s\S]*?)<\/p>/.exec(rest)?.[1] ?? "";
+    out.push({ index: i++, text: stripHtml(para), checked: m[1] === "true" });
+  }
+  return out;
+}
+
+export function openTasks(html: string): NoteTask[] {
+  return noteTasks(html).filter((t) => !t.checked && t.text);
+}
+
+// Setzt oder löscht den Haken der n-ten Aufgabe (Kästchen und data-checked bleiben im Einklang)
+export function setTaskInHtml(html: string, index: number, checked: boolean): string | null {
+  let i = 0;
+  let result: string | null = null;
+  const re = new RegExp(TASK_OPEN.source, "g");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    if (i++ !== index) continue;
+    const head = html.slice(0, m.index);
+    const afterLi = html.slice(m.index + m[0].length);
+    const input = /<input\b[^>]*>/.exec(afterLi);
+    const newInput = input ? input[0].replace(/\s+checked(="[^"]*")?/g, "").replace(/\s*\/?>$/, checked ? ' checked="checked" />' : " />") : "";
+    const rest = input ? afterLi.slice(0, input.index) + newInput + afterLi.slice(input.index + input[0].length) : afterLi;
+    result = `${head}<li data-type="taskItem" data-checked="${checked}">${rest}`;
+    break;
+  }
+  return result;
+}

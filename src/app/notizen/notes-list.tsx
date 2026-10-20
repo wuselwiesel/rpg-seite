@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Search, Trash2, X } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
+import { NotesTabs } from "./notes-tabs";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { createNote, createNoteFolder, deleteNote, deleteNoteFolder, renameNoteFolder } from "./actions";
@@ -17,7 +18,7 @@ type Scope = "all" | "none" | string;
 
 const chip = (on: boolean) => `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
 
-export function NotesList({ notes: initialNotes, folders: initialFolders }: { notes: NoteView[]; folders: NoteFolder[] }) {
+export function NotesList({ notes: initialNotes, folders: initialFolders, openCount }: { notes: NoteView[]; folders: NoteFolder[]; openCount: number }) {
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
   // Nach Änderungen auf dem Server (z. B. Ordner löschen) kommen neue Daten herein
@@ -117,6 +118,7 @@ export function NotesList({ notes: initialNotes, folders: initialFolders }: { no
           Neue Notiz
         </button>
       </div>
+      <NotesTabs active="notizen" openCount={openCount} />
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       <div className="-mx-4 mb-3 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">

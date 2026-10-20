@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapePostgrestValue } from "@/lib/postgrest";
-import { LINK_COLUMN, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, type LinkKind, type LinkTarget, type NoteLinkView } from "@/lib/notes";
+import { LINK_COLUMN, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteLinkView } from "@/lib/notes";
 import { getFaceclaimNames } from "@/lib/faceclaim-data";
 import { notesForTarget, resolveLinks } from "@/lib/notes-data";
 import { loadEntryItems, pickExcerptItems } from "@/lib/clip-server";
@@ -267,5 +267,21 @@ export async function moveNote(noteId: string, folderId: string | null): Promise
   const { error } = await supabase.from("notes").update({ folder_id: folderId }).eq("id", noteId).eq("user_id", user.id);
   if (error) return error.message;
   revalidatePath("/notizen");
+  return null;
+}
+
+// Haken einer Aufgabe in einer Notiz setzen oder löschen („Offene Fäden“)
+export async function setNoteTask(noteId: string, index: number, checked: boolean): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const { data } = await supabase.from("notes").select("body").eq("id", noteId).eq("user_id", user.id).maybeSingle<{ body: string }>();
+  if (!data) return "Notiz nicht gefunden.";
+  const next = setTaskInHtml(data.body, index, checked);
+  if (next === null) return "Die Aufgabe gibt es nicht mehr. Bitte neu laden.";
+  const { error } = await supabase.from("notes").update({ body: sanitizePostHtml(next), updated_at: new Date().toISOString() }).eq("id", noteId).eq("user_id", user.id);
+  if (error) return error.message;
+  revalidatePath("/notizen");
+  revalidatePath("/notizen/faeden");
+  revalidatePath(`/notizen/${noteId}`);
   return null;
 }

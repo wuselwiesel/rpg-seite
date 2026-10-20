@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
+import { noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
 
 const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, tags: [], folderId: null, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
 
@@ -39,5 +39,23 @@ describe("Notizbuch", () => {
   it("erkennt #Tags im Text, aber keine Zahlen, Farben oder Wortmitten", () => {
     expect(inlineTags("<p>Idee #Plot und (#Nebelhafen) sowie #2 und a#b und #ff00aa</p>")).toEqual(["plot", "nebelhafen", "ff00aa"]);
     expect(inlineTags("<p>kein Tag</p>")).toEqual([]);
+  });
+  it("liest Aufgaben und findet die offenen", () => {
+    const html = '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" disabled="disabled" checked="checked" /><span></span></label><div><p>Erledigt</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox" disabled="disabled" /><span></span></label><div><p>Offen <b>wichtig</b></p></div></li></ul>';
+    expect(noteTasks(html)).toEqual([
+      { index: 0, text: "Erledigt", checked: true },
+      { index: 1, text: "Offen wichtig", checked: false },
+    ]);
+    expect(openTasks(html).map((t) => t.text)).toEqual(["Offen wichtig"]);
+  });
+  it("hakt eine Aufgabe ab und wieder auf", () => {
+    const html = '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox" disabled="disabled" /><span></span></label><div><p>A</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox" disabled="disabled" /><span></span></label><div><p>B</p></div></li></ul>';
+    const done = setTaskInHtml(html, 1, true) as string;
+    expect(noteTasks(done).map((t) => t.checked)).toEqual([false, true]);
+    expect(done).toContain('checked="checked"');
+    const undone = setTaskInHtml(done, 1, false) as string;
+    expect(noteTasks(undone).map((t) => t.checked)).toEqual([false, false]);
+    expect(undone).not.toContain('checked="checked"');
+    expect(setTaskInHtml(html, 5, true)).toBeNull();
   });
 });
