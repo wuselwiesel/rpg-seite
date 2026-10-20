@@ -10,7 +10,7 @@ import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, setNotePinned, setNoteWorld } from "../actions";
 import { stripHtml } from "@/lib/strip-html";
-import { MAX_NOTE_TAGS, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
+import { MAX_NOTE_TAGS, flattenFolders, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
@@ -196,8 +196,9 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
             <Folder className="h-3.5 w-3.5" strokeWidth={2} />
             <select value={folderId ?? ""} onChange={(e) => void changeFolder(e.target.value)} aria-label="Ordner" className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-fg-soft outline-none focus:border-accent">
               <option value="">Ohne Ordner</option>
-              {folders.map((f) => (
+              {flattenFolders(folders).map((f) => (
                 <option key={f.id} value={f.id}>
+                  {"– ".repeat(f.depth - 1)}
                   {f.name}
                 </option>
               ))}

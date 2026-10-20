@@ -124,8 +124,8 @@ function toView(n: NoteRow, links: NoteLinkView[]): NoteView {
 }
 
 export async function listFolders(supabase: SupabaseClient, userId: string): Promise<NoteFolder[]> {
-  const { data } = await supabase.from("note_folders").select("id, name").eq("user_id", userId).order("position").order("name");
-  return (data ?? []) as NoteFolder[];
+  const { data } = await supabase.from("note_folders").select("id, name, parent_id").eq("user_id", userId).order("position").order("name");
+  return ((data ?? []) as { id: string; name: string; parent_id: string | null }[]).map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id }));
 }
 
 // Alle eigenen Tags (für die Vorschläge in der Notiz)

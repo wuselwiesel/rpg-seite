@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
+import { buildFolderTree, canMoveFolder, descendantIds, flattenFolders, folderPath, noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
 
 const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, tags: [], folderId: null, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
 
@@ -57,5 +57,31 @@ describe("Notizbuch", () => {
     expect(noteTasks(undone).map((t) => t.checked)).toEqual([false, false]);
     expect(undone).not.toContain('checked="checked"');
     expect(setTaskInHtml(html, 5, true)).toBeNull();
+  });
+  it("baut den Ordnerbaum und findet Pfade und Unterordner", () => {
+    const f = [
+      { id: "a", name: "Plots", parentId: null },
+      { id: "b", name: "Nebelhafen", parentId: "a" },
+      { id: "c", name: "Akt 1", parentId: "b" },
+      { id: "d", name: "Figuren", parentId: null },
+    ];
+    expect(flattenFolders(f).map((n) => `${n.depth}:${n.name}`)).toEqual(["1:Figuren", "1:Plots", "2:Nebelhafen", "3:Akt 1"]);
+    expect(buildFolderTree(f)).toHaveLength(2);
+    expect(folderPath(f, "c").map((x) => x.name)).toEqual(["Plots", "Nebelhafen", "Akt 1"]);
+    expect([...descendantIds(f, "a")].sort()).toEqual(["a", "b", "c"]);
+  });
+  it("erlaubt nur gültige Verschiebungen (kein Kreis, höchstens drei Ebenen)", () => {
+    const f = [
+      { id: "a", name: "A", parentId: null },
+      { id: "b", name: "B", parentId: "a" },
+      { id: "c", name: "C", parentId: "b" },
+      { id: "d", name: "D", parentId: null },
+    ];
+    expect(canMoveFolder(f, "a", "c")).toBe(false); // unter den eigenen Unterordner
+    expect(canMoveFolder(f, "a", "a")).toBe(false);
+    expect(canMoveFolder(f, "d", "b")).toBe(true); // b liegt auf Ebene 2, d darunter auf Ebene 3
+    expect(canMoveFolder(f, "a", "d")).toBe(false); // der Baum a/b/c hat drei Ebenen, unter d wären es vier
+    expect(canMoveFolder(f, "c", null)).toBe(true);
+    expect(canMoveFolder(f, "d", "c")).toBe(false); // c ist schon Ebene 3
   });
 });

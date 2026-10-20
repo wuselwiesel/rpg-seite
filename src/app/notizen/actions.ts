@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapePostgrestValue } from "@/lib/postgrest";
-import { LINK_COLUMN, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteLinkView } from "@/lib/notes";
+import { LINK_COLUMN, MAX_FOLDER_DEPTH, canMoveFolder, folderPath, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 import { getFaceclaimNames } from "@/lib/faceclaim-data";
 import { notesForTarget, resolveLinks } from "@/lib/notes-data";
 import { loadEntryItems, pickExcerptItems } from "@/lib/clip-server";
@@ -229,15 +229,38 @@ export async function createNoteFromScene(input: { storyPostId: string; entryIds
   return createNote({ title, bodyHtml: body, link: { kind: "scene", id: input.storyPostId } });
 }
 
-export async function createNoteFolder(name: string): Promise<{ error: string } | { folder: { id: string; name: string } }> {
+async function loadFolders(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<NoteFolder[]> {
+  const { data } = await supabase.from("note_folders").select("id, name, parent_id").eq("user_id", userId);
+  return ((data ?? []) as { id: string; name: string; parent_id: string | null }[]).map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id }));
+}
+
+export async function createNoteFolder(name: string, parentId: string | null = null): Promise<{ error: string } | { folder: NoteFolder }> {
   const { supabase, user } = await authed();
   if (!user) return { error: "Nicht angemeldet." };
   const clean = name.trim().slice(0, 60);
   if (!clean) return { error: "Bitte einen Namen eingeben." };
-  const { data, error } = await supabase.from("note_folders").insert({ user_id: user.id, name: clean }).select("id, name").single<{ id: string; name: string }>();
-  if (error || !data) return { error: error?.code === "23505" ? "Diesen Ordner gibt es schon." : (error?.message ?? "Konnte nicht angelegt werden.") };
+  if (parentId) {
+    const all = await loadFolders(supabase, user.id);
+    if (!all.some((f) => f.id === parentId)) return { error: "Der Ordner existiert nicht mehr." };
+    if (folderPath(all, parentId).length >= MAX_FOLDER_DEPTH) return { error: `Ordner lassen sich höchstens ${MAX_FOLDER_DEPTH} Ebenen tief verschachteln.` };
+  }
+  const { data, error } = await supabase.from("note_folders").insert({ user_id: user.id, name: clean, parent_id: parentId }).select("id, name, parent_id").single<{ id: string; name: string; parent_id: string | null }>();
+  if (error || !data) return { error: error?.code === "23505" ? "Diesen Ordner gibt es hier schon." : (error?.message ?? "Konnte nicht angelegt werden.") };
   revalidatePath("/notizen");
-  return { folder: data };
+  return { folder: { id: data.id, name: data.name, parentId: data.parent_id } };
+}
+
+// Ordner verschieben (null = oberste Ebene): kein Kreis, höchstens drei Ebenen
+export async function moveNoteFolder(id: string, parentId: string | null): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const all = await loadFolders(supabase, user.id);
+  if (!all.some((f) => f.id === id)) return "Ordner nicht gefunden.";
+  if (!canMoveFolder(all, id, parentId)) return "Dorthin lässt sich der Ordner nicht verschieben.";
+  const { error } = await supabase.from("note_folders").update({ parent_id: parentId }).eq("id", id).eq("user_id", user.id);
+  if (error) return error.code === "23505" ? "Dort gibt es schon einen Ordner mit diesem Namen." : error.message;
+  revalidatePath("/notizen");
+  return null;
 }
 
 export async function renameNoteFolder(id: string, name: string): Promise<string | null> {
