@@ -96,3 +96,31 @@ export async function getAccountChats(userId: string, includeArchived = false): 
     })
     .sort((a, b) => b.sortAt.localeCompare(a.sortAt));
 }
+
+// Nur die Zahl ungelesener Nachrichten je Redaktions-Chat (für die Chat-Blase auf jeder Seite): ohne Profile, Welten und Teilnehmerlisten,
+// also deutlich leichter als `getAccountChats`. Stumme, archivierte und Szenen-Chats zählen nicht.
+export async function getAccountUnread(userId: string): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("account_chat_participants")
+    .select("chat_id, last_read_at, muted, archived, account_chats(kind)")
+    .eq("user_id", userId)
+    .returns<{ chat_id: string; last_read_at: string; muted: boolean; archived: boolean; account_chats: { kind: string } | null }[]>();
+  const open = (rows ?? []).filter((r) => !r.muted && !r.archived && r.account_chats?.kind !== "scene");
+  if (open.length === 0) return {};
+  const readAt = new Map(open.map((r) => [r.chat_id, r.last_read_at]));
+  const oldest = open.reduce((min, r) => (r.last_read_at < min ? r.last_read_at : min), open[0].last_read_at);
+  const { data: recent } = await supabase
+    .from("account_messages")
+    .select("chat_id, created_at")
+    .in("chat_id", open.map((r) => r.chat_id))
+    .neq("sender_id", userId)
+    .gt("created_at", oldest)
+    .order("created_at", { ascending: false })
+    .limit(400);
+  const unread: Record<string, number> = {};
+  for (const m of recent ?? []) {
+    if (m.created_at > (readAt.get(m.chat_id) ?? "")) unread[m.chat_id] = (unread[m.chat_id] ?? 0) + 1;
+  }
+  return unread;
+}

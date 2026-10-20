@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { CustomEmojiPicker } from "./custom-emoji-picker";
-import { EmojiText } from "./custom-emoji-provider";
 import { NameSymbol } from "./name-symbol";
 import { checkColor, cleanNameSymbol, DEFAULT_CHECK_COLOR, isCheckSymbol, makeCheck } from "@/lib/name-symbol";
 

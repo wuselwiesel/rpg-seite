@@ -170,8 +170,8 @@ async function fresh() {
 {
   const { ctx, page, ed, out, errors } = await fresh();
   await ed.pressSequentially("Dort lebt eine Hexe im Wald");
-  await page.keyboard.press("Shift+Control+ArrowLeft");
-  await page.keyboard.press("Shift+Control+ArrowLeft");
+  await page.keyboard.press(`Shift+${process.platform === "darwin" ? "Alt" : "Control"}+ArrowLeft`);
+  await page.keyboard.press(`Shift+${process.platform === "darwin" ? "Alt" : "Control"}+ArrowLeft`);
   const bar = page.locator('[role="toolbar"][aria-label="Formatierung der Auswahl"]');
   await bar.waitFor({ timeout: 2000 });
   await bar.getByRole("button", { name: "Mit Wiki-Seite verlinken" }).click();
@@ -192,8 +192,8 @@ async function fresh() {
 {
   const { ctx, page, ed, out } = await fresh();
   await ed.pressSequentially("Das Hexenzirkel trifft sich");
-  await page.keyboard.press("Shift+Control+ArrowLeft");
-  await page.keyboard.press("Shift+Control+ArrowLeft");
+  await page.keyboard.press(`Shift+${process.platform === "darwin" ? "Alt" : "Control"}+ArrowLeft`);
+  await page.keyboard.press(`Shift+${process.platform === "darwin" ? "Alt" : "Control"}+ArrowLeft`);
   await page.locator('[role="toolbar"][aria-label="Formatierung der Auswahl"]').getByRole("button", { name: "Mit Wiki-Seite verlinken" }).click();
   const group = page.locator('[role="group"][aria-label="Wiki-Link einfügen"]');
   await group.getByLabel("Wiki-Seite suchen").fill("Hexenzirkel");
