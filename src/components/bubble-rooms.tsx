@@ -154,7 +154,20 @@ function MiniThread({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      {gifOpen && onSendGif && (
+        // Die Auswahl füllt den ganzen kleinen Chat (er ist oft niedrig: ein Fenster darüber würde oben abgeschnitten)
+        <div className="absolute inset-0 z-20 bg-surface">
+          <GifPicker
+            fill
+            onPick={(url) => {
+              setGifOpen(false);
+              void onSendGif(url);
+            }}
+            onClose={() => setGifOpen(false)}
+          />
+        </div>
+      )}
       <div
         ref={listRef}
         onScroll={(e) => {
@@ -379,18 +392,6 @@ function MiniThread({
           </button>
         </div>
       )}
-      <div className="relative">
-      {gifOpen && onSendGif && (
-        <div className="absolute inset-x-2 bottom-full z-20 mb-1 [&>*]:max-w-full">
-          <GifPicker
-            onPick={(url) => {
-              setGifOpen(false);
-              void onSendGif(url);
-            }}
-            onClose={() => setGifOpen(false)}
-          />
-        </div>
-      )}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -446,7 +447,6 @@ function MiniThread({
           <SendHorizontal className="h-4 w-4" strokeWidth={2} />
         </button>
       </form>
-      </div>
       {emojiFor && onReact && (
         <EmojiPickerDialog
           onClose={() => setEmojiFor(null)}

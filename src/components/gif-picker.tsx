@@ -5,7 +5,8 @@ import { Search, X } from "lucide-react";
 import { normalizeGifUrl, type GifResult } from "@/lib/gif";
 
 // Auswahl-Fenster für GIFs: Suche (mit Giphy/Tenor-Schlüssel) oder ein eingefügter GIF-Link.
-export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; onClose: () => void }) {
+// `fill`: füllt den Platz des Elternfensters (kleiner Chat) statt als schwebendes Fenster zu erscheinen
+export function GifPicker({ onPick, onClose, fill = false }: { onPick: (url: string) => void; onClose: () => void; fill?: boolean }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<GifResult[]>([]);
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -69,7 +70,7 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
       ref={panelRef}
       role="dialog"
       aria-label="GIF auswählen"
-      className="z-40 flex max-h-[70dvh] w-full flex-col gap-3 rounded-2xl border border-line bg-surface p-3 shadow-lg sm:w-[26rem]"
+      className={fill ? "flex h-full w-full flex-col gap-3 bg-surface p-3" : "z-40 flex max-h-[70dvh] w-full flex-col gap-3 rounded-2xl border border-line bg-surface p-3 shadow-lg sm:w-[26rem]"}
     >
       <div className="flex items-center gap-2">
         {configured !== false && (
@@ -92,7 +93,7 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
       </div>
 
       {configured === true && (
-        <div className="min-h-24 overflow-y-auto">
+        <div className={`overflow-y-auto ${fill ? "min-h-0 flex-1" : "min-h-24"}`}>
           {/* Zwei Spalten in natürlichem Seitenverhältnis: nichts wird abgeschnitten. */}
           <div className="columns-2 gap-1.5 [&>button]:mb-1.5">
             {results.map((g) => (
