@@ -10,6 +10,7 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
   const [results, setResults] = useState<GifResult[]>([]);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  const [serviceError, setServiceError] = useState<string | null>(null);
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -20,11 +21,16 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
       setLoading(true);
       try {
         const res = await fetch(`/api/gif-search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
-        const json = (await res.json()) as { configured: boolean; results: GifResult[] };
+        const json = (await res.json()) as { configured: boolean; results: GifResult[]; error?: string };
         setConfigured(json.configured);
         setResults(json.results);
-      } catch {
-        /* abgebrochen oder offline */
+        setServiceError(json.error ?? null);
+      } catch (e) {
+        // Abgebrochen (neue Eingabe) ist normal; sonst offline oder eine unlesbare Antwort: sichtbar machen statt leer zu lassen
+        if ((e as Error).name === "AbortError") return;
+        setConfigured(true);
+        setResults([]);
+        setServiceError("Die GIF-Suche antwortet nicht.");
       }
       setLoading(false);
     }, q ? 350 : 0);
@@ -102,7 +108,9 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
               </button>
             ))}
           </div>
-          {!loading && results.length === 0 && <p className="py-4 text-center text-sm text-muted">Nichts gefunden.</p>}
+          {!loading && results.length === 0 && (
+            <p className={`py-4 text-center text-sm ${serviceError ? "text-red-600 dark:text-red-400" : "text-muted"}`}>{serviceError ?? "Nichts gefunden."}</p>
+          )}
         </div>
       )}
 
