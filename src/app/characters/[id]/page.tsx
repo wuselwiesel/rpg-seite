@@ -56,7 +56,7 @@ export default async function CharacterProfilePage({
 
   const { data: character } = await supabase
     .from("characters")
-    .select("*, worlds(name, quote_enabled, status_enabled)")
+    .select("*, worlds(name, quote_enabled, status_enabled, review_characters)")
     .eq("id", id)
     .maybeSingle<Character>();
 
@@ -68,10 +68,14 @@ export default async function CharacterProfilePage({
   const canEdit = access.canEdit;
   const reviewStatus = (character as { review_status?: "pending" | "approved" | "rejected" }).review_status ?? "approved";
   const isWorldAdmin = access.worldAdminIds.includes(user.id);
-  const showReview = character.is_npc !== true && (isOwnerView || isWorldAdmin);
-  const { count: openProposals } = showReview
+  const mayReview = character.is_npc !== true && (isOwnerView || isWorldAdmin);
+  const { count: openProposals } = mayReview
     ? await supabase.from("character_change_proposals").select("id", { count: "exact", head: true }).eq("character_id", id).eq("status", "open")
     : { count: 0 };
+  // Ist „Neue Charaktere prüfen“ in der Welt aus, gibt es keine Marke („Genehmigt“ usw.) und keinen Zugang zur Prüfseite;
+  // nur was noch offen ist (zur Prüfung, abgelehnt, offene Änderungsvorschläge) bleibt sichtbar, bis es erledigt ist.
+  const reviewOn = (character.worlds as { review_characters?: boolean } | null | undefined)?.review_characters === true;
+  const showReview = mayReview && (reviewOn || reviewStatus !== "approved" || (openProposals ?? 0) > 0);
   const isNpcProfile = character.is_npc === true;
   // Frei: normaler Charakter, aber noch ohne Spieler:in; folgen und anschreiben ist dann sinnlos
   const isVacantProfile = character.vacant === true;

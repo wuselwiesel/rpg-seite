@@ -102,7 +102,7 @@ export type Character = {
   partner_character_id?: string | null;
   best_friend_character_id?: string | null;
   created_at: string;
-  worlds?: { name: string; quote_enabled?: boolean | null; status_enabled?: boolean | null } | null;
+  worlds?: { name: string; quote_enabled?: boolean | null; status_enabled?: boolean | null; review_characters?: boolean | null } | null;
 };
 
 export type CharacterRelationshipStatus = "single" | "beziehung" | "kompliziert" | "verheiratet";
