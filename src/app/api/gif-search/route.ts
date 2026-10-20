@@ -20,9 +20,15 @@ export async function GET(request: NextRequest) {
       const endpoint = q ? "search" : "trending";
       const url = `https://api.giphy.com/v1/gifs/${endpoint}?api_key=${encodeURIComponent(giphy)}&limit=24&rating=pg-13&lang=de${q ? `&q=${encodeURIComponent(q)}` : ""}`;
       const res = await fetch(url, { next: { revalidate: 300 } });
-      const json = (await res.json()) as {
+      const json = (await res.json().catch(() => ({}))) as {
         data?: { id: string; title: string; images: Record<string, { url: string }> }[];
+        meta?: { status?: number; msg?: string };
       };
+      // Giphy meldet Fehler (ungültiger oder gesperrter Schlüssel, zu viele Anfragen) im Antworttext: nicht als „nichts gefunden“ verstecken
+      if (!res.ok || !Array.isArray(json.data)) {
+        console.error("GIF-Suche (Giphy):", res.status, json.meta?.status, json.meta?.msg);
+        return NextResponse.json({ configured: true, results: [], error: res.status === 429 ? "Zu viele GIF-Anfragen. Gleich noch einmal versuchen." : `Der GIF-Dienst hat die Anfrage abgelehnt (${res.status}).` });
+      }
       const results: GifResult[] = (json.data ?? []).map((g) => ({
         id: g.id,
         title: g.title,

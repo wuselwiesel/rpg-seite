@@ -8,6 +8,7 @@ import { CustomEmojiPicker } from "./custom-emoji-picker";
 import { useEffect, useRef, useState } from "react";
 import { CornerUpLeft, ImagePlus, Quote, SendHorizontal, SmilePlus, X } from "lucide-react";
 import { QuoteCard } from "./quote-card";
+import { GifPicker } from "./gif-picker";
 import type { ChatQuote } from "@/lib/clips";
 import type { QuoteDraft } from "@/lib/scene-quote";
 import { EmojiPickerDialog } from "./emoji-picker-dialog";
@@ -72,6 +73,7 @@ function MiniThread({
   error,
   showNames,
   onSend,
+  onSendGif,
   onEdit,
   onDelete,
   onReact,
@@ -91,6 +93,8 @@ function MiniThread({
   // Mit onReact können Nachrichten beantwortet und mit Emojis bedacht werden
   onReact?: (id: string, emoji: string) => void;
   onSend: (text: string, image: PickedImage | null, replyToId?: string | null, quoteDraft?: QuoteDraft | null) => Promise<boolean>;
+  // Mit onSendGif gibt es den GIF-Knopf (Auswahl über Suche oder Link)
+  onSendGif?: (url: string) => Promise<boolean>;
   typingNames?: string[];
   onTyping?: () => void;
   onEdit?: (id: string, text: string) => void;
@@ -104,6 +108,7 @@ function MiniThread({
   const image = useImageDraft();
   const [replyTo, setReplyTo] = useState<ThreadItem | null>(null);
   const [emojiFor, setEmojiFor] = useState<string | null>(null);
+  const [gifOpen, setGifOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   // Klebt die Ansicht am Ende, solange man unten ist. Nur die Nachrichtenliste scrollt (kein scrollIntoView: das schob die ganze Seite mit
@@ -149,7 +154,20 @@ function MiniThread({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      {gifOpen && onSendGif && (
+        // Kleines Fenster über der Eingabe, nie höher als der Chat selbst (er ist oft niedrig: sonst würde es oben abgeschnitten)
+        <div className="absolute bottom-[3.75rem] left-2 z-20 h-[min(21rem,calc(100%-4.5rem))] w-[min(20rem,calc(100%-1rem))]">
+          <GifPicker
+            fill
+            onPick={(url) => {
+              setGifOpen(false);
+              void onSendGif(url);
+            }}
+            onClose={() => setGifOpen(false)}
+          />
+        </div>
+      )}
       <div
         ref={listRef}
         onScroll={(e) => {
@@ -392,6 +410,17 @@ function MiniThread({
           <ImagePlus className="h-[18px] w-[18px]" strokeWidth={1.75} />
           <input type="file" accept="image/*,video/*" onChange={image.pick} className="hidden" />
         </label>
+        {onSendGif && (
+          <button
+            type="button"
+            onClick={() => setGifOpen((v) => !v)}
+            aria-expanded={gifOpen}
+            title="GIF senden"
+            className="flex h-9 shrink-0 items-center justify-center rounded-full px-2 text-[11px] font-bold tracking-wide text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+          >
+            GIF
+          </button>
+        )}
         <textarea
           value={draft}
           rows={1}
@@ -465,7 +494,7 @@ function AccountThread({
 }) {
   const names = new Map(members.map((m) => [m.id, m]));
   const grouped = alwaysNames || members.length > 2;
-  const { messages, reactions, error, send, edit, remove, toggleReaction } = useAccountChat(
+  const { messages, reactions, error, send, sendGif, edit, remove, toggleReaction } = useAccountChat(
     chatId,
     userId,
     initial,
@@ -509,6 +538,7 @@ function AccountThread({
       typingNames={typing.names.length ? (grouped ? [typing.names.filter(Boolean).join(", ")] : [""]) : []}
       onTyping={typing.announce}
       onSend={send}
+      onSendGif={sendGif}
       quoteDraft={quoteDraft}
       onClearQuote={() => onQuoteChange?.(null)}
       onRestoreQuote={(d) => onQuoteChange?.(d)}
@@ -697,6 +727,24 @@ function RpThread({
     return true;
   }
 
+  // GIF per Link (Giphy/Tenor) senden: kein Hochladen
+  async function sendGif(url: string): Promise<boolean> {
+    const id = crypto.randomUUID();
+    setError(null);
+    setRows((prev) => [
+      ...prev,
+      { id, character_id: activeCharacterId, content: "", image_url: url, shared_post_id: null, story_id: null, created_at: new Date().toISOString(), pending: true },
+    ]);
+    const err = await sendMessage(chatId, activeCharacterId, "", url, { id });
+    if (err) {
+      setRows((prev) => prev.filter((m) => m.id !== id));
+      setError(err);
+      return false;
+    }
+    setRows((prev) => prev.map((m) => (m.id === id ? { ...m, pending: false } : m)));
+    return true;
+  }
+
   const items: ThreadItem[] = rows.map((m) => ({
     id: m.id,
     mine: m.character_id === activeCharacterId,
@@ -714,6 +762,7 @@ function RpThread({
       typingNames={typing.names}
       onTyping={typing.announce}
       onSend={send}
+      onSendGif={sendGif}
     />
   );
 }

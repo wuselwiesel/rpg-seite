@@ -202,7 +202,6 @@ export function EntryList({
     }
     window.addEventListener(GO_START_EVENT, goStart);
     return () => window.removeEventListener(GO_START_EVENT, goStart);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storyPostId]);
 
   // Sprung zu einem Beitrag, der noch nicht geladen ist (Link, Suchtreffer, Zitat): erst nachladen, dann erneut anspringen

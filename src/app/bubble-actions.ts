@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import { getUnreadCounts } from "@/lib/chat-reads";
-import { getAccountChats } from "@/lib/account-chat";
+import { getAccountChats, getAccountUnread } from "@/lib/account-chat";
 import { messagePreview } from "@/lib/chat-preview";
 import type { Character } from "@/lib/types";
 
@@ -125,11 +125,9 @@ export async function getBubbleUnread(characterId?: string | null): Promise<{ rp
   const chosen = characterId ? own.find((c) => c.id === characterId) : null;
   const active = chosen ?? (world ? await getActiveCharacter(user.id, world.id) : null);
 
-  const [rp, accountChats] = await Promise.all([
+  const [rp, account] = await Promise.all([
     active ? getUnreadCounts(user.id, own.map((c) => c.id), active.id) : Promise.resolve({} as Record<string, number>),
-    getAccountChats(user.id),
+    getAccountUnread(user.id),
   ]);
-  const account: Record<string, number> = {};
-  for (const c of accountChats) if (c.unread > 0 && !c.muted) account[c.id] = c.unread;
   return { rp, account };
 }

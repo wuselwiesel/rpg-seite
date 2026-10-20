@@ -4,7 +4,8 @@ import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
-import { Bookmark, Clover, Dices, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
+import { Bookmark, Check, Clover, Copy, Dices, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
+import { copyEntries } from "@/lib/entry-copy";
 import { useClipSelection } from "./clip-selection";
 import { MarkEventForm } from "./mark-event-form";
 import { unmarkEvent } from "@/app/wiki/actions";
@@ -91,6 +92,7 @@ export function StoryEntryItem({
     return () => document.removeEventListener("pointerdown", outside);
   }, [tapped]);
   const clipSelection = useClipSelection();
+  const [copied, setCopied] = useState(false);
   const selectedForClip = !!clipSelection?.isSelected(entry.id);
   const [chapterEditing, setChapterEditing] = useState(false);
   const [splitting, setSplitting] = useState(false);
@@ -242,6 +244,7 @@ export function StoryEntryItem({
         id={`beitrag-${entry.id}`}
         ref={cardRef}
         data-tapped={tapped ? "" : undefined}
+        data-author={isNarrator ? "Erzähler:in" : firstName}
         onClick={(e) => {
           // Läuft gerade eine Auswahl, wählt ein Klick auf die Nachricht (Links und Knöpfe darin bleiben unberührt)
           if (clipSelection?.picking && !(e.target as HTMLElement).closest("a, button, input, textarea, select, form, [contenteditable]")) {
@@ -270,6 +273,23 @@ export function StoryEntryItem({
           </div>
           {!editing && (
             <div className="flex shrink-0 items-center gap-1">
+              {!isRoll && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void copyEntries([entry.id], false).then((ok) => {
+                      if (!ok) return;
+                      setCopied(true);
+                      window.setTimeout(() => setCopied(false), 1500);
+                    })
+                  }
+                  title={copied ? "Kopiert" : "Nachricht kopieren"}
+                  aria-label={copied ? "Kopiert" : "Nachricht kopieren"}
+                  className={`rounded p-1 transition hover:bg-surface-2 ${copied ? "text-accent" : `text-muted hover:text-fg ${REVEAL}`}`}
+                >
+                  {copied ? <Check className="h-3.5 w-3.5" strokeWidth={2.25} /> : <Copy className="h-3.5 w-3.5" strokeWidth={2} />}
+                </button>
+              )}
               {clipSelection && (
                 <button
                   type="button"

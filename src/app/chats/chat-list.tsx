@@ -7,7 +7,6 @@ import { getUnreadCounts } from "@/lib/chat-reads";
 import { messagePreview } from "@/lib/chat-preview";
 import type { Character, Chat } from "@/lib/types";
 import { ChatListItem } from "./chat-list-item";
-import { NameBadge } from "@/components/name-badge";
 
 type ChatWithParticipants = Chat & {
   chat_participants: { muted: boolean; characters: Character }[];

@@ -5,11 +5,13 @@ import { Search, X } from "lucide-react";
 import { normalizeGifUrl, type GifResult } from "@/lib/gif";
 
 // Auswahl-Fenster für GIFs: Suche (mit Giphy/Tenor-Schlüssel) oder ein eingefügter GIF-Link.
-export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; onClose: () => void }) {
+// `fill`: füllt den Platz des Elternfensters (kleiner Chat) statt als schwebendes Fenster zu erscheinen
+export function GifPicker({ onPick, onClose, fill = false }: { onPick: (url: string) => void; onClose: () => void; fill?: boolean }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<GifResult[]>([]);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  const [serviceError, setServiceError] = useState<string | null>(null);
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -20,11 +22,16 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
       setLoading(true);
       try {
         const res = await fetch(`/api/gif-search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
-        const json = (await res.json()) as { configured: boolean; results: GifResult[] };
+        const json = (await res.json()) as { configured: boolean; results: GifResult[]; error?: string };
         setConfigured(json.configured);
         setResults(json.results);
-      } catch {
-        /* abgebrochen oder offline */
+        setServiceError(json.error ?? null);
+      } catch (e) {
+        // Abgebrochen (neue Eingabe) ist normal; sonst offline oder eine unlesbare Antwort: sichtbar machen statt leer zu lassen
+        if ((e as Error).name === "AbortError") return;
+        setConfigured(true);
+        setResults([]);
+        setServiceError("Die GIF-Suche antwortet nicht.");
       }
       setLoading(false);
     }, q ? 350 : 0);
@@ -63,7 +70,7 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
       ref={panelRef}
       role="dialog"
       aria-label="GIF auswählen"
-      className="z-40 flex max-h-[70dvh] w-full flex-col gap-3 rounded-2xl border border-line bg-surface p-3 shadow-lg sm:w-[26rem]"
+      className={fill ? "flex h-full w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2 shadow-lg" : "z-40 flex max-h-[55dvh] w-full flex-col gap-2 rounded-2xl border border-line bg-surface p-2.5 shadow-lg sm:w-[20rem]"}
     >
       <div className="flex items-center gap-2">
         {configured !== false && (
@@ -86,7 +93,7 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
       </div>
 
       {configured === true && (
-        <div className="min-h-24 overflow-y-auto">
+        <div className={`overflow-y-auto ${fill ? "min-h-0 flex-1" : "min-h-24"}`}>
           {/* Zwei Spalten in natürlichem Seitenverhältnis: nichts wird abgeschnitten. */}
           <div className="columns-2 gap-1.5 [&>button]:mb-1.5">
             {results.map((g) => (
@@ -102,7 +109,9 @@ export function GifPicker({ onPick, onClose }: { onPick: (url: string) => void; 
               </button>
             ))}
           </div>
-          {!loading && results.length === 0 && <p className="py-4 text-center text-sm text-muted">Nichts gefunden.</p>}
+          {!loading && results.length === 0 && (
+            <p className={`py-4 text-center text-sm ${serviceError ? "text-red-600 dark:text-red-400" : "text-muted"}`}>{serviceError ?? "Nichts gefunden."}</p>
+          )}
         </div>
       )}
 

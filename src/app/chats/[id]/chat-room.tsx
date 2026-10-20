@@ -280,6 +280,8 @@ export function ChatRoom({
     });
   }
 
+  // Beim Öffnen des Chats sofort ans Ende (sanft durch den ganzen Verlauf zu scrollen wäre lang und unruhig); danach sanft bei neuen Nachrichten
+  const firstScroll = useRef(true);
   useEffect(() => {
     // Beim Nachladen früherer Nachrichten nicht ans Ende springen
     if (holdScroll.current) {
@@ -291,9 +293,10 @@ export function ChatRoom({
     const last = messages[messages.length - 1];
     const ownLast = last ? myCharacterIds.includes(last.character_id) : false;
     if (stickToBottom.current || ownLast) {
-      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+      list.scrollTo({ top: list.scrollHeight, behavior: firstScroll.current ? "auto" : "smooth" });
       stickToBottom.current = true;
     }
+    firstScroll.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]);
 

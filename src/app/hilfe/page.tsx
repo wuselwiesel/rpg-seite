@@ -46,7 +46,6 @@ const TOC = [
   ["melden", "Tickets: etwas melden"],
   ["buch", "Szenen als PDF oder E-Book"],
   ["chats-archiv", "Chats archivieren und löschen"],
-  ["redaktion-bearbeiten", "Redaktions-Beiträge bearbeiten"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -401,6 +400,9 @@ export default async function HelpPage() {
             <strong>Im Wiki für alle:</strong> Beim Speichern „Im Wiki für alle zeigen“ wählen oder später im ChaBo das Wiki-Symbol am Ausschnitt antippen. Es entsteht eine Wiki-Seite der Art „Wichtiger Moment“ mit dem Wortlaut, die alle in der Welt sehen. Das ist eine feste Kopie: Dein privater Ausschnitt bleibt unverändert, spätere Änderungen daran erscheinen nicht im Wiki. Aus geheimen Szenen geht das nicht.
           </li>
           <li>
+            <strong>Nachrichten kopieren:</strong> Beim Darüberfahren (am Handy: Nachricht antippen) erscheint an jeder Nachricht ein kleines Kopieren-Symbol, das den Text der ganzen Nachricht kopiert. Mehrere Nachrichten wählst du wie oben aus und tippst dann „Kopieren“: Sie werden untereinander mit dem Namen der Figur kopiert.
+          </li>
+          <li>
             <strong>Nur eine Textstelle:</strong> Markiere in einer Nachricht einen Satz oder ein paar Zeilen. Direkt daneben erscheinen „Im Chat zitieren“ und „Speichern“. Das Zitat steht im Chat mit Anführungszeichen und dem Namen; „Speichern“ legt nur die markierte Stelle in deine Sammlung (Dialog wie oben). Die Markierung kann auch über mehrere Nachrichten gehen.
           </li>
           <li>
@@ -582,17 +584,6 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>Gilt für:</strong> den Redaktions-Chat und die Chats in der Welt.
-          </li>
-        </ul>
-      </Section>
-
-      <Section id="redaktion-bearbeiten" title="22. Redaktions-Beiträge bearbeiten">
-        <ul className="flex list-disc flex-col gap-2 pl-5">
-          <li>
-            <strong>Bearbeiten:</strong> An deinem eigenen Beitrag steht oben rechts ein Stift (im Feed) bzw. unter dem Text „Bearbeiten“ (in der Detailansicht). Text-Beiträge bearbeitest du im vollen Editor, bei Foto- und Video-Beiträgen änderst du die Bildunterschrift. Danach steht „bearbeitet“ am Beitrag.
-          </li>
-          <li>
-            <strong>Was bleibt:</strong> Fotos, Video und Umfrage ändern sich nicht. Wer Fotos tauschen will, löscht den Beitrag und stellt ihn neu ein.
           </li>
         </ul>
       </Section>

@@ -3,6 +3,7 @@
 import { alertDialog, confirmDialog } from "@/components/confirm-dialog";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
+import { GifPicker } from "@/components/gif-picker";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
@@ -74,7 +75,7 @@ export function AccountChatRoom({
   initialArchived?: boolean;
   initialTheme: ChatTheme;
 }) {
-  const { messages, reads, reactions, error, send, edit, remove, pin, toggleReaction, hasOlder, loadingOlder, loadOlder } = useAccountChat(
+  const { messages, reads, reactions, error, send, sendGif, edit, remove, pin, toggleReaction, hasOlder, loadingOlder, loadOlder } = useAccountChat(
     chatId,
     userId,
     initialMessages,
@@ -100,6 +101,7 @@ export function AccountChatRoom({
   const senderMap = useMemo(() => new Map<string, ChatMember>([...members, ...Object.values(extraSenders)].map((m) => [m.id, m])), [members, extraSenders]);
   const enterSends = useEnterSends();
   const [muted, setMuted] = useState(initialMuted);
+  const [gifOpen, setGifOpen] = useState(false);
   const [archived, setArchived] = useState(initialArchived);
   const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
@@ -653,6 +655,26 @@ export function AccountChatRoom({
           <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
           <input type="file" accept="image/*,video/*" onChange={image.pick} className="hidden" />
         </label>
+        <button
+          type="button"
+          onClick={() => setGifOpen((v) => !v)}
+          aria-expanded={gifOpen}
+          title="GIF senden"
+          className="flex h-10 shrink-0 items-center justify-center rounded-full px-2.5 text-xs font-bold tracking-wide text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+        >
+          GIF
+        </button>
+        {gifOpen && (
+          <div className="absolute bottom-full left-0 z-20 mb-1 max-w-full">
+            <GifPicker
+              onPick={(url) => {
+                setGifOpen(false);
+                void sendGif(url);
+              }}
+              onClose={() => setGifOpen(false)}
+            />
+          </div>
+        )}
         {mentionMatches.length > 0 && (
           <div className="absolute bottom-full left-12 z-10 mb-1 w-64 max-w-[calc(100%-3rem)] overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
             {mentionMatches.map((m) => (

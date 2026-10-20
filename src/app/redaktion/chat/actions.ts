@@ -8,6 +8,7 @@ import { isRateLimited } from "@/lib/rate-limit";
 import { sendPushToUser } from "@/lib/push";
 import { isVideoUrl } from "@/lib/chat-media-url";
 import { createNotification } from "@/lib/notifications";
+import { isAllowedGifUrl } from "@/lib/gif";
 import { findMentionedMembers } from "@/lib/account-mentions";
 import { buildQuote } from "@/lib/clip-server";
 import type { QuoteSource } from "@/lib/scene-quote";
@@ -23,7 +24,7 @@ export async function sendAccountMessage(
 ): Promise<string | null> {
   const text = content.trim().slice(0, 4000);
   if (!text && !imageUrl && !quoteSource) return "Nachricht darf nicht leer sein.";
-  if (imageUrl && !imageUrl.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`)) {
+  if (imageUrl && !imageUrl.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/`) && !isAllowedGifUrl(imageUrl)) {
     return "Dieses Bild kann nicht gesendet werden.";
   }
 
