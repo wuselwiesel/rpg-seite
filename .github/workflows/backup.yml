@@ -1,0 +1,76 @@
+name: Datenbank-Backup
+
+# Zweimal täglich (05:17 und 17:17 Uhr deutscher Sommerzeit) eine verschlüsselte, komprimierte Sicherung der Datenbank.
+# Die Dateien liegen als Artefakte dieses Laufs und werden nach 7 Tagen von GitHub automatisch gelöscht.
+# Das Repository ist öffentlich: darum wird die Sicherung VOR dem Hochladen mit dem Kennwort aus BACKUP_PASSPHRASE verschlüsselt.
+# Einrichtung und Wiederherstellung: docs/backup-wiederherstellen.md
+on:
+  schedule:
+    - cron: "17 3 * * *"
+    - cron: "17 15 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: datenbank-backup
+  cancel-in-progress: false
+
+jobs:
+  sichern:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Zugangsdaten prüfen
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::error::Die Secrets SUPABASE_DB_URL und BACKUP_PASSPHRASE fehlen (siehe docs/backup-wiederherstellen.md)."
+            exit 1
+          fi
+
+      # pg_dump muss mindestens so neu sein wie die Datenbank (Supabase: PostgreSQL 17)
+      # Platzsparend: komprimiertes Format (-Z 9); Sitzungen und Zugriffsprotokolle von Supabase Auth werden nicht mitgesichert (kurzlebig, 
+      # nach einem Zurückspielen melden sich alle einfach neu an). Dateien im Storage (Bilder) sind nicht Teil dieser Sicherung.
+      - name: Datenbank sichern
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          docker run --rm -e SUPABASE_DB_URL postgres:17-alpine sh -c 'pg_dump "$SUPABASE_DB_URL" \
+            --format=custom --compress=9 --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=storage --schema=hundeplan \
+            --exclude-table-data=auth.refresh_tokens \
+            --exclude-table-data=auth.sessions \
+            --exclude-table-data=auth.audit_log_entries \
+            --exclude-table-data=auth.flow_state \
+            --exclude-table-data=auth.one_time_tokens' > backup.dump
+          SIZE=$(stat -c %s backup.dump)
+          ENTRIES=$(docker run --rm -i postgres:17-alpine pg_restore --list < backup.dump | wc -l)
+          echo "Größe: $SIZE Bytes, Einträge: $ENTRIES"
+          if [ "$SIZE" -lt 20000 ] || [ "$ENTRIES" -lt 100 ]; then
+            echo "::error::Die Sicherung sieht unvollständig aus."
+            exit 1
+          fi
+
+      - name: Verschlüsseln
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          NAME="db-$(date -u +%Y-%m-%d_%H%M)Z.dump.enc"
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass env:BACKUP_PASSPHRASE -in backup.dump -out "$NAME"
+          rm backup.dump
+          # Probe: Entschlüsseln muss ein lesbares Archiv ergeben
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:BACKUP_PASSPHRASE -in "$NAME" | docker run --rm -i postgres:17-alpine pg_restore --list > /dev/null
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          ls -l "$NAME"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NAME }}
+          path: ${{ env.NAME }}
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
