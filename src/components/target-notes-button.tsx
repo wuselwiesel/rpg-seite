@@ -6,6 +6,7 @@ import Link from "next/link";
 import { NotebookPen, Plus, X } from "lucide-react";
 import { createNote, loadTargetNotes } from "@/app/notizen/actions";
 import { noteSnippet, type LinkKind } from "@/lib/notes";
+import { TemplateMenu } from "./template-menu";
 
 type Item = { id: string; title: string; body: string; updatedAt: string };
 
@@ -94,9 +95,12 @@ function NotesDialog({ kind, targetId, targetLabel, onClose, onCount }: { kind: 
             className="w-full resize-y rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
           />
           <div className="flex items-center justify-between gap-2">
-            <Link href="/notizen" className="text-xs text-muted hover:text-fg">
-              Alle Notizen
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/notizen" className="text-xs text-muted hover:text-fg">
+                Alle Notizen
+              </Link>
+              <TemplateMenu link={{ kind, id: targetId }} className="[&>button]:px-2.5 [&>button]:py-1 [&>button]:text-xs [&>div]:left-0 [&>div]:right-auto" />
+            </div>
             <button type="button" onClick={add} disabled={pending || !text.trim()} className="flex items-center gap-1 rounded-full bg-accent-strong px-3.5 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
               <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
               Notieren

@@ -9141,4 +9141,8 @@ create index if not exists note_folders_parent_idx on public.note_folders (paren
 create unique index if not exists note_folders_name_parent_uidx on public.note_folders (user_id, coalesce(parent_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(name));
 drop index if exists public.note_folders_name_uidx;
 
+-- Notizen als Vorlage: erscheinen nicht in der normalen Liste, sondern unter „Vorlagen“
+alter table public.notes add column if not exists is_template boolean not null default false;
+create index if not exists notes_template_idx on public.notes (user_id) where is_template;
+
 notify pgrst, 'reload schema';

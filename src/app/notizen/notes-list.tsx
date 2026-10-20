@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Search, Trash2, X } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
 import { NotesTabs } from "./notes-tabs";
+import { TemplateMenu } from "@/components/template-menu";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { createNote, createNoteFolder, deleteNote, deleteNoteFolder, moveNoteFolder, renameNoteFolder } from "./actions";
@@ -138,10 +139,13 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <h1 className="font-serif text-3xl text-fg">Notizen</h1>
-        <button type="button" onClick={add} disabled={pending} className="flex items-center gap-1.5 rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60">
-          <Plus className="h-4 w-4" strokeWidth={2.25} />
-          Neue Notiz
-        </button>
+        <div className="flex items-center gap-2">
+          <TemplateMenu folderId={current?.id ?? null} />
+          <button type="button" onClick={add} disabled={pending} className="flex items-center gap-1.5 rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60">
+            <Plus className="h-4 w-4" strokeWidth={2.25} />
+            Neue Notiz
+          </button>
+        </div>
       </div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <NotesTabs active="notizen" openCount={openCount} className="mb-0" />

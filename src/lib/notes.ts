@@ -37,6 +37,7 @@ export type NoteView = {
   pinned: boolean;
   tags: string[];
   folderId: string | null;
+  isTemplate: boolean;
   worldId: string | null;
   updatedAt: string;
   links: NoteLinkView[];

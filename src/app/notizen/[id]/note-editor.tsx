@@ -3,25 +3,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Folder, Globe, Hash, Link2, Pin, PinOff, Trash2, X } from "lucide-react";
+import { ChevronLeft, FileText, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, setNotePinned, setNoteWorld } from "../actions";
+import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld } from "../actions";
 import { stripHtml } from "@/lib/strip-html";
 import { MAX_NOTE_TAGS, flattenFolders, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
 // Eine Notiz: Titel und Text speichern von selbst, darunter die Verknüpfungen.
-export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
+export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, initialIsTemplate, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; initialIsTemplate: boolean; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [pinned, setPinned] = useState(initialPinned);
   const [links, setLinks] = useState<NoteLinkView[]>(initialLinks);
   const [tags, setTags] = useState<string[]>(initialTags);
   const [tagInput, setTagInput] = useState("");
+  const [isTemplate, setIsTemplate] = useState(initialIsTemplate);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuMsg, setMenuMsg] = useState<string | null>(null);
   const [worldId, setWorldId] = useState<string | null>(initialWorldId);
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const wordCount = (html: string) => stripHtml(html).split(/\s+/).filter(Boolean).length;
@@ -113,6 +116,21 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     router.refresh();
   }
 
+  async function saveAsTemplate() {
+    await flush();
+    const r = await saveNoteAsTemplate(id);
+    setMenuMsg("error" in r ? r.error : "Als Vorlage gespeichert");
+  }
+
+  async function toggleTemplate() {
+    const next = !isTemplate;
+    await flush();
+    const err = await setNoteIsTemplate(id, next);
+    if (err) return setMenuMsg(err);
+    setIsTemplate(next);
+    setMenuOpen(false);
+  }
+
   async function togglePin() {
     const next = !pinned;
     setPinned(next);
@@ -137,6 +155,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
           Notizen
         </Link>
+        {isTemplate && <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">Vorlage</span>}
         <div className="flex items-center gap-1">
           <span className={`mr-2 text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
             {stateLabel}
@@ -144,6 +163,26 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
           <button type="button" onClick={togglePin} aria-label={pinned ? "Nicht mehr anheften" : "Anheften"} title={pinned ? "Nicht mehr anheften" : "Anheften"} className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 ${pinned ? "text-accent" : "text-muted hover:text-fg"}`}>
             {pinned ? <PinOff className="h-4 w-4" strokeWidth={2} /> : <Pin className="h-4 w-4" strokeWidth={2} />}
           </button>
+          <div className="relative">
+            <button type="button" onClick={() => { setMenuOpen((v) => !v); setMenuMsg(null); }} aria-label="Mehr" aria-expanded={menuOpen} title="Mehr" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+              <MoreHorizontal className="h-4 w-4" strokeWidth={2} />
+            </button>
+            {menuOpen && (
+              <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-56 rounded-2xl border border-line bg-surface p-1.5 shadow-lg">
+                {!isTemplate && (
+                  <button type="button" role="menuitem" onClick={() => void saveAsTemplate()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
+                    <FileText className="h-4 w-4 text-muted" strokeWidth={2} />
+                    Als Vorlage speichern
+                  </button>
+                )}
+                <button type="button" role="menuitem" onClick={() => void toggleTemplate()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
+                  <FileText className="h-4 w-4 text-muted" strokeWidth={2} />
+                  {isTemplate ? "Zur normalen Notiz machen" : "Selbst zur Vorlage machen"}
+                </button>
+                {menuMsg && <p className="px-3 py-1.5 text-xs text-muted" role="status">{menuMsg}</p>}
+              </div>
+            )}
+          </div>
           <button type="button" onClick={remove} aria-label="Notiz löschen" title="Notiz löschen" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
             <Trash2 className="h-4 w-4" strokeWidth={2} />
           </button>

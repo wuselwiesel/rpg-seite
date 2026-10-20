@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-export type NotesTab = "notizen" | "faeden";
+export type NotesTab = "notizen" | "faeden" | "vorlagen";
 
-// Reiter über dem Notizbuch: Notizen · Offene Fäden (Zahl der offenen Aufgaben)
+// Reiter über dem Notizbuch: Notizen · Offene Fäden (Zahl der offenen Aufgaben) · Vorlagen
 export function NotesTabs({ active, openCount, className = "mb-5" }: { active: NotesTab; openCount: number; className?: string }) {
   const tab = (on: boolean) => `flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
   return (
@@ -13,6 +13,9 @@ export function NotesTabs({ active, openCount, className = "mb-5" }: { active: N
       <Link href="/notizen/faeden" aria-current={active === "faeden" ? "page" : undefined} className={tab(active === "faeden")}>
         Offene Fäden
         {openCount > 0 && <span className="text-xs tabular-nums opacity-75">{openCount}</span>}
+      </Link>
+      <Link href="/notizen/vorlagen" aria-current={active === "vorlagen" ? "page" : undefined} className={tab(active === "vorlagen")}>
+        Vorlagen
       </Link>
     </nav>
   );

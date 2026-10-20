@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { BUILTIN_TEMPLATES, uncheckTasks } from "./note-templates";
+import { sanitizePostHtmlCore } from "./sanitize-core";
 import { buildFolderTree, canMoveFolder, descendantIds, flattenFolders, folderPath, noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
 
-const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, tags: [], folderId: null, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
+const note = (over: Partial<NoteView> = {}): NoteView => ({ id: "1", title: "", body: "", pinned: false, tags: [], folderId: null, isTemplate: false, worldId: null, updatedAt: "2026-10-20T10:00:00Z", links: [], ...over });
 
 describe("Notizbuch", () => {
   it("nimmt den Titel, sonst den Anfang des Textes", () => {
@@ -83,5 +85,19 @@ describe("Notizbuch", () => {
     expect(canMoveFolder(f, "a", "d")).toBe(false); // der Baum a/b/c hat drei Ebenen, unter d wären es vier
     expect(canMoveFolder(f, "c", null)).toBe(true);
     expect(canMoveFolder(f, "d", "c")).toBe(false); // c ist schon Ebene 3
+  });
+  it("setzt Haken in Vorlagen zurück", () => {
+    const html = '<li data-type="taskItem" data-checked="true"><label><input type="checkbox" disabled="disabled" checked="checked" /></label></li>';
+    const out = uncheckTasks(html);
+    expect(out).toContain('data-checked="false"');
+    expect(out).not.toContain(`checked="checked"`);
+    expect(out).toContain("disabled");
+  });
+  it("mitgelieferte Vorlagen überstehen die Bereinigung", () => {
+    for (const t of BUILTIN_TEMPLATES) {
+      const out = sanitizePostHtmlCore(t.body);
+      expect(out).toContain("<h2>");
+      expect(out.length).toBeGreaterThan(40);
+    }
   });
 });

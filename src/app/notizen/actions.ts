@@ -8,6 +8,7 @@ import { escapePostgrestValue } from "@/lib/postgrest";
 import { LINK_COLUMN, MAX_FOLDER_DEPTH, canMoveFolder, folderPath, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 import { getFaceclaimNames } from "@/lib/faceclaim-data";
 import { notesForTarget, resolveLinks } from "@/lib/notes-data";
+import { BUILTIN_TEMPLATES, uncheckTasks } from "@/lib/note-templates";
 import { loadEntryItems, pickExcerptItems } from "@/lib/clip-server";
 import { escapeHtml } from "@/lib/character-links";
 import { stripHtml } from "@/lib/strip-html";
@@ -322,4 +323,83 @@ export async function setNoteWorld(noteId: string, worldId: string | null): Prom
   revalidatePath("/notizen");
   revalidatePath(`/notizen/${noteId}`);
   return null;
+}
+
+// ---- Vorlagen ----
+
+// Aus einer Notiz eine Vorlage machen (Kopie ohne Verknüpfungen; Haken zurückgesetzt)
+export async function saveNoteAsTemplate(noteId: string, title?: string): Promise<{ error: string } | { id: string }> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { data: note } = await supabase.from("notes").select("title, body, tags").eq("id", noteId).eq("user_id", user.id).maybeSingle<{ title: string; body: string; tags: string[] | null }>();
+  if (!note) return { error: "Notiz nicht gefunden." };
+  const name = (title ?? note.title).trim().slice(0, 200) || "Vorlage";
+  const { data, error } = await supabase
+    .from("notes")
+    .insert({ user_id: user.id, title: name, body: uncheckTasks(note.body), tags: note.tags ?? [], is_template: true })
+    .select("id")
+    .single<{ id: string }>();
+  if (error || !data) return { error: error?.message ?? "Konnte nicht gespeichert werden." };
+  revalidatePath("/notizen/vorlagen");
+  return { id: data.id };
+}
+
+// Vorlage in eine normale Notiz zurückverwandeln (oder umgekehrt)
+export async function setNoteIsTemplate(noteId: string, isTemplate: boolean): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.from("notes").update({ is_template: isTemplate }).eq("id", noteId).eq("user_id", user.id);
+  if (error) return error.message;
+  revalidatePath("/notizen");
+  revalidatePath("/notizen/vorlagen");
+  revalidatePath(`/notizen/${noteId}`);
+  return null;
+}
+
+// Neue Notiz aus einer eigenen oder mitgelieferten Vorlage, optional im Ordner oder mit Verknüpfung
+export async function createNoteFromTemplate(input: { templateId?: string; builtinId?: string; folderId?: string | null; link?: { kind: LinkKind; id: string } }): Promise<Result<{ id: string }>> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "Nicht angemeldet." };
+  let title = "";
+  let body = "";
+  let tags: string[] = [];
+  if (input.builtinId) {
+    const t = BUILTIN_TEMPLATES.find((b) => b.id === input.builtinId);
+    if (!t) return { error: "Vorlage nicht gefunden." };
+    ({ title, body, tags } = t);
+  } else if (input.templateId) {
+    const { data } = await supabase.from("notes").select("title, body, tags").eq("id", input.templateId).eq("user_id", user.id).eq("is_template", true).maybeSingle<{ title: string; body: string; tags: string[] | null }>();
+    if (!data) return { error: "Vorlage nicht gefunden." };
+    title = data.title;
+    body = data.body;
+    tags = data.tags ?? [];
+  } else return { error: "Keine Vorlage gewählt." };
+  const r = await createNote({ title, bodyHtml: uncheckTasks(body), folderId: input.folderId ?? null, link: input.link });
+  if (r.error || !r.id) return r;
+  if (tags.length > 0) await supabase.from("notes").update({ tags: normalizeTags(tags) }).eq("id", r.id).eq("user_id", user.id);
+  return r;
+}
+
+// Eigene Vorlagen für das Auswahlmenü
+export async function loadTemplateChoices(): Promise<{ id: string; title: string }[]> {
+  const { supabase, user } = await authed();
+  if (!user) return [];
+  const { data } = await supabase.from("notes").select("id, title").eq("user_id", user.id).eq("is_template", true).order("updated_at", { ascending: false }).limit(50);
+  return ((data ?? []) as { id: string; title: string }[]).map((t) => ({ id: t.id, title: t.title.trim() || "Vorlage" }));
+}
+
+// Mitgelieferte Vorlage als eigene Vorlage übernehmen
+export async function adoptBuiltinTemplate(builtinId: string): Promise<{ error: string } | { id: string }> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "Nicht angemeldet." };
+  const t = BUILTIN_TEMPLATES.find((b) => b.id === builtinId);
+  if (!t) return { error: "Vorlage nicht gefunden." };
+  const { data, error } = await supabase
+    .from("notes")
+    .insert({ user_id: user.id, title: t.title, body: sanitizePostHtml(t.body), tags: t.tags, is_template: true })
+    .select("id")
+    .single<{ id: string }>();
+  if (error || !data) return { error: error?.message ?? "Konnte nicht gespeichert werden." };
+  revalidatePath("/notizen/vorlagen");
+  return { id: data.id };
 }

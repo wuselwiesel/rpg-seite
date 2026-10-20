@@ -12,10 +12,10 @@ type LinkRow = {
   clip_id: string | null;
   linked_note_id: string | null;
 };
-type NoteRow = { id: string; title: string; body: string; pinned: boolean; tags: string[] | null; folder_id: string | null; world_id: string | null; updated_at: string };
+type NoteRow = { id: string; title: string; body: string; pinned: boolean; tags: string[] | null; folder_id: string | null; is_template: boolean; world_id: string | null; updated_at: string };
 
 const LINK_COLS = "id, note_id, character_id, wiki_page_id, story_post_id, clip_id, linked_note_id";
-const NOTE_COLS = "id, title, body, pinned, tags, folder_id, world_id, updated_at";
+const NOTE_COLS = "id, title, body, pinned, tags, folder_id, is_template, world_id, updated_at";
 
 function rowTarget(r: LinkRow): { kind: LinkKind; id: string } {
   if (r.character_id) return { kind: "character", id: r.character_id };
@@ -79,7 +79,7 @@ export async function resolveLinks(supabase: SupabaseClient, rows: LinkRow[]): P
 }
 
 export async function listNotes(supabase: SupabaseClient, userId: string): Promise<NoteView[]> {
-  const { data } = await supabase.from("notes").select(NOTE_COLS).eq("user_id", userId).order("pinned", { ascending: false }).order("updated_at", { ascending: false }).limit(500);
+  const { data } = await supabase.from("notes").select(NOTE_COLS).eq("user_id", userId).eq("is_template", false).order("pinned", { ascending: false }).order("updated_at", { ascending: false }).limit(500);
   const notes = (data ?? []) as NoteRow[];
   if (notes.length === 0) return [];
   const { data: links } = await supabase.from("note_links").select(LINK_COLS).eq("user_id", userId).in("note_id", notes.map((n) => n.id)).order("created_at");
@@ -120,7 +120,7 @@ export async function backlinks(supabase: SupabaseClient, userId: string, noteId
 }
 
 function toView(n: NoteRow, links: NoteLinkView[]): NoteView {
-  return { id: n.id, title: n.title, body: n.body, pinned: n.pinned, tags: n.tags ?? [], folderId: n.folder_id, worldId: n.world_id, updatedAt: n.updated_at, links };
+  return { id: n.id, title: n.title, body: n.body, pinned: n.pinned, tags: n.tags ?? [], folderId: n.folder_id, isTemplate: n.is_template, worldId: n.world_id, updatedAt: n.updated_at, links };
 }
 
 export async function listFolders(supabase: SupabaseClient, userId: string): Promise<NoteFolder[]> {
@@ -159,4 +159,10 @@ export async function connectionsForCharacter(supabase: SupabaseClient, userId: 
     const l = byLink.get(`${rowTarget(t.row).kind}:${rowTarget(t.row).id}`);
     return l && !l.missing ? [{ link: l, count: t.count }] : [];
   });
+}
+
+// Eigene Vorlagen (Notizen mit is_template), neueste zuerst
+export async function listTemplates(supabase: SupabaseClient, userId: string): Promise<NoteView[]> {
+  const { data } = await supabase.from("notes").select(NOTE_COLS).eq("user_id", userId).eq("is_template", true).order("updated_at", { ascending: false }).limit(100);
+  return ((data ?? []) as NoteRow[]).map((n) => toView(n, []));
 }
