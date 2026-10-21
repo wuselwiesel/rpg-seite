@@ -242,13 +242,13 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
             Ohne Ordner <span className="text-xs opacity-70">{withoutFolder}</span>
           </button>
         )}
-        {archived.length > 0 && (
+        {(archived.length > 0 || scope === "archive") && (
           <button type="button" onClick={() => setScope("archive")} aria-pressed={scope === "archive"} className={chip(scope === "archive")}>
             <Archive className="h-3.5 w-3.5" strokeWidth={2} />
             Archiv <span className="text-xs opacity-70">{archived.length}</span>
           </button>
         )}
-        {trashed.length > 0 && (
+        {(trashed.length > 0 || scope === "trash") && (
           <button type="button" onClick={() => setScope("trash")} aria-pressed={scope === "trash"} className={chip(scope === "trash")}>
             <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
             Papierkorb <span className="text-xs opacity-70">{trashed.length}</span>
