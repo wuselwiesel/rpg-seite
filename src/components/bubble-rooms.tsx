@@ -622,7 +622,7 @@ type RpRow = {
   created_at: string;
   pending?: boolean;
 };
-type Who = { id: string; name: string; avatar_url: string | null };
+type Who = { id: string; name: string; avatar_url: string | null; owner_id?: string };
 
 function RpThread({
   chatId,
@@ -747,7 +747,8 @@ function RpThread({
 
   const items: ThreadItem[] = rows.map((m) => ({
     id: m.id,
-    mine: m.character_id === activeCharacterId,
+    // Eigen ist, was von einer meiner Figuren stammt (nicht nur von der gerade gewählten)
+    mine: m.character_id === activeCharacterId || people[m.character_id]?.owner_id === userId,
     name: people[m.character_id]?.name ?? "?",
     avatarUrl: people[m.character_id]?.avatar_url ?? null,
     text: m.image_url && !m.content.trim() ? "" : messagePreview(m),
@@ -796,7 +797,7 @@ export function RpMiniRoom({
         .limit(60),
       supabase
         .from("chat_participants")
-        .select("characters(id, name, avatar_url)")
+        .select("characters(id, name, avatar_url, owner_id)")
         .eq("chat_id", chatId),
     ]).then(([{ data: rows }, { data: parts }]) => {
       if (cancelled) return;

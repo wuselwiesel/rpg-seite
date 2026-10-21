@@ -5,6 +5,8 @@ import type { Character, Message } from "@/lib/types";
 
 const me = { id: "c1", name: "Lyra Nachtfeder", avatar_url: null, owner_id: "u1" } as unknown as Character;
 const other = { id: "c2", name: "Finn Murphy", avatar_url: null, owner_id: "u2" } as unknown as Character;
+const second = { id: "c3", name: "Lyra Zweitfigur", avatar_url: null, owner_id: "u1" } as unknown as Character;
+const withSecond = new URLSearchParams(location.search).has("zweite");
 const now = Date.now();
 const messages = Array.from({ length: Number(new URLSearchParams(location.search).get("n")) || 6 }, (_, i) => ({
   id: `m${i}`,
@@ -15,6 +17,8 @@ const messages = Array.from({ length: Number(new URLSearchParams(location.search
   characters: i % 2 ? me : other,
   reactions: [],
 })) as unknown as Message[];
+// Nachricht einer anderen meiner Figuren (nicht der gerade gewählten): gehört mir, steht also rechts
+if (withSecond) messages.push({ id: "mx", chat_id: "chat", character_id: "c3", content: "Von meiner zweiten Figur", created_at: new Date(now).toISOString(), characters: second, reactions: [] } as unknown as Message);
 
 createRoot(document.getElementById("root")!).render(
   <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }}>
@@ -25,11 +29,11 @@ createRoot(document.getElementById("root")!).render(
       isGroup={false}
       avatarUrl={null}
       canDelete
-      participants={[me, other]}
+      participants={withSecond ? [me, other, second] : [me, other]}
       availableCharacters={[]}
       initialMessages={messages}
       activeCharacter={me}
-      myCharacterIds={["c1"]}
+      myCharacterIds={withSecond ? ["c1", "c3"] : ["c1"]}
       initialReads={[]}
       initialMuted={false}
       initialTheme={{} as never}
