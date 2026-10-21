@@ -14,6 +14,7 @@ import { storyBackground } from "@/lib/stories";
 import type { ReactionSummary } from "@/lib/reactions";
 import type { Character, Message } from "@/lib/types";
 import { isVideoUrl } from "@/lib/chat-media-url";
+import { SENDER_COLOR_CLASS, senderColorStyle } from "@/lib/sender-color";
 
 const SWIPE_TRIGGER = 56;
 
@@ -71,6 +72,7 @@ function StoryReplyPreview({ story, onDark }: { story: NonNullable<Message["stor
 export function MessageBubble({
   message,
   isOwn,
+  isGroup = false,
   activeCharacter,
   replyTarget,
   reactions,
@@ -85,6 +87,7 @@ export function MessageBubble({
 }: {
   message: Message;
   isOwn: boolean;
+  isGroup?: boolean;
   activeCharacter: Character;
   replyTarget?: Message;
   reactions: ReactionSummary[];
@@ -154,7 +157,13 @@ export function MessageBubble({
           )}
           <div className="mb-0.5 flex items-center gap-1.5">
             <p className="text-xs">
-              {message.characters?.name} · {formatDateTime(message.created_at)}
+              <span
+                className={isGroup && !isOwn ? `font-semibold ${SENDER_COLOR_CLASS}` : undefined}
+                style={isGroup && !isOwn ? senderColorStyle(message.character_id) : undefined}
+              >
+                {message.characters?.name}
+              </span>{" "}
+              · {formatDateTime(message.created_at)}
               {message.updated_at && " · bearbeitet"}
             </p>
             {!editing && !message.pending && (
