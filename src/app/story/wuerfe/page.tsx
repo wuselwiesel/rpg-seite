@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Clover, Dices } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clover, Dices, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -23,6 +23,8 @@ type RollRow = {
   roll_success: boolean | null;
   roll_luck_remaining: number | null;
   roll_condition: string | null;
+  roll_kind: string | null;
+  roll_secret: boolean;
   characters: { id: string; name: string; avatar_url: string | null; owner_id: string } | null;
   roll_target_character: { name: string } | null;
   story_posts: { title: string; world_id: string } | null;
@@ -63,7 +65,7 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
 
   // Spaltenliste als einfacher String, sonst wird die Typ-Auswertung der Verknüpfungen zu tief
   const columns: string =
-    "id, story_post_id, created_at, roll_label, roll_stat_name, roll_value, roll_bonus, roll_die, roll_result, roll_success, roll_luck_remaining, roll_condition, characters!story_entries_character_id_fkey(id, name, avatar_url, owner_id), roll_target_character:roll_target_character_id(name), story_posts!inner(title, world_id)";
+    "id, story_post_id, created_at, roll_label, roll_stat_name, roll_value, roll_bonus, roll_die, roll_result, roll_success, roll_luck_remaining, roll_condition, roll_kind, roll_secret, characters!story_entries_character_id_fkey(id, name, avatar_url, owner_id), roll_target_character:roll_target_character_id(name), story_posts!inner(title, world_id)";
   const base = supabase
     .from("story_entries")
     .select(columns, { count: "exact" })
@@ -127,7 +129,7 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     <span className="font-medium text-fg">{r.characters?.name ?? "Unbekannt"}</span>
                     <span className="text-fg-soft">
-                      würfelt auf <span className="font-medium text-fg">„{r.roll_label}“</span>
+                      würfelt{r.roll_secret ? " geheim" : ""} auf <span className="font-medium text-fg">„{r.roll_label}“</span>
                       {r.roll_stat_name && <span className="text-muted"> ({r.roll_stat_name})</span>}
                       {r.roll_condition && <span className="text-muted"> · {r.roll_condition}</span>}
                       {r.roll_target_character?.name && (
@@ -139,14 +141,27 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
                     </span>
                   </span>
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                    <span className="font-serif text-xl text-fg">
-                      {r.roll_value != null ? `${r.roll_result}/${r.roll_value + (r.roll_bonus ?? 0)}` : r.roll_result}
-                    </span>
-                    <span className="text-muted">
-                      W{r.roll_die}
-                      {r.roll_value != null && r.roll_bonus ? ` (${r.roll_value}${r.roll_bonus > 0 ? "+" : ""}${r.roll_bonus})` : ""}
-                    </span>
-                    {r.roll_value != null && (
+                    {r.roll_kind === "yesno" ? (
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-sm font-medium ${
+                          r.roll_success ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-red-500/15 text-red-700 dark:text-red-400"
+                        }`}
+                      >
+                        {r.roll_success ? "Ja" : "Nein"}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="font-serif text-xl text-fg">
+                          {r.roll_value != null ? `${r.roll_result}/${r.roll_value + (r.roll_bonus ?? 0)}` : r.roll_result}
+                        </span>
+                        <span className="text-muted">
+                          W{r.roll_die}
+                          {r.roll_value != null && r.roll_bonus ? ` (${r.roll_value}${r.roll_bonus > 0 ? "+" : ""}${r.roll_bonus})` : ""}
+                        </span>
+                      </>
+                    )}
+                    {r.roll_secret && <EyeOff className="h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={2} aria-label="Geheim" />}
+                    {r.roll_kind !== "yesno" && r.roll_value != null && (
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           r.roll_success ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-red-500/15 text-red-700 dark:text-red-400"

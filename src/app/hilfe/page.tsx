@@ -142,6 +142,10 @@ export default async function HelpPage() {
         <p className={p}>
           Das Ergebnis steht als Eintrag in der Szene, grün bei Erfolg und rot bei Misserfolg. Jeder Wurf kommt außerdem in den Würfelverlauf.
         </p>
+        <p className={p}>
+          <strong>Ja / Nein:</strong> Im Reiter Würfeln schaltest du oben von „Würfel“ auf „Ja / Nein“. Du stellst eine Frage und das Los antwortet mit Ja oder Nein, ganz ohne Zahlen. Der Wurf steht wie ein normaler Wurf in der Szene, grün bei Ja und rot bei Nein.
+          Mit <strong>Geheim</strong> sieht nur du die Antwort. Für alle anderen taucht der Wurf nirgends auf, auch nicht in der Szene, im Würfelverlauf oder im Buch, und er gibt den Zug nicht weiter.
+        </p>
       </Section>
 
       {showRolls && (

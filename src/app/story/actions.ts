@@ -1121,6 +1121,57 @@ export async function createDiceRoll(
   );
 }
 
+// Ja/Nein-Wurf („Schicksalsfrage“): kein Zahlenwurf, nur die Antwort Ja oder Nein. Offen erscheint er wie ein normaler Wurf in der Szene
+// (und gibt wie jeder Beitrag den Zug weiter); geheim ist er per Zeilenregel nur für die Person sichtbar, der die würfelnde Figur gehört,
+// und löst weder Meldungen noch einen Wechsel der Reihenfolge aus.
+export type YesNoRollState = { error: string | null; answer?: boolean | null; secret?: boolean };
+
+export async function createYesNoRoll(
+  storyPostId: string,
+  worldId: string,
+  _prevState: YesNoRollState | null,
+  formData: FormData,
+): Promise<YesNoRollState> {
+  const label = String(formData.get("label") ?? "").trim().slice(0, 200);
+  const secret = formData.get("secret") === "on";
+  if (!label) return { error: "Bitte die Frage angeben." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet." };
+  const { data: diceWorld } = await supabase.from("worlds").select("dice_enabled").eq("id", worldId).maybeSingle<{ dice_enabled: boolean | null }>();
+  if (diceWorld?.dice_enabled === false) return { error: "Würfeln ist in dieser Welt ausgeschaltet." };
+
+  const characterId = await resolveWriter(user.id, worldId, String(formData.get("character_id") ?? "").trim());
+  if (!characterId) return { error: "Du brauchst zuerst einen Charakter in dieser Welt." };
+
+  if (await isRateLimited(supabase, "story_entries", "character_id", characterId, 10, 15)) {
+    return { error: "Zu viele Würfe in kurzer Zeit. Kurz warten und nochmal versuchen." };
+  }
+
+  const answer = Math.random() < 0.5;
+  const content = `würfelt${secret ? " geheim" : ""} auf „${label}“: ${answer ? "Ja" : "Nein"}`;
+  const { error } = await supabase.from("story_entries").insert({
+    story_post_id: storyPostId,
+    character_id: characterId,
+    content,
+    roll_label: label,
+    roll_kind: "yesno",
+    roll_secret: secret,
+    roll_die: 2,
+    roll_result: answer ? 1 : 2,
+    roll_success: answer,
+  });
+  if (error) return { error: error.message };
+
+  if (!secret) await afterWriting(supabase, storyPostId, user.id, characterId, "", true);
+
+  revalidatePath(`/story/${storyPostId}`);
+  return { error: null, answer, secret };
+}
+
 // Glückspunkt einsetzen: derselbe Wurf (gleicher Wert/Bonus/Würfel/Ziel) wird noch einmal gewürfelt,
 // nur solange in dieser Szene für diesen Charakter noch Glückspunkte übrig sind.
 export async function rerollWithLuck(

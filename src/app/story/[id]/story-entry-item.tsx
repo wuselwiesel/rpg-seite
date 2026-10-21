@@ -4,7 +4,7 @@ import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
-import { Bookmark, Check, Clover, Copy, Dices, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
+import { Bookmark, Check, Clover, Copy, Dices, EyeOff, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
 import { copyEntries } from "@/lib/entry-copy";
 import { useClipSelection } from "./clip-selection";
 import { MarkEventForm } from "./mark-event-form";
@@ -442,7 +442,7 @@ export function StoryEntryItem({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
             <Dices className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
             <span className="text-fg-soft">
-              würfelt auf <span className="font-medium text-fg">„{entry.roll_label}“</span>
+              würfelt{entry.roll_secret ? " geheim" : ""} auf <span className="font-medium text-fg">„{entry.roll_label}“</span>
               {entry.roll_stat_name && <span className="text-muted"> ({entry.roll_stat_name})</span>}
               {entry.roll_condition && <span className="text-muted"> · {entry.roll_condition}</span>}
               {entry.roll_target_character?.name && (
@@ -452,7 +452,7 @@ export function StoryEntryItem({
                 </>
               )}
               :{" "}
-              {entry.roll_value != null ? (
+              {entry.roll_kind === "yesno" ? null : entry.roll_value != null ? (
                 <>
                   {entry.roll_result}/{entry.roll_value + (entry.roll_bonus ?? 0)}
                   {entry.roll_bonus ? (
@@ -469,7 +469,17 @@ export function StoryEntryItem({
                 <>{entry.roll_result} (W{entry.roll_die})</>
               )}
             </span>
-            {entry.roll_value != null && (
+            {entry.roll_kind === "yesno" && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  entry.roll_success ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-red-500/15 text-red-700 dark:text-red-400"
+                }`}
+              >
+                {entry.roll_success ? "Ja" : "Nein"}
+              </span>
+            )}
+            {entry.roll_secret && <EyeOff className="h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={2} aria-label="Geheim" />}
+            {entry.roll_kind !== "yesno" && entry.roll_value != null && (
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                   entry.roll_success

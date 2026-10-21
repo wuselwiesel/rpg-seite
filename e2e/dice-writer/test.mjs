@@ -48,6 +48,30 @@ await sel3.selectOption({ label: "Mut (15)" });
 await page.locator('input[name="value"]').fill("12");
 check("Eigener Wert: Bindung an den Stat entfällt", (await page.locator('input[name="stat_name"]').count()) === 0);
 
+// Ja/Nein-Wurf: Umschalter im Reiter, Frage, Geheim, Antwort; der normale Wurf bleibt unverändert
+await page.keyboard.press("Alt+Period");
+await page.waitForTimeout(250);
+const toggle = page.getByRole("radiogroup", { name: "Art des Wurfs" });
+check("Umschalter Würfel / Ja / Nein ist da", (await toggle.getByRole("radio").allTextContents()).join("|") === "Würfel|Ja / Nein");
+check("Standard ist der Würfelwurf", (await page.locator('input[name="label"]').count()) === 1 && (await page.getByText("Frage", { exact: true }).count()) === 0);
+await toggle.getByRole("radio", { name: "Ja / Nein" }).click();
+check("Ja/Nein: Feld „Frage“, Geheim und Würfeln, keine Zahlenfelder", (await page.getByText("Frage", { exact: true }).count()) === 1 && (await page.locator('input[name="secret"]').count()) === 1 && (await page.locator('input[name="value"]').count()) === 0 && (await page.locator('input[name="die"], select[name="die"]').count()) === 0);
+await page.locator('input[name="label"]').fill("Folgt uns jemand?");
+await page.locator('form button[type="submit"]').first().click();
+await page.waitForTimeout(250);
+let yn = await page.evaluate(() => window.__yesno.at(-1));
+check("Ja/Nein offen: Frage und Figur gesendet, nicht geheim", yn?.label === "Folgt uns jemand?" && yn.character_id === "b" && yn.secret === undefined, JSON.stringify(yn));
+check("Ja/Nein: Antwort „Ja“ erscheint, Feld wird geleert", (await page.getByText("Ja", { exact: true }).count()) >= 1 && (await page.locator('input[name="label"]').inputValue()) === "");
+await page.locator('input[name="label"]').fill("Ist die Tür verschlossen?");
+await page.locator('input[name="secret"]').check();
+await page.locator('form button[type="submit"]').first().click();
+await page.waitForTimeout(250);
+yn = await page.evaluate(() => window.__yesno.at(-1));
+check("Ja/Nein geheim: secret=on gesendet", yn?.label === "Ist die Tür verschlossen?" && yn.secret === "on", JSON.stringify(yn));
+check("Ja/Nein: ohne Frage kein Absenden", await page.locator('input[name="label"]').evaluate((el) => el.required));
+await toggle.getByRole("radio", { name: "Würfel" }).click();
+check("Zurück zum Würfelwurf: Zahlenfelder wieder da", (await page.locator('input[name="value"]').count()) === 1);
+
 check("keine Seitenfehler", errors.length === 0, errors.join("|"));
 await ctx.close();
 await browser.close();
