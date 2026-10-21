@@ -32,6 +32,7 @@ export function EntryCard({
   location,
   inWorldTime,
   locationHrefBase,
+  locationWikiId,
   yourTurn,
   narrator = false,
 }: {
@@ -58,6 +59,8 @@ export function EntryCard({
   location?: string | null;
   inWorldTime?: string | null;
   locationHrefBase?: string;
+  // Wiki-Seite zum Ort: der Klick führt dorthin statt zur gefilterten Liste
+  locationWikiId?: string | null;
   yourTurn?: boolean;
   // Erzähler:in-Beitrag: neutral, ohne Charakter.
   narrator?: boolean;
@@ -117,9 +120,9 @@ export function EntryCard({
             </span>
           )}
           {location &&
-            (locationHrefBase ? (
+            (locationWikiId || locationHrefBase ? (
               <Link
-                href={`${locationHrefBase}?ort=${encodeURIComponent(location)}`}
+                href={locationWikiId ? `/wiki/${locationWikiId}` : `${locationHrefBase}?ort=${encodeURIComponent(location)}`}
                 className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 transition hover:text-accent"
               >
                 <MapPin className="h-3 w-3" strokeWidth={2} />

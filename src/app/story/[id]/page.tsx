@@ -13,6 +13,7 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import { getWikiTerms } from "@/lib/wiki-terms";
+import { findLocationPageId } from "@/lib/location-link";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import { getWikiTypes } from "@/lib/wiki-data";
 import { datesFromRow } from "@/lib/wiki-calendar";
@@ -384,6 +385,7 @@ export default async function StoryPostDetailPage({
               <SceneMeta
                 storyPostId={storyPost.id}
                 location={storyPost.location}
+                locationWikiId={findLocationPageId(wikiTerms, storyPost.location)}
                 inWorldTime={storyPost.in_world_time}
                 dates={datesFromRow(storyPost)}
                 calendar={calendar}
