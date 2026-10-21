@@ -83,6 +83,7 @@ export function ChatRoom({
   const [messages, setMessages] = useState(initialMessages);
   const [olderCursor, setOlderCursor] = useState<string | null>(olderBefore);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [receiptsOpen, setReceiptsOpen] = useState(false);
   const holdScroll = useRef(false);
   const [draft, setDraft] = useState("");
   const enterSends = useEnterSends();
@@ -452,6 +453,23 @@ export function ChatRoom({
     return otherOwners.size === 1 ? "Gelesen" : `Gelesen von ${readers}`;
   }
 
+  // Wer hat gelesen, wer noch nicht: je Besitzer:in mit den Figuren im Chat.
+  function receiptDetails(message: Message) {
+    const owners = new Map<string, string[]>();
+    for (const p of participants) {
+      if (p.owner_id === userId) continue;
+      owners.set(p.owner_id, [...(owners.get(p.owner_id) ?? []), p.name]);
+    }
+    const created = new Date(message.created_at);
+    const read: string[] = [];
+    const unread: string[] = [];
+    for (const [owner, names] of owners) {
+      const seen = reads.some((r) => r.user_id === owner && new Date(r.last_read_at) >= created);
+      (seen ? read : unread).push(names.join(", "));
+    }
+    return { read, unread };
+  }
+
   async function sendGif(url: string) {
     setGifOpen(false);
     const id = crypto.randomUUID();
@@ -722,6 +740,7 @@ export function ChatRoom({
                 <MessageBubble
                   message={message}
                   isOwn={isOwn}
+                  isGroup={isGroup}
                   activeCharacter={activeCharacter}
                   replyTarget={message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : undefined}
                   reactions={aggregateReactions(message.reactions, myCharacterIdSet)}
@@ -735,7 +754,24 @@ export function ChatRoom({
                   onReply={() => setReplyTo(message)}
                 />
                 {isLast && myCharacterIds.includes(message.character_id) && (
-                  <p className="mt-1 text-right text-[11px] text-muted">{receiptLabel(message)}</p>
+                  <div className="mt-1 text-right text-[11px] text-muted">
+                    {isGroup && !message.pending ? (
+                      <button type="button" onClick={() => setReceiptsOpen((o) => !o)} aria-expanded={receiptsOpen} className="hover:text-fg">
+                        {receiptLabel(message)}
+                      </button>
+                    ) : (
+                      receiptLabel(message)
+                    )}
+                    {isGroup && receiptsOpen && !message.pending && (() => {
+                      const { read, unread } = receiptDetails(message);
+                      return (
+                        <div className="mt-0.5 space-y-0.5" data-testid="receipt-details">
+                          {read.length > 0 && <p>Gelesen: {read.join("; ")}</p>}
+                          {unread.length > 0 && <p>Noch nicht: {unread.join("; ")}</p>}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
             );

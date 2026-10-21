@@ -24,6 +24,7 @@ import { TypingLine } from "@/components/typing-line";
 import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { useImageDraft, uploadChatImage } from "@/lib/chat-image";
+import { SENDER_COLOR_CLASS, senderColorStyle } from "@/lib/sender-color";
 
 // Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
 function useChatThemeStyle(kind: "account" | "rp", chatId: string, userId: string) {
@@ -54,6 +55,8 @@ type ThreadItem = {
   name: string;
   // Konto der Absender:in (für Zeichen/Haken neben dem Namen), nur in Konto-Chats
   senderId?: string;
+  // Figur der Absender:in (Namensfarbe in Gruppen)
+  characterId?: string;
   avatarUrl: string | null;
   text: string;
   imageUrl?: string | null;
@@ -191,11 +194,18 @@ function MiniThread({
             return (
               <div
                 key={m.id}
-                className={`flex flex-col ${m.mine ? "items-end" : "items-start"}`}
+                className={`relative flex flex-col ${m.mine ? "items-end" : "items-start"} ${showNames && !m.mine ? "pl-6" : ""}`}
               >
-                {showNames && !m.mine && newSender && (
-                  <span className="mb-0.5 flex items-center gap-1.5 px-1 text-[11px] font-medium text-fg-soft">
+                {showNames && !m.mine && (
+                  <span className="absolute bottom-0 left-0">
                     <CharacterAvatar name={m.name} avatarUrl={m.avatarUrl} size={20} />
+                  </span>
+                )}
+                {showNames && !m.mine && newSender && (
+                  <span
+                    className={`mb-0.5 flex items-center gap-1.5 px-1 text-[11px] font-semibold ${m.characterId ? SENDER_COLOR_CLASS : "text-fg-soft"}`}
+                    style={senderColorStyle(m.characterId)}
+                  >
                     {m.name}
                     {m.senderId && <NameBadge userId={m.senderId} symbolOnly />}
                   </span>
@@ -516,6 +526,7 @@ function AccountThread({
     mine: m.sender_id === userId,
     name: grouped ? (names.get(m.sender_id)?.name ?? "Ehemaliges Mitglied") : "",
     senderId: grouped ? m.sender_id : undefined,
+    characterId: grouped ? m.sender_id : undefined,
     avatarUrl: null,
     text: m.content,
     imageUrl: m.image_url,
@@ -776,6 +787,7 @@ function RpThread({
     id: m.id,
     // Eigen ist, was von einer meiner Figuren stammt (nicht nur von der gerade gewählten)
     mine: m.character_id === activeCharacterId || people[m.character_id]?.owner_id === userId,
+    characterId: m.character_id,
     name: people[m.character_id]?.name ?? "?",
     avatarUrl: people[m.character_id]?.avatar_url ?? null,
     text: m.image_url && !m.content.trim() ? "" : messagePreview(m),
