@@ -47,6 +47,7 @@ const TOC = [
   ["buch", "Szenen als PDF oder E-Book"],
   ["chats-archiv", "Chats archivieren und löschen"],
   ["notizen", "Notizen und Faceclaims (nur für dich)"],
+  ["szenen-ordnen", "Szenen ordnen und Ordner"],
 ] as const;
 
 // Tastenkürzel: links Windows/Linux, rechts Mac
@@ -627,6 +628,23 @@ export default async function HelpPage() {
           </li>
           <li>
             <strong>Faceclaim:</strong> Am eigenen Charakter (Profil unter dem Namen und oben im Charakterbogen) das kleine Gesicht-Symbol antippen: Name der Person, Link (z. B. Pinterest) und bis zu 8 Bilder. Das sieht nur dein Konto, andere sehen es nirgends. In „Meine Charaktere“ steht der Name unter dem Charakter.
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="szenen-ordnen" title="23. Szenen ordnen und Ordner">
+        <ul className="flex list-disc flex-col gap-2 pl-5">
+          <li>
+            <strong>Ordnen:</strong> In der Story oben auf „Ordnen“ tippen. Dort legst du mit „Neuer Ordner“ Ordner an (auch Unterordner, bis zu drei Ebenen) und stellst die Szenen in die Ordner.
+          </li>
+          <li>
+            <strong>Verschieben:</strong> Am Computer eine Szene am Griff links anfassen und auf einen Ordner oder vor eine andere Szene ziehen. Am Handy gehen die Pfeile „nach oben/unten“ und die Auswahl „Verschieben nach“. Auch Ordner lassen sich mit den Pfeilen umsortieren und über den Stift umbenennen oder in einen anderen Ordner legen.
+          </li>
+          <li>
+            <strong>Rechte:</strong> Ordner anlegen kann jedes Mitglied. Umbenennen, verschieben und löschen dürfen die Person, die den Ordner angelegt hat, und die Welt-Admins. Eine Szene verschieben nur ihre Autor:in und die Welt-Admins. Wird ein Ordner gelöscht, bleiben die Szenen erhalten (dann ohne Ordner).
+          </li>
+          <li>
+            <strong>Im Feed:</strong> Unter „Filter“ steht „Ordner“. Ist ein Ordner gewählt, erscheinen seine Szenen (samt Unterordnern) in der Reihenfolge, die du festgelegt hast.
           </li>
         </ul>
       </Section>

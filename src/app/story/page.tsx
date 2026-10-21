@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, ChevronLeft, ChevronRight, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, FolderTree, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -19,6 +19,7 @@ import { snippetAround } from "@/lib/snippet";
 import { segmentsToPlain } from "@/lib/segments";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
+import { descendantIds, flattenFolders } from "@/lib/folder-tree";
 import type { StoryArc, StoryPost } from "@/lib/types";
 
 // Szenen pro Seite im Story-Feed - ohne Grenze wuerde die Abfrage mit wachsendem
@@ -33,6 +34,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const tag = typeof params.tag === "string" ? params.tag.trim().toLowerCase() : "";
   const arc = typeof params.arc === "string" ? params.arc.trim() : "";
   const ort = typeof params.ort === "string" ? params.ort.trim() : "";
+  // Ordner (Szenen ordnen): „none“ = ohne Ordner, sonst die ID eines Ordners (samt Unterordnern)
+  const ordner = typeof params.ordner === "string" ? params.ordner.trim() : "";
   // Suche nur in den Szenen (Titel, Anfangstext) oder zusätzlich in den Nachrichten darin
   const searchAll = params.suche_in === "alles";
   const onlyMyTurn = params.dran === "1";
@@ -63,8 +66,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     })
     .eq("world_id", activeWorld.id)
     .eq("archived", showArchived)
-    .order("pinned", { ascending: false })
-    .order("created_at", { ascending: false })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
   // Je Szene die Nachrichten, in denen der Suchtext steht (nur bei „Szenen und Nachrichten“)
@@ -103,6 +104,17 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.in("id", (inArc ?? []).map((r) => r.story_post_id as string));
   }
   if (ort) storyQuery = storyQuery.eq("location", ort);
+  // Bei gewähltem Ordner gilt die manuelle Reihenfolge (sort_order), sonst die Anlegezeit
+  const { data: folderRows } = await supabase.from("story_folders").select("id, name, parent_id, position").eq("world_id", activeWorld.id).returns<{ id: string; name: string; parent_id: string | null; position: number }[]>();
+  const folderList = (folderRows ?? []).map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id }));
+  if (ordner === "none") storyQuery = storyQuery.is("folder_id", null);
+  else if (ordner && folderList.some((f) => f.id === ordner)) {
+    storyQuery = storyQuery.in("folder_id", [...descendantIds(folderList, ordner)]);
+  }
+  const manualOrder = ordner !== "" && ordner !== "none" && folderList.some((f) => f.id === ordner);
+  storyQuery = manualOrder
+    ? storyQuery.order("pinned", { ascending: false }).order("sort_order", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false })
+    : storyQuery.order("pinned", { ascending: false }).order("created_at", { ascending: false });
   if (from) storyQuery = storyQuery.gte("created_at", new Date(from).toISOString());
   if (to) {
     const toDate = new Date(to);
@@ -153,7 +165,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   // Orte mit Wiki-Seite führen beim Klick dorthin (nur nötig, wenn die Karten einen Ort zeigen)
   const wikiTerms = locations.length ? await getWikiTerms(activeWorld.id) : [];
 
-  const filterCount = [arc, ort, onlyMyTurn, showArchived, bookmarkedOnly, q, tag, from || to].filter(Boolean).length;
+  const filterCount = [arc, ort, ordner, onlyMyTurn, showArchived, bookmarkedOnly, q, tag, from || to].filter(Boolean).length;
   function viewHref(view: "karten" | "kompakt") {
     const next = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
@@ -180,6 +192,15 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-6 sm:py-10">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="font-serif text-3xl text-fg">Story</h1>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+        <Link
+          href="/story/ordnung"
+          title="Szenen in Ordnern ordnen"
+          className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+        >
+          <FolderTree className="h-4 w-4" strokeWidth={2} />
+          Ordnen
+        </Link>
         <Link
           href="/story/buch"
           title="Alle Szenen als Buch ansehen, als PDF oder E-Book speichern"
@@ -188,6 +209,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
           <BookOpen className="h-4 w-4" strokeWidth={2} />
           PDF / E-Book
         </Link>
+        </div>
       </div>
 
       <StorySections current="szenen" />
@@ -245,6 +267,24 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               }`}
             >
               {a.name} ({a.story_posts?.[0]?.count ?? 0})
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {folderList.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <FolderTree className="h-4 w-4 text-muted" strokeWidth={2} />
+          {[{ id: "", name: "Alle Ordner", depth: 1 }, ...flattenFolders(folderList), { id: "none", name: "Ohne Ordner", depth: 1 }].map((f) => (
+            <Link
+              key={f.id || "alle"}
+              href={f.id ? `/story?ordner=${f.id}` : "/story"}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                ordner === f.id ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"
+              }`}
+            >
+              {"– ".repeat(f.depth - 1)}
+              {f.name}
             </Link>
           ))}
         </div>
