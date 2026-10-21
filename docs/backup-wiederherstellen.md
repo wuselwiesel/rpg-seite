@@ -9,7 +9,7 @@
 2. ```bash
    gh secret set SUPABASE_DB_URL
    ```
-   (fragt nach dem Wert, einfügen, Enter)
+   (fragt nach dem Wert, einfügen, Enter). **In einem eigenen Terminal-Fenster** ausführen, nicht mit `!` im Claude-Chat (dort gibt es kein Eingabefeld, das Secret wird leer). Es muss „✓ Set Actions secret …“ erscheinen. Kein Leerzeichen am Anfang oder Ende mitkopieren, keine `< >` um das Passwort; das Passwort am besten nur aus Buchstaben und Ziffern. Der Workflow prüft die Form vorab und meldet Fehler mit Länge (ohne den Wert zu zeigen).
 3. Ein **langes eigenes Kennwort** wählen, im Passwortmanager speichern (**ohne dieses Kennwort sind die Sicherungen wertlos**) und eintragen:
    ```bash
    gh secret set BACKUP_PASSPHRASE
@@ -22,7 +22,7 @@
    ```bash
    openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in db-JJJJ-MM-TT_HHMMZ.dump.enc -out backup.dump
    ```
-3. Inhalt ansehen: `pg_restore --list backup.dump`
+3. Inhalt ansehen: `pg_restore --list backup.dump` (am Mac ist `pg_restore` nicht vorinstalliert: `brew install libpq` oder bei laufendem Docker `docker run --rm -v "$PWD":/d postgres:17-alpine pg_restore --list /d/backup.dump`). Die Datei beginnt mit `PGDMP`.
 4. Zurückspielen (am besten in ein **neues** Supabase-Projekt oder lokal, nicht blind über die Produktion):
    ```bash
    pg_restore --no-owner --no-privileges --clean --if-exists -d "<DB-URL>" backup.dump
