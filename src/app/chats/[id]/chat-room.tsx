@@ -14,6 +14,7 @@ import { chatImageError, previewUrlFor } from "@/lib/chat-image";
 import { AttachmentPreview } from "@/components/chat-media";
 import { isVideoUrl } from "@/lib/chat-media-url";
 import { aggregateReactions } from "@/lib/reactions";
+import { parseSystemMessage } from "@/lib/system-message";
 import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
 import { GifPicker } from "@/components/gif-picker";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
@@ -333,7 +334,7 @@ export function ChatRoom({
     const { data } = await createClient()
       .from("messages")
       .select(
-        "*, characters(*), reactions(emoji, character_id), shared_post:shared_post_id(id, content, media_url, media_type, media_urls, characters!posts_character_id_fkey(name, username, avatar_url)), story:story_id(id, image_url, video_url, bg, text_content, expires_at)",
+        "*, characters(id, name, username, avatar_url, theme_accent, owner_id), reactions(emoji, character_id), shared_post:shared_post_id(id, content, media_url, media_type, media_urls, characters!posts_character_id_fkey(name, username, avatar_url)), story:story_id(id, image_url, video_url, bg, text_content, expires_at)",
       )
       .eq("chat_id", chatId)
       .lt("created_at", olderCursor)
@@ -735,6 +736,14 @@ export function ChatRoom({
             // Eigen ist, was von einer meiner Figuren stammt (nicht nur von der gerade gewählten)
             const isOwn = message.character_id === activeCharacter.id || myCharacterIds.includes(message.character_id);
             const isLast = index === messages.length - 1;
+            const systemText = parseSystemMessage(message.content);
+            if (systemText) {
+              return (
+                <p key={message.id} id={`rpmsg-${message.id}`} className="py-1 text-center text-xs text-muted">
+                  {systemText}
+                </p>
+              );
+            }
             return (
               <div key={message.id} id={`rpmsg-${message.id}`} className="flex flex-col">
                 <MessageBubble

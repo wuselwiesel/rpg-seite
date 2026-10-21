@@ -59,7 +59,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
     supabase
       .from("messages")
       .select(
-        "*, characters(*), reactions(emoji, character_id), shared_post:shared_post_id(id, content, media_url, media_type, media_urls, characters!posts_character_id_fkey(name, username, avatar_url)), story:story_id(id, image_url, video_url, bg, text_content, expires_at)",
+        "*, characters(id, name, username, avatar_url, theme_accent, owner_id), reactions(emoji, character_id), shared_post:shared_post_id(id, content, media_url, media_type, media_urls, characters!posts_character_id_fkey(name, username, avatar_url)), story:story_id(id, image_url, video_url, bg, text_content, expires_at)",
       )
       .eq("chat_id", id)
       .order("created_at", { ascending: false })

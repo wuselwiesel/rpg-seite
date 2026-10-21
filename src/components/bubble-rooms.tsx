@@ -25,6 +25,7 @@ import { TypingLine } from "@/components/typing-line";
 import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { useImageDraft, uploadChatImage } from "@/lib/chat-image";
+import { parseSystemMessage } from "@/lib/system-message";
 import { SENDER_COLOR_CLASS, senderColorStyle } from "@/lib/sender-color";
 
 // Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
@@ -193,6 +194,14 @@ function MiniThread({
             const prev = items[i - 1];
             const newSender =
               !prev || prev.mine !== m.mine || prev.name !== m.name;
+            const systemText = parseSystemMessage(m.text);
+            if (systemText) {
+              return (
+                <p key={m.id} className="py-0.5 text-center text-[11px] text-muted">
+                  {systemText}
+                </p>
+              );
+            }
             return (
               <div
                 key={m.id}
@@ -862,7 +871,7 @@ function RpThread({
     characterId: m.character_id,
     name: people[m.character_id]?.name ?? "?",
     avatarUrl: people[m.character_id]?.avatar_url ?? null,
-    text: m.image_url && !m.content.trim() ? "" : messagePreview(m),
+    text: parseSystemMessage(m.content) ? m.content : m.image_url && !m.content.trim() ? "" : messagePreview(m),
     imageUrl: m.image_url,
     pending: m.pending,
     edited: !!m.updated_at,
