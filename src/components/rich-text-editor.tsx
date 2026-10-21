@@ -161,7 +161,14 @@ function SelectionMenu({ editor, wikiPages }: { editor: Editor; wikiPages?: { id
   return (
     <BubbleMenu
       editor={editor}
-      options={{ placement: coarse ? "bottom" : "top", offset: 8, shift: { padding: 8 } }}
+      // Über Seitenleisten und Linien der Seite; waagerecht am Editor ausgerichtet, nicht an der ganzen Seite (sonst ragt die Leiste in die Seitenleiste)
+      className="z-50"
+      options={{ placement: coarse ? "bottom" : "top", offset: 8, shift: ({ elements }) => {
+          // nur am Editor ausrichten, wenn die Leiste hineinpasst; ist der Editor schmaler, gilt wie bisher die ganze Seite
+          const wrap = editor.view.dom.closest("[data-rte]");
+          return { padding: 8, boundary: wrap && elements.floating.getBoundingClientRect().width <= wrap.getBoundingClientRect().width - 16 ? wrap : undefined };
+        },
+      }}
       shouldShow={({ editor: ed, state }) => ed.isEditable && !state.selection.empty && !ed.isActive("image")}
     >
       <div className="flex max-w-[calc(100vw-1rem)] flex-col gap-1">
@@ -757,7 +764,7 @@ export function RichTextEditor({
   }, [editor]);
 
   return (
-    <div className="rounded-md border border-line bg-surface focus-within:border-accent">
+    <div data-rte className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
       {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} notesTools={notesTools} wikiPages={wikiPages} />}
       {editor && <SelectionMenu editor={editor} wikiPages={wikiPages} />}
