@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { CALLOUT_KINDS, type CalloutKind } from "@/lib/callout-kinds";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_MEDIA_BYTES } from "@/lib/upload-media";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const KIND_LABEL: Record<CalloutKind, string> = { info: "Info", tipp: "Tipp", achtung: "Achtung", gefahr: "Gefahr" };
 
@@ -33,7 +34,7 @@ export function BlockTools({ editor }: { editor: Editor }) {
     setPdfError(null);
     const supabase = createClient();
     const path = `wiki-pdf/${crypto.randomUUID()}.pdf`;
-    const { error } = await supabase.storage.from("post-media").upload(path, file, { contentType: "application/pdf" });
+    const { error } = await supabase.storage.from("post-media").upload(path, file, { ...UPLOAD_CACHE, contentType: "application/pdf" });
     setPdfBusy(false);
     if (error) return setPdfError(error.message);
     const url = supabase.storage.from("post-media").getPublicUrl(path).data.publicUrl;

@@ -29,6 +29,7 @@ import { SymbolPicker } from "./symbol-picker";
 import { PROFILE_FONTS } from "@/lib/profile-theme";
 import { loadDefaultFontId, saveDefaultFontId } from "@/lib/default-font";
 import type { Character } from "@/lib/types";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
@@ -328,7 +329,7 @@ function Toolbar({
 
     const { error: uploadError } = await supabase.storage
       .from("post-images")
-      .upload(path, file);
+      .upload(path, file, UPLOAD_CACHE);
 
     setUploading(false);
 

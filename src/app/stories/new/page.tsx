@@ -14,6 +14,7 @@ import { createStory } from "../actions";
 import { OVERLAY_COLORS, STORY_BACKGROUNDS, STORY_DURATIONS, isDarkStoryBg, overlayColor } from "@/lib/stories";
 import { OVERLAY_TEXT_STYLE, StoryStage } from "@/components/story-stage";
 import type { StoryOverlay } from "@/lib/types";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 
@@ -270,7 +271,7 @@ export default function NewStoryPage() {
     setUploadError(null);
     const supabase = createClient();
     const path = `stories/${crypto.randomUUID()}.${file.name.split(".").pop()}`;
-    const { error: err } = await supabase.storage.from("chat-media").upload(path, file);
+    const { error: err } = await supabase.storage.from("chat-media").upload(path, file, UPLOAD_CACHE);
     if (err) setUploadError(err.message);
     else setAudio({ url: supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl, name: file.name, start: 0, length: 30 });
     setAudioUploading(false);

@@ -1,6 +1,6 @@
-# Datenbank-Backup (zweimal täglich, 7 Tage)
+# Datenbank-Backup (einmal täglich, 7 Tage)
 
-**Was:** Der Workflow `.github/workflows/backup.yml` sichert die Datenbank (Schemas `public`, `auth`, `storage`-Metadaten, `hundeplan`) um 05:17 und 17:17 Uhr (Sommerzeit; im Winter eine Stunde früher auf der Uhr). Jede Sicherung ist komprimiert (`pg_dump -Fc -Z9`) und **verschlüsselt** (AES-256, Kennwort = Secret `BACKUP_PASSPHRASE`), weil das Repository öffentlich ist. Sie liegt als Artefakt des jeweiligen Laufs unter *GitHub → Actions → Datenbank-Backup* und wird nach **7 Tagen** automatisch gelöscht (höchstens 14 Dateien, jeweils wenige MB). Schlägt ein Lauf fehl, schickt GitHub eine E-Mail.
+**Was:** Der Workflow `.github/workflows/backup.yml` sichert die Datenbank (Schemas `public`, `auth`, `storage`-Metadaten, `hundeplan`) täglich um 05:17 Uhr (Sommerzeit; im Winter 04:17 Uhr). Jede Sicherung ist komprimiert (`pg_dump -Fc -Z9`) und **verschlüsselt** (AES-256, Kennwort = Secret `BACKUP_PASSPHRASE`), weil das Repository öffentlich ist. Sie liegt als Artefakt des jeweiligen Laufs unter *GitHub → Actions → Datenbank-Backup* und wird nach **7 Tagen** automatisch gelöscht (höchstens 7 Dateien, jeweils wenige MB). Schlägt ein Lauf fehl, schickt GitHub eine E-Mail.
 
 **Nicht enthalten:** die Dateien im Storage (Bilder, Videos; derzeit ca. 140 MB, 607 Dateien) – in der Datenbank steht nur ihre Adresse. Sitzungen/Anmelde-Token (werden nach dem Zurückspielen neu angelegt, alle melden sich neu an).
 

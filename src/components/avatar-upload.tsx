@@ -6,6 +6,7 @@ import { resizeImage } from "@/lib/image-resize";
 import { CharacterAvatar } from "./character-avatar";
 import { ASPECTS, ImageCropper, canCrop } from "./image-cropper";
 import { WorldCover, isIconCover } from "./world-cover";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 
@@ -92,7 +93,7 @@ export function AvatarUpload({
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(path, file);
+      .upload(path, file, UPLOAD_CACHE);
 
     if (uploadError) {
       setError(uploadError.message);

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 export const MAX_TICKET_IMAGES = 4;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -19,7 +20,7 @@ export async function uploadTicketImages(files: File[]): Promise<{ paths: string
     if (file.size > MAX_BYTES) return { error: "Ein Bild ist zu groß (max. 5 MB)." };
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("ticket-files").upload(path, file, { contentType: file.type });
+    const { error } = await supabase.storage.from("ticket-files").upload(path, file, { ...UPLOAD_CACHE, contentType: file.type });
     if (error) return { error: error.message };
     paths.push(path);
   }

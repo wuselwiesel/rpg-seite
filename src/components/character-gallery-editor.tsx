@@ -6,6 +6,7 @@ import { ImagePlus, Trash2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { addGalleryImage, deleteGalleryImage } from "@/app/characters/gallery-actions";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 type Img = { id: string; image_url: string; caption: string | null };
 
@@ -33,7 +34,7 @@ export function GalleryEditor({ characterId, images, canEdit }: { characterId: s
         continue;
       }
       const path = `gallery-${crypto.randomUUID()}.${file.name.split(".").pop()}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file);
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, UPLOAD_CACHE);
       if (upErr) {
         setError(upErr.message);
         continue;

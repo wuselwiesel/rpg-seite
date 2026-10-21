@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, ImagePlus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const MAX_IMAGES = 24;
@@ -39,7 +40,7 @@ export function GalleryUpload({ initial, bucket = "wiki-covers" }: { initial: st
         }
         const ext = file.name.split(".").pop();
         const path = `gallery/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from(bucket).upload(path, file);
+        const { error: upErr } = await supabase.storage.from(bucket).upload(path, file, UPLOAD_CACHE);
         if (upErr) {
           setError(upErr.message);
           continue;

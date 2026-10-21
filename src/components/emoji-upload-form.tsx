@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { EMOJI_NAME } from "@/lib/custom-emoji";
 import { isAnimatedImage } from "@/lib/image-animation";
 import { createCustomEmoji } from "@/app/profile/emojis/actions";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 const MAX_BYTES = 256 * 1024;
 // Animierte Emojis (GIF, WebP, APNG) bleiben unverändert und dürfen bis zur Grenze des Speichers (5 MB) groß sein
 const MAX_BYTES_ANIMATED = 5 * 1024 * 1024;
@@ -131,7 +132,7 @@ export function EmojiUploadForm({
       const supabase = createClient();
       const ext = prepared.type === "image/gif" ? "gif" : prepared.type === "image/webp" ? "webp" : "png";
       const path = `emoji/${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, prepared, { contentType: prepared.type });
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, prepared, { ...UPLOAD_CACHE, contentType: prepared.type });
       if (upErr) {
         setError(upErr.message);
         return;

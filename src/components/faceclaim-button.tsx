@@ -6,6 +6,7 @@ import { ExternalLink, ImagePlus, Lock, ScanFace, Trash2, X } from "lucide-react
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
 import { saveFaceclaim, type Faceclaim } from "@/app/characters/faceclaim-actions";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const MAX_IMAGES = 8;
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -78,7 +79,7 @@ function FaceclaimDialog({ characterId, initial, onClose, onSaved }: { character
         }
         const ext = file.name.split(".").pop() || "jpg";
         const path = `faceclaim/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("avatars").upload(path, file);
+        const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, UPLOAD_CACHE);
         if (upErr) {
           setError(upErr.message);
           continue;

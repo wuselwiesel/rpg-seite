@@ -1,13 +1,12 @@
 name: Datenbank-Backup
 
-# Zweimal täglich (05:17 und 17:17 Uhr deutscher Sommerzeit) eine verschlüsselte, komprimierte Sicherung der Datenbank.
+# Einmal täglich (05:17 Uhr deutscher Sommerzeit, 04:17 Uhr Winterzeit) eine verschlüsselte, komprimierte Sicherung der Datenbank.
 # Die Dateien liegen als Artefakte dieses Laufs und werden nach 7 Tagen von GitHub automatisch gelöscht.
 # Das Repository ist öffentlich: darum wird die Sicherung VOR dem Hochladen mit dem Kennwort aus BACKUP_PASSPHRASE verschlüsselt.
 # Einrichtung und Wiederherstellung: docs/backup-wiederherstellen.md
 on:
   schedule:
     - cron: "17 3 * * *"
-    - cron: "17 15 * * *"
   workflow_dispatch:
 
 permissions:

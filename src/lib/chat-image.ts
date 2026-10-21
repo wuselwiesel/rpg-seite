@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/image-resize";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 export const MAX_CHAT_IMAGE_BYTES = 25 * 1024 * 1024;
 export const MAX_CHAT_VIDEO_BYTES = 50 * 1024 * 1024;
@@ -40,7 +41,7 @@ export async function uploadChatImage(folder: string, source: File): Promise<{ u
   const file = await resizeImage(source);
   const ext = VIDEO_EXT_BY_MIME[file.type] ?? (file.name.split(".").pop() || "jpg");
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from("chat-media").upload(path, file, { contentType: file.type || undefined });
+  const { error } = await supabase.storage.from("chat-media").upload(path, file, { ...UPLOAD_CACHE, contentType: file.type || undefined });
   if (error) return { error: error.message };
   return { url: supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl };
 }

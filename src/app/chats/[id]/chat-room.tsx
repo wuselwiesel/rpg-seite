@@ -28,6 +28,7 @@ import { usePageBackground } from "@/lib/use-page-background";
 import { useIsDark } from "@/lib/use-dark";
 import { keepScrollAnchor } from "@/lib/keep-scroll";
 import type { Character, Message } from "@/lib/types";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const OLDER_PAGE = 100;
 
@@ -427,7 +428,7 @@ export function ChatRoom({
         ? ({ "video/quicktime": "mov", "video/webm": "webm", "video/ogg": "ogv", "video/x-m4v": "m4v" }[file.type] ?? "mp4")
         : file.name.split(".").pop() || "jpg";
       const path = `${chatId}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("chat-media").upload(path, file, { contentType: file.type || undefined });
+      const { error: uploadError } = await supabase.storage.from("chat-media").upload(path, file, { ...UPLOAD_CACHE, contentType: file.type || undefined });
       setSending(false);
       if (uploadError) return fail(uploadError.message);
       imageUrl = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;

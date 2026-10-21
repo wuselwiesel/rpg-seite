@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MAP_MAX_BYTES, prepareMapImage } from "@/lib/map-image";
 import { deleteWikiMap, updateWikiMap } from "./actions";
 import { useWorldRights } from "@/components/rights-context";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
@@ -130,7 +131,7 @@ function EditDialog({ map, onClose }: { map: MapInfo; onClose: () => void }) {
         const supabase = createClient();
         const ext = resized.name.split(".").pop() || "jpg";
         const path = `maps/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("wiki-covers").upload(path, resized);
+        const { error: upErr } = await supabase.storage.from("wiki-covers").upload(path, resized, UPLOAD_CACHE);
         if (upErr) throw new Error(upErr.message);
         imageUrl = supabase.storage.from("wiki-covers").getPublicUrl(path).data.publicUrl;
       }

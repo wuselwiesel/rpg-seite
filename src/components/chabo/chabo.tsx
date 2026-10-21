@@ -50,6 +50,7 @@ import {
   type SheetData,
   DEFAULT_FAMILY_TITLE,
 } from "@/lib/sheet-rules";
+import { UPLOAD_CACHE } from "@/lib/upload-cache";
 
 // Jedes Attribut hat einen festen Farbton (dieselben Töne wie bei Ordnern und Seitenarten im Wiki).
 const ATTR_COLOR: Record<string, string> = {
@@ -279,7 +280,7 @@ export function Chabo({
           const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
           const supabase = createClient();
           const path = `${crypto.randomUUID()}.${ext}`;
-          const { error } = await supabase.storage.from("avatars").upload(path, blob);
+          const { error } = await supabase.storage.from("avatars").upload(path, blob, UPLOAD_CACHE);
           if (!error) next.portraitUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
         } catch {
           // Das Bild ist optional; der Rest wird trotzdem übernommen.
