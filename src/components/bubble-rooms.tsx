@@ -22,6 +22,7 @@ import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
 import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
+import { CharacterAvatar } from "@/components/character-avatar";
 import { useImageDraft, uploadChatImage } from "@/lib/chat-image";
 
 // Lädt die eigenen Chat-Farben (nur lesen; geändert wird im Vollbild-Chat).
@@ -193,7 +194,8 @@ function MiniThread({
                 className={`flex flex-col ${m.mine ? "items-end" : "items-start"}`}
               >
                 {showNames && !m.mine && newSender && (
-                  <span className="mb-0.5 flex items-center gap-1 px-1 text-[10px] text-muted">
+                  <span className="mb-0.5 flex items-center gap-1.5 px-1 text-[11px] font-medium text-fg-soft">
+                    <CharacterAvatar name={m.name} avatarUrl={m.avatarUrl} size={20} />
                     {m.name}
                     {m.senderId && <NameBadge userId={m.senderId} symbolOnly />}
                   </span>
@@ -628,7 +630,7 @@ function RpThread({
   chatId,
   userId,
   activeCharacterId,
-  people,
+  people: initialPeople,
   initial,
 }: {
   chatId: string;
@@ -638,8 +640,32 @@ function RpThread({
   initial: RpRow[];
 }) {
   const [rows, setRows] = useState(initial);
+  // Wer im Chat schreibt: wer erst nach dem Öffnen dazukam (oder keine Teilnehmer:in mehr ist), wird beim ersten Eintreffen nachgeladen,
+  // sonst stünde bei allen Neuen „?“ und in Gruppen sähe es aus, als schriebe immer dieselbe Figur.
+  const [loadedPeople, setLoadedPeople] = useState<Record<string, Who>>({});
+  const people = { ...initialPeople, ...loadedPeople };
+  const requested = useRef(new Set<string>());
+  const initialPeopleRef = useRef(initialPeople);
+  function loadSender(characterId: string) {
+    if (requested.current.has(characterId)) return;
+    requested.current.add(characterId);
+    createClient()
+      .from("characters")
+      .select("id, name, avatar_url, owner_id")
+      .eq("id", characterId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setLoadedPeople((prev) => ({ ...prev, [data.id]: data as Who }));
+      });
+  }
   const [error, setError] = useState<string | null>(null);
   const typing = useTyping(`chat-${chatId}`, activeCharacterId, people[activeCharacterId]?.name ?? "");
+
+  // Absender früherer Nachrichten, die nicht mehr in der Teilnehmerliste stehen
+  useEffect(() => {
+    for (const id of new Set(initial.map((r) => r.character_id))) if (!initialPeopleRef.current[id]) loadSender(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -665,6 +691,7 @@ function RpThread({
         },
         (payload) => {
           const row = payload.new as RpRow;
+          if (!initialPeopleRef.current[row.character_id]) loadSender(row.character_id);
           setRows((prev) =>
             prev.some((m) => m.id === row.id)
               ? prev.map((m) => (m.id === row.id ? row : m))

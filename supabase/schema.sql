@@ -9324,4 +9324,26 @@ alter table public.notes add column if not exists deleted_at timestamptz;
 alter table public.notes add column if not exists archived boolean not null default false;
 create index if not exists notes_deleted_idx on public.notes (user_id, deleted_at) where deleted_at is not null;
 
+
+-- Chat-Nachrichten nur von Figuren, die im Chat sind (migration_messages_sender_participant.sql)
+-- Chat-Nachrichten: die schreibende Figur muss selbst Teilnehmerin des Chats sein (bisher reichte es, dass sie mir gehört und ich im Chat bin).
+-- Sonst erscheinen Nachrichten von Figuren, die in der Teilnehmerliste fehlen, bei den anderen ohne Namen und Bild.
+-- Bestand geprüft: keine bestehende Nachricht verstößt dagegen.
+alter policy messages_insert_participant on public.messages with check (
+  public.is_chat_participant(chat_id)
+  and exists (
+    select 1 from public.characters c
+    where c.id = messages.character_id and c.owner_id = (select auth.uid())
+  )
+  and exists (
+    select 1 from public.chat_participants cp
+    where cp.chat_id = messages.chat_id and cp.character_id = messages.character_id
+  )
+);
+
+
+-- Index für den Chat-Verlauf (migration_messages_chat_created_idx.sql)
+-- Chat-Verlauf: die neuesten Nachrichten eines Chats (order by created_at desc limit …) kommen direkt aus dem Index statt sortiert zu werden.
+create index if not exists messages_chat_created_idx on public.messages (chat_id, created_at desc);
+
 notify pgrst, 'reload schema';
