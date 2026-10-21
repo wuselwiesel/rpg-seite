@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
+import { getWikiTerms } from "@/lib/wiki-terms";
+import { findLocationPageId } from "@/lib/location-link";
 import { EntryCard } from "@/components/entry-card";
 import { StoryCompactRow } from "@/components/story-compact-row";
 import { RecapToggle } from "@/components/recap-toggle";
@@ -148,6 +150,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
       .in("turn_character_id", myCharIds.length ? myCharIds : ["00000000-0000-0000-0000-000000000000"]),
   ]);
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
+  // Orte mit Wiki-Seite führen beim Klick dorthin (nur nötig, wenn die Karten einen Ort zeigen)
+  const wikiTerms = locations.length ? await getWikiTerms(activeWorld.id) : [];
 
   const filterCount = [arc, ort, onlyMyTurn, showArchived, bookmarkedOnly, q, tag, from || to].filter(Boolean).length;
   function viewHref(view: "karten" | "kompakt") {
@@ -392,6 +396,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               recapHtml={recapOf(post)}
               pinned={post.pinned}
               location={post.location}
+              locationWikiId={findLocationPageId(wikiTerms, post.location)}
               inWorldTime={post.in_world_time}
               locationHrefBase="/story"
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}

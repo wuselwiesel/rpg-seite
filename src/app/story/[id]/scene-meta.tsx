@@ -14,6 +14,7 @@ import { uploadSceneImage } from "@/lib/scene-image";
 export function SceneMeta({
   storyPostId,
   location,
+  locationWikiId = null,
   inWorldTime,
   dates,
   calendar,
@@ -27,6 +28,8 @@ export function SceneMeta({
 }: {
   storyPostId: string;
   location: string | null;
+  // Wiki-Seite zum Ort: der Klick führt dorthin statt zur gefilterten Liste
+  locationWikiId?: string | null;
   inWorldTime: string | null;
   dates: PageDates;
   calendar: WikiCalendar;
@@ -154,7 +157,7 @@ export function SceneMeta({
     <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-fg-soft">
       {location && (
         <Link
-          href={`/story?ort=${encodeURIComponent(location)}`}
+          href={locationWikiId ? `/wiki/${locationWikiId}` : `/story?ort=${encodeURIComponent(location)}`}
           className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 transition hover:text-accent"
         >
           <MapPin className="h-3 w-3" strokeWidth={2} />
