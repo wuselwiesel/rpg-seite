@@ -34,7 +34,8 @@ jobs:
           # Form prüfen, ohne den Wert zu zeigen: Länge, Anfang und Ende der Adresse, Leerzeichen
           CLEAN=$(printf '%s' "$DB_URL" | tr -d '[:space:]')
           if [ "$CLEAN" != "$DB_URL" ]; then
-            echo "::error::SUPABASE_DB_URL enthält Leerzeichen oder Zeilenumbrüche. Bitte neu setzen."
+            LINES=$(printf '%s\n' "$DB_URL" | wc -l | tr -d ' ')
+            echo "::error::SUPABASE_DB_URL enthält Leerzeichen oder Zeilenumbrüche (Länge ${#DB_URL}, ohne Leerraum ${#CLEAN}, Zeilen ${LINES}). Bitte neu setzen."
             exit 1
           fi
           case "$DB_URL" in
