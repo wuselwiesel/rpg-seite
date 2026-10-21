@@ -258,15 +258,15 @@ export function StoryEntryItem({
         className={`group min-w-0 flex-1 scroll-mt-24 rounded-lg ${bundled && bundled.length > 1 ? "rounded-b-none" : ""} border bg-surface px-4 py-2 ${selectedForClip ? "ring-2 ring-accent" : ""} ${clipSelection?.picking ? "cursor-pointer select-none" : ""} ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}
       >
         <div className="mb-1 flex items-baseline justify-between gap-2">
-          <div className="flex items-baseline gap-2">
+          <div className="flex min-w-0 items-baseline gap-2">
             {isNarrator ? (
-              <p className="text-sm font-medium text-fg">Erzähler:in</p>
+              <p className="truncate text-sm font-medium text-fg">Erzähler:in</p>
             ) : (
-              <Link href={`/characters/${firstId}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
+              <Link href={`/characters/${firstId}/chabo`} className="min-w-0 truncate text-sm font-medium text-fg transition hover:text-accent">
                 {firstName}
               </Link>
             )}
-            <p className="text-xs text-muted">
+            <p className="shrink-0 whitespace-nowrap text-xs text-muted">
               {formatDateTime(entry.created_at)}
               {entry.updated_at && " · bearbeitet"}
             </p>
@@ -528,11 +528,11 @@ export function StoryEntryItem({
             {!isLast && <span className="mt-1 w-px flex-1 bg-line" />}
           </div>
           <div className={`min-w-0 flex-1 border border-t-0 border-line bg-surface px-4 py-2 ${isLast ? "rounded-b-lg" : ""}`}>
-            <div className="mb-1 flex items-baseline gap-2">
-              <Link href={`/characters/${seg.id}/chabo`} className="text-sm font-medium text-fg transition hover:text-accent">
+            <div className="mb-1 flex min-w-0 items-baseline gap-2">
+              <Link href={`/characters/${seg.id}/chabo`} className="min-w-0 truncate text-sm font-medium text-fg transition hover:text-accent">
                 {name}
               </Link>
-              <p className="text-xs text-muted">{formatDateTime(entry.created_at)}</p>
+              <p className="shrink-0 whitespace-nowrap text-xs text-muted">{formatDateTime(entry.created_at)}</p>
             </div>
             <SpoilerGate spoiler={spoiler}>
               <EmojiHtml className="post-content text-[15.5px] leading-[1.75] text-fg" html={seg.html} />
