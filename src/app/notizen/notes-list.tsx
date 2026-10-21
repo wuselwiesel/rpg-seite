@@ -3,20 +3,20 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Check, Download, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Printer, Search, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Download, Folder, FolderPlus, Hash, Pencil, Pin, Plus, Printer, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
 import { NotesTabs } from "./notes-tabs";
 import { TemplateMenu } from "@/components/template-menu";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { createNote, createNoteFolder, deleteNote, deleteNoteFolder, moveNoteFolder, renameNoteFolder } from "./actions";
+import { archiveNote, createNote, createNoteFolder, deleteNote, deleteNoteFolder, emptyTrash, moveNoteFolder, renameNoteFolder, restoreNote, trashNote } from "./actions";
 import { NOTE_PATCH_EVENT, type NotePatch } from "@/lib/note-events";
 import { MAX_FOLDER_DEPTH, canMoveFolder, descendantIds, flattenFolders, folderPath, noteMatches, noteSnippet, noteTitle, type NoteFolder, type NoteView } from "@/lib/notes";
 
 const dayFormat = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
 
-// „all“ = alle Notizen, „none“ = ohne Ordner, sonst die ID eines Ordners
-type Scope = "all" | "none" | string;
+// „all“ = alle Notizen, „none“ = ohne Ordner, „archive“, „trash“, sonst die ID eines Ordners
+type Scope = "all" | "none" | "archive" | "trash" | string;
 
 const chip = (on: boolean) => `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
 
@@ -57,11 +57,15 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
 
   // Angeheftete zuerst, dann zuletzt geändert
   const sorted = useMemo(() => [...notes].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt)), [notes]);
-  const inWorld = useMemo(() => (world === "all" ? sorted : sorted.filter((n) => n.worldId === null || n.worldId === world)), [sorted, world]);
+  const inWorldAll = useMemo(() => (world === "all" ? sorted : sorted.filter((n) => n.worldId === null || n.worldId === world)), [sorted, world]);
+  const live = useMemo(() => inWorldAll.filter((n) => !n.deletedAt && !n.archived), [inWorldAll]);
+  const archived = useMemo(() => inWorldAll.filter((n) => !n.deletedAt && n.archived), [inWorldAll]);
+  const trashed = useMemo(() => inWorldAll.filter((n) => n.deletedAt).sort((a, b) => (b.deletedAt ?? "").localeCompare(a.deletedAt ?? "")), [inWorldAll]);
+  const inWorld = scope === "archive" ? archived : scope === "trash" ? trashed : live;
   // Notizen je Ordner zählen auch die der Unterordner mit
   const folderCount = useMemo(() => {
     const direct = new Map<string, number>();
-    for (const n of inWorld) direct.set(n.folderId ?? "none", (direct.get(n.folderId ?? "none") ?? 0) + 1);
+    for (const n of live) direct.set(n.folderId ?? "none", (direct.get(n.folderId ?? "none") ?? 0) + 1);
     const m = new Map<string, number>([["none", direct.get("none") ?? 0]]);
     for (const f of folders) {
       let sum = 0;
@@ -69,7 +73,7 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
       m.set(f.id, sum);
     }
     return m;
-  }, [inWorld, folders]);
+  }, [live, folders]);
   const withoutFolder = folderCount.get("none") ?? 0;
   const tags = useMemo(() => {
     const m = new Map<string, number>();
@@ -77,9 +81,9 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
     return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"));
   }, [inWorld]);
 
-  const scopeIds = useMemo(() => (scope === "all" || scope === "none" ? null : descendantIds(folders, scope)), [folders, scope]);
+  const scopeIds = useMemo(() => (scope === "all" || scope === "none" || scope === "archive" || scope === "trash" ? null : descendantIds(folders, scope)), [folders, scope]);
   const shown = useMemo(
-    () => inWorld.filter((n) => (scope === "all" || (scope === "none" ? n.folderId === null : !!n.folderId && !!scopeIds?.has(n.folderId))) && (!tag || n.tags.includes(tag)) && noteMatches(n, q)),
+    () => inWorld.filter((n) => (scope === "all" || scope === "archive" || scope === "trash" || (scope === "none" ? n.folderId === null : !!n.folderId && !!scopeIds?.has(n.folderId))) && (!tag || n.tags.includes(tag)) && noteMatches(n, q)),
     [inWorld, scope, scopeIds, tag, q],
   );
   const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name;
@@ -140,11 +144,50 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
     });
   }
 
+  // Papierkorb mit „Rückgängig“; endgültig löschen gibt es nur im Papierkorb selbst
+  const [undo, setUndo] = useState<{ id: string; title: string } | null>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const t = window.setTimeout(() => setUndo(null), 6000);
+    return () => window.clearTimeout(t);
+  }, [undo]);
+
+  function patchNote(id: string, patch: Partial<NoteView>) {
+    setNotes((cur) => cur.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+
   async function removeNote(n: NoteView) {
-    if (!(await confirmDialog({ message: `„${noteTitle(n)}“ löschen?`, confirmLabel: "Löschen", danger: true }))) return;
+    const err = await trashNote(n.id);
+    if (err) return setError(err);
+    patchNote(n.id, { deletedAt: new Date().toISOString() });
+    setUndo({ id: n.id, title: noteTitle(n) });
+  }
+
+  async function restore(n: NoteView) {
+    const err = await restoreNote(n.id);
+    if (err) return setError(err);
+    patchNote(n.id, { deletedAt: null });
+    setUndo(null);
+  }
+
+  async function toggleArchive(n: NoteView) {
+    const err = await archiveNote(n.id, !n.archived);
+    if (err) return setError(err);
+    patchNote(n.id, { archived: !n.archived });
+  }
+
+  async function removeForever(n: NoteView) {
+    if (!(await confirmDialog({ message: `„${noteTitle(n)}“ endgültig löschen?`, confirmLabel: "Löschen", danger: true }))) return;
     const err = await deleteNote(n.id);
     if (err) return setError(err);
     setNotes((cur) => cur.filter((x) => x.id !== n.id));
+  }
+
+  async function clearTrash() {
+    if (!(await confirmDialog({ message: `Papierkorb leeren? ${trashed.length === 1 ? "Die Notiz wird" : `${trashed.length} Notizen werden`} endgültig gelöscht.`, confirmLabel: "Leeren", danger: true }))) return;
+    const err = await emptyTrash();
+    if (err) return setError(err);
+    setNotes((cur) => cur.filter((x) => !x.deletedAt));
   }
 
   async function removeFolder(f: NoteFolder) {
@@ -186,7 +229,7 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
 
       <div className="-mx-4 mb-3 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
         <button type="button" onClick={() => setScope("all")} aria-pressed={scope === "all"} className={chip(scope === "all")}>
-          Alle <span className="text-xs opacity-70">{inWorld.length}</span>
+          Alle <span className="text-xs opacity-70">{live.length}</span>
         </button>
         {rootFolders.map((f) => (
           <button key={f.id} type="button" onClick={() => setScope(f.id)} aria-pressed={path[0]?.id === f.id} className={chip(path[0]?.id === f.id)}>
@@ -197,6 +240,18 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
         {folders.length > 0 && withoutFolder > 0 && (
           <button type="button" onClick={() => setScope("none")} aria-pressed={scope === "none"} className={chip(scope === "none")}>
             Ohne Ordner <span className="text-xs opacity-70">{withoutFolder}</span>
+          </button>
+        )}
+        {(archived.length > 0 || scope === "archive") && (
+          <button type="button" onClick={() => setScope("archive")} aria-pressed={scope === "archive"} className={chip(scope === "archive")}>
+            <Archive className="h-3.5 w-3.5" strokeWidth={2} />
+            Archiv <span className="text-xs opacity-70">{archived.length}</span>
+          </button>
+        )}
+        {(trashed.length > 0 || scope === "trash") && (
+          <button type="button" onClick={() => setScope("trash")} aria-pressed={scope === "trash"} className={chip(scope === "trash")}>
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+            Papierkorb <span className="text-xs opacity-70">{trashed.length}</span>
           </button>
         )}
         {newFolder === null || newParent !== null ? (
@@ -298,7 +353,15 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
         </div>
       )}
 
-      {shown.length > 0 && (
+      {scope === "trash" && trashed.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <button type="button" onClick={() => void clearTrash()} className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-surface-2">
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+            Papierkorb leeren
+          </button>
+        </div>
+      )}
+      {shown.length > 0 && scope !== "trash" && (
         <div className="mb-3 flex items-center justify-end gap-1">
           <a href={`/notizen/druck?${exportQuery}`} target="_blank" rel="noreferrer" title="Auswahl als PDF" aria-label="Auswahl als PDF" className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
             <Printer className="h-3.5 w-3.5" strokeWidth={2} />
@@ -322,9 +385,25 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
               key={n.id}
               className={`items-start gap-0 rounded-2xl border bg-surface transition hover:border-accent/40 ${n.id === activeId ? "border-accent/60 bg-surface-2" : "border-line"}`}
               actions={
-                <button type="button" onClick={() => void removeNote(n)} title="Notiz löschen" aria-label="Notiz löschen" className="m-2 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
-                  <Trash2 className="h-4 w-4" strokeWidth={2} />
-                </button>
+                n.deletedAt ? (
+                  <>
+                    <button type="button" onClick={() => void restore(n)} title="Wiederherstellen" aria-label="Wiederherstellen" className="m-1 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+                      <RotateCcw className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                    <button type="button" onClick={() => void removeForever(n)} title="Endgültig löschen" aria-label="Endgültig löschen" className="m-1 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
+                      <Trash2 className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => void toggleArchive(n)} title={n.archived ? "Aus dem Archiv holen" : "Archivieren"} aria-label={n.archived ? "Aus dem Archiv holen" : "Archivieren"} className="m-1 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+                      {n.archived ? <ArchiveRestore className="h-4 w-4" strokeWidth={2} /> : <Archive className="h-4 w-4" strokeWidth={2} />}
+                    </button>
+                    <button type="button" onClick={() => void removeNote(n)} title="In den Papierkorb" aria-label="In den Papierkorb" className="m-1 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
+                      <Trash2 className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                  </>
+                )
               }
             >
               <div className="min-w-0 flex-1">
@@ -358,6 +437,14 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
             </RevealRow>
           ))}
         </ul>
+      )}
+      {undo && (
+        <div role="status" className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 mx-auto flex w-fit max-w-[90vw] items-center gap-3 rounded-full bg-accent-strong px-4 py-2 text-sm text-on-accent-strong shadow-lg lg:bottom-6">
+          <span className="truncate">„{undo.title}“ im Papierkorb</span>
+          <button type="button" onClick={() => { const n = notes.find((x) => x.id === undo.id); if (n) void restore(n); }} className="shrink-0 font-semibold underline">
+            Rückgängig
+          </button>
+        </div>
       )}
     </div>
   );

@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Download, FileText, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, ChevronLeft, Download, FileText, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { addNoteLink, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld } from "@/app/notizen/actions";
+import { addNoteLink, archiveNote, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld, restoreNote, trashNote } from "@/app/notizen/actions";
 import { stripHtml } from "@/lib/strip-html";
 import { emitNotePatch } from "@/lib/note-events";
 import { MAX_NOTE_TAGS, flattenFolders, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
@@ -16,13 +16,15 @@ import { MAX_NOTE_TAGS, flattenFolders, normalizeTag, type LinkTarget, type Note
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
 // Eine Notiz: Titel und Text speichern von selbst, darunter die Verknüpfungen.
-export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, initialIsTemplate, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; initialIsTemplate: boolean; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
+export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, initialIsTemplate, initialArchived, initialDeletedAt, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; initialIsTemplate: boolean; initialArchived: boolean; initialDeletedAt: string | null; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [pinned, setPinned] = useState(initialPinned);
   const [links, setLinks] = useState<NoteLinkView[]>(initialLinks);
   const [tags, setTags] = useState<string[]>(initialTags);
   const [tagInput, setTagInput] = useState("");
+  const [archived, setArchived] = useState(initialArchived);
+  const [deletedAt, setDeletedAt] = useState<string | null>(initialDeletedAt);
   const [isTemplate, setIsTemplate] = useState(initialIsTemplate);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMsg, setMenuMsg] = useState<string | null>(null);
@@ -147,13 +149,40 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     await setNotePinned(id, next);
   }
 
+  // In den Papierkorb (30 Tage, wiederherstellbar); endgültig löschen gibt es nur dort
   async function remove() {
-    if (!(await confirmDialog({ message: "Notiz löschen?", confirmLabel: "Löschen", danger: true }))) return;
+    await flush();
+    const err = await trashNote(id);
+    if (err) return setMenuMsg(err);
+    emitNotePatch({ id, deletedAt: new Date().toISOString() });
+    router.replace("/notizen");
+    router.refresh();
+  }
+
+  async function restore() {
+    const err = await restoreNote(id);
+    if (err) return setMenuMsg(err);
+    setDeletedAt(null);
+    emitNotePatch({ id, deletedAt: null });
+    router.refresh();
+  }
+
+  async function removeForever() {
+    if (!(await confirmDialog({ message: "Notiz endgültig löschen?", confirmLabel: "Löschen", danger: true }))) return;
     dirty.current = false;
     if (timer.current) clearTimeout(timer.current);
     await deleteNote(id);
     router.replace("/notizen");
     router.refresh();
+  }
+
+  async function toggleArchive() {
+    const next = !archived;
+    const err = await archiveNote(id, next);
+    if (err) return setMenuMsg(err);
+    setArchived(next);
+    setMenuOpen(false);
+    emitNotePatch({ id, archived: next });
   }
 
   const taken = new Set(links.map((l) => `${l.kind}:${l.targetId}`));
@@ -190,6 +219,10 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
                   <FileText className="h-4 w-4 text-muted" strokeWidth={2} />
                   {isTemplate ? "Zur normalen Notiz machen" : "Selbst zur Vorlage machen"}
                 </button>
+                <button type="button" role="menuitem" onClick={() => void toggleArchive()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
+                  {archived ? <ArchiveRestore className="h-4 w-4 text-muted" strokeWidth={2} /> : <Archive className="h-4 w-4 text-muted" strokeWidth={2} />}
+                  {archived ? "Aus dem Archiv holen" : "Archivieren"}
+                </button>
                 <a href={`/notizen/druck?id=${id}`} target="_blank" rel="noreferrer" role="menuitem" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
                   <Printer className="h-4 w-4 text-muted" strokeWidth={2} />
                   Als PDF
@@ -202,11 +235,30 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
               </div>
             )}
           </div>
-          <button type="button" onClick={remove} aria-label="Notiz löschen" title="Notiz löschen" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
-            <Trash2 className="h-4 w-4" strokeWidth={2} />
-          </button>
+          {!deletedAt && (
+            <button type="button" onClick={() => void remove()} aria-label="In den Papierkorb" title="In den Papierkorb" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
+              <Trash2 className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
+
+      {deletedAt && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-sm text-fg">
+          <span className="flex items-center gap-2">
+            <Trash2 className="h-4 w-4 text-muted" strokeWidth={2} />
+            Im Papierkorb
+          </span>
+          <span className="flex items-center gap-2">
+            <button type="button" onClick={() => void restore()} className="rounded-full bg-accent-strong px-3 py-1 text-xs font-medium text-on-accent-strong hover:opacity-90">
+              Wiederherstellen
+            </button>
+            <button type="button" onClick={() => void removeForever()} className="rounded-full border border-line px-3 py-1 text-xs font-medium text-red-600 hover:bg-surface">
+              Endgültig löschen
+            </button>
+          </span>
+        </div>
+      )}
 
       <input
         value={title}

@@ -118,7 +118,7 @@ export async function searchPosts(sb: SupabaseClient, q: string, limit: number):
 // Eigene Notizen (die Datenbank liefert nur die eigenen): Titel, Text und Tags; „#tag“ sucht nur in Tags
 export async function searchNotes(sb: SupabaseClient, q: string, limit: number): Promise<NoteHit[]> {
   const raw = q.trim();
-  let query = sb.from("notes").select("id, title, body, tags").eq("is_template", false);
+  let query = sb.from("notes").select("id, title, body, tags").eq("is_template", false).is("deleted_at", null);
   if (raw.startsWith("#")) {
     const tag = raw.slice(1).toLowerCase().replace(/[^\p{L}\p{N}_-]/gu, "");
     if (!tag) return [];

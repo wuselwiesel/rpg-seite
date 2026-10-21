@@ -9319,5 +9319,9 @@ grant execute on function public.invite_to_world(uuid, uuid) to authenticated;
 grant execute on function public.respond_world_invite(uuid, boolean) to authenticated;
 grant execute on function public.withdraw_world_invite(uuid) to authenticated;
 grant execute on function public.my_world_invites() to authenticated;
+-- Papierkorb (30 Tage, wird beim Öffnen des Notizbuchs geleert) und Archiv für Notizen
+alter table public.notes add column if not exists deleted_at timestamptz;
+alter table public.notes add column if not exists archived boolean not null default false;
+create index if not exists notes_deleted_idx on public.notes (user_id, deleted_at) where deleted_at is not null;
 
 notify pgrst, 'reload schema';
