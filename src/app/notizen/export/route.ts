@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return new NextResponse("Nicht angemeldet.", { status: 401 });
-  const notes = await selectNotes(supabase, user.id, { id: p.get("id"), folder: p.get("ordner"), tag: p.get("tag"), world: p.get("welt") });
+  const notes = await selectNotes(supabase, user.id, { id: p.get("id"), ids: p.get("ids")?.split(",") ?? null, folder: p.get("ordner"), tag: p.get("tag"), world: p.get("welt") });
   if (notes.length === 0) return new NextResponse("Keine Notizen.", { status: 404 });
   const body = notes.map((n) => noteDocument(n)).join("\n---\n\n");
   const file = exportFileName(notes.length === 1 ? noteTitle(notes[0]) : "Notizen", "md");

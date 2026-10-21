@@ -41,6 +41,7 @@ export type NoteView = {
   folderId: string | null;
   isTemplate: boolean;
   worldId: string | null;
+  createdAt?: string;
   updatedAt: string;
   links: NoteLinkView[];
 };
@@ -66,9 +67,15 @@ export function isLinkKind(v: unknown): v is LinkKind {
 
 export const MAX_NOTE_TAGS = 12;
 
-// Tag: klein, ohne #, nur Buchstaben, Ziffern und _ - (höchstens 30 Zeichen)
+// Tag: klein, ohne #, nur Buchstaben, Ziffern und _ - (höchstens 60 Zeichen); „/“ verschachtelt (plot/nebelhafen, höchstens 3 Ebenen)
 export function normalizeTag(raw: string): string {
-  return raw.trim().replace(/^#+/, "").toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_-]/gu, "").slice(0, 30);
+  const cleaned = raw.trim().replace(/^#+/, "").toLowerCase().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}_/-]/gu, "");
+  return cleaned.split("/").filter(Boolean).slice(0, 3).join("/").slice(0, 60);
+}
+
+// Gehört der Tag zum gewählten Tag (er selbst oder ein Unter-Tag: „plot“ trifft „plot/nebelhafen“)?
+export function tagMatches(tag: string, selected: string): boolean {
+  return tag === selected || tag.startsWith(`${selected}/`);
 }
 
 export function normalizeTags(raw: string[]): string[] {
@@ -79,7 +86,7 @@ export function normalizeTags(raw: string[]): string[] {
 export function noteMatches(n: NoteView, q: string): boolean {
   const term = q.trim().toLowerCase();
   if (!term) return true;
-  if (term.startsWith("#")) return n.tags.includes(normalizeTag(term));
+  if (term.startsWith("#")) return n.tags.some((t) => tagMatches(t, normalizeTag(term)));
   return [n.title, stripHtml(n.body), ...n.tags, ...n.links.map((l) => l.label)].some((s) => s.toLowerCase().includes(term));
 }
 
@@ -103,7 +110,7 @@ export function inlineTargets(html: string): { wikiTitles: string[]; characterId
 export function inlineTags(html: string): string[] {
   const text = stripHtml(html);
   const found: string[] = [];
-  for (const m of text.matchAll(/(?:^|[\s(])#([\p{L}][\p{L}\p{N}_-]{0,29})/gu)) found.push(m[1]);
+  for (const m of text.matchAll(/(?:^|[\s(])#([\p{L}][\p{L}\p{N}_/-]{0,59})/gu)) found.push(m[1]);
   return normalizeTags(found);
 }
 

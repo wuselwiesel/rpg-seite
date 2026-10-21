@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { clipJumpHref } from "@/lib/clips";
-import { LINK_COLUMN, descendantIds, noteTitle, type LinkKind, type NoteFolder, type NoteLinkView, type NoteView } from "@/lib/notes";
+import { LINK_COLUMN, descendantIds, noteTitle, tagMatches, type LinkKind, type NoteFolder, type NoteLinkView, type NoteView } from "@/lib/notes";
 
 type LinkRow = {
   id: string;
@@ -12,10 +12,10 @@ type LinkRow = {
   clip_id: string | null;
   linked_note_id: string | null;
 };
-type NoteRow = { id: string; title: string; body: string; pinned: boolean; archived: boolean; deleted_at: string | null; tags: string[] | null; folder_id: string | null; is_template: boolean; world_id: string | null; updated_at: string };
+type NoteRow = { id: string; title: string; body: string; pinned: boolean; archived: boolean; deleted_at: string | null; tags: string[] | null; folder_id: string | null; is_template: boolean; world_id: string | null; created_at: string; updated_at: string };
 
 const LINK_COLS = "id, note_id, character_id, wiki_page_id, story_post_id, clip_id, linked_note_id";
-const NOTE_COLS = "id, title, body, pinned, archived, deleted_at, tags, folder_id, is_template, world_id, updated_at";
+const NOTE_COLS = "id, title, body, pinned, archived, deleted_at, tags, folder_id, is_template, world_id, created_at, updated_at";
 
 function rowTarget(r: LinkRow): { kind: LinkKind; id: string } {
   if (r.character_id) return { kind: "character", id: r.character_id };
@@ -123,7 +123,7 @@ export async function backlinks(supabase: SupabaseClient, userId: string, noteId
 }
 
 function toView(n: NoteRow, links: NoteLinkView[]): NoteView {
-  return { id: n.id, title: n.title, body: n.body, pinned: n.pinned, archived: n.archived, deletedAt: n.deleted_at, tags: n.tags ?? [], folderId: n.folder_id, isTemplate: n.is_template, worldId: n.world_id, updatedAt: n.updated_at, links };
+  return { id: n.id, title: n.title, body: n.body, pinned: n.pinned, archived: n.archived, deletedAt: n.deleted_at, tags: n.tags ?? [], folderId: n.folder_id, isTemplate: n.is_template, worldId: n.world_id, createdAt: n.created_at, updatedAt: n.updated_at, links };
 }
 
 export async function listFolders(supabase: SupabaseClient, userId: string): Promise<NoteFolder[]> {
@@ -170,7 +170,7 @@ export async function listTemplates(supabase: SupabaseClient, userId: string): P
   return ((data ?? []) as NoteRow[]).map((n) => toView(n, []));
 }
 
-export type NoteSelection = { id?: string | null; folder?: string | null; tag?: string | null; world?: string | null };
+export type NoteSelection = { id?: string | null; ids?: string[] | null; folder?: string | null; tag?: string | null; world?: string | null };
 
 // Notizen für Export und Druck: eine Notiz (id) oder Auswahl nach Ordner (samt Unterordnern; „none“ = ohne Ordner), Tag und Welt (inkl. Notizen ohne Welt)
 export async function selectNotes(supabase: SupabaseClient, userId: string, sel: NoteSelection): Promise<NoteView[]> {
@@ -178,11 +178,15 @@ export async function selectNotes(supabase: SupabaseClient, userId: string, sel:
     const one = await getNote(supabase, userId, sel.id);
     return one ? [one] : [];
   }
+  if (sel.ids && sel.ids.length > 0) {
+    const wanted = new Set(sel.ids);
+    return (await listNotes(supabase, userId, true)).filter((n) => wanted.has(n.id) && !n.deletedAt).sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
+  }
   const [all, folders] = await Promise.all([listNotes(supabase, userId), listFolders(supabase, userId)]);
   const folderIds = sel.folder && sel.folder !== "none" ? descendantIds(folders, sel.folder) : null;
   return all
     .filter((n) => (sel.folder === "none" ? n.folderId === null : folderIds ? !!n.folderId && folderIds.has(n.folderId) : true))
-    .filter((n) => (sel.tag ? n.tags.includes(sel.tag) : true))
+    .filter((n) => (sel.tag ? n.tags.some((t) => tagMatches(t, sel.tag as string)) : true))
     .filter((n) => (sel.world ? n.worldId === null || n.worldId === sel.world : true))
     .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
 }

@@ -17,7 +17,7 @@ export default async function NotesPrintPage({ searchParams }: { searchParams: P
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const notes = await selectNotes(supabase, user.id, { id: one("id"), folder: one("ordner"), tag: one("tag"), world: one("welt") });
+  const notes = await selectNotes(supabase, user.id, { id: one("id"), ids: one("ids")?.split(",") ?? null, folder: one("ordner"), tag: one("tag"), world: one("welt") });
   if (notes.length === 0) notFound();
 
   return (

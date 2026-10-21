@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapePostgrestValue } from "@/lib/postgrest";
-import { LINK_COLUMN, MAX_FOLDER_DEPTH, canMoveFolder, folderPath, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
+import { LINK_COLUMN, MAX_FOLDER_DEPTH, canMoveFolder, folderPath, normalizeTag, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 import { getFaceclaimNames } from "@/lib/faceclaim-data";
 import { notesForTarget, resolveLinks } from "@/lib/notes-data";
 import { BUILTIN_TEMPLATES, uncheckTasks } from "@/lib/note-templates";
@@ -434,6 +434,67 @@ export async function emptyTrash(): Promise<string | null> {
   const { supabase, user } = await authed();
   if (!user) return "Nicht angemeldet.";
   const { error } = await supabase.from("notes").delete().eq("user_id", user.id).not("deleted_at", "is", null);
+  if (error) return error.message;
+  revalidatePath("/notizen");
+  return null;
+}
+
+// ---- Mehrfachauswahl ----
+
+export type BulkOp =
+  | { kind: "move"; folderId: string | null }
+  | { kind: "addTag"; tag: string }
+  | { kind: "removeTag"; tag: string }
+  | { kind: "pin"; pinned: boolean }
+  | { kind: "archive"; archived: boolean }
+  | { kind: "trash" }
+  | { kind: "restore" }
+  | { kind: "delete" };
+
+// Eine Änderung auf mehrere eigene Notizen anwenden (höchstens 200 auf einmal)
+export async function bulkUpdateNotes(ids: string[], op: BulkOp): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const clean = [...new Set(ids.filter((i) => /^[0-9a-f-]{36}$/i.test(i)))].slice(0, 200);
+  if (clean.length === 0) return "Keine Notizen gewählt.";
+  let error: { message: string } | null = null;
+  switch (op.kind) {
+    case "move":
+      ({ error } = await supabase.from("notes").update({ folder_id: op.folderId }).in("id", clean).eq("user_id", user.id));
+      break;
+    case "pin":
+      ({ error } = await supabase.from("notes").update({ pinned: op.pinned }).in("id", clean).eq("user_id", user.id));
+      break;
+    case "archive":
+      ({ error } = await supabase.from("notes").update({ archived: op.archived }).in("id", clean).eq("user_id", user.id));
+      break;
+    case "trash":
+      ({ error } = await supabase.from("notes").update({ deleted_at: new Date().toISOString() }).in("id", clean).eq("user_id", user.id));
+      break;
+    case "restore":
+      ({ error } = await supabase.from("notes").update({ deleted_at: null }).in("id", clean).eq("user_id", user.id));
+      break;
+    case "delete":
+      ({ error } = await supabase.from("notes").delete().in("id", clean).eq("user_id", user.id).not("deleted_at", "is", null));
+      break;
+    case "addTag":
+    case "removeTag": {
+      const tag = normalizeTag(op.tag);
+      if (!tag) return "Bitte einen Tag eingeben.";
+      const { data } = await supabase.from("notes").select("id, tags").in("id", clean).eq("user_id", user.id);
+      for (const n of (data ?? []) as { id: string; tags: string[] | null }[]) {
+        const cur = n.tags ?? [];
+        const next = op.kind === "addTag" ? normalizeTags([...cur, tag]) : cur.filter((t) => t !== tag);
+        if (next.join() === cur.join()) continue;
+        const r = await supabase.from("notes").update({ tags: next }).eq("id", n.id).eq("user_id", user.id);
+        if (r.error) {
+          error = r.error;
+          break;
+        }
+      }
+      break;
+    }
+  }
   if (error) return error.message;
   revalidatePath("/notizen");
   return null;
