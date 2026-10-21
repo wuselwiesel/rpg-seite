@@ -10,6 +10,7 @@ import { sendPushToUser } from "@/lib/push";
 import { isAllowedGifUrl } from "@/lib/gif";
 import { mentionedCharacterIds } from "@/lib/mentions";
 import { isRateLimited } from "@/lib/rate-limit";
+import { systemMessageText } from "@/lib/system-message";
 
 export async function createChat(_prevState: string | null, formData: FormData) {
   const isGroup = formData.get("is_group") === "on";
@@ -241,6 +242,25 @@ export async function addChatParticipant(
     .insert({ chat_id: chatId, character_id: characterId });
 
   if (error) return error.message;
+
+  // Systemzeile „X wurde hinzugefügt“, geschrieben von einer meiner Figuren in diesem Chat (Fehler hier sind nicht schlimm)
+  const [{ data: added }, { data: me }] = await Promise.all([
+    supabase.from("characters").select("name").eq("id", characterId).maybeSingle(),
+    supabase.from("chat_participants").select("character_id, characters!inner(owner_id)").eq("chat_id", chatId).limit(50),
+  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const mine = (me ?? []).find(
+    (p) => user && (p.characters as unknown as { owner_id: string }).owner_id === user.id && p.character_id !== characterId,
+  );
+  if (added && mine) {
+    await supabase.from("messages").insert({
+      chat_id: chatId,
+      character_id: mine.character_id,
+      content: systemMessageText(`${added.name} wurde hinzugefügt`),
+    });
+  }
 
   revalidatePath(`/chats/${chatId}`);
   revalidatePath("/chats");
