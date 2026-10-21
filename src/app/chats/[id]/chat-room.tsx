@@ -689,7 +689,8 @@ export function ChatRoom({
         )}
         <div className="flex flex-col gap-3">
           {messages.map((message, index) => {
-            const isOwn = message.character_id === activeCharacter.id;
+            // Eigen ist, was von einer meiner Figuren stammt (nicht nur von der gerade gewählten)
+            const isOwn = message.character_id === activeCharacter.id || myCharacterIds.includes(message.character_id);
             const isLast = index === messages.length - 1;
             return (
               <div key={message.id} id={`rpmsg-${message.id}`} className="flex flex-col">

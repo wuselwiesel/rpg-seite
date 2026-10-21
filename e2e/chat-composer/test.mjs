@@ -88,6 +88,16 @@ const box = (loc) => loc.evaluate((el) => { const r = el.getBoundingClientRect()
 
 const real = errors.filter((e) => !/gif-search|ERR_FAILED/.test(e));
 check("keine Konsolen-/Seitenfehler", real.length === 0, real.join(" | ").slice(0, 400));
+// Nachrichten meiner anderen Figur stehen rechts wie meine eigenen (nicht links als „die anderen“)
+{
+  const page = await open(1100, 800, false, "?zweite=1");
+  const row = page.locator("#rpmsg-mx > div").first();
+  check("Nachricht meiner zweiten Figur steht rechts (eigen)", ((await row.getAttribute("class")) ?? "").includes("flex-row-reverse"));
+  const other = page.locator("#rpmsg-m0 > div").first();
+  check("Nachricht der anderen Person steht links", !((await other.getAttribute("class")) ?? "").includes("flex-row-reverse"));
+  await page.context().close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} FEHLGESCHLAGEN` : `Alle ${results.length} Prüfungen bestanden`);
