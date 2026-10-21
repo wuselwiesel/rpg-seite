@@ -13,7 +13,8 @@ import type { ChatQuote } from "@/lib/clips";
 import type { QuoteDraft } from "@/lib/scene-quote";
 import { EmojiPickerDialog } from "./emoji-picker-dialog";
 import { createClient } from "@/lib/supabase/client";
-import { sendMessage } from "@/app/chats/actions";
+import { sendMessage, updateMessage, deleteMessage } from "@/app/chats/actions";
+import { toggleReaction as toggleMessageReaction } from "@/app/reactions/actions";
 import { useAccountChat, type AccountMessage, type AccountReaction } from "@/lib/use-account-chat";
 import { messagePreview } from "@/lib/chat-preview";
 import { chatThemeStyle, type ChatTheme } from "@/lib/chat-theme";
@@ -61,6 +62,7 @@ type ThreadItem = {
   text: string;
   imageUrl?: string | null;
   pending?: boolean;
+  edited?: boolean;
   // Antwort auf eine andere Nachricht (Name und Textanfang des Zitats) und Reaktionen (nur Redaktions-Chats)
   replyTo?: { name: string; text: string } | null;
   // Zitat aus der Szene (nur im Szenen-Chat)
@@ -269,6 +271,7 @@ function MiniThread({
                     {m.text && (
                       <div className={m.imageUrl ? "px-2 pb-0.5 pt-1" : ""}>
                         <SpoilerText text={m.text} />
+                        {m.edited && <span className="ml-1 text-[10px] opacity-70">bearbeitet</span>}
                       </div>
                     )}
                   </div>
@@ -478,10 +481,15 @@ function MiniThread({
 type AccountMember = { id: string; name: string; avatarUrl: string | null };
 
 // Reaktionen einer Nachricht nach Emoji zusammenfassen (Anzahl, ob man selbst dabei ist, wer reagiert hat)
-function groupReactions(rows: AccountReaction[], userId: string, nameOf: (id: string) => string) {
+function groupReactions(
+  rows: { emoji: string; user_id: string }[],
+  userId: string,
+  nameOf: (id: string) => string,
+  isMine: (id: string) => boolean = (id) => id === userId,
+) {
   const by = new Map<string, string[]>();
   for (const r of rows) by.set(r.emoji, [...(by.get(r.emoji) ?? []), r.user_id]);
-  return [...by.entries()].map(([emoji, ids]) => ({ emoji, count: ids.length, mine: ids.includes(userId), names: ids.map(nameOf).join(", ") }));
+  return [...by.entries()].map(([emoji, ids]) => ({ emoji, count: ids.length, mine: ids.some(isMine), names: ids.map(nameOf).join(", ") }));
 }
 
 function AccountThread({
@@ -633,6 +641,7 @@ type RpRow = {
   shared_post_id: string | null;
   story_id: string | null;
   created_at: string;
+  updated_at?: string | null;
   pending?: boolean;
 };
 type Who = { id: string; name: string; avatar_url: string | null; owner_id?: string };
@@ -670,7 +679,23 @@ function RpThread({
       });
   }
   const [error, setError] = useState<string | null>(null);
+  const [reactionRows, setReactionRows] = useState<{ id: string; message_id: string; character_id: string; emoji: string }[]>([]);
+  const rowIdsRef = useRef(new Set(initial.map((r) => r.id)));
   const typing = useTyping(`chat-${chatId}`, activeCharacterId, people[activeCharacterId]?.name ?? "");
+
+  // Reaktionen der geladenen Nachrichten
+  useEffect(() => {
+    const ids = initial.map((r) => r.id);
+    if (ids.length === 0) return;
+    createClient()
+      .from("reactions")
+      .select("id, message_id, character_id, emoji")
+      .in("message_id", ids)
+      .then(({ data }) => {
+        if (data) setReactionRows(data as typeof reactionRows);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Absender früherer Nachrichten, die nicht mehr in der Teilnehmerliste stehen
   useEffect(() => {
@@ -713,17 +738,64 @@ function RpThread({
       )
       .on(
         "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `chat_id=eq.${chatId}` },
+        (payload) => {
+          const row = payload.new as RpRow;
+          setRows((prev) => prev.map((m) => (m.id === row.id ? { ...m, content: row.content, updated_at: row.updated_at } : m)));
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "DELETE", schema: "public", table: "messages" },
         (payload) => {
           const id = (payload.old as { id?: string }).id;
           if (id) setRows((prev) => prev.filter((m) => m.id !== id));
         },
       )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reactions" }, (payload) => {
+        const row = payload.new as { id: string; message_id: string | null; character_id: string; emoji: string };
+        if (!row.message_id || !rowIdsRef.current.has(row.message_id)) return;
+        const r = row as { id: string; message_id: string; character_id: string; emoji: string };
+        setReactionRows((prev) => (prev.some((x) => x.id === r.id) ? prev : [...prev, r]));
+        if (!initialPeopleRef.current[r.character_id]) loadSender(r.character_id);
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "reactions" }, (payload) => {
+        const id = (payload.old as { id?: string }).id;
+        if (id) setReactionRows((prev) => prev.filter((x) => x.id !== id));
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [chatId, userId]);
+
+  useEffect(() => {
+    rowIdsRef.current = new Set(rows.map((r) => r.id));
+  }, [rows]);
+
+  async function edit(id: string, text: string) {
+    const err = await updateMessage(id, text);
+    if (err) return setError(err);
+    setRows((prev) => prev.map((m) => (m.id === id ? { ...m, content: text.trim(), updated_at: new Date().toISOString() } : m)));
+  }
+
+  async function remove(id: string) {
+    const err = await deleteMessage(id, chatId);
+    if (err) return setError(err);
+    setRows((prev) => prev.filter((m) => m.id !== id));
+  }
+
+  async function react(messageId: string, emoji: string) {
+    const mine = reactionRows.find((r) => r.message_id === messageId && r.emoji === emoji && (r.character_id === activeCharacterId || people[r.character_id]?.owner_id === userId));
+    // sofort anzeigen, der Server-Stand kommt per Echtzeit nach
+    if (mine) setReactionRows((prev) => prev.filter((r) => r.id !== mine.id));
+    else setReactionRows((prev) => [...prev, { id: `tmp-${messageId}-${emoji}`, message_id: messageId, character_id: activeCharacterId, emoji }]);
+    const err = await toggleMessageReaction({ messageId, characterId: mine?.character_id ?? activeCharacterId }, emoji);
+    if (err) {
+      setError(err);
+      setReactionRows((prev) => (mine ? [...prev, mine] : prev.filter((r) => r.id !== `tmp-${messageId}-${emoji}`)));
+    }
+  }
 
   async function send(text: string, image: PickedImage | null): Promise<boolean> {
     const content = text.trim();
@@ -793,11 +865,21 @@ function RpThread({
     text: m.image_url && !m.content.trim() ? "" : messagePreview(m),
     imageUrl: m.image_url,
     pending: m.pending,
+    edited: !!m.updated_at,
+    reactions: groupReactions(
+      reactionRows.filter((r) => r.message_id === m.id).map((r) => ({ emoji: r.emoji, user_id: r.character_id })),
+      activeCharacterId,
+      (id) => people[id]?.name ?? "?",
+      (id) => id === activeCharacterId || people[id]?.owner_id === userId,
+    ),
   }));
   return (
     <MiniThread
       items={items}
       error={error}
+      onEdit={(id, t) => void edit(id, t)}
+      onDelete={(id) => void remove(id)}
+      onReact={(id, emoji) => void react(id, emoji)}
       showNames={Object.keys(people).length > 2}
       typingNames={typing.names}
       onTyping={typing.announce}
@@ -829,7 +911,7 @@ export function RpMiniRoom({
       supabase
         .from("messages")
         .select(
-          "id, character_id, content, image_url, shared_post_id, story_id, created_at",
+          "id, character_id, content, image_url, shared_post_id, story_id, created_at, updated_at",
         )
         .eq("chat_id", chatId)
         .order("created_at", { ascending: false })

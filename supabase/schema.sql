@@ -9346,4 +9346,12 @@ alter policy messages_insert_participant on public.messages with check (
 -- Chat-Verlauf: die neuesten Nachrichten eines Chats (order by created_at desc limit …) kommen direkt aus dem Index statt sortiert zu werden.
 create index if not exists messages_chat_created_idx on public.messages (chat_id, created_at desc);
 
+-- Reaktionen auf Chat-Nachrichten live im kleinen Chat-Fenster (Echtzeit respektiert die RLS).
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'reactions') then
+    alter publication supabase_realtime add table public.reactions;
+  end if;
+end $$;
+
 notify pgrst, 'reload schema';
