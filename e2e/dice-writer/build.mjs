@@ -19,7 +19,9 @@ fs.writeFileSync(
   `export type DiceRollState = { error: string | null; luckRemaining: number | null; success?: boolean | null };
 export async function createDiceRoll(_post: string, _world: string, _prev: unknown, fd: FormData): Promise<DiceRollState> { (window as any).__rolls.push(Object.fromEntries(fd.entries())); return { error: null, luckRemaining: null }; }
 export async function getLuckPointsRemaining() { return 3; }
-export async function rerollWithLuck() { return { error: null, luckRemaining: 2 } as DiceRollState; }`,
+export async function rerollWithLuck() { return { error: null, luckRemaining: 2 } as DiceRollState; }
+export type YesNoRollState = { error: string | null; answer?: boolean | null; secret?: boolean };
+export async function createYesNoRoll(_post: string, _world: string, _prev: unknown, fd: FormData): Promise<YesNoRollState> { (window as any).__yesno.push(Object.fromEntries(fd.entries())); return { error: null, answer: true, secret: fd.get("secret") === "on" }; }`,
 );
 // Supabase-Client: ChaBo-Bögen je Charakter aus window.__sheets, alles andere leer
 fs.writeFileSync(
@@ -43,7 +45,7 @@ export const createClient = () => ({ from: (t: string) => q(t), channel: () => q
 const stubs = {
   name: "stubs",
   setup(b) {
-    b.onResolve({ filter: /\.\.\/actions$/ }, (a) => (a.importer.endsWith("dice-roll-form.tsx") ? { path: path.join(out, "stub-dice-actions.ts") } : undefined));
+    b.onResolve({ filter: /\.\.\/actions$/ }, (a) => (a.importer.endsWith("dice-roll-form.tsx") || a.importer.endsWith("yes-no-roll-form.tsx") ? { path: path.join(out, "stub-dice-actions.ts") } : undefined));
     b.onResolve({ filter: /supabase\/client$/ }, () => ({ path: path.join(out, "stub-client.ts") }));
   },
 };
@@ -59,5 +61,5 @@ const sheetA = { attrBasis: { MU: "15" }, attrBonus: {} };
 const sheetB = { attrBasis: { MU: "8" }, attrBonus: { MU: "2" } };
 fs.writeFileSync(
   path.join(out, "index.html"),
-  `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><body style="background:var(--app);margin:0"><script>window.__rolls=[];window.__sheets={a:${JSON.stringify(sheetA)},b:${JSON.stringify(sheetB)}}</script><div id="root"></div><script src="out.js"></script>`,
+  `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><body style="background:var(--app);margin:0"><script>window.__rolls=[];window.__yesno=[];window.__sheets={a:${JSON.stringify(sheetA)},b:${JSON.stringify(sheetB)}}</script><div id="root"></div><script src="out.js"></script>`,
 );

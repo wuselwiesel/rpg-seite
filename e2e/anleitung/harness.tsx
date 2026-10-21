@@ -101,6 +101,19 @@ function Scene2() {
   );
 }
 
+function YesNoRows() {
+  const rows: StoryEntry[] = [
+    entry("j1", vesper, "", 30, { roll_label: "Folgt uns jemand?", roll_kind: "yesno", roll_die: 2, roll_result: 1, roll_success: true }),
+    entry("j2", dorian, "", 29, { roll_label: "Ist die Tür verschlossen?", roll_kind: "yesno", roll_die: 2, roll_result: 2, roll_success: false }),
+    entry("j3", seraphine, "", 28, { roll_label: "Lügt er?", roll_kind: "yesno", roll_secret: true, roll_die: 2, roll_result: 1, roll_success: true }),
+  ];
+  return (
+    <div id="shot" style={{ maxWidth: 720, padding: pad }} className="flex flex-col gap-2">
+      {rows.map((e) => <Row key={e.id} e={e} />)}
+    </div>
+  );
+}
+
 function RollRows() {
   const rows: StoryEntry[] = [
     entry("r1", vesper, "", 30, { roll_label: "Dorians Blick standhalten", ...roll(14, null, 20, 5, true) }),
@@ -218,6 +231,6 @@ function Editor() {
   );
 }
 
-const screens: Record<string, () => React.JSX.Element> = { szene: Scene, szene2: Scene2, wurfzeilen: RollRows, chabo: ChaboScreen, netz: Net, wuerfeln: Composer, schreiben: Composer, karte: MapScreen, tickets: TicketsList, ticket: TicketThread, besetzung: Besetzung, editor: Editor };
+const screens: Record<string, () => React.JSX.Element> = { szene: Scene, szene2: Scene2, wurfzeilen: RollRows, jn: YesNoRows, chabo: ChaboScreen, netz: Net, wuerfeln: Composer, schreiben: Composer, karte: MapScreen, tickets: TicketsList, ticket: TicketThread, besetzung: Besetzung, editor: Editor };
 const Screen = screens[screen] ?? Scene;
 createRoot(document.getElementById("root")!).render(<Screen />);

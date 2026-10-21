@@ -7,7 +7,7 @@ import { SceneChatPanel } from "./scene-chat";
 import { QUOTE_EVENT, type QuoteDraft } from "@/lib/scene-quote";
 import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
-import { DiceRollForm } from "./dice-roll-form";
+import { DiceTab } from "./dice-tab";
 import { NextSceneForm } from "./next-scene-form";
 import { WriterSelect } from "@/components/writer-select";
 import { OnlineLine } from "@/components/online-members";
@@ -339,7 +339,7 @@ export function StoryComposer({
           onTyping={() => announceTyping("write")}
         />
       ) : (
-        <DiceRollForm
+        <DiceTab
           key={writerId}
           storyPostId={storyPostId}
           worldId={worldId}

@@ -229,6 +229,9 @@ export type StoryEntry = {
   // Stand nach diesem Wurf - null, wenn kein Glück-Wert bekannt/verknüpft ist.
   roll_luck_remaining?: number | null;
   roll_condition?: string | null;
+  // „yesno“: Ja/Nein-Wurf ohne Zahlen (roll_success = Ja); roll_secret: nur für die Besitzerin der würfelnden Figur sichtbar
+  roll_kind?: "yesno" | null;
+  roll_secret?: boolean;
   kind?: "entry" | "narrator" | "chapter";
   chapter_title?: string | null;
   chapter_summary?: string | null;

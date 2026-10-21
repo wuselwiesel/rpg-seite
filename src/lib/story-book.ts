@@ -43,6 +43,7 @@ type EntryRow = {
   chapter_title: string | null;
   chapter_summary: string | null;
   roll_label: string | null;
+  roll_kind: string | null;
   roll_result: number | null;
   roll_value: number | null;
   roll_die: number | null;
@@ -97,8 +98,9 @@ export async function loadBook(scope: { sceneId: string } | { arcId: string } | 
       ...(await allRows<EntryRow>((from, to) =>
         supabase
           .from("story_entries")
-          .select("story_post_id, content, kind, chapter_title, chapter_summary, roll_label, roll_result, roll_value, roll_die, roll_success, created_at, characters!story_entries_character_id_fkey(name)")
+          .select("story_post_id, content, kind, chapter_title, chapter_summary, roll_label, roll_kind, roll_result, roll_value, roll_die, roll_success, created_at, characters!story_entries_character_id_fkey(name)")
           .in("story_post_id", ids)
+          .eq("roll_secret", false)
           .order("created_at", { ascending: true })
           .order("id")
           .range(from, to)
@@ -122,7 +124,10 @@ export async function loadBook(scope: { sceneId: string } | { arcId: string } | 
           return { kind: "chapter", author: e.characters?.name ?? "", html: "", chapterTitle: e.chapter_title ?? stripHtml(e.content), chapterSummary: e.chapter_summary ?? undefined };
         }
         if (e.roll_label) {
-          const text = `würfelt auf „${e.roll_label}“: ${e.roll_result}/${e.roll_value} (W${e.roll_die}) – ${e.roll_success ? "Erfolg" : "Misserfolg"}`;
+          const text =
+            e.roll_kind === "yesno"
+              ? `würfelt auf „${e.roll_label}“: ${e.roll_success ? "Ja" : "Nein"}`
+              : `würfelt auf „${e.roll_label}“: ${e.roll_result}/${e.roll_value} (W${e.roll_die}) – ${e.roll_success ? "Erfolg" : "Misserfolg"}`;
           return { kind: "roll", author: e.characters?.name ?? "", html: `<p>${escapeXml(text)}</p>` };
         }
         return { kind: e.kind === "narrator" ? "narrator" : "entry", author: e.characters?.name ?? "", html: e.content };
