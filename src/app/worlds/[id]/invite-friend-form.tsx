@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { addWorldMember } from "../actions";
+import { inviteToWorld } from "../actions";
 import type { Profile } from "@/lib/types";
 
 export function InviteFriendForm({
@@ -11,7 +11,7 @@ export function InviteFriendForm({
   worldId: string;
   friends: Profile[];
 }) {
-  const action = addWorldMember.bind(null, worldId);
+  const action = inviteToWorld.bind(null, worldId);
   const [error, formAction, pending] = useActionState(action, null);
 
   if (friends.length === 0) {
