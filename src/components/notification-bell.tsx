@@ -70,8 +70,12 @@ export function NotificationBell({
     // Zusätzliches Polling als Fallback: die Realtime-Verbindung liefert INSERTs
     // nicht immer zuverlässig aus (z.B. nach WLAN-Wechsel oder langer Inaktivität
     // des Tabs), sodass neue Benachrichtigungen sonst erst nach einem manuellen
-    // Reload auftauchen würden.
+    // Reload auftauchen würden. Nur im sichtbaren Tab und nur die sichtbare Glocke
+    // (Handy- und Desktop-Leiste sind beide eingebaut, eine davon per CSS versteckt),
+    // sonst füllen Hintergrund-Tabs das Anfrage-Protokoll von Supabase.
     const pollForNew = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (!panelRef.current || panelRef.current.getClientRects().length === 0) return;
       let query = supabase.from("notifications").select("*").eq("user_id", userId);
       if (worldFilter) query = query.or(`world_id.is.null,world_id.eq.${worldFilter}`);
       const { data } = await query.order("created_at", { ascending: false }).limit(20).returns<AppNotification[]>();
@@ -85,10 +89,13 @@ export function NotificationBell({
       });
       setUnreadCount(data.filter((n) => !n.read_at).length);
     };
-    const interval = setInterval(pollForNew, 20_000);
+    const interval = setInterval(pollForNew, 60_000);
+    const onVisible = () => void pollForNew();
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
   }, [userId, instanceId, worldFilter]);

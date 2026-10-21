@@ -23,12 +23,13 @@ export function useUnreadChatIds(
     myIdsRef.current = myCharacterIds;
   });
 
-  // Zählung neu vom Server holen (beim Seitenwechsel, Zurückkehren zur App und alle 30 s),
+  // Zählung neu vom Server holen (beim Seitenwechsel, Zurückkehren zur App und alle 60 s, nur im sichtbaren Tab),
   // damit ein verpasstes Realtime-Ereignis keinen "Geister"-Punkt hinterlässt.
   useEffect(() => {
     const supabase = createClient();
     let cancelled = false;
     async function refetch() {
+      if (document.visibilityState !== "visible") return;
       const [{ data: chats }, { data: reads }] = await Promise.all([
         supabase
           .from("chats")
@@ -44,7 +45,7 @@ export function useUnreadChatIds(
     refetchRef.current = refetch;
     // Direkt nach dem Verlassen eines Chats ist der Lese-Zeitstempel evtl. noch nicht gespeichert.
     const first = setTimeout(refetch, 800);
-    const interval = setInterval(refetch, 30_000);
+    const interval = setInterval(refetch, 60_000);
     const onVisible = () => document.visibilityState === "visible" && refetch();
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", refetch);

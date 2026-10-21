@@ -159,10 +159,11 @@ function BubbleInner({
     setAccUnread(next.account);
   }, []);
 
-  // Beim Start, bei Rückkehr zur App und regelmäßig abgleichen, damit nie eine Meldung "hängen bleibt" oder fehlt.
+  // Beim Start, bei Rückkehr zur App und regelmäßig abgleichen, damit nie eine Meldung "hängen bleibt" oder fehlt
+  // (regelmäßig nur im sichtbaren Tab, sonst fragen Hintergrund-Tabs rund um die Uhr nach).
   useEffect(() => {
     void refreshCounts();
-    const interval = setInterval(() => void refreshCounts(), 45_000);
+    const interval = setInterval(() => document.visibilityState === "visible" && void refreshCounts(), 90_000);
     const onVisible = () => document.visibilityState === "visible" && void refreshCounts();
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
