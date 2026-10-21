@@ -189,6 +189,30 @@ export function ChatRoom({
     }
   }
 
+  // Wer im Chat schreibt: der Kanal hört seit dem Öffnen zu und kennt nur die damals eingetragenen Figuren. Wer danach dazukam,
+  // wird beim ersten Eintreffen nachgeladen; sonst stünden bei neuen Nachrichten weder Name noch Bild und in Gruppen wirkte es,
+  // als schriebe immer dieselbe Figur.
+  const participantsRef = useRef(participants);
+  useEffect(() => {
+    participantsRef.current = participants;
+  }, [participants]);
+  const knownSenders = useRef(new Map<string, Character>());
+  const requestedSenders = useRef(new Set<string>());
+  function loadSender(characterId: string) {
+    if (requestedSenders.current.has(characterId)) return;
+    requestedSenders.current.add(characterId);
+    supabase
+      .from("characters")
+      .select("*")
+      .eq("id", characterId)
+      .maybeSingle<Character>()
+      .then(({ data }) => {
+        if (!data) return;
+        knownSenders.current.set(data.id, data);
+        setMessages((prev) => prev.map((m) => (m.character_id === data.id && !m.characters ? { ...m, characters: data } : m)));
+      });
+  }
+
   useEffect(() => {
     markAsRead();
 
@@ -199,7 +223,8 @@ export function ChatRoom({
         { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${chatId}` },
         (payload) => {
           const row = payload.new as Omit<Message, "characters">;
-          const character = participants.find((p) => p.id === row.character_id) ?? null;
+          const character = participantsRef.current.find((p) => p.id === row.character_id) ?? knownSenders.current.get(row.character_id) ?? null;
+          if (!character) loadSender(row.character_id);
           setMessages((prev) =>
             prev.some((m) => m.id === row.id)
               ? // bereits optimistisch angezeigt: als zugestellt markieren
