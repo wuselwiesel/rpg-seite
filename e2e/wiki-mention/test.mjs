@@ -203,6 +203,35 @@ async function fresh() {
   await ctx.close();
 }
 
+// Schwebende Leiste bleibt am Editor und liegt über der Seitenleiste (Seite mit fester Leiste links, Markierung am Zeilenanfang)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+  const page = await ctx.newPage();
+  const html = encodeURIComponent("<h2>4. Dana erfährt die Wahrheit</h2><p>Text</p>");
+  await page.goto(url + "#" + html);
+  await page.waitForTimeout(500);
+  await page.evaluate(() => {
+    document.body.style.margin = "0";
+    const wrap = document.querySelector("#root > div");
+    wrap.style.cssText = "margin-left:420px;max-width:1000px;padding:20px";
+    const side = document.createElement("aside");
+    side.style.cssText = "position:fixed;left:0;top:0;bottom:0;width:400px;background:#faf5ef;border-right:1px solid #ccc;z-index:30";
+    document.body.appendChild(side);
+  });
+  await page.locator(".ProseMirror h2").click({ clickCount: 3 });
+  await page.waitForTimeout(400);
+  const pos = await page.evaluate(() => {
+    const tb = document.querySelector('[role="toolbar"][aria-label="Formatierung der Auswahl"]');
+    const r = tb.getBoundingClientRect();
+    const ed = document.querySelector("[data-rte]").getBoundingClientRect();
+    const hit = document.elementFromPoint(Math.max(r.left + 30, 5), r.top + r.height / 2);
+    return { left: r.left, editorLeft: ed.left, onTop: !!hit?.closest('[role="toolbar"]') };
+  });
+  check("Schwebende Leiste ragt nicht über den Editor hinaus", pos.left >= pos.editorLeft, JSON.stringify(pos));
+  check("Schwebende Leiste liegt über der Seitenleiste", pos.onTop);
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r).length;
 console.log(failed ? `${failed} Test(e) fehlgeschlagen` : `Alle ${results.length} Prüfungen bestanden`);
