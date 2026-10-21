@@ -13,7 +13,7 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "friend", label: "Freundschaftsanfragen und Begrüßungen", types: ["friend_request", "friend_accept", "welcome_greeting"] },
   { key: "relationship", label: "Beziehungen", types: ["relationship"] },
   { key: "badge", label: "Badges", types: ["badge"] },
-  { key: "world_join", label: "Welt-Beitritt", types: ["world_request", "world_request_result"] },
+  { key: "world_join", label: "Welt-Beitritt", types: ["world_request", "world_request_result", "world_invite", "world_invite_result"] },
   { key: "world_admin", label: "Welt-Verwaltung (als Admin)", types: ["world_admin_member", "world_admin_character", "world_admin_npc", "world_admin_leave", "world_admin_full", "world_admin_role"] },
   { key: "role", label: "Rollen (Angebote und Antworten)", types: ["character_offer", "character_claim_result"] },
   { key: "review", label: "Charaktere prüfen (Entscheidungen und Änderungsvorschläge)", types: ["character_review", "character_change"] },

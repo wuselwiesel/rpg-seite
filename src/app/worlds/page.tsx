@@ -5,6 +5,7 @@ import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { WorldCover } from "@/components/world-cover";
 import { EnterWorldButton } from "./enter-world-button";
 import { LeaveWorldButton } from "./[id]/leave-world-button";
+import { PendingWorldInvites } from "./world-invites";
 
 export default async function WorldsPage() {
   const supabase = await createClient();
@@ -37,6 +38,8 @@ export default async function WorldsPage() {
           </Link>
         </div>
       </div>
+
+      <PendingWorldInvites />
 
       {worlds.length === 0 && (
         <p className="text-muted">

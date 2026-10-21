@@ -10,6 +10,7 @@ import { JoinOrRequestButton } from "../join-or-request-button";
 import { JoinRequests, type JoinRequest } from "./join-requests";
 import { LeaveWorldButton } from "./leave-world-button";
 import { InviteFriendForm } from "./invite-friend-form";
+import { PendingInvitesList } from "./pending-invites-list";
 import { InviteLink } from "@/components/invite-link";
 import { MemberActions } from "./member-actions";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -126,7 +127,18 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
 
   const officialId = isAdmin ? await getOfficialAccountId() : null;
   const friends = isAdmin ? (await getAcceptedFriends(user.id)).filter((f) => f.id !== officialId) : [];
-  const invitableFriends = friends.filter((f) => !memberIds.has(f.id));
+  // Offene Einladungen (nur Admins): wer schon eingeladen ist, steht nicht noch einmal zur Auswahl
+  const { data: pendingInvites } = isAdmin
+    ? await supabase
+        .from("world_member_invites")
+        .select("id, invited_user_id, profiles!world_member_invites_invited_user_id_fkey(username, nickname)")
+        .eq("world_id", id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .returns<{ id: string; invited_user_id: string; profiles: { username: string; nickname: string | null } | null }[]>()
+    : { data: [] as { id: string; invited_user_id: string; profiles: { username: string; nickname: string | null } | null }[] };
+  const invitedIds = new Set((pendingInvites ?? []).map((i) => i.invited_user_id));
+  const invitableFriends = friends.filter((f) => !memberIds.has(f.id) && !invitedIds.has(f.id));
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
@@ -244,6 +256,7 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
             <InviteLink worldId={world.id} />
           </div>
           <InviteFriendForm worldId={world.id} friends={invitableFriends} />
+          <PendingInvitesList worldId={world.id} invites={(pendingInvites ?? []).map((i) => ({ id: i.id, name: i.profiles?.nickname || i.profiles?.username || "?" }))} />
         </>
       )}
 

@@ -6,6 +6,7 @@ import { getUserWorlds } from "@/lib/worlds";
 import { JoinOrRequestButton } from "@/app/worlds/join-or-request-button";
 import { EnterWorldButton } from "@/app/worlds/enter-world-button";
 import { InviteLinkForm } from "./invite-link-form";
+import { PendingWorldInvites } from "@/app/worlds/world-invites";
 
 export const metadata = { title: "Willkommen" };
 
@@ -28,6 +29,8 @@ export default async function WelcomePage() {
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4 px-4 py-10">
       <h1 className="font-serif text-3xl text-fg">Willkommen bei Wortwinkel</h1>
+
+      <PendingWorldInvites />
 
       {demo && (
         <section className={card} aria-label="Übungswelt">

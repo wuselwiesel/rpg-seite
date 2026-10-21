@@ -10,6 +10,7 @@ import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
 import { isDefaultNatures, parseNatureConfig } from "@/lib/natures";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { notifyWorldAdmins } from "@/lib/world-admin-notify";
+import { createNotification } from "@/lib/notifications";
 import { parseMutedEvents } from "@/lib/world-admin-events";
 
 // Beitrittsart aus dem Formular: offen (Standard), auf Anfrage oder nur Einladung
@@ -125,7 +126,9 @@ export async function joinWorld(worldId: string): Promise<string | null> {
   redirect("/");
 }
 
-export async function addWorldMember(
+// Freund:in in die Welt einladen: die Person bekommt eine Benachrichtigung und nimmt die Einladung an oder lehnt sie ab
+// (erst mit der Zusage wird sie Mitglied, siehe respondWorldInvite).
+export async function inviteToWorld(
   worldId: string,
   _prevState: string | null,
   formData: FormData,
@@ -137,15 +140,23 @@ export async function addWorldMember(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { error } = await supabase
-    .from("world_members")
-    .insert({ world_id: worldId, user_id: friendUserId });
+  if (!user) return "Nicht angemeldet.";
 
+  const { error } = await supabase.rpc("invite_to_world", { p_world: worldId, p_user: friendUserId });
   if (error) return error.message;
-  if (user) {
-    const { data: added } = await supabase.from("profiles").select("username, nickname").eq("id", friendUserId).maybeSingle<{ username: string; nickname: string | null }>();
-    await notifyWorldAdmins(supabase, worldId, "member_join", user.id, `hat ${added?.nickname || added?.username || "jemanden"} zur Welt hinzugefügt`);
-  }
+
+  const [{ data: me }, { data: world }] = await Promise.all([
+    supabase.from("profiles").select("username, nickname, avatar_url").eq("id", user.id).maybeSingle<{ username: string; nickname: string | null; avatar_url: string | null }>(),
+    supabase.from("worlds").select("name").eq("id", worldId).maybeSingle<{ name: string }>(),
+  ]);
+  await createNotification(supabase, {
+    userId: friendUserId,
+    type: "world_invite",
+    actorName: me?.nickname || me?.username || "Jemand",
+    actorAvatarUrl: me?.avatar_url ?? null,
+    link: "/worlds",
+    message: `hat dich in die Welt „${world?.name ?? "eine Welt"}“ eingeladen`,
+  });
 
   revalidatePath(`/worlds/${worldId}`);
   return null;
