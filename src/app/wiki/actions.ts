@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { parseProfileFields } from "@/lib/profile-fields";
+import { parseSecretItems, type SecretItem } from "@/lib/secret-items";
 import { pageSubtreeIds } from "@/lib/wiki-tree";
 import { parseWikiType } from "@/lib/wiki-types";
 import { getWikiTypes } from "@/lib/wiki-data";
@@ -238,10 +239,8 @@ export async function updateWikiPage(wikiPageId: string, _prevState: string | nu
 
   // Geheime Felder (nur Seiten von Figuren, nur die Besitzer:in; die Datenbank lässt sonst nichts durch)
   if (formData.get("has_secret_fields") === "1") {
-    const { error: secretError } = await supabase
-      .from("wiki_page_secrets")
-      .upsert({ page_id: wikiPageId, fields: parseProfileFields(formData, "secret_"), updated_at: new Date().toISOString() });
-    if (secretError) return `Die geheimen Felder konnten nicht gespeichert werden: ${secretError.message}`;
+    const secretError = await saveSecretItems(supabase, wikiPageId, parseSecretItems(formData.get("secret_items")));
+    if (secretError) return secretError;
   }
 
   // Unterseiten (auch tiefere Ebenen) ziehen mit in den neuen Ordner.
@@ -360,4 +359,27 @@ export async function toggleWikiFavorite(wikiPageId: string): Promise<{ favorite
   }
   revalidatePath("/wiki", "layout");
   return { favorite: !existing };
+}
+
+// Geheime Felder einer Figuren-Seite speichern: nicht mehr vorhandene Zeilen entfallen, die übrigen werden angelegt bzw. geändert.
+async function saveSecretItems(supabase: Awaited<ReturnType<typeof createClient>>, pageId: string, items: SecretItem[]): Promise<string | null> {
+  const { data: existing, error: readError } = await supabase.from("wiki_page_secret_items").select("id").eq("page_id", pageId).returns<{ id: string }[]>();
+  if (readError) return `Die geheimen Felder konnten nicht gespeichert werden: ${readError.message}`;
+  const known = new Set((existing ?? []).map((r) => r.id));
+  const keep = new Set(items.flatMap((i) => (i.id && known.has(i.id) ? [i.id] : [])));
+  const gone = [...known].filter((id) => !keep.has(id));
+  if (gone.length) {
+    const { error } = await supabase.from("wiki_page_secret_items").delete().in("id", gone);
+    if (error) return `Die geheimen Felder konnten nicht gespeichert werden: ${error.message}`;
+  }
+  const now = new Date().toISOString();
+  for (const [position, item] of items.entries()) {
+    const row = { page_id: pageId, position, icon: item.icon, title: item.title, text: item.text, shared_with: item.shared_with, updated_at: now };
+    const { error } =
+      item.id && known.has(item.id)
+        ? await supabase.from("wiki_page_secret_items").update(row).eq("id", item.id)
+        : await supabase.from("wiki_page_secret_items").insert(row);
+    if (error) return `Die geheimen Felder konnten nicht gespeichert werden: ${error.message}`;
+  }
+  return null;
 }

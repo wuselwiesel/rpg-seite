@@ -4,7 +4,7 @@ import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Clock, MapPin, Network, Pencil, Plus, UserRound, Lock } from "lucide-react";
+import { Clock, MapPin, Network, Pencil, Plus, UserRound, Lock, LockOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getWorldRights } from "@/lib/world-rights";
 import { canEditWikiPage } from "@/lib/world-permissions";
@@ -35,6 +35,7 @@ import { FavoriteButton } from "./favorite-button";
 import { TargetNotesButton } from "@/components/target-notes-button";
 import { noteCountForTarget } from "@/lib/notes-data";
 import { PublishButton } from "./publish-button";
+import { RevealSecretButton } from "./reveal-secret-button";
 
 export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[id]">) {
   const { id } = await params;
@@ -107,11 +108,13 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   // Wiki-Seite einer Figur: die öffentlichen ChaBo-Angaben stehen live im Steckbrief, darunter die eigenen Felder der Seite
   // (gleiche Bezeichnung = die eigene Angabe gilt).
   const chabo = page.character_id ? await getCharacterWikiRows(page.character_id) : { rows: [], hasSheet: false, enabled: false, portraitUrl: null, avatarUrl: null };
-  // Geheime Felder: die Datenbank liefert sie nur der Besitzer:in der Figur
-  const { data: secretRow } = page.character_id
-    ? await supabase.from("wiki_page_secrets").select("fields").eq("page_id", page.id).maybeSingle<{ fields: { icon: string; title: string; text: string }[] }>()
+  // Geheime Felder: die Datenbank liefert sie nur der Besitzer:in der Figur und den Figuren, für die sie freigegeben sind
+  const ownsPage = page.character_id ? (await supabase.rpc("owns_wiki_character_page", { p_page: page.id })).data === true : false;
+  const { data: secretRows } = page.character_id
+    ? await supabase.from("wiki_page_secret_items").select("id, icon, title, text, shared_with").eq("page_id", page.id).order("position").returns<{ id: string; icon: string; title: string; text: string; shared_with: string[] }[]>()
     : { data: null };
-  const secretFields = secretRow?.fields ?? [];
+  const secretFields = secretRows ?? [];
+  const nameOfCharacter = (id: string) => characters.find((c) => c.id === id)?.name ?? "?";
   const ownFields = page.fields ?? [];
   const ownTitles = new Set(ownFields.map((f) => f.title.trim().toLowerCase()));
   const fields = [...chabo.rows.filter((r) => !ownTitles.has(r.title.trim().toLowerCase())), ...ownFields];
@@ -124,7 +127,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     ? await Promise.all([
         getCharacterGalleryUrls(page.character_id!),
         getRelationCards(page.character_id!),
-        getCharacterStory({ id: page.character_id!, world_id: page.world_id }, (await supabase.rpc("owns_wiki_character_page", { p_page: page.id })).data === true),
+        getCharacterStory({ id: page.character_id!, world_id: page.world_id }, ownsPage),
       ])
     : [[] as string[], [], { recent: [], knows: [], timeline: [], total: 0 }];
   const houseMembers = figureOn && !page.character_id && page.page_type === "organisation" ? await getHouseMembers(page.world_id, page.title) : [];
@@ -291,17 +294,23 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
               </section>
             )}
             {secretFields.length > 0 && (
-              <section aria-label="Geheim" className="overflow-hidden rounded-2xl border border-dashed border-accent/60 bg-surface">
+              <section aria-label={ownsPage ? "Geheim" : "Mit dir geteilt"} className="overflow-hidden rounded-2xl border border-dashed border-accent/60 bg-surface">
                 <h2 className="flex items-center gap-2 border-b border-line bg-surface-2/60 px-4 py-2.5 font-serif text-lg text-fg">
-                  <Lock className="h-4 w-4" strokeWidth={2} />
-                  Geheim
+                  {ownsPage ? <Lock className="h-4 w-4" strokeWidth={2} /> : <LockOpen className="h-4 w-4" strokeWidth={2} />}
+                  {ownsPage ? "Geheim" : "Mit dir geteilt"}
                 </h2>
                 <dl className="grid gap-px bg-line grid-cols-2 @3xl:grid-cols-1">
-                  {secretFields.map((f, i) => (
-                    <div key={i} className="flex flex-col gap-0.5 bg-surface px-4 py-2.5 text-sm">
+                  {secretFields.map((f) => (
+                    <div key={f.id} className="flex flex-col gap-0.5 bg-surface px-4 py-2.5 text-sm">
                       <dt className="flex items-center gap-1.5 text-xs text-muted">
                         {f.icon && <EmojiText text={f.icon} />}
                         {f.title}
+                        {ownsPage && (
+                          <span className="ml-auto flex items-center gap-1">
+                            <span className="text-[11px]">{f.shared_with.length === 0 ? "nur du" : `für ${f.shared_with.map(nameOfCharacter).join(", ")}`}</span>
+                            <RevealSecretButton itemId={f.id} title={f.title} />
+                          </span>
+                        )}
                       </dt>
                       <dd className="min-w-0 break-words text-fg">
                         <EmojiHtml html={fieldHtml(f.text)} />

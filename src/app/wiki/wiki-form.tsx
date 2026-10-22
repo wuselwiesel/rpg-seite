@@ -8,6 +8,8 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { GalleryUpload } from "@/components/gallery-upload";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
+import { SecretItemsEditor, type ShareTarget } from "@/components/secret-items-editor";
+import type { SecretItem } from "@/lib/secret-items";
 import { useDraft } from "@/lib/use-draft";
 import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf } from "@/lib/wiki-types";
 import { useWikiTypes } from "@/components/wiki-types-context";
@@ -31,7 +33,10 @@ export function WikiForm({
   calendar = DEFAULT_CALENDAR,
   defaults,
   canSetDraft = true,
-  secretFields = null,
+  secretItems = null,
+  shareTargets = [],
+  partnerId = null,
+  friendId = null,
 }: {
   page?: WikiPage;
   folders: FolderOption[];
@@ -43,7 +48,11 @@ export function WikiForm({
   // Entwurf nur für die, die die Seite angelegt haben.
   canSetDraft?: boolean;
   // Geheime Felder der Seite einer Figur (nur für die Besitzer:in); null = diese Seite hat keine
-  secretFields?: ProfileField[] | null;
+  secretItems?: SecretItem[] | null;
+  // Figuren, für die ein geheimes Feld sichtbar gemacht werden kann (Vertraute)
+  shareTargets?: ShareTarget[];
+  partnerId?: string | null;
+  friendId?: string | null;
 }) {
   const action = page ? updateWikiPage.bind(null, page.id) : createWikiPage;
   const [error, formAction, pending] = useActionState(action, null);
@@ -208,7 +217,7 @@ export function WikiForm({
         <ProfileFieldsEditor key={fieldsKey} initial={fieldRows} />
       </section>
 
-      {secretFields && (
+      {secretItems && (
         <section className={card}>
           <div>
             <h2 className="flex items-center gap-2 font-serif text-xl text-fg">
@@ -217,7 +226,7 @@ export function WikiForm({
             </h2>
           </div>
           <input type="hidden" name="has_secret_fields" value="1" />
-          <ProfileFieldsEditor initial={secretFields} prefix="secret_" />
+          <SecretItemsEditor initial={secretItems} people={shareTargets} partnerId={partnerId} friendId={friendId} />
         </section>
       )}
 
