@@ -41,6 +41,7 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
       userId={user.id}
       isWorldOwner={world.created_by === user.id}
       showCast={Boolean(world.cast_enabled) || isAdmin}
+      showFigures={world.character_wiki_enabled === true}
       castRequests={castRequests ?? 0}
     >
       {children}
