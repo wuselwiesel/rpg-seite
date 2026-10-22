@@ -16,7 +16,7 @@ import { AttachmentPreview } from "@/components/chat-media";
 import { isVideoUrl } from "@/lib/chat-media-url";
 import { aggregateReactions } from "@/lib/reactions";
 import { parseSystemMessage } from "@/lib/system-message";
-import { addChatParticipant, deleteChat, deleteMessage, leaveChat, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
+import { addChatParticipant, deleteChat, deleteMessage, leaveChat, removeChatParticipant, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
 import { GifPicker } from "@/components/gif-picker";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
@@ -94,6 +94,8 @@ export function ChatRoom({
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [memberError, setMemberError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -552,6 +554,14 @@ export function ChatRoom({
     if (error) void alertDialog(error);
   }
 
+  async function handleRemoveMember(c: Character) {
+    if (!(await confirmDialog({ message: `${c.name} aus der Gruppe entfernen? Die Nachrichten bleiben, die Gruppe bekommt eine Meldung.`, confirmLabel: "Entfernen", danger: true }))) return;
+    setMemberError(null);
+    const error = await removeChatParticipant(chatId, c.id);
+    if (error) setMemberError(error);
+    else router.refresh();
+  }
+
   async function handleLeave() {
     if (!(await confirmDialog({ message: `${activeCharacter.name} aus dieser Gruppe austreten lassen? Die Nachrichten bleiben, die Gruppe bekommt eine Meldung.`, confirmLabel: "Verlassen", danger: true }))) return;
     const error = await leaveChat(chatId, activeCharacter.id);
@@ -669,6 +679,18 @@ export function ChatRoom({
             onDelete={canDelete ? handleDeleteChat : undefined}
             onLeave={isGroup && participants.length > 1 ? handleLeave : undefined}
           />
+          {isGroup && canDelete && (
+            <button
+              type="button"
+              onClick={() => setShowMembers((v) => !v)}
+              title="Mitglieder"
+              aria-label="Mitglieder"
+              aria-expanded={showMembers}
+              className="shrink-0 rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg"
+            >
+              <Users className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
           {isGroup && availableCharacters.length > 0 && (
             <button
               type="button"
@@ -694,6 +716,28 @@ export function ChatRoom({
           )}
         </div>
       </div>
+
+      {showMembers && isGroup && canDelete && (
+        <div className="flex flex-col gap-1 border-b border-line py-3" aria-label="Mitglieder der Gruppe">
+          {participants.map((c) => {
+            const mine = myCharacterIds.includes(c.id);
+            return (
+              <div key={c.id} className="flex items-center gap-3 px-1 py-1">
+                <ZoomAvatar name={c.name} avatarUrl={c.avatar_url} size={32} />
+                <span className="min-w-0 flex-1 truncate text-sm text-fg">{c.name}</span>
+                {mine ? (
+                  <span className="text-xs text-muted">deine Figur</span>
+                ) : (
+                  <button type="button" onClick={() => void handleRemoveMember(c)} aria-label={`${c.name} entfernen`} className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500">
+                    <X className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          {memberError && <p role="alert" className="px-1 text-xs text-red-600 dark:text-red-400">{memberError}</p>}
+        </div>
+      )}
 
       {showAddForm && (
         <form action={addFormAction} className="flex flex-col gap-2 border-b border-line py-3">
