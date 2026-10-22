@@ -170,7 +170,8 @@ export function NotesProvider({
   const archived = useMemo(() => inWorldAll.filter((n) => !n.deletedAt && n.archived), [inWorldAll]);
   const trashed = useMemo(() => inWorldAll.filter((n) => n.deletedAt).sort((a, b) => (b.deletedAt ?? "").localeCompare(a.deletedAt ?? "")), [inWorldAll]);
 
-  const recentCutoff = useMemo(() => new Date(Date.now() - RECENT_DAYS * 24 * 3600 * 1000).toISOString(), [notes]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [mountedAt] = useState(() => Date.now());
+  const recentCutoff = useMemo(() => new Date(mountedAt - RECENT_DAYS * 24 * 3600 * 1000).toISOString(), [mountedAt]);
   const recentCount = useMemo(() => live.filter((n) => n.updatedAt >= recentCutoff).length, [live, recentCutoff]);
   const untaggedCount = useMemo(() => live.filter((n) => n.tags.length === 0).length, [live]);
 
