@@ -3,7 +3,7 @@ import { Archive, SquarePen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
-import { getUnreadCounts } from "@/lib/chat-reads";
+import { getUnreadOverview } from "@/lib/chat-reads";
 import { messagePreview } from "@/lib/chat-preview";
 import type { Character, Chat } from "@/lib/types";
 import { ChatListItem } from "./chat-list-item";
@@ -42,7 +42,7 @@ export async function ChatList() {
     : { data: [] as ChatWithParticipants[] };
 
   const ownCharacters = await getOwnCharacters(user.id, activeWorld.id);
-  const unreadCounts = await getUnreadCounts(user.id, ownCharacters.map((c) => c.id), activeCharacter.id);
+  const { forActive: unreadCounts, perCharacter: unreadPerCharacter } = await getUnreadOverview(user.id, ownCharacters.map((c) => c.id), activeCharacter.id);
 
   // Letzte Nachricht je Chat (eine Abfrage; neueste zuerst, pro Chat zählt die erste).
   type LastMessage = { chat_id: string; character_id: string; content: string; image_url: string | null; shared_post_id: string | null; story_id: string | null; created_at: string };
@@ -97,6 +97,7 @@ export async function ChatList() {
         <ChatOwnerSwitch
           characters={ownCharacters.map((c) => ({ id: c.id, name: c.name, username: c.username ?? null, avatar_url: c.avatar_url ?? null }))}
           activeId={activeCharacter.id}
+          unread={unreadPerCharacter}
           subtitle={`Nachrichten in ${activeWorld.name}`}
         />
         <Link
