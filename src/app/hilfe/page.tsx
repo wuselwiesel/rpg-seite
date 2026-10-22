@@ -322,6 +322,7 @@ export default async function HelpPage() {
           <li>Wenn die Admins unter „Welt bearbeiten“ <strong>Wiki-Eintrag für jede Figur</strong> einschalten (Standard: aus), hat jede Figur automatisch einen Wiki-Eintrag (Ordner „Charaktere“, Art „Person“), den alle in der Welt sehen. Gab es schon eine Seite mit dem Namen der Figur, wurde sie übernommen.</li>
           <li>Der <strong>Steckbrief</strong> zeigt die öffentlichen Angaben aus Profil und ChaBo automatisch und immer aktuell (ohne Attribute und Talente, nie Geheimes). Eigene Felder, Text und Bilder ergänzt du über <strong>Bearbeiten</strong>. Hat ein eigenes Feld denselben Titel wie eine ChaBo-Angabe, gilt das eigene.</li>
           <li>Unter <strong>Geheim (nur für dich sichtbar)</strong> beim Bearbeiten legst du Felder an, die nur du siehst. Mit <strong>Sichtbar für</strong> gibst du ein einzelnes Feld für Vertraute frei (zum Beispiel Partner:in oder beste:r Freund:in); sie sehen es dann bei dem Eintrag unter „Mit dir geteilt“. Mit <strong>Aufdecken</strong> wird ein Feld öffentlich und steht im Steckbrief, zum Beispiel wenn das Geheimnis in der Story enthüllt wird.</li>
+          <li>Admins legen unter „Welt bearbeiten“ bei <strong>Felder der Wiki-Einträge (Vorlage)</strong> fest, welche Felder jeder Eintrag zu Beginn hat, öffentlich oder geheim (zum Beispiel „Beruf“, „Wohnort“, „Geheimnis“). Sie erscheinen beim Anlegen einer Figur und beim Bearbeiten ihres Eintrags als leere Zeilen.</li>
         </ul>
 
         <h3 className="mt-2 font-medium text-fg">NPCs</h3>

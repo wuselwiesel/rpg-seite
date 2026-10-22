@@ -4,6 +4,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { getWorldFirstNames } from "@/lib/npc-data";
 import { fetchRandomLists } from "@/lib/random-lists";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
+import { parseTemplate } from "@/lib/wiki-template";
 import { NewCharacterForm } from "./new-character-form";
 
 export default async function NewCharacterPage({ searchParams }: PageProps<"/characters/new">) {
@@ -31,5 +32,11 @@ export default async function NewCharacterPage({ searchParams }: PageProps<"/cha
       .maybeSingle<{ id: string; name: string; holder_user: string | null; holder_kind: string | null; world_id: string }>();
     if (data && data.world_id === world.id && data.holder_kind === "approved" && data.holder_user === user.id) role = { id: data.id, name: data.name };
   }
-  return <NewCharacterForm takenNames={takenNames} randomLists={randomLists} startAsNpc={npc === "1"} choiceLists={choiceLists} fateEnabled={fateEnabled} houseEnabled={houseEnabled} role={role} />;
+  // Wiki-Eintrag der Figur (Option der Welt): Vorlage der Felder und Figuren, für die ein geheimes Feld sichtbar gemacht werden kann
+  const wikiTemplate = world?.character_wiki_enabled === true ? parseTemplate(world.character_wiki_template) : null;
+  const { data: others } = wikiTemplate && world
+    ? await supabase.from("characters").select("id, name, avatar_url").eq("world_id", world.id).is("deleted_at", null).neq("owner_id", user.id).order("name").limit(200).returns<{ id: string; name: string; avatar_url: string | null }[]>()
+    : { data: null };
+  const shareTargets = (others ?? []).map((c) => ({ id: c.id, name: c.name, avatarUrl: c.avatar_url }));
+  return <NewCharacterForm wikiTemplate={wikiTemplate} shareTargets={shareTargets} takenNames={takenNames} randomLists={randomLists} startAsNpc={npc === "1"} choiceLists={choiceLists} fateEnabled={fateEnabled} houseEnabled={houseEnabled} role={role} />;
 }

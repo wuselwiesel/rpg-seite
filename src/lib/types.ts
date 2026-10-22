@@ -42,6 +42,8 @@ export type World = {
   cast_enabled?: boolean;
   // Jede Figur bekommt einen Wiki-Eintrag mit ChaBo-Angaben (Standard: aus)
   character_wiki_enabled?: boolean;
+  // Felder, die jeder Figuren-Eintrag zu Beginn hat ([{ icon, title, secret }])
+  character_wiki_template?: unknown;
   // Neue Charaktere normaler Mitglieder starten „zur Prüfung“ (Admins genehmigen)
   review_characters?: boolean;
   // Rechte-Tabelle (siehe lib/world-permissions.ts); fehlende Schlüssel gelten als „alle Mitglieder“

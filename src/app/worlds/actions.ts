@@ -1,5 +1,6 @@
 "use server";
 
+import { parseTemplate } from "@/lib/wiki-template";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -189,6 +190,8 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
     cast_enabled: formData.get("cast_enabled") === "on",
     character_wiki_enabled: formData.get("character_wiki_enabled") === "on",
   };
+
+  if (formData.has("character_wiki_template")) patch.character_wiki_template = parseTemplate(formData.get("character_wiki_template"));
 
   if (formData.has("welcome")) {
     const html = sanitizePostHtml(String(formData.get("welcome") ?? "").trim());
