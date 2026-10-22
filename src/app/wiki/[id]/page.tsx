@@ -12,6 +12,8 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
 import { escapeHtml, linkCharacterMentions } from "@/lib/character-links";
 import { getCharacterWikiRows, getWorldCharacterTerms } from "@/lib/wiki-characters";
+import { getCharacterGalleryUrls, getCharacterStory, getHouseMembers, getRelationCards } from "@/lib/character-wiki-data";
+import { CharacterTimeline, PersonCards, RecentScenes } from "@/components/character-wiki-sections";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import { getMapsForPage } from "@/lib/wiki-map-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
@@ -104,7 +106,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   const { html, headings } = addHeadingIds(linked);
   // Wiki-Seite einer Figur: die öffentlichen ChaBo-Angaben stehen live im Steckbrief, darunter die eigenen Felder der Seite
   // (gleiche Bezeichnung = die eigene Angabe gilt).
-  const chabo = page.character_id ? await getCharacterWikiRows(page.character_id) : { rows: [], hasSheet: false };
+  const chabo = page.character_id ? await getCharacterWikiRows(page.character_id) : { rows: [], hasSheet: false, enabled: false, portraitUrl: null, avatarUrl: null };
   // Geheime Felder: die Datenbank liefert sie nur der Besitzer:in der Figur
   const { data: secretRow } = page.character_id
     ? await supabase.from("wiki_page_secrets").select("fields").eq("page_id", page.id).maybeSingle<{ fields: { icon: string; title: string; text: string }[] }>()
@@ -113,7 +115,21 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   const ownFields = page.fields ?? [];
   const ownTitles = new Set(ownFields.map((f) => f.title.trim().toLowerCase()));
   const fields = [...chabo.rows.filter((r) => !ownTitles.has(r.title.trim().toLowerCase())), ...ownFields];
-  const gallery = page.gallery ?? [];
+  // Figuren-Seite (Option der Welt an): Titelbild, Galerie, Beziehungen und Szenen kommen live aus dem ChaBo und dem Beziehungsnetz,
+  // damit sie nur einmal gepflegt werden.
+  const { data: worldFlag } = await supabase.from("worlds").select("character_wiki_enabled").eq("id", page.world_id).maybeSingle<{ character_wiki_enabled: boolean | null }>();
+  const figureOn = worldFlag?.character_wiki_enabled === true;
+  const isCharPage = !!page.character_id && chabo.enabled;
+  const [charGallery, relations, story] = isCharPage
+    ? await Promise.all([
+        getCharacterGalleryUrls(page.character_id!),
+        getRelationCards(page.character_id!),
+        getCharacterStory({ id: page.character_id!, world_id: page.world_id }, (await supabase.rpc("owns_wiki_character_page", { p_page: page.id })).data === true),
+      ])
+    : [[] as string[], [], { recent: [], knows: [], timeline: [], total: 0 }];
+  const houseMembers = figureOn && !page.character_id && page.page_type === "organisation" ? await getHouseMembers(page.world_id, page.title) : [];
+  const coverImage = isCharPage ? (chabo.portraitUrl ?? chabo.avatarUrl ?? page.cover_image_url) : page.cover_image_url;
+  const gallery = [...new Set([...(page.gallery ?? []), ...charGallery])];
   const isEmpty = stripHtml(page.content ?? "").trim() === "" && !/<img\b/i.test(page.content ?? "");
   // Initiale nur, wenn der erste Absatz mit einem Buchstaben beginnt und lang genug ist, damit sie schön umflossen wird.
   const firstPara = html.match(/^\s*<p[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? "";
@@ -145,11 +161,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
             // Icon: durchsichtig, ohne Rahmen und Zuschnitt
             // eslint-disable-next-line @next/next/no-img-element
             <img loading="lazy" decoding="async" src={page.icon_url} alt={page.title} className="h-24 w-24 shrink-0 object-contain @xl:h-32 @xl:w-32 @4xl:h-40 @4xl:w-40" />
-          ) : page.cover_image_url ? (
+          ) : coverImage ? (
             // Titelbild in normalem Format neben dem Namen (Person: Hochformat, sonst 4:3), nie als breiter Streifen.
             // eslint-disable-next-line @next/next/no-img-element
             <img loading="lazy" decoding="async"
-              src={page.cover_image_url}
+              src={coverImage}
               alt={page.title}
               className={`${portrait ? "aspect-[4/5]" : "aspect-[4/3]"} w-28 shrink-0 rounded-2xl bg-surface-2 object-cover shadow-sm @xl:w-40 @4xl:w-52`}
             />
@@ -321,6 +337,12 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           <WikiGallery urls={gallery} title={page.title} />
         </section>
       )}
+
+      <PersonCards id="beziehungen" title="Beziehungen" people={relations} />
+      <PersonCards id="kennt" title="Wer kennt wen" people={story.knows} />
+      <RecentScenes scenes={story.recent} total={story.total} />
+      <CharacterTimeline items={story.timeline} />
+      <PersonCards id="mitglieder" title="Mitglieder" people={houseMembers} />
 
       {node && node.children.length > 0 && (
         <section aria-labelledby="unterseiten">
