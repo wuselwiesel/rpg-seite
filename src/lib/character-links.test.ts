@@ -44,3 +44,15 @@ describe("Hilfsfunktionen", () => {
     expect(characterAnchor(lucian, "L")).toContain('class="wiki-link wiki-char"');
   });
 });
+
+describe("linkCharacterMentions ohne @", () => {
+  it("zeigt im Wiki nur den Namen, mit Link", () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    const html = `<p><span data-type="mention" data-id="${id}" class="mention">@Meru Burns</span></p>`;
+    const map = new Map([[id, { id, name: "Meru Burns", avatarUrl: null, excerpt: "" }]]);
+    expect(linkCharacterMentions(html, map)).toContain(">@Meru Burns<");
+    const out = linkCharacterMentions(html, map, { stripAt: true });
+    expect(out).toContain(">Meru Burns<");
+    expect(out).not.toContain("@Meru");
+  });
+});

@@ -142,7 +142,7 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
         );
       }
       case "text": {
-        const withMentions = linkCharacterMentions(sanitizePostHtml(b.html), new Map(characters.map((c) => [c.id, c])));
+        const withMentions = linkCharacterMentions(sanitizePostHtml(b.html), new Map(characters.map((c) => [c.id, c])), { stripAt: true });
         const html = autolinkHtml(withMentions, { wiki: wikiTerms, characters });
         return (
           <section>
