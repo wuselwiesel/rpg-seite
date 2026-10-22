@@ -1,0 +1,32 @@
+name: Tägliche Zusammenfassung
+
+# Ersetzt den Vercel-Cron (vercel.json): ruft einmal täglich um 17:00 UTC die Adresse /api/cron/digest der App auf.
+# Läuft erst, wenn die beiden Secrets APP_URL (z. B. https://wortwinkel.xyz, ohne Schrägstrich am Ende) und CRON_SECRET gesetzt sind.
+# Einrichtung: docs/deploy-railway.md
+on:
+  schedule:
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Zusammenfassung auslösen
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Secrets APP_URL und CRON_SECRET nicht gesetzt, nichts zu tun."
+            exit 0
+          fi
+          code=$(curl -sS -o response.txt -w "%{http_code}" --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/digest")
+          cat response.txt; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Antwort $code"
+            exit 1
+          fi
