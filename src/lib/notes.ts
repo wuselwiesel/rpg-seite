@@ -182,3 +182,43 @@ export function buildTagTree(tags: string[]): TagNode[] {
   sort(root.children);
   return root.children;
 }
+
+// ---- Gliederung und Notiz-Info ----
+export type OutlineItem = { level: 1 | 2 | 3; text: string; index: number };
+
+// Überschriften einer Notiz in Textreihenfolge (index = Position unter allen Überschriften, zum Springen)
+export function noteOutline(html: string): OutlineItem[] {
+  const out: OutlineItem[] = [];
+  let i = 0;
+  for (const m of html.matchAll(/<h([123])\b[^>]*>([\s\S]*?)<\/h\1>/g)) {
+    const text = stripHtml(m[2]);
+    if (text) out.push({ level: Number(m[1]) as 1 | 2 | 3, text, index: i });
+    i++;
+  }
+  return out;
+}
+
+export type NoteStats = { words: number; characters: number; charactersNoSpaces: number; readingMinutes: number; paragraphs: number };
+
+export function noteStats(html: string): NoteStats {
+  const text = stripHtml(html);
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const paragraphs = [...html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/g)].filter((m) => stripHtml(m[1]).length > 0).length;
+  return { words, characters: text.length, charactersNoSpaces: text.replace(/\s/g, "").length, readingMinutes: Math.max(words === 0 ? 0 : 1, Math.ceil(words / 200)), paragraphs };
+}
+
+// Alle Fundstellen (Anfangsindex) von „query“ in „text“, ohne Überlappung; ohne Groß-/Kleinschreibung, wenn caseSensitive aus ist
+export function findMatches(text: string, query: string, caseSensitive = false): number[] {
+  if (!query) return [];
+  const hay = caseSensitive ? text : text.toLowerCase();
+  const needle = caseSensitive ? query : query.toLowerCase();
+  const out: number[] = [];
+  let from = 0;
+  for (;;) {
+    const i = hay.indexOf(needle, from);
+    if (i === -1) break;
+    out.push(i);
+    from = i + needle.length;
+  }
+  return out;
+}

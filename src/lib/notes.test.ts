@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTagTree, tagMatches } from "./notes";
+import { buildTagTree, noteOutline, noteStats, tagMatches } from "./notes";
 import { BUILTIN_TEMPLATES, uncheckTasks } from "./note-templates";
 import { sanitizePostHtmlCore } from "./sanitize-core";
 import { buildFolderTree, canMoveFolder, descendantIds, flattenFolders, folderPath, noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
@@ -154,6 +154,23 @@ describe("Markdown → HTML", () => {
   it("Rundlauf Markdown → HTML → Markdown bleibt gleich", () => {
     const md = "# Titel\n\nText mit **fett**.\n\n- [x] Fertig\n- [ ] Offen\n";
     expect(noteToMarkdown(markdownToHtml(md))).toBe(md);
+  });
+});
+
+describe("Gliederung und Info", () => {
+  it("liest Überschriften mit Ebene und Position", () => {
+    const html = "<h1>Titel</h1><p>x</p><h2>Teil <em>eins</em></h2><h3></h3><h3>Unter</h3>";
+    expect(noteOutline(html)).toEqual([
+      { level: 1, text: "Titel", index: 0 },
+      { level: 2, text: "Teil eins", index: 1 },
+      { level: 3, text: "Unter", index: 3 },
+    ]);
+  });
+  it("zählt Wörter, Zeichen, Absätze und Lesezeit", () => {
+    const s = noteStats("<p>Ein kurzer Satz.</p><p></p><p>Zwei</p>");
+    expect(s).toEqual({ words: 4, characters: 21, charactersNoSpaces: 18, readingMinutes: 1, paragraphs: 2 });
+    expect(noteStats("").readingMinutes).toBe(0);
+    expect(noteStats("<p>" + "wort ".repeat(450) + "</p>").readingMinutes).toBe(3);
   });
 });
 

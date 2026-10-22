@@ -9,6 +9,8 @@ import { EyeOff } from "lucide-react";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Highlight from "@tiptap/extension-highlight";
+import { SearchReplace } from "@/lib/search-replace-extension";
+import { EditorSearch } from "@/components/editor-search";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -270,12 +272,14 @@ function Toolbar({
   allowFontSelection,
   allowBlocks,
   notesTools,
+  onSearch,
   wikiPages,
 }: {
   editor: Editor;
   allowFontSelection?: boolean;
   allowBlocks?: boolean;
   notesTools?: boolean;
+  onSearch?: () => void;
   wikiPages?: { id: string; title: string }[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -460,6 +464,11 @@ function Toolbar({
             <ToolbarButton label="Code im Text" active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()}>
               {"`Code`"}
             </ToolbarButton>
+            {onSearch && (
+              <ToolbarButton label="Suchen und Ersetzen (Strg+F)" onClick={onSearch}>
+                🔍 Suchen
+              </ToolbarButton>
+            )}
             <ToolbarButton label="Code-Block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
               {"</>"} Code
             </ToolbarButton>
@@ -695,6 +704,8 @@ export function RichTextEditor({
   notesTools?: boolean;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const notesToolsRef = useRef(notesTools);
   const enterSends = useEnterSends();
   const enterSendsRef = useRef(enterSends);
   const submitKeyRef = useRef(onSubmitKey);
@@ -723,7 +734,7 @@ export function RichTextEditor({
       TextStyle,
       FontSize,
       ...(allowFontSelection ? [FontFamily] : []),
-      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true }), Highlight] : []),
+      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true }), Highlight, SearchReplace] : []),
       ...(allowBlocks
         ? [Callout, PdfFile, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
         : []),
@@ -748,6 +759,12 @@ export function RichTextEditor({
     content: initialContent ?? "",
     editorProps: {
       handleKeyDown: (view, event) => {
+        // Strg/Cmd+F: Suchen und Ersetzen in der Notiz (statt der Browsersuche)
+        if (notesToolsRef.current && (event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "f") {
+          event.preventDefault();
+          setSearchOpen(true);
+          return true;
+        }
         if (!submitKeyRef.current || !isSendKey(event, enterSendsRef.current)) return false;
         // Während die @-Auswahl offen ist, wählt Enter den Charakter; leerer Text wird nicht abgeschickt.
         if (document.querySelector("[data-mention-popup]")) return false;
@@ -779,7 +796,8 @@ export function RichTextEditor({
   return (
     <div data-rte className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
-      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} notesTools={notesTools} wikiPages={wikiPages} />}
+      {editor && searchOpen && <EditorSearch editor={editor} onClose={() => { setSearchOpen(false); editor.commands.focus(); }} />}
+      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} notesTools={notesTools} onSearch={notesTools ? () => setSearchOpen(true) : undefined} wikiPages={wikiPages} />}
       {editor && <SelectionMenu editor={editor} wikiPages={wikiPages} />}
       <EditorContent editor={editor} />
     </div>

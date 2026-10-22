@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ChevronLeft, Download, FileCode, FileText, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, ChevronLeft, Download, FileCode, FileText, Info, ListTree, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { markdownToHtml, noteToMarkdown } from "@/lib/note-markdown";
 import { NoteLinkChip } from "@/components/note-link-chip";
@@ -12,12 +12,12 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { addNoteLink, archiveNote, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld, restoreNote, trashNote } from "@/app/notizen/actions";
 import { stripHtml } from "@/lib/strip-html";
 import { emitNotePatch } from "@/lib/note-events";
-import { MAX_NOTE_TAGS, flattenFolders, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
+import { MAX_NOTE_TAGS, flattenFolders, noteOutline, noteStats, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
 // Eine Notiz: Titel und Text speichern von selbst, darunter die Verknüpfungen.
-export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, initialIsTemplate, initialArchived, initialDeletedAt, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; initialIsTemplate: boolean; initialArchived: boolean; initialDeletedAt: string | null; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
+export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, initialIsTemplate, initialArchived, initialDeletedAt, createdAt, initialUpdatedAt, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; initialIsTemplate: boolean; initialArchived: boolean; initialDeletedAt: string | null; createdAt: string; initialUpdatedAt: string; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [pinned, setPinned] = useState(initialPinned);
@@ -37,6 +37,9 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const [md, setMd] = useState("");
   const [bodyInit, setBodyInit] = useState(initialBody);
   const [editorKey, setEditorKey] = useState(0);
+  const [bodyHtml, setBodyHtml] = useState(initialBody);
+  const [panel, setPanel] = useState<"outline" | "info" | null>(null);
+  const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
   const [words, setWords] = useState(() => wordCount(initialBody));
   const [state, setState] = useState<SaveState>("saved");
   const [picker, setPicker] = useState(false);
@@ -65,6 +68,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
       setTags(r.tags);
     }
     emitNotePatch({ id, title: titleRef.current, body: bodyRef.current, tags: r.tags, ...(r.links ? { links: r.links } : {}) });
+    setUpdatedAt(new Date().toISOString());
     if (!dirty.current) setState("saved");
   }, [id]);
 
@@ -159,6 +163,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     setBodyInit(html);
     setEditorKey((k) => k + 1);
     setWords(wordCount(html));
+            setBodyHtml(html);
     setSource(false);
     schedule();
   }
@@ -386,6 +391,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
             setMd(e.target.value);
             bodyRef.current = markdownToHtml(e.target.value);
             setWords(wordCount(bodyRef.current));
+            setBodyHtml(bodyRef.current);
             schedule();
           }}
           aria-label="Markdown"
@@ -407,12 +413,71 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
             if (html === bodyRef.current) return;
             bodyRef.current = html;
             setWords(wordCount(html));
+            setBodyHtml(html);
             schedule();
           }}
         />
       )}
 
-      <p className="-mt-2 text-right text-xs tabular-nums text-muted">{words} {words === 1 ? "Wort" : "Wörter"}</p>
+      <div className="relative -mt-2 flex items-center justify-end gap-1 text-xs text-muted">
+        <button type="button" onClick={() => setPanel(panel === "outline" ? null : "outline")} aria-expanded={panel === "outline"} className="flex items-center gap-1 rounded-full px-2 py-1 transition hover:bg-surface-2 hover:text-fg">
+          <ListTree className="h-3.5 w-3.5" strokeWidth={2} />
+          Gliederung
+        </button>
+        <button type="button" onClick={() => setPanel(panel === "info" ? null : "info")} aria-expanded={panel === "info"} className="flex items-center gap-1 rounded-full px-2 py-1 tabular-nums transition hover:bg-surface-2 hover:text-fg">
+          <Info className="h-3.5 w-3.5" strokeWidth={2} />
+          {words} {words === 1 ? "Wort" : "Wörter"}
+        </button>
+        {panel === "outline" && (
+          <div role="dialog" aria-label="Gliederung" className="absolute bottom-full right-0 z-20 mb-1 max-h-72 w-72 overflow-y-auto rounded-2xl border border-line bg-surface p-2 shadow-lg">
+            {noteOutline(bodyHtml).length === 0 ? (
+              <p className="px-3 py-2 text-sm text-muted">Keine Überschriften.</p>
+            ) : (
+              <ul>
+                {noteOutline(bodyHtml).map((h) => (
+                  <li key={h.index}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const els = [...document.querySelectorAll(".ProseMirror")].find((e) => (e as HTMLElement).offsetParent !== null)?.querySelectorAll("h1, h2, h3");
+                        els?.[h.index]?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        setPanel(null);
+                      }}
+                      style={{ paddingLeft: `${(h.level - 1) * 0.9 + 0.5}rem` }}
+                      className={`block w-full truncate rounded-lg py-1.5 pr-2 text-left text-sm text-fg hover:bg-surface-2 ${h.level === 1 ? "font-semibold" : ""}`}
+                    >
+                      {h.text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        {panel === "info" && (() => {
+          const st = noteStats(bodyHtml);
+          const when = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
+          const rows: [string, string][] = [
+            ["Wörter", String(st.words)],
+            ["Zeichen", String(st.characters)],
+            ["Ohne Leerzeichen", String(st.charactersNoSpaces)],
+            ["Absätze", String(st.paragraphs)],
+            ["Lesezeit", st.readingMinutes === 0 ? "–" : `${st.readingMinutes} Min.`],
+            ["Erstellt", when.format(new Date(createdAt))],
+            ["Zuletzt geändert", when.format(new Date(updatedAt))],
+          ];
+          return (
+            <dl role="dialog" aria-label="Notiz-Info" className="absolute bottom-full right-0 z-20 mb-1 w-64 rounded-2xl border border-line bg-surface p-3 text-sm shadow-lg">
+              {rows.map(([k, v]) => (
+                <div key={k} className="flex items-baseline justify-between gap-3 py-0.5">
+                  <dt className="text-muted">{k}</dt>
+                  <dd className="tabular-nums text-fg">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          );
+        })()}
+      </div>
 
       {backlinks.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
