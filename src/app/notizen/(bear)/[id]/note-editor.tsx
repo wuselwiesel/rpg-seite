@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ChevronLeft, Download, FileCode, FileText, Info, ListTree, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, ChevronLeft, Download, FileCode, FileText, Info, ListTree, Maximize2, Type, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { markdownToHtml, noteToMarkdown } from "@/lib/note-markdown";
 import { NoteLinkChip } from "@/components/note-link-chip";
@@ -12,6 +12,7 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { addNoteLink, archiveNote, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld, restoreNote, trashNote } from "@/app/notizen/actions";
 import { stripHtml } from "@/lib/strip-html";
 import { emitNotePatch } from "@/lib/note-events";
+import { FOCUS_EVENT } from "@/app/notizen/notes-shortcuts";
 import { clearDraft, draftDiffers, loadDraft, saveDraft, type NoteDraft } from "@/lib/note-draft";
 import { MAX_NOTE_TAGS, flattenFolders, noteOutline, noteStats, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
@@ -39,6 +40,31 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const [bodyInit, setBodyInit] = useState(initialBody);
   const [editorKey, setEditorKey] = useState(0);
   const [bodyHtml, setBodyHtml] = useState(initialBody);
+  // Darstellung (nur in diesem Browser): Schrift, Größe, Papier
+  const [look, setLook] = useState({ font: "serif", size: "m", paper: "standard" });
+  const lookRef = useRef(look);
+  const [lookOpen, setLookOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem("notes-look") ?? "null");
+      if (raw && typeof raw === "object") {
+        lookRef.current = { ...lookRef.current, ...raw };
+        setLook(lookRef.current);
+      }
+    } catch {
+      /* Standard */
+    }
+  }, []);
+  function changeLook(patch: Partial<typeof look>) {
+    const next = { ...lookRef.current, ...patch };
+    lookRef.current = next;
+    setLook(next);
+    try {
+      localStorage.setItem("notes-look", JSON.stringify(next));
+    } catch {
+      /* nicht merken */
+    }
+  }
   const [panel, setPanel] = useState<"outline" | "info" | null>(null);
   const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
   const [words, setWords] = useState(() => wordCount(initialBody));
@@ -277,7 +303,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const stateLabel = { saved: "Gespeichert", dirty: "Ungespeichert …", saving: "Speichert …", error: "Speichern fehlgeschlagen", offline: "Offline – wird gespeichert, sobald du wieder online bist" }[state];
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
+    <div data-font={look.font} data-size={look.size} data-paper={look.paper} className="note-surface mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
       <div className="flex items-center justify-between gap-3">
         <Link href="/notizen" className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg lg:invisible">
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
@@ -288,6 +314,36 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
           <span className={`mr-2 max-w-[14rem] text-right text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
             {stateLabel}
           </span>
+          <div className="relative">
+            <button type="button" onClick={() => setLookOpen((v) => !v)} aria-expanded={lookOpen} aria-label="Darstellung" title="Darstellung" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+              <Type className="h-4 w-4" strokeWidth={2} />
+            </button>
+            {lookOpen && (
+              <div role="dialog" aria-label="Darstellung" className="absolute right-0 top-full z-30 mt-1 w-64 rounded-2xl border border-line bg-surface p-3 shadow-lg">
+                {(
+                  [
+                    ["font", "Schrift", [["serif", "Serif"], ["sans", "Sans"], ["mono", "Mono"]]],
+                    ["size", "Größe", [["s", "Klein"], ["m", "Normal"], ["l", "Groß"], ["xl", "Sehr groß"]]],
+                    ["paper", "Papier", [["standard", "Standard"], ["sepia", "Sepia"], ["dark", "Dunkel"]]],
+                  ] as [keyof typeof look, string, [string, string][]][]
+                ).map(([k, label, opts]) => (
+                  <div key={k} className="mb-2 last:mb-0">
+                    <p className="mb-1 text-xs text-muted">{label}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {opts.map(([v, text]) => (
+                        <button key={v} type="button" onClick={() => changeLook({ [k]: v })} aria-pressed={look[k] === v} className={`rounded-full px-2.5 py-1 text-xs transition ${look[k] === v ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}>
+                          {text}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={() => window.dispatchEvent(new Event(FOCUS_EVENT))} aria-label="Fokus-Modus" title="Fokus-Modus (Alt+F)" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+            <Maximize2 className="h-4 w-4" strokeWidth={2} />
+          </button>
           <button type="button" onClick={toggleSource} aria-pressed={source} aria-label="Markdown-Quelltext" title="Markdown-Quelltext" className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 ${source ? "text-accent" : "text-muted hover:text-fg"}`}>
             <FileCode className="h-4 w-4" strokeWidth={2} />
           </button>

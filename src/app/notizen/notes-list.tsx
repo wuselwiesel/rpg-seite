@@ -3,12 +3,13 @@
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, ArrowDownUp, Check, CheckSquare, Download, Folder, FolderPlus, Hash, Pencil, Pin, PinOff, Plus, Printer, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDownUp, Check, CheckSquare, Keyboard, Download, Folder, FolderPlus, Hash, Pencil, Pin, PinOff, Plus, Printer, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
 import { NotesTabs } from "./notes-tabs";
 import { TemplateMenu } from "@/components/template-menu";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { createNote, type BulkOp } from "./actions";
+import { SHORTCUTS_EVENT } from "./notes-shortcuts";
 import { useNotesStore, type SortKey } from "./notes-store";
 import { MAX_FOLDER_DEPTH, canMoveFolder, flattenFolders, folderPath, noteSnippet, noteTitle, type NoteView } from "@/lib/notes";
 import { confirmDialog } from "@/components/confirm-dialog";
@@ -106,6 +107,9 @@ export function NotesList() {
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setSelecting(!selecting)} aria-pressed={selecting} title="Mehrere auswählen" aria-label="Mehrere auswählen" className={`flex h-9 w-9 items-center justify-center rounded-full border border-line transition ${selecting ? "bg-accent-strong text-on-accent-strong" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}>
             <CheckSquare className="h-4 w-4" strokeWidth={2} />
+          </button>
+          <button type="button" onClick={() => window.dispatchEvent(new Event(SHORTCUTS_EVENT))} title="Tastenkürzel" aria-label="Tastenkürzel" className="hidden h-9 w-9 items-center justify-center rounded-full border border-line text-fg-soft transition hover:bg-surface-2 hover:text-fg lg:flex">
+            <Keyboard className="h-4 w-4" strokeWidth={2} />
           </button>
           <TemplateMenu folderId={current?.id ?? null} />
           <button type="button" onClick={add} disabled={pending} className="flex items-center gap-1.5 rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60">
