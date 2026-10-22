@@ -11,10 +11,10 @@ export function cleanFieldIcon(raw: string): string {
 }
 
 // Liest die eigenen Profilfelder (field_icon / field_title / field_text) aus dem Formular; unvollständige fallen weg.
-export function parseProfileFields(formData: FormData): ProfileField[] {
-  const icons = formData.getAll("field_icon").map(String);
-  const titles = formData.getAll("field_title").map(String);
-  const texts = formData.getAll("field_text").map(String);
+export function parseProfileFields(formData: FormData, prefix = ""): ProfileField[] {
+  const icons = formData.getAll(`${prefix}field_icon`).map(String);
+  const titles = formData.getAll(`${prefix}field_title`).map(String);
+  const texts = formData.getAll(`${prefix}field_text`).map(String);
   return titles
     .map((title, i) => ({
       icon: cleanFieldIcon(icons[i] ?? ""),
