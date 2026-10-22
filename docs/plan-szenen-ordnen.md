@@ -7,4 +7,4 @@ Entwurf: neue Tabelle `story_folders` (Ordner je Welt, bis 3 Ebenen, `position`)
 - [x] 1. Migration `migration_story_folders.sql` (live + `schema.sql`), `lib/folder-tree.ts` (aus `lib/notes.ts` herausgelöst, dort re-exportiert), Aktionen in `src/app/story/folder-actions.ts`.
 - [x] 2. Seite `/story/ordnung` + Client `scene-organizer.tsx`; Knopf „Ordnen“ in der Story-Kopfzeile.
 - [x] 3. Ordner-Filter im Feed (erledigt). Ordner-Marke an Karten, Zeilen und Szene sowie Auswahl „Ordner“ unter „Ändern“ (`setSceneFolder`) sind seit 22. Oktober fertig und im Browser geprüft.
-- [~] 4. (Hilfe + Protokoll + Tests fertig; Handy-Test, `next build`, E2E offen) Hilfe `/hilfe`, Protokoll `docs/uebergabe-wortwinkel.md`, Tests (`folder-tree`, Sortierfunktion), Prüfung Desktop + Handy, `next build`, E2E.
+- [x] 4. (Hilfe, Protokoll, Tests, Handy-Ansicht der Ordnen-Seite gesehen (Ordner-Symbol statt abgeschnittener Auswahl), `next build`, alle Browser-Suiten grün; **nicht geprüft:** echtes Ziehen mit der Maus) Hilfe `/hilfe`, Protokoll `docs/uebergabe-wortwinkel.md`, Tests (`folder-tree`, Sortierfunktion), Prüfung Desktop + Handy, `next build`, E2E.
