@@ -187,6 +187,7 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
     allow_secrets: formData.get("allow_secrets") === "on",
     review_characters: formData.get("review_characters") === "on",
     cast_enabled: formData.get("cast_enabled") === "on",
+    character_wiki_enabled: formData.get("character_wiki_enabled") === "on",
   };
 
   if (formData.has("welcome")) {
@@ -229,6 +230,13 @@ export async function saveWorldSettings(worldId: string, _prevState: string | nu
   const { error, count } = await supabase.from("worlds").update(patch, { count: "exact" }).eq("id", worldId);
   if (error) return error.message;
   if (!count) return "Das dürfen nur die Besitzer:in und Admins der Welt.";
+
+  // Wiki-Einträge einschalten: fehlende Seiten für alle Figuren anlegen (ausgeschaltet bleiben die Seiten erhalten, sind aber nicht sichtbar)
+  if (patch.character_wiki_enabled) {
+    const { error: syncError } = await supabase.rpc("sync_character_wiki", { p_world: worldId });
+    if (syncError) return `Gespeichert, aber die Wiki-Einträge konnten nicht angelegt werden: ${syncError.message}`;
+    revalidatePath("/wiki", "layout");
+  }
 
   revalidatePath(`/worlds/${worldId}`);
   revalidatePath(`/worlds/${worldId}/edit`);

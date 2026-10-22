@@ -52,10 +52,11 @@ export async function getCharacterWikiRows(characterId: string): Promise<{ rows:
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("characters")
-    .select("name, bio, house, quote, status_text, gender, choices, world_id, worlds(house_enabled, quote_enabled, status_enabled)")
+    .select("name, bio, house, quote, status_text, gender, choices, world_id, worlds(house_enabled, quote_enabled, status_enabled, character_wiki_enabled)")
     .eq("id", characterId)
-    .maybeSingle<ProfileFields & { world_id: string; worlds: { house_enabled: boolean | null; quote_enabled: boolean | null; status_enabled: boolean | null } | null }>();
-  if (!c) return { rows: [], hasSheet: false };
+    .maybeSingle<ProfileFields & { world_id: string; worlds: { house_enabled: boolean | null; quote_enabled: boolean | null; status_enabled: boolean | null; character_wiki_enabled: boolean | null } | null }>();
+  // Nur in Welten, die die Option eingeschaltet haben (sonst bleibt eine ältere, nur verknüpfte Seite einfach eine normale Seite)
+  if (!c || c.worlds?.character_wiki_enabled !== true) return { rows: [], hasSheet: false };
   const [lists, sheet] = await Promise.all([getWorldChoiceLists(c.world_id).catch(() => []), getCharacterSheet(characterId, false)]);
   const w = c.worlds;
   const fields = listCharacterFields(c, lists, sheet, { house: w?.house_enabled !== false, quote: false, status: false });
