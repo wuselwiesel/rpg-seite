@@ -7,7 +7,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Settings, Theater, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Contact, Settings, Theater, Users } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -52,6 +52,8 @@ type Props = {
   isWorldOwner: boolean;
   // Besetzung ist eingeschaltet (Admins sehen den Eintrag immer, um sie einzuschalten)
   showCast: boolean;
+  // Gesamtliste der Figuren (Option „Wiki-Eintrag für jede Figur“ der Welt)
+  showFigures?: boolean;
   // Offene Rollenanfragen (nur Admins), Zahl am Reiter „Besetzung“
   castRequests?: number;
   children: React.ReactNode;
@@ -72,12 +74,13 @@ const WIKI_TOOLS = [
   { href: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },
   { href: "/wiki/kalender", label: "Kalender", Icon: CalendarDays },
   { href: "/wiki/besetzung", label: "Besetzung", Icon: Theater },
+  { href: "/wiki/figuren", label: "Figuren", Icon: Contact },
   { href: "/characters/relationships", label: "Beziehungen", Icon: Users },
   { href: "/wiki/einstellungen", label: "Einstellungen", title: "Wiki-Einstellungen (Seitenarten)", Icon: Settings },
 ] as const;
 
-export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, showCast, castRequests = 0, children }: Props) {
-  const tools = showCast ? WIKI_TOOLS : WIKI_TOOLS.filter((t) => t.href !== "/wiki/besetzung");
+export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, showCast, showFigures = false, castRequests = 0, children }: Props) {
+  const tools = WIKI_TOOLS.filter((t) => (showCast || t.href !== "/wiki/besetzung") && (showFigures || t.href !== "/wiki/figuren"));
   const rights = useWorldRights();
   const pathname = usePathname();
   const router = useRouter();
