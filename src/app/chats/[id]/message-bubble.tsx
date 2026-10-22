@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { CornerUpLeft, Pencil, Play, Trash2 } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { ZoomAvatar } from "@/components/zoom-avatar";
 import { DoubleTapLike } from "@/components/double-tap-like";
 import { ReactionBar } from "@/components/reaction-bar";
 import { formatDateTime } from "@/lib/format";
@@ -145,7 +146,7 @@ export function MessageBubble({
         resetRow();
       }}
     >
-      <CharacterAvatar name={message.characters?.name ?? "?"} avatarUrl={message.characters?.avatar_url} size={28} />
+      <ZoomAvatar name={message.characters?.name ?? "?"} avatarUrl={message.characters?.avatar_url} size={28} />
       <DoubleTapLike
         likeKey={message.id}
         heartClassName="h-14 w-14"

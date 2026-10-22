@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, CornerUpLeft, ImagePlus, Pencil, Plus, SendHorizontal, UserPlus, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { ZoomAvatar } from "@/components/zoom-avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { resizeImage } from "@/lib/image-resize";
 import { chatImageError, previewUrlFor } from "@/lib/chat-image";
@@ -626,7 +627,7 @@ export function ChatRoom({
             </form>
           ) : (
             <div className="flex items-center gap-2">
-              {isGroup && <CharacterAvatar name={title} avatarUrl={avatarUrl} size={36} />}
+              {isGroup && <ZoomAvatar name={title} avatarUrl={avatarUrl} size={36} />}
               <div className="flex min-w-0 flex-col">
                 <h1 className="truncate font-serif text-2xl leading-tight text-fg">{title}</h1>
                 {isGroup ? (

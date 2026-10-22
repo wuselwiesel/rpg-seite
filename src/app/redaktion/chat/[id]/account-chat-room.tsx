@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { BookOpen, BellOff, Bell, Check, ChevronLeft, CornerUpLeft, Globe2, ImagePlus, Pencil, Pin, PinOff, Search, EyeOff, SendHorizontal, SmilePlus, Trash2, UsersRound, X } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { ZoomAvatar } from "@/components/zoom-avatar";
 import { NameBadge } from "@/components/name-badge";
 import { OnlineBadge, OnlineDot } from "@/components/online-status";
 import { useRouter } from "next/navigation";
@@ -457,7 +458,7 @@ export function AccountChatRoom({
                   <div className={`group flex items-end gap-1.5 ${mine ? "flex-row-reverse" : ""}`}>
                     {!isDirect && !mine && (
                       <span className="w-7 shrink-0 self-end">
-                        {runStart && <CharacterAvatar name={sender?.name ?? "?"} avatarUrl={sender?.avatarUrl ?? null} size={28} />}
+                        {runStart && <ZoomAvatar name={sender?.name ?? "?"} avatarUrl={sender?.avatarUrl ?? null} size={28} />}
                       </span>
                     )}
                     <div

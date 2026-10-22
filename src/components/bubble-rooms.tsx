@@ -23,7 +23,7 @@ import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { useTyping } from "@/lib/use-typing";
 import { TypingLine } from "@/components/typing-line";
 import { AttachmentPreview, ChatMedia } from "@/components/chat-media";
-import { CharacterAvatar } from "@/components/character-avatar";
+import { ZoomAvatar } from "@/components/zoom-avatar";
 import { useImageDraft, uploadChatImage } from "@/lib/chat-image";
 import { parseSystemMessage } from "@/lib/system-message";
 import { SENDER_COLOR_CLASS, senderColorStyle } from "@/lib/sender-color";
@@ -209,7 +209,7 @@ function MiniThread({
               >
                 {showNames && !m.mine && (
                   <span className="absolute bottom-0 left-0">
-                    <CharacterAvatar name={m.name} avatarUrl={m.avatarUrl} size={20} />
+                    <ZoomAvatar name={m.name} avatarUrl={m.avatarUrl} size={20} />
                   </span>
                 )}
                 {showNames && !m.mine && newSender && (
