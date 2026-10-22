@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, ChevronLeft, ChevronRight, FolderTree, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, ArrowDownUp, FolderTree, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -20,6 +20,7 @@ import { segmentsToPlain } from "@/lib/segments";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import { descendantIds, flattenFolders } from "@/lib/folder-tree";
+import { compareScenes } from "@/lib/scene-order";
 import type { StoryArc, StoryPost } from "@/lib/types";
 
 // Szenen pro Seite im Story-Feed - ohne Grenze wuerde die Abfrage mit wachsendem
@@ -59,9 +60,10 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   // Ohne Charakter darf man die Szenen lesen
 
+  const STORY_SELECT = "*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs!arc_id(name), story_post_arcs(arc_id, story_arcs(name))";
   let storyQuery = supabase
     .from("story_posts")
-    .select("*, characters!story_posts_character_id_fkey(*), story_entries(count), story_arcs!arc_id(name), story_post_arcs(arc_id, story_arcs(name))", {
+    .select(STORY_SELECT, {
       count: "exact",
     })
     .eq("world_id", activeWorld.id)
@@ -112,6 +114,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.in("folder_id", [...descendantIds(folderList, ordner)]);
   }
   const manualOrder = ordner !== "" && ordner !== "none" && folderList.some((f) => f.id === ordner);
+  // Reihenfolge der Liste: „Nach Ordnung“ (Standard, sobald die Welt Ordner hat) oder „Neueste zuerst“
+  const byOrder = !manualOrder && (params.sortierung === "ordnung" || (params.sortierung !== "neueste" && folderList.length > 0));
   storyQuery = manualOrder
     ? storyQuery.order("pinned", { ascending: false }).order("sort_order", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false })
     : storyQuery.order("pinned", { ascending: false }).order("created_at", { ascending: false });
@@ -140,8 +144,30 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.in("turn_character_id", myCharIds.length ? myCharIds : ["00000000-0000-0000-0000-000000000000"]);
   }
 
+  // „Nach Ordnung“: Ordner in Baumreihenfolge, darin die von Hand geordneten Szenen, dann der Rest (neueste zuerst), „Ohne Ordner“ zuletzt.
+  // Das lässt sich nicht in einer Abfrage sortieren, deshalb erst die leichten Angaben aller Treffer ordnen, dann die Seite laden.
+  async function loadInOrder(): Promise<{ data: StoryPost[] | null; count: number | null }> {
+    const { data: light, count } = await storyQuery
+      .select("id, folder_id, sort_order, created_at, pinned")
+      .range(0, 4999)
+      .returns<{ id: string; folder_id: string | null; sort_order: number | null; created_at: string; pinned: boolean }[]>();
+    const rank = new Map(flattenFolders(folderList).map((f, i) => [f.id, i]));
+    const rankOf = (id: string | null) => (id ? (rank.get(id) ?? rank.size) : rank.size + 1);
+    const sorted = [...(light ?? [])].sort(
+      (a, b) =>
+        Number(b.pinned) - Number(a.pinned) ||
+        rankOf(a.folder_id) - rankOf(b.folder_id) ||
+        compareScenes({ id: a.id, sortOrder: a.sort_order, createdAt: a.created_at }, { id: b.id, sortOrder: b.sort_order, createdAt: b.created_at }),
+    );
+    const ids = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((r) => r.id);
+    if (ids.length === 0) return { data: [], count: count ?? sorted.length };
+    const { data: rows } = await supabase.from("story_posts").select(STORY_SELECT).in("id", ids).returns<StoryPost[]>();
+    const byId = new Map((rows ?? []).map((r) => [r.id, r]));
+    return { data: ids.map((id) => byId.get(id)).filter((r): r is StoryPost => !!r), count: count ?? sorted.length };
+  }
+
   const [{ data: storyPosts, count: totalCount }, { data: arcs }, { data: locationRows }, { count: myTurnCount }] = await Promise.all([
-    storyQuery.returns<StoryPost[]>(),
+    byOrder ? loadInOrder() : storyQuery.returns<StoryPost[]>(),
     supabase
       .from("story_arcs")
       .select("*, story_posts:story_post_arcs(count)")
@@ -166,6 +192,15 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const wikiTerms = locations.length ? await getWikiTerms(activeWorld.id) : [];
 
   const filterCount = [arc, ort, ordner, onlyMyTurn, showArchived, bookmarkedOnly, q, tag, from || to].filter(Boolean).length;
+  function sortHref(mode: "ordnung" | "neueste") {
+    const next = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (key === "sortierung" || key === "seite" || value === undefined) continue;
+      for (const v of Array.isArray(value) ? value : [value]) next.append(key, v);
+    }
+    next.set("sortierung", mode);
+    return `/story?${next.toString()}`;
+  }
   function viewHref(view: "karten" | "kompakt") {
     const next = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
@@ -235,6 +270,22 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
             <LayoutList className="h-4 w-4" strokeWidth={2} />
           </Link>
         </div>
+      {!manualOrder && (
+        <div className="mb-3 flex w-fit rounded-full border border-line bg-surface p-0.5 text-sm" role="group" aria-label="Reihenfolge">
+          {([["ordnung", "Nach Ordnung", FolderTree], ["neueste", "Neueste zuerst", ArrowDownUp]] as const).map(([mode, label, Icon]) => (
+            <Link
+              key={mode}
+              href={sortHref(mode)}
+              replace
+              aria-current={(mode === "ordnung") === byOrder ? "true" : undefined}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 transition ${(mode === "ordnung") === byOrder ? "bg-accent-strong text-on-accent-strong" : "text-fg-soft hover:text-fg"}`}
+            >
+              <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
       <details className="group" open={filterCount > 0}>
         <summary data-tour="story-filter" className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />

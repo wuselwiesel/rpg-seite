@@ -2,6 +2,7 @@ import "server-only";
 import sanitizeHtml from "sanitize-html";
 import { createClient } from "@/lib/supabase/server";
 import { stripHtml } from "@/lib/strip-html";
+import { flattenFolders } from "@/lib/folder-tree";
 
 export type BookEntry = {
   kind: "entry" | "narrator" | "chapter" | "roll";
@@ -26,6 +27,9 @@ export type Book = { title: string; subtitle: string; worldName: string; coverIm
 
 type SceneRow = {
   id: string;
+  world_id: string;
+  folder_id: string | null;
+  sort_order: number | null;
   title: string;
   content: string;
   location: string | null;
@@ -63,9 +67,24 @@ async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data
   return out;
 }
 
+// Lesereihenfolge wie in „Szenen ordnen“: Ordner in Baumreihenfolge, darin die von Hand geordneten Szenen, dann der Rest
+// nach Anlegezeit (ältestes zuerst, wie ein Buch); Szenen ohne Ordner zuletzt. Ohne Ordner und Handordnung bleibt es nach Datum.
+async function orderLikeStory(supabase: Awaited<ReturnType<typeof createClient>>, rows: SceneRow[]) {
+  const worldId = rows[0].world_id;
+  const { data: folders } = await supabase.from("story_folders").select("id, name, parent_id").eq("world_id", worldId);
+  const rank = new Map(flattenFolders((folders ?? []).map((f) => ({ id: f.id as string, name: f.name as string, parentId: f.parent_id as string | null }))).map((f, i) => [f.id, i]));
+  const rankOf = (id: string | null) => (id ? (rank.get(id) ?? rank.size) : rank.size + 1);
+  rows.sort((a, b) => {
+    if (rankOf(a.folder_id) !== rankOf(b.folder_id)) return rankOf(a.folder_id) - rankOf(b.folder_id);
+    if (a.sort_order !== null && b.sort_order !== null && a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    if ((a.sort_order === null) !== (b.sort_order === null)) return a.sort_order === null ? 1 : -1;
+    return a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
+  });
+}
+
 export async function loadBook(scope: { sceneId: string } | { arcId: string } | { worldId: string }): Promise<Book | null> {
   const supabase = await createClient();
-  const select = "id, title, content, location, in_world_time, created_at, characters!story_posts_character_id_fkey(name), worlds(name, cover_image_url), story_arcs!arc_id(name)";
+  const select = "id, world_id, folder_id, sort_order, title, content, location, in_world_time, created_at, characters!story_posts_character_id_fkey(name), worlds(name, cover_image_url), story_arcs!arc_id(name)";
   let rows: SceneRow[] = [];
   let arcName: string | null = null;
   let wholeWorld = false;
@@ -89,6 +108,7 @@ export async function loadBook(scope: { sceneId: string } | { arcId: string } | 
     arcName = arcRow?.name ?? null;
   }
   if (rows.length === 0) return null;
+  if (!("sceneId" in scope)) await orderLikeStory(supabase, rows);
 
   // Nachrichten je Szenengruppe seitenweise holen (lange Szenen haben über 1000 Nachrichten)
   const entryRows: EntryRow[] = [];
