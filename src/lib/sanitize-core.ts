@@ -53,7 +53,7 @@ export function sanitizePostHtmlCore(html: string): string {
       a: ["href", "target", "rel"],
       img: ["src", "alt", "loading", "decoding"],
       span: ["data-type", "data-id", "class", "style"],
-      div: ["data-callout", "data-type", "data-id", "data-name", "data-pdf"],
+      div: ["data-callout", "data-type", "data-id", "data-name", "data-pdf", "data-note-file"],
       details: ["open"],
       ul: ["data-type"],
       li: ["data-type", "data-checked"],
@@ -69,6 +69,7 @@ export function sanitizePostHtmlCore(html: string): string {
       div: (tagName, attribs) => {
         const out: Record<string, string> = {};
         if (attribs["data-pdf"] !== undefined) out["data-pdf"] = "";
+        else if (attribs["data-note-file"] !== undefined) out["data-note-file"] = "";
         else if (attribs["data-callout"] && (CALLOUT_KINDS as readonly string[]).includes(attribs["data-callout"])) out["data-callout"] = attribs["data-callout"];
         else if (attribs["data-type"] === "detailsContent") out["data-type"] = "detailsContent";
         // Abschnitt einer gebündelten Nachricht (mehrere Figuren): nur mit gültiger Figuren-ID

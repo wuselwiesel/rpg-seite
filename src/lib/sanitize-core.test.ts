@@ -80,3 +80,13 @@ describe("Notizen: Überschrift 1 und Markierstift", () => {
   });
 });
 
+describe("Notizen: Dateianhänge", () => {
+  it("behält die Datei-Karte mit dem Link zur eigenen Route", () => {
+    const html = '<div data-note-file><a href="/notizen/datei?p=abc%2Fd%2Fplan.zip" target="_blank" rel="noopener noreferrer">plan.zip</a></div>';
+    expect(clean(html)).toBe(html);
+  });
+  it("lässt gefährliche Links nicht durch", () => {
+    expect(clean('<div data-note-file><a href="javascript:alert(1)">x</a></div>')).not.toContain("javascript");
+  });
+});
+

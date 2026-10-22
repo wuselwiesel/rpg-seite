@@ -26,6 +26,7 @@ import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table
 import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
 import { Callout } from "@/lib/tiptap-callout";
 import { PdfFile } from "@/lib/tiptap-pdf";
+import { NoteFile } from "@/lib/tiptap-note-file";
 import { Spoiler } from "@/lib/tiptap-spoiler";
 import { BlockTools } from "@/components/editor-blocks";
 import { SymbolPicker } from "./symbol-picker";
@@ -283,6 +284,7 @@ function Toolbar({
   wikiPages?: { id: string; title: string }[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
@@ -345,6 +347,37 @@ function Toolbar({
 
     const { data } = supabase.storage.from("post-images").getPublicUrl(path);
     editor.chain().focus().setImage({ src: data.publicUrl }).run();
+  }
+
+  // Beliebige Datei an eine Notiz hängen (privater Speicher „note-files“, bis 20 MB)
+  async function handleAttachChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      setError("Datei ist zu groß (max. 20 MB).");
+      return;
+    }
+    setUploading(true);
+    setError(null);
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setUploading(false);
+      setError("Nicht angemeldet.");
+      return;
+    }
+    const safe = file.name.replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(-100) || "datei";
+    const path = `${user.id}/${crypto.randomUUID()}/${safe}`;
+    const { error: uploadError } = await supabase.storage.from("note-files").upload(path, file, { contentType: file.type || "application/octet-stream" });
+    setUploading(false);
+    if (uploadError) {
+      setError(uploadError.message);
+      return;
+    }
+    editor.chain().focus().setNoteFile({ path, name: file.name.slice(0, 120) }).run();
   }
 
   function setLink() {
@@ -469,6 +502,9 @@ function Toolbar({
                 🔍 Suchen
               </ToolbarButton>
             )}
+            <ToolbarButton label="Datei anhängen" onClick={() => attachInputRef.current?.click()}>
+              📎 Datei
+            </ToolbarButton>
             <ToolbarButton label="Code-Block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
               {"</>"} Code
             </ToolbarButton>
@@ -641,6 +677,7 @@ function Toolbar({
         </div>
       )}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      <input ref={attachInputRef} type="file" onChange={handleAttachChange} className="hidden" />
       <input
         ref={fileInputRef}
         type="file"
@@ -734,7 +771,7 @@ export function RichTextEditor({
       TextStyle,
       FontSize,
       ...(allowFontSelection ? [FontFamily] : []),
-      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true }), Highlight, SearchReplace] : []),
+      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true }), Highlight, SearchReplace, NoteFile] : []),
       ...(allowBlocks
         ? [Callout, PdfFile, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
         : []),
