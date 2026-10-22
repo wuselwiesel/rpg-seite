@@ -24,6 +24,7 @@ export function ReactionBar({
   activeCharacterId,
   bonusLikes = 0,
   isOwn = false,
+  hideAdd = false,
 }: {
   onBubble?: boolean;
   // Instagram-Stil: Herz-Button (❤️), danach `commentSlot`, dann Emoji-Auswahl; weitere Reaktionen darunter.
@@ -39,6 +40,8 @@ export function ReactionBar({
   // Besitzer frei wählbar, siehe `isOwn`).
   bonusLikes?: number;
   isOwn?: boolean;
+  // Knopf „Reaktion hinzufügen“ ausblenden (zum Beispiel im Chat, bis man die Nachricht antippt); vorhandene Reaktionen bleiben sichtbar
+  hideAdd?: boolean;
 }) {
   const [reactions, setReactions] = useState(initialReactions);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -280,7 +283,7 @@ export function ReactionBar({
         </button>
       ))}
 
-      {!heart && pickerButton}
+      {!heart && !hideAdd && pickerButton}
 
       {postId && !heart && total > 0 && (
         <button

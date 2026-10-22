@@ -1,7 +1,7 @@
 "use client";
 
 import { SpoilerText } from "@/components/spoiler-text";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { CornerUpLeft, Pencil, Play, Trash2 } from "lucide-react";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -101,6 +101,8 @@ export function MessageBubble({
   onReply: () => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
+  // Die Reaktions-Auswahl erscheint erst, wenn man die Nachricht antippt (vorhandene Reaktionen sind immer zu sehen)
+  const [showAdd, setShowAdd] = useState(false);
   const swipe = useRef<{ x: number; y: number; active: boolean } | null>(null);
   // Nur die Akzentfarbe, nicht die Profil-Schriftart übernehmen - sonst wirkt der Chat
   // mit vielen Charakteren/Fonts schnell chaotisch, siehe Nutzerfeedback.
@@ -151,7 +153,12 @@ export function MessageBubble({
           isOwn ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg"
         }`}
       >
-        <div>
+        <div
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest("a, button, input, textarea, video, [role=button]")) return;
+            if (!editing && !message.pending) setShowAdd((v) => !v);
+          }}
+        >
           {!isOwn && accent && (
             <span aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full" style={{ background: accent }} />
           )}
@@ -250,8 +257,9 @@ export function MessageBubble({
             </>
           )}
           {!editing && !message.pending && (
-            <div className="mt-1.5">
+            <div className="[&:has(button)]:mt-1.5">
               <ReactionBar
+                hideAdd={!showAdd}
                 onBubble
                 target={{ messageId: message.id, characterId: activeCharacter.id }}
                 initialReactions={reactions}
