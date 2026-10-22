@@ -1,5 +1,7 @@
 "use client";
 
+import { WikiTemplateEditor } from "./wiki-template-editor";
+import { parseTemplate } from "@/lib/wiki-template";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
 import { saveWorldSettings } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -213,6 +215,7 @@ export function EditWorldForm({
         <input type="checkbox" name="character_wiki_enabled" defaultChecked={world.character_wiki_enabled === true} className="h-4 w-4 accent-[var(--accent-strong)]" />
         Wiki-Eintrag für jede Figur
       </label>
+      <WikiTemplateEditor initial={parseTemplate(world.character_wiki_template)} />
       <label data-tour="welt-pruefen" className="flex items-center gap-3 text-sm text-fg">
         <input
           type="checkbox"

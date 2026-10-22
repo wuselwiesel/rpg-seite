@@ -1,5 +1,6 @@
 "use server";
 
+import { parseSecretItems } from "@/lib/secret-items";
 import { cleanNameSymbol } from "@/lib/name-symbol";
 import { parseProfileFields } from "@/lib/profile-fields";
 import { cookies } from "next/headers";
@@ -171,6 +172,13 @@ export async function createCharacter(_prevState: string | null, formData: FormD
       await supabase.from("characters").delete().eq("id", data.id);
       return roleError.message;
     }
+  }
+
+  // Wiki-Eintrag der Figur (Option der Welt): Felder aus dem Formular setzen; Fehler hier verhindern das Anlegen nicht
+  if (activeWorld.character_wiki_enabled === true) {
+    const wikiFields = parseProfileFields(formData, "wiki_");
+    const wikiSecrets = parseSecretItems(formData.get("secret_items"));
+    if (wikiFields.length > 0 || wikiSecrets.length > 0) await supabase.rpc("init_character_wiki", { p_character: data.id, p_fields: wikiFields, p_secrets: wikiSecrets });
   }
 
   // Admins der Welt erfahren von neuen Charakteren und NPCs und davon, dass ein Eintrag seine Höchstzahl erreicht hat

@@ -10,8 +10,11 @@ import { npcBio, npcName, rollNpcSheet, speciesOfSheet } from "@/lib/npc-random"
 import type { CustomPools } from "@/lib/random-pools";
 import { activeLists, isSpeciesOff, type ChoiceList } from "@/lib/choice-lists";
 import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
+import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
+import { SecretItemsEditor, type ShareTarget } from "@/components/secret-items-editor";
+import { missingPublicRows, missingSecretRows, type TemplateField } from "@/lib/wiki-template";
 
-export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [], fateEnabled = true, houseEnabled = true, role = null }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[]; fateEnabled?: boolean; houseEnabled?: boolean; role?: { id: string; name: string } | null }) {
+export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, choiceLists = [], fateEnabled = true, houseEnabled = true, role = null, wikiTemplate = null, shareTargets = [] }: { takenNames: string[]; randomLists?: Partial<CustomPools>; startAsNpc?: boolean; choiceLists?: ChoiceList[]; fateEnabled?: boolean; houseEnabled?: boolean; role?: { id: string; name: string } | null; wikiTemplate?: TemplateField[] | null; shareTargets?: ShareTarget[] }) {
   const speciesList = activeLists(choiceLists).find((l) => l.isSpecies) ?? null;
   const speciesOff = isSpeciesOff(choiceLists);
   const [error, formAction, pending] = useActionState(createCharacter, null);
@@ -190,6 +193,18 @@ export function NewCharacterForm({ takenNames, randomLists, startAsNpc = false, 
         )}
           </div>
         </details>
+        {wikiTemplate && (
+          <details className="rounded-lg border border-line p-3">
+            <summary className="cursor-pointer text-sm text-fg">Wiki-Eintrag (optional)</summary>
+            <div className="mt-3 flex flex-col gap-4">
+              <ProfileFieldsEditor initial={missingPublicRows(wikiTemplate, [])} prefix="wiki_" />
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium text-fg">Geheim (nur für dich sichtbar)</p>
+                <SecretItemsEditor initial={missingSecretRows(wikiTemplate, [])} people={shareTargets} />
+              </div>
+            </div>
+          </details>
+        )}
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button
