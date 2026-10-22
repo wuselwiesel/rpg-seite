@@ -363,3 +363,38 @@ export async function leaveChat(chatId: string, characterId: string): Promise<st
   revalidatePath("/chats");
   return null;
 }
+
+// Mitglied aus einer Gruppe entfernen (nur wer die Gruppe erstellt hat; die Regel steht in der Datenbank, chat_participants_delete_creator).
+// Eigene Figuren verlassen die Gruppe über „Gruppe verlassen“. Es erscheint die Zeile „X wurde entfernt“.
+export async function removeChatParticipant(chatId: string, characterId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: chat } = await supabase.from("chats").select("is_group, created_by").eq("id", chatId).maybeSingle<{ is_group: boolean; created_by: string }>();
+  if (!chat?.is_group) return "Nur aus Gruppen kann man Mitglieder entfernen.";
+  if (chat.created_by !== user.id) return "Nur wer die Gruppe erstellt hat, kann Mitglieder entfernen.";
+
+  const { data: members } = await supabase
+    .from("chat_participants")
+    .select("character_id, characters(name, owner_id)")
+    .eq("chat_id", chatId)
+    .returns<{ character_id: string; characters: { name: string; owner_id: string } }[]>();
+  const target = (members ?? []).find((m) => m.character_id === characterId);
+  if (!target) return "Diese Figur ist nicht (mehr) in der Gruppe.";
+  if (target.characters.owner_id === user.id) return "Eigene Figuren verlassen die Gruppe über „Gruppe verlassen“.";
+  if ((members ?? []).length <= 1) return "Die Gruppe braucht mindestens ein Mitglied.";
+  const sender = (members ?? []).find((m) => m.characters.owner_id === user.id && m.character_id !== characterId);
+
+  const { error, count } = await supabase.from("chat_participants").delete({ count: "exact" }).eq("chat_id", chatId).eq("character_id", characterId);
+  if (error) return error.message;
+  if (!count) return "Entfernen ist nicht möglich.";
+  // Systemzeile von einer eigenen Figur in der Gruppe (ohne eigene Figur dort entfällt sie)
+  if (sender) await supabase.from("messages").insert({ chat_id: chatId, character_id: sender.character_id, content: systemMessageText(`${target.characters.name} wurde entfernt`) });
+
+  revalidatePath(`/chats/${chatId}`);
+  revalidatePath("/chats");
+  return null;
+}
