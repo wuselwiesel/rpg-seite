@@ -315,6 +315,8 @@ export type WikiPage = {
   icon_url?: string | null;
   gallery?: string[];
   page_type?: string | null;
+  // Wiki-Seite einer Figur (genau eine je Figur)
+  character_id?: string | null;
   tags?: string[];
   event_label?: string | null;
   event_end_label?: string | null;
