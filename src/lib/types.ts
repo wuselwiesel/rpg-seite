@@ -337,6 +337,8 @@ export type WikiPage = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Wer die Seite zuletzt inhaltlich geändert hat (Auslöser in der Datenbank)
+  updated_by?: string | null;
 };
 
 export type CharacterRelationship = {
