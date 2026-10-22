@@ -9,6 +9,7 @@ import {
   ChevronDown,
   MoreHorizontal,
   Palette,
+  LogOut,
   Trash2,
 } from "lucide-react";
 import { saveChatTheme } from "@/app/chat-theme-actions";
@@ -77,6 +78,7 @@ export function ChatThemePicker({
   archived,
   onToggleArchive,
   onDelete,
+  onLeave,
 }: {
   kind: ChatKind;
   chatId: string;
@@ -89,6 +91,8 @@ export function ChatThemePicker({
   onToggleArchive?: () => void;
   // Chat löschen (nur angeben, wenn es erlaubt ist)
   onDelete?: () => void;
+  // Gruppe verlassen (nur in Gruppen angeben)
+  onLeave?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [colorsOpen, setColorsOpen] = useState(false);
@@ -261,6 +265,20 @@ export function ChatThemePicker({
             >
               {archived ? <ArchiveRestore className="h-[18px] w-[18px] shrink-0 text-accent" strokeWidth={2} /> : <Archive className="h-[18px] w-[18px] shrink-0 text-fg-soft" strokeWidth={2} />}
               {archived ? "Aus dem Archiv holen" : "Archivieren"}
+            </button>
+          )}
+          {onLeave && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onLeave();
+                setOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-fg transition hover:bg-surface-2"
+            >
+              <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              Gruppe verlassen
             </button>
           )}
           {onDelete && (

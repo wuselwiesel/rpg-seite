@@ -15,7 +15,7 @@ import { AttachmentPreview } from "@/components/chat-media";
 import { isVideoUrl } from "@/lib/chat-media-url";
 import { aggregateReactions } from "@/lib/reactions";
 import { parseSystemMessage } from "@/lib/system-message";
-import { addChatParticipant, deleteChat, deleteMessage, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
+import { addChatParticipant, deleteChat, deleteMessage, leaveChat, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
 import { GifPicker } from "@/components/gif-picker";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
@@ -551,6 +551,13 @@ export function ChatRoom({
     if (error) void alertDialog(error);
   }
 
+  async function handleLeave() {
+    if (!(await confirmDialog({ message: `${activeCharacter.name} aus dieser Gruppe austreten lassen? Die Nachrichten bleiben, die Gruppe bekommt eine Meldung.`, confirmLabel: "Verlassen", danger: true }))) return;
+    const error = await leaveChat(chatId, activeCharacter.id);
+    if (error) void alertDialog(error);
+    else router.push("/chats");
+  }
+
   function startEdit(message: Message) {
     setEditingId(message.id);
     setEditDraft(plainMentions(message.content));
@@ -659,6 +666,7 @@ export function ChatRoom({
             archived={archived}
             onToggleArchive={toggleArchive}
             onDelete={canDelete ? handleDeleteChat : undefined}
+            onLeave={isGroup && participants.length > 1 ? handleLeave : undefined}
           />
           {isGroup && availableCharacters.length > 0 && (
             <button
