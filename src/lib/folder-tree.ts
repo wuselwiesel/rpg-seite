@@ -1,9 +1,10 @@
 // Ordnerbäume (höchstens drei Ebenen) für Notizen und Szenen: nur Namen und Verweise auf den Oberordner
-export type FolderLike = { id: string; name: string; parentId: string | null };
+export type FolderLike = { id: string; name: string; parentId: string | null; position?: number };
 
 export const MAX_FOLDER_DEPTH = 3;
 
-const byFolderName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "de");
+// Nach festgelegter Reihenfolge (position), dann nach Name
+const byFolderName = (a: { name: string; position?: number }, b: { name: string; position?: number }) => (a.position ?? 0) - (b.position ?? 0) || a.name.localeCompare(b.name, "de");
 
 export type FolderNode = FolderLike & { depth: number; children: FolderNode[] };
 

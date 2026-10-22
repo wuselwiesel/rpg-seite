@@ -8,7 +8,7 @@ import { RevealRow } from "@/components/reveal-row";
 import { NotesTabs } from "./notes-tabs";
 import { TemplateMenu } from "@/components/template-menu";
 import { NoteLinkChip } from "@/components/note-link-chip";
-import { bulkUpdateNotes, createNote, type BulkOp } from "./actions";
+import { createNote, type BulkOp } from "./actions";
 import { useNotesStore, type SortKey } from "./notes-store";
 import { MAX_FOLDER_DEPTH, canMoveFolder, flattenFolders, folderPath, noteSnippet, noteTitle, type NoteView } from "@/lib/notes";
 import { confirmDialog } from "@/components/confirm-dialog";
@@ -89,23 +89,11 @@ export function NotesList() {
     setSelected(next);
   }
 
-  async function bulk(op: BulkOp, apply: (n: NoteView) => Partial<NoteView> | "remove") {
+  async function bulk(op: BulkOp) {
     const ids = [...selected];
     if (ids.length === 0) return;
     if (op.kind === "delete" && !(await confirmDialog({ message: `${ids.length === 1 ? "Die Notiz" : `${ids.length} Notizen`} endgültig löschen?`, confirmLabel: "Löschen", danger: true }))) return;
-    setError(null);
-    const err = await bulkUpdateNotes(ids, op);
-    if (err) return setError(err);
-    const gone: string[] = [];
-    for (const id of ids) {
-      const n = notes.find((x) => x.id === id);
-      if (!n) continue;
-      const r = apply(n);
-      if (r === "remove") gone.push(id);
-      else s.patchNote(id, r);
-    }
-    if (gone.length) s.removeNotes(gone);
-    setSelected(new Set());
+    if (await s.bulkApply(ids, op)) setSelected(new Set());
   }
 
   const selectedList = [...selected];
@@ -135,7 +123,7 @@ export function NotesList() {
         </p>
       )}
 
-      <div className="-mx-3 mb-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+      <div className="-mx-3 mb-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 xl:hidden">
         <button type="button" onClick={() => setScope("all")} aria-pressed={scope === "all"} className={chip(scope === "all")}>
           Alle <span className="text-xs opacity-70">{live.length}</span>
         </button>
@@ -182,7 +170,7 @@ export function NotesList() {
       </div>
 
       {current && (
-        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 xl:hidden">
           <nav aria-label="Ordnerpfad" className="flex items-center gap-1 text-sm">
             <button type="button" onClick={() => setScope("all")} className="text-muted hover:text-fg">
               Alle
@@ -275,7 +263,7 @@ export function NotesList() {
         </div>
       )}
       {tagCounts.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-1.5" aria-label="Tags">
+        <div className="mb-4 flex flex-wrap gap-1.5 xl:hidden" aria-label="Tags">
           {tagCounts.map(([t, n]) => (
             <button key={t} type="button" onClick={() => setTag(tag === t ? null : t)} aria-pressed={tag === t} className={`flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-xs transition ${tag === t ? "bg-accent text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}>
               <Hash className="h-3 w-3" strokeWidth={2.25} />
@@ -316,11 +304,11 @@ export function NotesList() {
             <>
               {inTrash ? (
                 <>
-                  <BarButton onClick={() => void bulk({ kind: "restore" }, () => ({ deletedAt: null }))}>
+                  <BarButton onClick={() => void bulk({ kind: "restore" })}>
                     <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
                     Wiederherstellen
                   </BarButton>
-                  <BarButton danger onClick={() => void bulk({ kind: "delete" }, () => "remove")}>
+                  <BarButton danger onClick={() => void bulk({ kind: "delete" })}>
                     <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                     Endgültig löschen
                   </BarButton>
@@ -331,7 +319,7 @@ export function NotesList() {
                     value=""
                     onChange={(e) => {
                       const v = e.target.value;
-                      if (v) void bulk({ kind: "move", folderId: v === "none" ? null : v }, () => ({ folderId: v === "none" ? null : v }));
+                      if (v) void bulk({ kind: "move", folderId: v === "none" ? null : v });
                     }}
                     aria-label="Verschieben nach"
                     className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-fg-soft outline-none"
@@ -352,7 +340,7 @@ export function NotesList() {
                       const t = bulkTag.trim();
                       if (!t) return;
                       setBulkTag("");
-                      void bulk({ kind: "addTag", tag: t }, (n) => ({ tags: [...new Set([...n.tags, t.replace(/^#+/, "").toLowerCase()])] }));
+                      void bulk({ kind: "addTag", tag: t });
                     }}
                   >
                     <input value={bulkTag} onChange={(e) => setBulkTag(e.target.value)} placeholder="#Tag" aria-label="Tag hinzufügen" className="w-20 rounded-full border border-dashed border-line bg-transparent px-2.5 py-1 text-xs text-fg outline-none focus:border-accent" />
@@ -360,19 +348,19 @@ export function NotesList() {
                       Hinzufügen
                     </button>
                   </form>
-                  <BarButton onClick={() => void bulk({ kind: "pin", pinned: true }, () => ({ pinned: true }))}>
+                  <BarButton onClick={() => void bulk({ kind: "pin", pinned: true })}>
                     <Pin className="h-3.5 w-3.5" strokeWidth={2} />
                     Anheften
                   </BarButton>
-                  <BarButton onClick={() => void bulk({ kind: "pin", pinned: false }, () => ({ pinned: false }))}>
+                  <BarButton onClick={() => void bulk({ kind: "pin", pinned: false })}>
                     <PinOff className="h-3.5 w-3.5" strokeWidth={2} />
                     Lösen
                   </BarButton>
-                  <BarButton onClick={() => void bulk({ kind: "archive", archived: scope !== "archive" }, () => ({ archived: scope !== "archive" }))}>
+                  <BarButton onClick={() => void bulk({ kind: "archive", archived: scope !== "archive" })}>
                     {scope === "archive" ? <ArchiveRestore className="h-3.5 w-3.5" strokeWidth={2} /> : <Archive className="h-3.5 w-3.5" strokeWidth={2} />}
                     {scope === "archive" ? "Aus dem Archiv" : "Archivieren"}
                   </BarButton>
-                  <BarButton onClick={() => void bulk({ kind: "trash" }, () => ({ deletedAt: new Date().toISOString() }))}>
+                  <BarButton onClick={() => void bulk({ kind: "trash" })}>
                     <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                     Papierkorb
                   </BarButton>
@@ -433,8 +421,17 @@ export function NotesList() {
                     <input type="checkbox" checked={isSel} onChange={() => undefined} onClick={(e) => toggleSelect(n, e.shiftKey)} aria-label={`${noteTitle(n)} auswählen`} className="h-4 w-4 cursor-pointer accent-[var(--accent)]" />
                   </label>
                 )}
-                <div className="min-w-0 flex-1">
+                <div
+                  className="min-w-0 flex-1"
+                  draggable={!selecting || isSel}
+                  onDragStart={(e) => {
+                    const ids = selecting && isSel ? [...selected] : [n.id];
+                    e.dataTransfer.setData("application/x-notes", JSON.stringify(ids));
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                >
                   <Link
+                    draggable={false}
                     href={`/notizen/${n.id}`}
                     onClick={(e) => {
                       if (selecting) {

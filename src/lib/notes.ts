@@ -46,7 +46,7 @@ export type NoteView = {
   links: NoteLinkView[];
 };
 
-export type NoteFolder = { id: string; name: string; parentId: string | null };
+export type NoteFolder = { id: string; name: string; parentId: string | null; position?: number };
 
 export type LinkTarget = { kind: LinkKind; id: string; label: string; sub?: string; avatar?: string | null };
 
@@ -156,3 +156,29 @@ export function setTaskInHtml(html: string, index: number, checked: boolean): st
 
 // Ordnerbäume liegen in folder-tree.ts (auch für Szenen-Ordner genutzt)
 export { MAX_FOLDER_DEPTH, buildFolderTree, flattenFolders, folderPath, descendantIds, subtreeHeight, canMoveFolder, type FolderNode } from "./folder-tree";
+
+// ---- Tag-Baum (verschachtelte Tags „plot/nebelhafen“) ----
+export type TagNode = { name: string; full: string; children: TagNode[] };
+
+export function buildTagTree(tags: string[]): TagNode[] {
+  const root: TagNode = { name: "", full: "", children: [] };
+  for (const tag of new Set(tags)) {
+    let cur = root;
+    let path = "";
+    for (const part of tag.split("/").filter(Boolean)) {
+      path = path ? `${path}/${part}` : part;
+      let next = cur.children.find((c) => c.name === part);
+      if (!next) {
+        next = { name: part, full: path, children: [] };
+        cur.children.push(next);
+      }
+      cur = next;
+    }
+  }
+  const sort = (list: TagNode[]) => {
+    list.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    for (const n of list) sort(n.children);
+  };
+  sort(root.children);
+  return root.children;
+}

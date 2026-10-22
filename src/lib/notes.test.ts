@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildTagTree, tagMatches } from "./notes";
 import { BUILTIN_TEMPLATES, uncheckTasks } from "./note-templates";
 import { sanitizePostHtmlCore } from "./sanitize-core";
 import { buildFolderTree, canMoveFolder, descendantIds, flattenFolders, folderPath, noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
@@ -120,5 +121,13 @@ describe("Notiz als Markdown", () => {
   it("baut ein Dokument mit Titel und Tags", () => {
     expect(noteDocument({ title: "Idee", body: "<p>Text</p>", tags: ["plot", "szene"] })).toBe("# Idee\n\n#plot #szene\n\nText\n");
     expect(noteDocument({ title: "", body: "<p>x</p>", tags: [] })).toBe("# Ohne Titel\n\nx\n");
+  });
+  it("baut den Tag-Baum und kennt Unter-Tags", () => {
+    const tree = buildTagTree(["plot", "plot/nebelhafen", "plot/akt-1", "figuren", "plot"]);
+    expect(tree.map((n) => n.full)).toEqual(["figuren", "plot"]);
+    expect(tree[1].children.map((n) => n.full)).toEqual(["plot/akt-1", "plot/nebelhafen"]);
+    expect(tagMatches("plot/nebelhafen", "plot")).toBe(true);
+    expect(tagMatches("plotter", "plot")).toBe(false);
+    expect(normalizeTags(["#Plot/Nebelhafen", "a//b/c/d/e"])).toEqual(["plot/nebelhafen", "a/b/c"]);
   });
 });

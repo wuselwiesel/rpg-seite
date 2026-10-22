@@ -499,3 +499,15 @@ export async function bulkUpdateNotes(ids: string[], op: BulkOp): Promise<string
   revalidatePath("/notizen");
   return null;
 }
+
+// Reihenfolge der Ordner auf einer Ebene speichern (Ziehen in der Seitenleiste)
+export async function reorderNoteFolders(orderedIds: string[]): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const ids = orderedIds.filter((i) => /^[0-9a-f-]{36}$/i.test(i)).slice(0, 200);
+  const results = await Promise.all(ids.map((id, position) => supabase.from("note_folders").update({ position }).eq("id", id).eq("user_id", user.id)));
+  const failed = results.find((r) => r.error);
+  if (failed?.error) return failed.error.message;
+  revalidatePath("/notizen");
+  return null;
+}
