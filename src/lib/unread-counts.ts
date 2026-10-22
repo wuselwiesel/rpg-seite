@@ -23,11 +23,21 @@ export function computeUnreadCounts(
       : chat.chat_participants.filter((p) => myCharacterIds.includes(p.character_id)).map((p) => p.character_id);
     if (receivers.length === 0) continue;
 
-    const count = chat.messages.filter(
-      (m) =>
-        (!lastRead || new Date(m.created_at) > new Date(lastRead)) &&
-        receivers.some((receiverId) => receiverId !== m.character_id),
-    ).length;
+    // Wer selbst geantwortet hat, hat vorher gelesen: für jede empfangende Figur zählen nur Nachrichten, die neuer sind als der letzte
+    // Lesezeitpunkt und als ihre eigene letzte Nachricht (Antworten aus dem kleinen Chat-Fenster oder von einer Benachrichtigung aus
+    // setzen den Lesezeitpunkt nicht immer). Schreibt eine eigene Figur einer anderen eigenen, bleibt es für die andere ungelesen.
+    const base = lastRead ? new Date(lastRead).getTime() : 0;
+    const readUntil = new Map<string, number>();
+    for (const r of receivers) {
+      let t = base;
+      for (const m of chat.messages) if (m.character_id === r) t = Math.max(t, new Date(m.created_at).getTime());
+      readUntil.set(r, t);
+    }
+
+    const count = chat.messages.filter((m) => {
+      const t = new Date(m.created_at).getTime();
+      return receivers.some((receiverId) => receiverId !== m.character_id && t > (readUntil.get(receiverId) ?? base));
+    }).length;
     if (count > 0) counts[chat.id] = count;
   }
   return counts;
