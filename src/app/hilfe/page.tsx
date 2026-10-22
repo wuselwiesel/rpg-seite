@@ -627,6 +627,24 @@ export default async function HelpPage() {
             <strong>Export und Suche:</strong> „…“ in der Notiz oder PDF/Text über der Liste speichern eine Notiz oder die gewählte Auswahl (Ordner, Tag, Welt) als PDF (im Druckdialog „Als PDF speichern“) oder als Markdown-Text. Die Suche findet Notizen im Reiter „Notizen“; mit „#tag“ nur nach Tags. Am Charakterprofil zeigt „Verbindungen“, was in deinen Notizen mit ihm zusammenhängt.
           </li>
           <li>
+            <strong>Papierkorb und Archiv:</strong> Eine Notiz im Papierkorb bleibt 30 Tage erhalten (Wiederherstellen oder Endgültig löschen), danach wird sie von selbst gelöscht. Das Archiv räumt Notizen aus der Liste, ohne sie zu löschen.
+          </li>
+          <li>
+            <strong>Liste:</strong> Sortieren nach Geändert, Erstellt oder Titel (die Wahl wird gemerkt), Ansichten „Zuletzt geändert“ und „Ohne Tag“. Mit dem Häkchen-Symbol wählst du mehrere Notizen aus (Umschalt-Klick für einen Bereich) und verschiebst, taggst, heftest an, archivierst, löschst oder exportierst sie gemeinsam.
+          </li>
+          <li>
+            <strong>Seitenleiste (großer Bildschirm):</strong> Links stehen Ansichten, Ordnerbaum und Tag-Baum. Tags lassen sich mit „/“ verschachteln (z. B. <code>#plot/nebelhafen</code>); ein Klick auf „plot“ zeigt auch die Unter-Tags. Notizen lassen sich mit der Maus auf einen Ordner, einen Tag, das Archiv oder den Papierkorb ziehen, Ordner auf Ordner (Mitte = hinein, Rand = davor/danach). Am Handy gehen Verschieben und Tags über die Auswahl.
+          </li>
+          <li>
+            <strong>Schreiben:</strong> Überschriften H1–H3, Markierstift, Code, Tabellen, Aufgabenlisten, Datei anhängen (bis 20 MB, nur für dich abrufbar). Mit dem Symbol „Markdown-Quelltext“ oben wechselst du zwischen Editor und Markdown. „Suchen“ (Strg/Cmd + F) sucht und ersetzt im Text. Unten zeigen „Gliederung“ die Überschriften zum Springen und die Wortzahl die Info (Zeichen, Lesezeit, erstellt, geändert). „Darstellung“ ändert Schrift, Größe und Papier, „Fokus-Modus“ blendet alles andere aus (Esc beendet).
+          </li>
+          <li>
+            <strong>Tastenkürzel:</strong> Alt + N neue Notiz, Alt + J zu einer Notiz springen, ↑/↓ in der Liste blättern, Alt + F Fokus-Modus, Alt + Rücktaste in den Papierkorb. Die Übersicht öffnet das Tastatur-Symbol über der Liste.
+          </li>
+          <li>
+            <strong>Offline und Import:</strong> Schreibst du ohne Netz, wird der Text im Browser aufgehoben und gespeichert, sobald du wieder online bist; nach einem Absturz fragt die Notiz, ob du Ungespeichertes wiederherstellen willst. Mit „Importieren“ (oder Ablegen auf die Liste) kommen Markdown-Dateien (.md, .txt) als Notizen herein, auch aus Bear.
+          </li>
+          <li>
             <strong>Faceclaim:</strong> Am eigenen Charakter (Profil unter dem Namen und oben im Charakterbogen) das kleine Gesicht-Symbol antippen: Name der Person, Link (z. B. Pinterest) und bis zu 8 Bilder. Das sieht nur dein Konto, andere sehen es nirgends. In „Meine Charaktere“ steht der Name unter dem Charakter.
           </li>
         </ul>

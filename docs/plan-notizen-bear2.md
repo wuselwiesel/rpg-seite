@@ -23,8 +23,8 @@ Allgemeine Prüfung je Schritt: `npx tsc --noEmit`, `npx eslint <Dateien>`, `npx
 - [x] **M. Importieren.** (erledigt: Knopf „Importieren“ und Ablegen auf die Liste, `importMarkdownNotes` (bis 100 Dateien, je 200 KB, Titel aus `# `, `#tags`, Ordner = gewählter Ordner); ZIP nicht unterstützt; im Browser geprüft) Menü „Importieren“ in der Listenkopfzeile: Dateiauswahl (mehrfach, `.md`, `.markdown`, `.txt`, auch ZIP mit Markdown-Dateien über `fflate` wenn schon vorhanden, sonst nur Einzeldateien), Ziehen-und-Ablegen auf die Liste. Aktion `importMarkdownNotes([{name, text}])` (max. 100 Dateien, je 200 KB): Titel aus erster `# `-Überschrift oder Dateiname, `#tags` aus dem Text → `tags` (wie Bear-Export), Markdown → HTML (`markdownToHtml`), bereinigt, Ordner wählbar. Ergebnis „n Notizen importiert“.
 
 ## Danach (Abschluss)
-- [ ] Hilfe `/hilfe` Abschnitt 22 aktualisieren (Papierkorb/Archiv, Auswahl, Sortierung, Seitenleiste, Drag & Drop, verschachtelte Tags, Formate, Suchen/Ersetzen, Gliederung, Info, Kürzel, Offline, Dateien, Fokus/Darstellung, Import).
-- [ ] Protokoll `docs/uebergabe-wortwinkel.md` (Nachtrag), Plan-Kopf „ALLE SCHRITTE ERLEDIGT“.
+- [x] Hilfe `/hilfe` Abschnitt 22 aktualisieren (Papierkorb/Archiv, Auswahl, Sortierung, Seitenleiste, Drag & Drop, verschachtelte Tags, Formate, Suchen/Ersetzen, Gliederung, Info, Kürzel, Offline, Dateien, Fokus/Darstellung, Import).
+- [x] Protokoll `docs/uebergabe-wortwinkel.md` (Nachtrag), Plan-Kopf „ALLE SCHRITTE ERLEDIGT“.
 - [ ] Gesamtprüfung: `tsc`, ESLint, Vitest, `next build`, E2E, `get_advisors`, Handy-Ansicht aller neuen Teile, Backup-Lauf prüfen (`gh run list --workflow backup.yml`; Secrets `SUPABASE_DB_URL`/`BACKUP_PASSPHRASE` setzt die Nutzerin).
 
 ## Entscheidungen / Hinweise
