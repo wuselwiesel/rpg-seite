@@ -25,6 +25,7 @@ import { StoryEntryItem } from "./story-entry-item";
 import { EntryList } from "./entry-list";
 import { TurnTitle } from "@/components/turn-title";
 import { ClipSelectionProvider } from "./clip-selection";
+import { SelectionToWiki } from "./selection-to-wiki";
 import { ScrollToLast } from "./scroll-to-last";
 import { ScrollToEntry } from "./scroll-to-entry";
 import { JumpToLast, JumpToStart, JumpToStartFloating } from "./jump-to-last";
@@ -579,6 +580,7 @@ export default async function StoryPostDetailPage({
           />
         </div>
       )}
+        <SelectionToWiki sceneId={storyPost.id} />
       </ClipSelectionProvider>
     </div>
     </div>

@@ -317,6 +317,11 @@ export default async function HelpPage() {
           <li>Die automatische Übersicht bleibt über <strong>Übersicht</strong> erreichbar. Wird die Startseite entfernt, erscheint sie wieder als Wiki-Einstieg.</li>
         </ul>
 
+        <h3 className="mt-2 font-medium text-fg">Aus der Szene ins Wiki</h3>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
+          <li>Markiere in einer Szene einen Text innerhalb eines Beitrags (zum Beispiel einen Namen oder einen Satz). Es erscheint <strong>Ins Wiki</strong>. Du wählst eine Wiki-Seite (steht der Name einer Figur im Text, ist ihre Seite schon vorgewählt), änderst die Notiz und tippst auf <strong>Anhängen</strong>. Die Notiz steht dann unter der Überschrift „Aus Szenen“ am Ende der Seite, mit einem Link zur Stelle in der Szene. Das geht nur bei Seiten, die du bearbeiten darfst.</li>
+        </ul>
+
         <h3 className="mt-2 font-medium text-fg">Verlauf einer Wiki-Seite</h3>
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
           <li>Unter jeder Seite steht, wer sie zuletzt geändert hat. Über <strong>Verlauf</strong> siehst du frühere Fassungen (der Stand vor jeder Bearbeitung) mit Text und Steckbrief. Wer die Seite bearbeiten darf, kann eine Fassung mit <strong>Wiederherstellen</strong> zurückholen; der jetzige Stand bleibt dabei im Verlauf erhalten.</li>
