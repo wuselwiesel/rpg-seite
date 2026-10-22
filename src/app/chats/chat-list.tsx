@@ -7,6 +7,7 @@ import { getUnreadCounts } from "@/lib/chat-reads";
 import { messagePreview } from "@/lib/chat-preview";
 import type { Character, Chat } from "@/lib/types";
 import { ChatListItem } from "./chat-list-item";
+import { ChatOwnerSwitch } from "./chat-owner-switch";
 
 type ChatWithParticipants = Chat & {
   chat_participants: { muted: boolean; characters: Character }[];
@@ -93,10 +94,11 @@ export async function ChatList() {
   return (
     <div className="flex flex-col">
       <div className="mb-3 flex items-center justify-between gap-3 px-3">
-        <div className="min-w-0">
-          <h1 className="truncate font-serif text-2xl text-fg">{activeCharacter.username ?? activeCharacter.name}</h1>
-          <p className="truncate text-xs text-muted">Nachrichten in {activeWorld.name}</p>
-        </div>
+        <ChatOwnerSwitch
+          characters={ownCharacters.map((c) => ({ id: c.id, name: c.name, username: c.username ?? null, avatar_url: c.avatar_url ?? null }))}
+          activeId={activeCharacter.id}
+          subtitle={`Nachrichten in ${activeWorld.name}`}
+        />
         <Link
           href="/chats/new"
           aria-label="Neuer Chat"
