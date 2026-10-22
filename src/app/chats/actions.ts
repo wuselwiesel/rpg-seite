@@ -337,3 +337,29 @@ export async function setChatArchived(chatId: string, archived: boolean): Promis
   revalidatePath("/chats", "layout");
   return null;
 }
+
+// Aus einer Gruppe austreten (mit der gewählten Figur): Systemzeile „X hat die Gruppe verlassen“, dann wird die Teilnahme entfernt.
+// Die Letzte in der Gruppe kann nicht austreten (dann die Gruppe löschen). Die Regel dafür steht in der Datenbank (chat_participants_delete_own).
+export async function leaveChat(chatId: string, characterId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: chat } = await supabase.from("chats").select("is_group").eq("id", chatId).maybeSingle<{ is_group: boolean }>();
+  if (!chat?.is_group) return "Nur aus Gruppen kann man austreten.";
+  const { data: character } = await supabase.from("characters").select("name").eq("id", characterId).eq("owner_id", user.id).maybeSingle<{ name: string }>();
+  if (!character) return "Das ist nicht deine Figur.";
+  const { count } = await supabase.from("chat_participants").select("character_id", { count: "exact", head: true }).eq("chat_id", chatId);
+  if ((count ?? 0) <= 1) return "Du bist die Letzte in der Gruppe. Lösche die Gruppe stattdessen.";
+
+  // Erst die Systemzeile (solange die Figur noch Teilnehmerin ist), dann austreten
+  await supabase.from("messages").insert({ chat_id: chatId, character_id: characterId, content: systemMessageText(`${character.name} hat die Gruppe verlassen`) });
+  const { error, count: removed } = await supabase.from("chat_participants").delete({ count: "exact" }).eq("chat_id", chatId).eq("character_id", characterId);
+  if (error) return error.message;
+  if (!removed) return "Austreten ist nicht möglich.";
+
+  revalidatePath("/chats");
+  return null;
+}
