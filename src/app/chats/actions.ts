@@ -241,7 +241,7 @@ export async function addChatParticipant(
     .from("chat_participants")
     .insert({ chat_id: chatId, character_id: characterId });
 
-  if (error) return error.message;
+  if (error) return error.code === "42501" ? "Nur Gruppen-Admins können Mitglieder hinzufügen." : error.message;
 
   // Systemzeile „X wurde hinzugefügt“, geschrieben von einer meiner Figuren in diesem Chat (Fehler hier sind nicht schlimm)
   const [{ data: added }, { data: me }] = await Promise.all([
@@ -284,7 +284,7 @@ export async function renameChat(
     .eq("is_group", true);
 
   if (error) return error.message;
-  if (!count) return "Nur Gruppenchats können umbenannt werden.";
+  if (!count) return "Nur Gruppen-Admins können die Gruppe umbenennen.";
 
   revalidatePath(`/chats/${chatId}`);
   revalidatePath("/chats");
@@ -364,7 +364,7 @@ export async function leaveChat(chatId: string, characterId: string): Promise<st
   return null;
 }
 
-// Mitglied aus einer Gruppe entfernen (nur wer die Gruppe erstellt hat; die Regel steht in der Datenbank, chat_participants_delete_creator).
+// Mitglied aus einer Gruppe entfernen (nur Gruppen-Admins; die Regel steht in der Datenbank, chat_participants_delete_creator; wer die Gruppe erstellt hat, lässt sich nur selbst entfernen).
 // Eigene Figuren verlassen die Gruppe über „Gruppe verlassen“. Es erscheint die Zeile „X wurde entfernt“.
 export async function removeChatParticipant(chatId: string, characterId: string): Promise<string | null> {
   const supabase = await createClient();
@@ -375,7 +375,8 @@ export async function removeChatParticipant(chatId: string, characterId: string)
 
   const { data: chat } = await supabase.from("chats").select("is_group, created_by").eq("id", chatId).maybeSingle<{ is_group: boolean; created_by: string }>();
   if (!chat?.is_group) return "Nur aus Gruppen kann man Mitglieder entfernen.";
-  if (chat.created_by !== user.id) return "Nur wer die Gruppe erstellt hat, kann Mitglieder entfernen.";
+  const { data: isAdmin } = await supabase.rpc("is_chat_admin", { p_chat: chatId });
+  if (isAdmin !== true) return "Nur Gruppen-Admins können Mitglieder entfernen.";
 
   const { data: members } = await supabase
     .from("chat_participants")
@@ -396,5 +397,18 @@ export async function removeChatParticipant(chatId: string, characterId: string)
 
   revalidatePath(`/chats/${chatId}`);
   revalidatePath("/chats");
+  return null;
+}
+
+// Gruppen-Admin ernennen oder entfernen (nur Admins; wer die Gruppe erstellt hat, bleibt Admin). Die Prüfung steht in der Datenbank (set_chat_admin).
+export async function setChatAdmin(chatId: string, characterId: string, admin: boolean): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("set_chat_admin", { p_chat: chatId, p_character: characterId, p_admin: admin });
+  if (error) return error.message;
+  revalidatePath(`/chats/${chatId}`);
   return null;
 }

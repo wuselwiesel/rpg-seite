@@ -16,7 +16,7 @@ import { AttachmentPreview } from "@/components/chat-media";
 import { isVideoUrl } from "@/lib/chat-media-url";
 import { aggregateReactions } from "@/lib/reactions";
 import { parseSystemMessage } from "@/lib/system-message";
-import { addChatParticipant, deleteChat, deleteMessage, leaveChat, removeChatParticipant, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
+import { addChatParticipant, deleteChat, deleteMessage, leaveChat, removeChatParticipant, setChatAdmin, renameChat, sendMessage, setChatArchived, setChatMuted, updateMessage } from "../actions";
 import { GifPicker } from "@/components/gif-picker";
 import { isSendKey, useEnterSends } from "@/lib/send-pref";
 import { encodeMentionsInText, findMentionQuery, firstName, type MentionQuery } from "@/components/mention-textarea";
@@ -51,6 +51,9 @@ export function ChatRoom({
   isGroup,
   avatarUrl,
   canDelete,
+  isGroupAdmin,
+  adminIds,
+  creatorId,
   participants,
   availableCharacters,
   initialMessages,
@@ -68,6 +71,10 @@ export function ChatRoom({
   isGroup: boolean;
   avatarUrl: string | null;
   canDelete: boolean;
+  // Gruppen-Admin (Ersteller:in oder von einem Admin ernannt): Mitglieder hinzufügen/entfernen, Admins ernennen, Gruppe umbenennen
+  isGroupAdmin: boolean;
+  adminIds: string[];
+  creatorId: string;
   participants: Character[];
   availableCharacters: Character[];
   initialMessages: Message[];
@@ -562,6 +569,13 @@ export function ChatRoom({
     else router.refresh();
   }
 
+  async function handleToggleAdmin(c: Character, makeAdmin: boolean) {
+    setMemberError(null);
+    const error = await setChatAdmin(chatId, c.id, makeAdmin);
+    if (error) setMemberError(error);
+    else router.refresh();
+  }
+
   async function handleLeave() {
     if (!(await confirmDialog({ message: `${activeCharacter.name} aus dieser Gruppe austreten lassen? Die Nachrichten bleiben, die Gruppe bekommt eine Meldung.`, confirmLabel: "Verlassen", danger: true }))) return;
     const error = await leaveChat(chatId, activeCharacter.id);
@@ -646,7 +660,7 @@ export function ChatRoom({
                   <PresenceBadge online={participants.find((p) => p.id !== activeCharacter.id)?.presence_online ?? false} />
                 )}
               </div>
-              {isGroup && (
+              {isGroup && isGroupAdmin && (
                 <button
                   type="button"
                   onClick={() => setRenaming(true)}
@@ -679,7 +693,7 @@ export function ChatRoom({
             onDelete={canDelete ? handleDeleteChat : undefined}
             onLeave={isGroup && participants.length > 1 ? handleLeave : undefined}
           />
-          {isGroup && canDelete && (
+          {isGroup && (
             <button
               type="button"
               onClick={() => setShowMembers((v) => !v)}
@@ -691,7 +705,7 @@ export function ChatRoom({
               <Users className="h-4 w-4" strokeWidth={2} />
             </button>
           )}
-          {isGroup && availableCharacters.length > 0 && (
+          {isGroup && isGroupAdmin && availableCharacters.length > 0 && (
             <button
               type="button"
               onClick={() => setShowAddForm((v) => !v)}
@@ -717,20 +731,35 @@ export function ChatRoom({
         </div>
       </div>
 
-      {showMembers && isGroup && canDelete && (
+      {showMembers && isGroup && (
         <div className="flex flex-col gap-1 border-b border-line py-3" aria-label="Mitglieder der Gruppe">
           {participants.map((c) => {
             const mine = myCharacterIds.includes(c.id);
+            const isAdm = adminIds.includes(c.id);
+            const isCreatorFigure = c.owner_id === creatorId;
+            // Wer die Gruppe erstellt hat, bleibt Admin und lässt sich nur von ihr selbst entfernen
+            const protectedFigure = isCreatorFigure && creatorId !== userId;
             return (
-              <div key={c.id} className="flex items-center gap-3 px-1 py-1">
+              <div key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 py-1">
                 <ZoomAvatar name={c.name} avatarUrl={c.avatar_url} size={32} />
-                <span className="min-w-0 flex-1 truncate text-sm text-fg">{c.name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                  {c.name}
+                  {isAdm && <span className="ml-2 rounded-full bg-accent-strong/15 px-2 py-0.5 text-[11px] font-medium text-accent">Admin</span>}
+                </span>
+                {isGroupAdmin && !isCreatorFigure && (
+                  <button type="button" onClick={() => void handleToggleAdmin(c, !isAdm)} className="rounded-md px-2 py-1 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+                    {isAdm ? "Admin entfernen" : "Zum Admin machen"}
+                  </button>
+                )}
                 {mine ? (
                   <span className="text-xs text-muted">deine Figur</span>
                 ) : (
-                  <button type="button" onClick={() => void handleRemoveMember(c)} aria-label={`${c.name} entfernen`} className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500">
-                    <X className="h-4 w-4" strokeWidth={2} />
-                  </button>
+                  isGroupAdmin &&
+                  !protectedFigure && (
+                    <button type="button" onClick={() => void handleRemoveMember(c)} aria-label={`${c.name} entfernen`} className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500">
+                      <X className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                  )
                 )}
               </div>
             );

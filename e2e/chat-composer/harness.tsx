@@ -7,6 +7,9 @@ const me = { id: "c1", name: "Lyra Nachtfeder", avatar_url: null, owner_id: "u1"
 const other = { id: "c2", name: "Finn Murphy", avatar_url: null, owner_id: "u2" } as unknown as Character;
 const second = { id: "c3", name: "Lyra Zweitfigur", avatar_url: null, owner_id: "u1" } as unknown as Character;
 const withSecond = new URLSearchParams(location.search).has("zweite");
+// ?gruppe=1: Gruppenchat; &admin=1: ich bin Gruppen-Admin (Ersteller:in ist u2, Finn)
+const group = new URLSearchParams(location.search).has("gruppe");
+const iAmAdmin = new URLSearchParams(location.search).has("admin");
 const now = Date.now();
 const messages = Array.from({ length: Number(new URLSearchParams(location.search).get("n")) || 6 }, (_, i) => ({
   id: `m${i}`,
@@ -25,11 +28,11 @@ createRoot(document.getElementById("root")!).render(
     <ChatRoom
       chatId="chat"
       userId="u1"
-      title="Finn Murphy"
-      isGroup={false}
+      title={group ? "Die Runde" : "Finn Murphy"}
+      isGroup={group}
       avatarUrl={null}
-      canDelete
-      participants={withSecond ? [me, other, second] : [me, other]}
+      canDelete isGroupAdmin={iAmAdmin} adminIds={group ? (iAmAdmin ? ["c1", "c2"] : ["c2"]) : []} creatorId={group ? "u2" : "u1"}
+      participants={withSecond || group ? [me, other, second] : [me, other]}
       availableCharacters={[]}
       initialMessages={messages}
       activeCharacter={me}
