@@ -48,15 +48,15 @@ export type CharacterWikiRow = { icon: string; title: string; text: string };
 
 // Die öffentlichen Angaben aus dem ChaBo und Profil als Steckbrief-Zeilen für die Wiki-Seite einer Figur (immer live, ohne Attribute,
 // Talente, Notizen und nie Geheimes). Leere Angaben fehlen.
-export async function getCharacterWikiRows(characterId: string): Promise<{ rows: CharacterWikiRow[]; hasSheet: boolean }> {
+export async function getCharacterWikiRows(characterId: string): Promise<{ rows: CharacterWikiRow[]; hasSheet: boolean; enabled: boolean; portraitUrl: string | null; avatarUrl: string | null }> {
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("characters")
-    .select("name, bio, house, quote, status_text, gender, choices, world_id, worlds(house_enabled, quote_enabled, status_enabled, character_wiki_enabled)")
+    .select("name, avatar_url, bio, house, quote, status_text, gender, choices, world_id, worlds(house_enabled, quote_enabled, status_enabled, character_wiki_enabled)")
     .eq("id", characterId)
-    .maybeSingle<ProfileFields & { world_id: string; worlds: { house_enabled: boolean | null; quote_enabled: boolean | null; status_enabled: boolean | null; character_wiki_enabled: boolean | null } | null }>();
+    .maybeSingle<ProfileFields & { avatar_url: string | null; world_id: string; worlds: { house_enabled: boolean | null; quote_enabled: boolean | null; status_enabled: boolean | null; character_wiki_enabled: boolean | null } | null }>();
   // Nur in Welten, die die Option eingeschaltet haben (sonst bleibt eine ältere, nur verknüpfte Seite einfach eine normale Seite)
-  if (!c || c.worlds?.character_wiki_enabled !== true) return { rows: [], hasSheet: false };
+  if (!c || c.worlds?.character_wiki_enabled !== true) return { rows: [], hasSheet: false, enabled: false, portraitUrl: null, avatarUrl: null };
   const [lists, sheet] = await Promise.all([getWorldChoiceLists(c.world_id).catch(() => []), getCharacterSheet(characterId, false)]);
   const w = c.worlds;
   const fields = listCharacterFields(c, lists, sheet, { house: w?.house_enabled !== false, quote: false, status: false });
@@ -67,5 +67,5 @@ export async function getCharacterWikiRows(characterId: string): Promise<{ rows:
     if (!value || f.key === "s:familyTitle") continue;
     if (f.group === "Profil" ? ["p:house", "p:gender"].includes(f.key) : wanted(f.group)) rows.push({ icon: "", title: f.label, text: value });
   }
-  return { rows, hasSheet: !!sheet };
+  return { rows, hasSheet: !!sheet, enabled: true, portraitUrl: sheet?.portraitUrl ?? null, avatarUrl: c.avatar_url };
 }
