@@ -174,3 +174,16 @@ describe("Gliederung und Info", () => {
   });
 });
 
+
+import { draftDiffers } from "./note-draft";
+
+describe("Entwurf", () => {
+  const server = { title: "T", body: "<p>a</p>", tags: ["x"], updatedAt: "2026-10-22T10:00:00Z" };
+  it("bietet nur neuere, abweichende Entwürfe an", () => {
+    const newer = new Date("2026-10-22T11:00:00Z").getTime();
+    const older = new Date("2026-10-22T09:00:00Z").getTime();
+    expect(draftDiffers({ title: "T", body: "<p>b</p>", tags: ["x"], at: newer }, server)).toBe(true);
+    expect(draftDiffers({ title: "T", body: "<p>a</p>", tags: ["x"], at: newer }, server)).toBe(false);
+    expect(draftDiffers({ title: "T", body: "<p>b</p>", tags: ["x"], at: older }, server)).toBe(false);
+  });
+});

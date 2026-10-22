@@ -12,9 +12,10 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { addNoteLink, archiveNote, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld, restoreNote, trashNote } from "@/app/notizen/actions";
 import { stripHtml } from "@/lib/strip-html";
 import { emitNotePatch } from "@/lib/note-events";
+import { clearDraft, draftDiffers, loadDraft, saveDraft, type NoteDraft } from "@/lib/note-draft";
 import { MAX_NOTE_TAGS, flattenFolders, noteOutline, noteStats, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
-type SaveState = "saved" | "dirty" | "saving" | "error";
+type SaveState = "saved" | "dirty" | "saving" | "error" | "offline";
 
 // Eine Notiz: Titel und Text speichern von selbst, darunter die Verknüpfungen.
 export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, initialIsTemplate, initialArchived, initialDeletedAt, createdAt, initialUpdatedAt, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; initialIsTemplate: boolean; initialArchived: boolean; initialDeletedAt: string | null; createdAt: string; initialUpdatedAt: string; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
@@ -53,9 +54,21 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     if (!dirty.current) return;
+    // Ohne Netz gar nicht erst versuchen: der Entwurf liegt im Browser, gespeichert wird später
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setState("offline");
+      return;
+    }
     dirty.current = false;
     setState("saving");
-    const r = await saveNote(id, { title: titleRef.current, body: bodyRef.current, tags: tagsRef.current });
+    let r: Awaited<ReturnType<typeof saveNote>>;
+    try {
+      r = await saveNote(id, { title: titleRef.current, body: bodyRef.current, tags: tagsRef.current });
+    } catch {
+      dirty.current = true;
+      setState(typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "error");
+      return;
+    }
     if ("error" in r) {
       dirty.current = true;
       setState("error");
@@ -69,15 +82,19 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     }
     emitNotePatch({ id, title: titleRef.current, body: bodyRef.current, tags: r.tags, ...(r.links ? { links: r.links } : {}) });
     setUpdatedAt(new Date().toISOString());
-    if (!dirty.current) setState("saved");
+    if (!dirty.current) {
+      setState("saved");
+      clearDraft(id);
+    }
   }, [id]);
 
   const schedule = useCallback(() => {
     dirty.current = true;
     setState("dirty");
+    saveDraft(id, { title: titleRef.current, body: bodyRef.current, tags: tagsRef.current });
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void flush(), 900);
-  }, [flush]);
+  }, [flush, id]);
 
   // Beim Verlassen der Seite (oder des Tabs) noch Ungespeichertes wegschreiben
   useEffect(() => {
@@ -90,6 +107,51 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
       void flush();
     };
   }, [flush]);
+
+  // Scheiterte das Speichern (kein Netz, Fehler), erneut versuchen: sobald das Netz zurück ist und alle 15 Sekunden
+  useEffect(() => {
+    const retry = () => {
+      if (dirty.current) void flush();
+    };
+    window.addEventListener("online", retry);
+    const t = window.setInterval(retry, 15000);
+    return () => {
+      window.removeEventListener("online", retry);
+      window.clearInterval(t);
+    };
+  }, [flush]);
+
+  // Entwurf aus dem Browser, der neuer ist als der gespeicherte Stand (z. B. nach Absturz oder ohne Netz geschlossen)
+  const [draft, setDraft] = useState<NoteDraft | null>(null);
+  useEffect(() => {
+    const d = loadDraft(id);
+    if (d && draftDiffers(d, { title: initialTitle, body: initialBody, tags: initialTags, updatedAt: initialUpdatedAt })) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDraft(d);
+    } else if (d) clearDraft(id);
+    // nur beim Öffnen prüfen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  function restoreDraft() {
+    if (!draft) return;
+    titleRef.current = draft.title;
+    setTitle(draft.title);
+    tagsRef.current = draft.tags;
+    setTags(draft.tags);
+    bodyRef.current = draft.body;
+    setBodyInit(draft.body);
+    setBodyHtml(draft.body);
+    setWords(wordCount(draft.body));
+    setEditorKey((k) => k + 1);
+    setDraft(null);
+    schedule();
+  }
+
+  function discardDraft() {
+    clearDraft(id);
+    setDraft(null);
+  }
 
   async function pick(t: LinkTarget): Promise<string | null> {
     const r = await addNoteLink(id, t.kind, t.id);
@@ -212,7 +274,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   }
 
   const taken = new Set(links.map((l) => `${l.kind}:${l.targetId}`));
-  const stateLabel = { saved: "Gespeichert", dirty: "Ungespeichert …", saving: "Speichert …", error: "Speichern fehlgeschlagen" }[state];
+  const stateLabel = { saved: "Gespeichert", dirty: "Ungespeichert …", saving: "Speichert …", error: "Speichern fehlgeschlagen", offline: "Offline – wird gespeichert, sobald du wieder online bist" }[state];
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
@@ -223,7 +285,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
         </Link>
         {isTemplate && <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">Vorlage</span>}
         <div className="flex items-center gap-1">
-          <span className={`mr-2 text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
+          <span className={`mr-2 max-w-[14rem] text-right text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
             {stateLabel}
           </span>
           <button type="button" onClick={toggleSource} aria-pressed={source} aria-label="Markdown-Quelltext" title="Markdown-Quelltext" className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 ${source ? "text-accent" : "text-muted hover:text-fg"}`}>
@@ -284,6 +346,20 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
             </button>
             <button type="button" onClick={() => void removeForever()} className="rounded-full border border-line px-3 py-1 text-xs font-medium text-red-600 hover:bg-surface">
               Endgültig löschen
+            </button>
+          </span>
+        </div>
+      )}
+
+      {draft && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-sm text-fg">
+          <span>Ungespeicherte Änderungen vom {new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }).format(new Date(draft.at))}</span>
+          <span className="flex items-center gap-2">
+            <button type="button" onClick={restoreDraft} className="rounded-full bg-accent-strong px-3 py-1 text-xs font-medium text-on-accent-strong hover:opacity-90">
+              Wiederherstellen
+            </button>
+            <button type="button" onClick={discardDraft} className="rounded-full border border-line px-3 py-1 text-xs font-medium text-fg-soft hover:bg-surface">
+              Verwerfen
             </button>
           </span>
         </div>
