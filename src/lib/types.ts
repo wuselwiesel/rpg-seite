@@ -40,6 +40,8 @@ export type World = {
   allow_secrets?: boolean;
   // Besetzung (Rollenliste im Wiki) eingeschaltet
   cast_enabled?: boolean;
+  // Jede Figur bekommt einen Wiki-Eintrag mit ChaBo-Angaben (Standard: aus)
+  character_wiki_enabled?: boolean;
   // Neue Charaktere normaler Mitglieder starten „zur Prüfung“ (Admins genehmigen)
   review_characters?: boolean;
   // Rechte-Tabelle (siehe lib/world-permissions.ts); fehlende Schlüssel gelten als „alle Mitglieder“

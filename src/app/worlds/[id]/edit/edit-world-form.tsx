@@ -209,6 +209,10 @@ export function EditWorldForm({
         <input type="checkbox" name="cast_enabled" defaultChecked={world.cast_enabled === true} className="h-4 w-4 accent-[var(--accent-strong)]" />
         Besetzung (Rollenliste im Wiki)
       </label>
+      <label className="flex items-center gap-3 text-sm text-fg">
+        <input type="checkbox" name="character_wiki_enabled" defaultChecked={world.character_wiki_enabled === true} className="h-4 w-4 accent-[var(--accent-strong)]" />
+        Wiki-Eintrag für jede Figur
+      </label>
       <label data-tour="welt-pruefen" className="flex items-center gap-3 text-sm text-fg">
         <input
           type="checkbox"

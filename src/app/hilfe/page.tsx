@@ -319,7 +319,7 @@ export default async function HelpPage() {
 
         <h3 className="mt-2 font-medium text-fg">Wiki-Eintrag deiner Figur</h3>
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
-          <li>Jede Figur hat automatisch einen Wiki-Eintrag (Ordner „Charaktere“, Art „Person“), den alle in der Welt sehen. Gab es schon eine Seite mit dem Namen der Figur, wurde sie übernommen.</li>
+          <li>Wenn die Admins unter „Welt bearbeiten“ <strong>Wiki-Eintrag für jede Figur</strong> einschalten (Standard: aus), hat jede Figur automatisch einen Wiki-Eintrag (Ordner „Charaktere“, Art „Person“), den alle in der Welt sehen. Gab es schon eine Seite mit dem Namen der Figur, wurde sie übernommen.</li>
           <li>Der <strong>Steckbrief</strong> zeigt die öffentlichen Angaben aus Profil und ChaBo automatisch und immer aktuell (ohne Attribute und Talente, nie Geheimes). Eigene Felder, Text und Bilder ergänzt du über <strong>Bearbeiten</strong>. Hat ein eigenes Feld denselben Titel wie eine ChaBo-Angabe, gilt das eigene.</li>
           <li>Unter <strong>Geheim (nur für dich sichtbar)</strong> beim Bearbeiten legst du Felder an, die nur du siehst. Sie stehen in einem eigenen Bereich und sind für andere nicht abrufbar.</li>
         </ul>
