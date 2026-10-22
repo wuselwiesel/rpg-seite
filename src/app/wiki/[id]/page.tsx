@@ -4,14 +4,14 @@ import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Clock, MapPin, Network, Pencil, Plus } from "lucide-react";
+import { Clock, MapPin, Network, Pencil, Plus, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getWorldRights } from "@/lib/world-rights";
 import { canEditWikiPage } from "@/lib/world-permissions";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { autolinkHtml } from "@/lib/autolink";
 import { escapeHtml, linkCharacterMentions } from "@/lib/character-links";
-import { getWorldCharacterTerms } from "@/lib/wiki-characters";
+import { getCharacterWikiRows, getWorldCharacterTerms } from "@/lib/wiki-characters";
 import { getWikiTerms } from "@/lib/wiki-terms";
 import { getMapsForPage } from "@/lib/wiki-map-data";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
@@ -102,7 +102,12 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   // Steckbrief-Texte: Klartext, aber [[Seite]], Alternativnamen und Charaktere werden zu Links.
   const fieldHtml = (text: string) => autolinkHtml(escapeHtml(text), { wiki: wikiTerms, characters, excludeWikiId: page.id });
   const { html, headings } = addHeadingIds(linked);
-  const fields = page.fields ?? [];
+  // Wiki-Seite einer Figur: die öffentlichen ChaBo-Angaben stehen live im Steckbrief, darunter die eigenen Felder der Seite
+  // (gleiche Bezeichnung = die eigene Angabe gilt).
+  const chabo = page.character_id ? await getCharacterWikiRows(page.character_id) : { rows: [], hasSheet: false };
+  const ownFields = page.fields ?? [];
+  const ownTitles = new Set(ownFields.map((f) => f.title.trim().toLowerCase()));
+  const fields = [...chabo.rows.filter((r) => !ownTitles.has(r.title.trim().toLowerCase())), ...ownFields];
   const gallery = page.gallery ?? [];
   const isEmpty = stripHtml(page.content ?? "").trim() === "" && !/<img\b/i.test(page.content ?? "");
   // Initiale nur, wenn der erste Absatz mit einem Buchstaben beginnt und lang genug ist, damit sie schön umflossen wird.
@@ -195,6 +200,16 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
             <FavoriteButton wikiPageId={page.id} initial={favoriteIds.includes(page.id)} />
             <TargetNotesButton kind="wiki" targetId={page.id} targetLabel={page.title} count={await noteCountForTarget(supabase, user.id, "wiki", page.id)} showLabel className="px-3 py-1.5 text-sm" />
             <ShareWikiButton pageId={page.id} title={page.title} />
+            {page.character_id && (
+              <Link
+                href={chabo.hasSheet ? `/characters/${page.character_id}/chabo` : `/characters/${page.character_id}`}
+                title={chabo.hasSheet ? "Zum Charakterbogen" : "Zum Profil"}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+              >
+                <UserRound className="h-3.5 w-3.5" strokeWidth={2} />
+                {chabo.hasSheet ? "ChaBo" : "Profil"}
+              </Link>
+            )}
             <Link
               href={`/wiki/graph?fokus=${page.id}`}
               title="Verbindungen dieser Seite im Graph ansehen"
