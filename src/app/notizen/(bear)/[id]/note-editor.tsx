@@ -304,13 +304,13 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
 
   return (
     <div data-font={look.font} data-size={look.size} data-paper={look.paper} className="note-surface mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <Link href="/notizen" className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg lg:invisible">
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
           Notizen
         </Link>
         {isTemplate && <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">Vorlage</span>}
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-end gap-1">
           <span className={`mr-2 max-w-[14rem] text-right text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
             {stateLabel}
           </span>

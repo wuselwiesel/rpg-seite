@@ -45,7 +45,7 @@ export function TemplateMenu({ folderId = null, link, className = "" }: { folder
   const item = "block w-full truncate rounded-lg px-3 py-2 text-left text-sm text-fg transition hover:bg-surface-2 disabled:opacity-50";
   return (
     <div className={`relative ${className}`} ref={ref}>
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex items-center gap-1.5 rounded-full border border-line px-3 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg">
         <FileText className="h-4 w-4" strokeWidth={2} />
         Aus Vorlage
         <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />

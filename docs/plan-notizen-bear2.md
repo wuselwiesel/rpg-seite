@@ -1,4 +1,4 @@
-# Plan: Notizbuch Teil 2 – „wie Bear“ vollständig (Stand 20. Oktober 2026)
+# Plan: Notizbuch Teil 2 – „wie Bear“ vollständig (Stand 22. Oktober 2026) – ALLE SCHRITTE ERLEDIGT
 
 Zum Weiterarbeiten nach einer Unterbrechung: Diese Datei zuerst lesen, dann `git fetch && git log --oneline -8 && git status`, dann beim ersten Schritt mit `[ ]` weitermachen. Jeder Schritt ist **für sich lauffähig, getestet und gepusht** (kleine Commits direkt auf `main`, Trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`). Nach jedem Schritt hier `[x]` setzen, Abweichungen notieren, committen. Vorgänger: `docs/plan-notizen-ausbau.md` (alles erledigt). Auftrag der Nutzerin vom 20. Oktober: alles aus der Liste „was fehlt noch wie Bear“ umsetzen.
 
@@ -25,7 +25,7 @@ Allgemeine Prüfung je Schritt: `npx tsc --noEmit`, `npx eslint <Dateien>`, `npx
 ## Danach (Abschluss)
 - [x] Hilfe `/hilfe` Abschnitt 22 aktualisieren (Papierkorb/Archiv, Auswahl, Sortierung, Seitenleiste, Drag & Drop, verschachtelte Tags, Formate, Suchen/Ersetzen, Gliederung, Info, Kürzel, Offline, Dateien, Fokus/Darstellung, Import).
 - [x] Protokoll `docs/uebergabe-wortwinkel.md` (Nachtrag), Plan-Kopf „ALLE SCHRITTE ERLEDIGT“.
-- [ ] Gesamtprüfung: `tsc`, ESLint, Vitest, `next build`, E2E, `get_advisors`, Handy-Ansicht aller neuen Teile, Backup-Lauf prüfen (`gh run list --workflow backup.yml`; Secrets `SUPABASE_DB_URL`/`BACKUP_PASSPHRASE` setzt die Nutzerin).
+- [x] Gesamtprüfung (erledigt: tsc, ESLint, 516 Vitest, `next build`, alle Browser-Suiten, Berater ohne Befunde zu den neuen Tabellen, Handy-Breite von Liste und Notiz gesehen; Backup-Lauf: Secrets offen, siehe Protokoll): `tsc`, ESLint, Vitest, `next build`, E2E, `get_advisors`, Handy-Ansicht aller neuen Teile, Backup-Lauf prüfen (`gh run list --workflow backup.yml`; Secrets `SUPABASE_DB_URL`/`BACKUP_PASSPHRASE` setzt die Nutzerin).
 
 ## Entscheidungen / Hinweise
 - Papierkorb statt endgültigem Löschen überall (Liste, Notizseite, Mehrfachauswahl); endgültig nur im Papierkorb. Vorlagen und Ordner löschen weiterhin direkt (Ordner: Notizen bleiben).

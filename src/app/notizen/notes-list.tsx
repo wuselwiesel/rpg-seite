@@ -155,7 +155,7 @@ export function NotesList() {
             <Keyboard className="h-4 w-4" strokeWidth={2} />
           </button>
           <TemplateMenu folderId={current?.id ?? null} />
-          <button type="button" onClick={add} disabled={pending} className="flex items-center gap-1.5 rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60">
+          <button type="button" onClick={add} disabled={pending} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60">
             <Plus className="h-4 w-4" strokeWidth={2.25} />
             Neue Notiz
           </button>
@@ -293,10 +293,10 @@ export function NotesList() {
         <div className="mb-3 flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={2} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="In Notizen suchen" className="w-full rounded-full border border-line bg-surface py-2.5 pl-10 pr-4 text-sm text-fg outline-none focus:border-accent" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="In Notizen suchen" className="w-full min-w-0 rounded-full border border-line bg-surface py-2.5 pl-10 pr-4 text-sm text-fg outline-none focus:border-accent" />
           </div>
           <div className="flex shrink-0 items-center">
-            <select value={sort.key} onChange={(e) => setSort({ ...sort, key: e.target.value as SortKey })} aria-label="Sortieren nach" className="rounded-l-full border border-r-0 border-line bg-surface py-2.5 pl-3 pr-1 text-sm text-fg-soft outline-none focus:border-accent">
+            <select value={sort.key} onChange={(e) => setSort({ ...sort, key: e.target.value as SortKey })} aria-label="Sortieren nach" className="w-[6.6rem] rounded-l-full border border-r-0 border-line bg-surface py-2.5 pl-3 pr-1 text-sm text-fg-soft outline-none focus:border-accent">
               {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
                 <option key={k} value={k}>
                   {SORT_LABEL[k]}
