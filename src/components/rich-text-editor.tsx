@@ -8,6 +8,7 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import { EyeOff } from "lucide-react";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
+import Highlight from "@tiptap/extension-highlight";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -404,6 +405,11 @@ function Toolbar({
 
         <span className="mx-1 h-5 w-px bg-line" />
 
+        {notesTools && (
+          <ToolbarButton label="Überschrift ganz groß" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+            H1
+          </ToolbarButton>
+        )}
         <ToolbarButton
           label="Überschrift groß"
           active={editor.isActive("heading", { level: 2 })}
@@ -447,6 +453,12 @@ function Toolbar({
           <>
             <ToolbarButton label="Aufgabenliste" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}>
               ☑ Aufgaben
+            </ToolbarButton>
+            <ToolbarButton label="Markierstift" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()}>
+              🖍 Markieren
+            </ToolbarButton>
+            <ToolbarButton label="Code im Text" active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()}>
+              {"`Code`"}
             </ToolbarButton>
             <ToolbarButton label="Code-Block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
               {"</>"} Code
@@ -711,7 +723,7 @@ export function RichTextEditor({
       TextStyle,
       FontSize,
       ...(allowFontSelection ? [FontFamily] : []),
-      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true })] : []),
+      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true }), Highlight] : []),
       ...(allowBlocks
         ? [Callout, PdfFile, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
         : []),

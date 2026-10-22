@@ -1,4 +1,6 @@
-// Notiz (bereinigtes HTML) als Markdown-Text, für den Export. Bewusst klein gehalten: nur, was Notizen enthalten können.
+import { marked } from "marked";
+
+// Notiz (bereinigtes HTML) als Markdown-Text, für den Export und die Quelltext-Ansicht. Bewusst klein gehalten: nur, was Notizen enthalten können.
 
 type El = { tag: string; attrs: Record<string, string>; children: Node[] };
 type Node = El | string;
@@ -50,6 +52,8 @@ function inline(nodes: Node[]): string {
           return `*${inline(n.children)}*`;
         case "s":
           return `~~${inline(n.children)}~~`;
+        case "mark":
+          return `==${inline(n.children)}==`;
         case "code":
           return `\`${text(n)}\``;
         case "br":
@@ -120,12 +124,15 @@ function block(nodes: Node[]): string[] {
     loose = [];
   };
   for (const n of nodes) {
-    if (typeof n === "string" || ["strong", "b", "em", "i", "s", "code", "a", "img", "br", "span", "u"].includes(n.tag)) {
+    if (typeof n === "string" || ["strong", "b", "em", "i", "s", "code", "a", "img", "br", "span", "u", "mark"].includes(n.tag)) {
       loose.push(n);
       continue;
     }
     flush();
     switch (n.tag) {
+      case "h1":
+        out.push(`# ${inline(n.children).trim()}`);
+        break;
       case "h2":
         out.push(`## ${inline(n.children).trim()}`);
         break;
@@ -172,4 +179,28 @@ export function noteDocument(n: { title: string; body: string; tags: string[] },
   const head = `# ${n.title.trim() || fallbackTitle}`;
   const tags = n.tags.length ? `\n\n${n.tags.map((t) => `#${t}`).join(" ")}` : "";
   return `${head}${tags}\n\n${noteToMarkdown(n.body)}`;
+}
+
+// Markdown-Text als HTML für den Editor (Überschriften, Listen, Aufgaben `- [ ]`, Tabellen, Code, ==Markierung==). Das Ergebnis wird danach wie jeder Text bereinigt.
+export function markdownToHtml(md: string): string {
+  let html = marked.parse(md, { async: false, gfm: true, breaks: false }) as string;
+  // Aufgabenlisten: <li><input type="checkbox" …> Text</li> → Tiptap-Struktur
+  html = html.replace(/<ul>((?:(?!<\/ul>)[\s\S])*?<li>\s*<input[^>]*type="checkbox"[\s\S]*?)<\/ul>/g, (whole, inner: string) => {
+    const items = [...inner.matchAll(/<li>\s*<input([^>]*)>\s*([\s\S]*?)<\/li>/g)];
+    if (items.length === 0) return whole;
+    const lis = items
+      .map((m) => {
+        const checked = /\bchecked\b/.test(m[1]);
+        const text = m[2].replace(/^<p>|<\/p>$/g, "").trim();
+        return `<li data-type="taskItem" data-checked="${checked}"><label><input type="checkbox"${checked ? ' checked="checked"' : ""} /><span></span></label><div><p>${text}</p></div></li>`;
+      })
+      .join("");
+    return `<ul data-type="taskList">${lis}</ul>`;
+  });
+  // ==Markierung== außerhalb von Code
+  html = html
+    .split(/(<pre[\s\S]*?<\/pre>|<code[\s\S]*?<\/code>|<[^>]+>)/g)
+    .map((seg) => (seg.startsWith("<") ? seg : seg.replace(/==([^=\n]+)==/g, "<mark>$1</mark>")))
+    .join("");
+  return html;
 }

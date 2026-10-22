@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ChevronLeft, Download, FileText, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, ChevronLeft, Download, FileCode, FileText, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { markdownToHtml, noteToMarkdown } from "@/lib/note-markdown";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
@@ -31,6 +32,11 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const [worldId, setWorldId] = useState<string | null>(initialWorldId);
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const wordCount = (html: string) => stripHtml(html).split(/\s+/).filter(Boolean).length;
+  // Markdown-Quelltext statt Editor: der Text wird beim Umschalten hin- und zurückgewandelt
+  const [source, setSource] = useState(false);
+  const [md, setMd] = useState("");
+  const [bodyInit, setBodyInit] = useState(initialBody);
+  const [editorKey, setEditorKey] = useState(0);
   const [words, setWords] = useState(() => wordCount(initialBody));
   const [state, setState] = useState<SaveState>("saved");
   const [picker, setPicker] = useState(false);
@@ -142,6 +148,21 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     router.refresh();
   }
 
+  function toggleSource() {
+    if (!source) {
+      setMd(noteToMarkdown(bodyRef.current));
+      setSource(true);
+      return;
+    }
+    const html = markdownToHtml(md);
+    bodyRef.current = html;
+    setBodyInit(html);
+    setEditorKey((k) => k + 1);
+    setWords(wordCount(html));
+    setSource(false);
+    schedule();
+  }
+
   async function togglePin() {
     const next = !pinned;
     setPinned(next);
@@ -200,6 +221,9 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
           <span className={`mr-2 text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
             {stateLabel}
           </span>
+          <button type="button" onClick={toggleSource} aria-pressed={source} aria-label="Markdown-Quelltext" title="Markdown-Quelltext" className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 ${source ? "text-accent" : "text-muted hover:text-fg"}`}>
+            <FileCode className="h-4 w-4" strokeWidth={2} />
+          </button>
           <button type="button" onClick={togglePin} aria-label={pinned ? "Nicht mehr anheften" : "Anheften"} title={pinned ? "Nicht mehr anheften" : "Anheften"} className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 ${pinned ? "text-accent" : "text-muted hover:text-fg"}`}>
             {pinned ? <PinOff className="h-4 w-4" strokeWidth={2} /> : <Pin className="h-4 w-4" strokeWidth={2} />}
           </button>
@@ -355,22 +379,38 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
         )}
       </div>
 
-      <RichTextEditor
-        name="body"
-        initialContent={initialBody}
-        placeholder="Notiz schreiben …"
-        minHeight={320}
-        allowBlocks
-        notesTools
-        wikiPages={linkPages}
-        wikiCharacters={linkCharacters}
-        onChange={(html) => {
-          if (html === bodyRef.current) return;
-          bodyRef.current = html;
-          setWords(wordCount(html));
-          schedule();
-        }}
-      />
+      {source ? (
+        <textarea
+          value={md}
+          onChange={(e) => {
+            setMd(e.target.value);
+            bodyRef.current = markdownToHtml(e.target.value);
+            setWords(wordCount(bodyRef.current));
+            schedule();
+          }}
+          aria-label="Markdown"
+          spellCheck={false}
+          className="min-h-[20rem] w-full resize-y rounded-md border border-line bg-surface px-3 py-2 font-mono text-sm leading-relaxed text-fg outline-none focus:border-accent"
+        />
+      ) : (
+        <RichTextEditor
+          key={editorKey}
+          name="body"
+          initialContent={bodyInit}
+          placeholder="Notiz schreiben …"
+          minHeight={320}
+          allowBlocks
+          notesTools
+          wikiPages={linkPages}
+          wikiCharacters={linkCharacters}
+          onChange={(html) => {
+            if (html === bodyRef.current) return;
+            bodyRef.current = html;
+            setWords(wordCount(html));
+            schedule();
+          }}
+        />
+      )}
 
       <p className="-mt-2 text-right text-xs tabular-nums text-muted">{words} {words === 1 ? "Wort" : "Wörter"}</p>
 

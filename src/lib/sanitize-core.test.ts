@@ -74,3 +74,9 @@ describe("Notizen: Aufgabenlisten und Code", () => {
   });
 });
 
+describe("Notizen: Überschrift 1 und Markierstift", () => {
+  it("behält h1 und mark", () => {
+    expect(clean("<h1>Titel</h1><p>ein <mark>markierter</mark> Text</p>")).toBe("<h1>Titel</h1><p>ein <mark>markierter</mark> Text</p>");
+  });
+});
+
