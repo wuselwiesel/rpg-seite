@@ -64,6 +64,10 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     getWikiTypes(page.world_id),
   ]);
   const pageDates = datesFromRow(page);
+  // Wer die Seite zuletzt geändert hat (Konto-Name)
+  const lastEditorId = page.updated_by ?? null;
+  const { data: editor } = lastEditorId ? await supabase.from("profiles").select("username, nickname").eq("id", lastEditorId).maybeSingle<{ username: string; nickname: string | null }>() : { data: null };
+  const editorName = editor ? editor.nickname || editor.username : null;
 
   const tree = buildWikiTree(folders, pageRows);
   const findNode = (list: TreePage[]): TreePage | null => {
@@ -219,7 +223,14 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-y border-line py-2.5">
-          <p className="text-xs text-muted">Zuletzt bearbeitet am {formatDateTime(page.updated_at)}</p>
+          <p className="text-xs text-muted">
+            Zuletzt bearbeitet am {formatDateTime(page.updated_at)}
+            {editorName && <> von {editorName}</>}
+            {" · "}
+            <Link href={`/wiki/${page.id}/verlauf`} className="underline underline-offset-2 transition hover:text-fg">
+              Verlauf
+            </Link>
+          </p>
           <div className="flex flex-wrap items-center gap-1">
             <FavoriteButton wikiPageId={page.id} initial={favoriteIds.includes(page.id)} />
             <TargetNotesButton kind="wiki" targetId={page.id} targetLabel={page.title} count={await noteCountForTarget(supabase, user.id, "wiki", page.id)} showLabel className="px-3 py-1.5 text-sm" />

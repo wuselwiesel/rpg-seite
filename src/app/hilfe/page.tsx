@@ -317,6 +317,11 @@ export default async function HelpPage() {
           <li>Die automatische Übersicht bleibt über <strong>Übersicht</strong> erreichbar. Wird die Startseite entfernt, erscheint sie wieder als Wiki-Einstieg.</li>
         </ul>
 
+        <h3 className="mt-2 font-medium text-fg">Verlauf einer Wiki-Seite</h3>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
+          <li>Unter jeder Seite steht, wer sie zuletzt geändert hat. Über <strong>Verlauf</strong> siehst du frühere Fassungen (der Stand vor jeder Bearbeitung) mit Text und Steckbrief. Wer die Seite bearbeiten darf, kann eine Fassung mit <strong>Wiederherstellen</strong> zurückholen; der jetzige Stand bleibt dabei im Verlauf erhalten.</li>
+        </ul>
+
         <h3 className="mt-2 font-medium text-fg">Wiki-Eintrag deiner Figur</h3>
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
           <li>Wenn die Admins unter „Welt bearbeiten“ <strong>Wiki-Eintrag für jede Figur</strong> einschalten (Standard: aus), hat jede Figur automatisch einen Wiki-Eintrag (Ordner „Charaktere“, Art „Person“), den alle in der Welt sehen. Gab es schon eine Seite mit dem Namen der Figur, wurde sie übernommen.</li>
