@@ -11,7 +11,7 @@ const field = "rounded-md border border-line bg-surface px-3 py-2 text-fg outlin
 type Row = ProfileField & { key: number };
 
 // Eigene Profilfelder (Symbol, Titel, Inhalt) mit Sortierung; schreibt field_icon / field_title / field_text ins Formular.
-export function ProfileFieldsEditor({ initial }: { initial: ProfileField[] }) {
+export function ProfileFieldsEditor({ initial, prefix = "" }: { initial: ProfileField[]; prefix?: string }) {
   const [nextKey, setNextKey] = useState(initial.length + 1);
   const [rows, setRows] = useState<Row[]>(() => initial.map((f, i) => ({ ...f, key: i })));
 
@@ -35,7 +35,7 @@ export function ProfileFieldsEditor({ initial }: { initial: ProfileField[] }) {
         <div key={row.key} className="flex flex-col gap-2 rounded-xl border border-line p-3">
           <div className="flex gap-2">
             <input
-              name="field_icon"
+              name={`${prefix}field_icon`}
               value={row.icon}
               onChange={(e) => update(row.key, { icon: e.target.value })}
               placeholder="🙂"
@@ -55,7 +55,7 @@ export function ProfileFieldsEditor({ initial }: { initial: ProfileField[] }) {
               )}
             </div>
             <input
-              name="field_title"
+              name={`${prefix}field_title`}
               value={row.title}
               maxLength={40}
               onChange={(e) => update(row.key, { title: e.target.value })}
@@ -93,7 +93,7 @@ export function ProfileFieldsEditor({ initial }: { initial: ProfileField[] }) {
             </div>
           </div>
           <textarea
-            name="field_text"
+            name={`${prefix}field_text`}
             rows={2}
             maxLength={300}
             value={row.text}

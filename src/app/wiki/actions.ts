@@ -236,6 +236,14 @@ export async function updateWikiPage(wikiPageId: string, _prevState: string | nu
   // RLS lehnt unberechtigte Änderungen ohne Fehler ab (0 Zeilen) – das soll nicht wie Erfolg aussehen.
   if (!data?.length) return "Der Eintrag konnte nicht gespeichert werden (keine Berechtigung oder gelöscht).";
 
+  // Geheime Felder (nur Seiten von Figuren, nur die Besitzer:in; die Datenbank lässt sonst nichts durch)
+  if (formData.get("has_secret_fields") === "1") {
+    const { error: secretError } = await supabase
+      .from("wiki_page_secrets")
+      .upsert({ page_id: wikiPageId, fields: parseProfileFields(formData, "secret_"), updated_at: new Date().toISOString() });
+    if (secretError) return `Die geheimen Felder konnten nicht gespeichert werden: ${secretError.message}`;
+  }
+
   // Unterseiten (auch tiefere Ebenen) ziehen mit in den neuen Ordner.
   const { data: rows } = await supabase
     .from("wiki_pages")

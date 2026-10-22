@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { Lock } from "lucide-react";
 import { createWikiPage, updateWikiPage } from "./actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -30,6 +31,7 @@ export function WikiForm({
   calendar = DEFAULT_CALENDAR,
   defaults,
   canSetDraft = true,
+  secretFields = null,
 }: {
   page?: WikiPage;
   folders: FolderOption[];
@@ -40,6 +42,8 @@ export function WikiForm({
   defaults?: { title?: string; folder?: string; parent?: string; type?: string };
   // Entwurf nur für die, die die Seite angelegt haben.
   canSetDraft?: boolean;
+  // Geheime Felder der Seite einer Figur (nur für die Besitzer:in); null = diese Seite hat keine
+  secretFields?: ProfileField[] | null;
 }) {
   const action = page ? updateWikiPage.bind(null, page.id) : createWikiPage;
   const [error, formAction, pending] = useActionState(action, null);
@@ -203,6 +207,19 @@ export function WikiForm({
         </div>
         <ProfileFieldsEditor key={fieldsKey} initial={fieldRows} />
       </section>
+
+      {secretFields && (
+        <section className={card}>
+          <div>
+            <h2 className="flex items-center gap-2 font-serif text-xl text-fg">
+              <Lock className="h-4 w-4" strokeWidth={2} />
+              Geheim (nur für dich sichtbar)
+            </h2>
+          </div>
+          <input type="hidden" name="has_secret_fields" value="1" />
+          <ProfileFieldsEditor initial={secretFields} prefix="secret_" />
+        </section>
+      )}
 
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Text</h2>

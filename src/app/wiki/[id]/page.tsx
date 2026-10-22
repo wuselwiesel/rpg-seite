@@ -4,7 +4,7 @@ import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Clock, MapPin, Network, Pencil, Plus, UserRound } from "lucide-react";
+import { Clock, MapPin, Network, Pencil, Plus, UserRound, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getWorldRights } from "@/lib/world-rights";
 import { canEditWikiPage } from "@/lib/world-permissions";
@@ -105,6 +105,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   // Wiki-Seite einer Figur: die öffentlichen ChaBo-Angaben stehen live im Steckbrief, darunter die eigenen Felder der Seite
   // (gleiche Bezeichnung = die eigene Angabe gilt).
   const chabo = page.character_id ? await getCharacterWikiRows(page.character_id) : { rows: [], hasSheet: false };
+  // Geheime Felder: die Datenbank liefert sie nur der Besitzer:in der Figur
+  const { data: secretRow } = page.character_id
+    ? await supabase.from("wiki_page_secrets").select("fields").eq("page_id", page.id).maybeSingle<{ fields: { icon: string; title: string; text: string }[] }>()
+    : { data: null };
+  const secretFields = secretRow?.fields ?? [];
   const ownFields = page.fields ?? [];
   const ownTitles = new Set(ownFields.map((f) => f.title.trim().toLowerCase()));
   const fields = [...chabo.rows.filter((r) => !ownTitles.has(r.title.trim().toLowerCase())), ...ownFields];
@@ -113,7 +118,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   // Initiale nur, wenn der erste Absatz mit einem Buchstaben beginnt und lang genug ist, damit sie schön umflossen wird.
   const firstPara = html.match(/^\s*<p[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? "";
   const dropCap = /^[A-Za-zÄÖÜäöüß]/.test(stripHtml(firstPara).trim()) && stripHtml(firstPara).length >= 150;
-  const hasSide = fields.length > 0 || headings.length >= 3;
+  const hasSide = fields.length > 0 || secretFields.length > 0 || headings.length >= 3;
   const crumbs = [
     ...folderTrail.map((f) => ({ href: `/wiki/ordner/${f.id}`, label: f.name })),
     ...pageTrail.map((p) => ({ href: `/wiki/${p.id}`, label: p.title })),
@@ -256,6 +261,27 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
                 <h2 className="border-b border-line bg-surface-2/60 px-4 py-2.5 font-serif text-lg text-fg">Steckbrief</h2>
                 <dl className="grid gap-px bg-line grid-cols-2 @3xl:grid-cols-1">
                   {fields.map((f, i) => (
+                    <div key={i} className="flex flex-col gap-0.5 bg-surface px-4 py-2.5 text-sm">
+                      <dt className="flex items-center gap-1.5 text-xs text-muted">
+                        {f.icon && <EmojiText text={f.icon} />}
+                        {f.title}
+                      </dt>
+                      <dd className="min-w-0 break-words text-fg">
+                        <EmojiHtml html={fieldHtml(f.text)} />
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
+            {secretFields.length > 0 && (
+              <section aria-label="Geheim" className="overflow-hidden rounded-2xl border border-dashed border-accent/60 bg-surface">
+                <h2 className="flex items-center gap-2 border-b border-line bg-surface-2/60 px-4 py-2.5 font-serif text-lg text-fg">
+                  <Lock className="h-4 w-4" strokeWidth={2} />
+                  Geheim
+                </h2>
+                <dl className="grid gap-px bg-line grid-cols-2 @3xl:grid-cols-1">
+                  {secretFields.map((f, i) => (
                     <div key={i} className="flex flex-col gap-0.5 bg-surface px-4 py-2.5 text-sm">
                       <dt className="flex items-center gap-1.5 text-xs text-muted">
                         {f.icon && <EmojiText text={f.icon} />}
