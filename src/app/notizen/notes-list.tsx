@@ -42,7 +42,8 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
   }, []);
   const [scope, setScope] = useState<Scope>("all");
   // Welt: eine Welt-ID (zeigt ihre Notizen und die ohne Welt) oder „all“ = alle Welten
-  const [world, setWorld] = useState<string>(activeWorldId && worlds.some((w) => w.id === activeWorldId) ? activeWorldId : "all");
+  // Nur die aktive Welt (plus Notizen ohne Welt); ohne aktive Welt alle
+  const world = activeWorldId && worlds.some((w) => w.id === activeWorldId) ? activeWorldId : "all";
   const [tag, setTag] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [pending, start] = useTransition();
@@ -214,16 +215,6 @@ export function NotesList({ notes: initialNotes, folders: initialFolders, openCo
       </div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <NotesTabs active="notizen" openCount={openCount} className="mb-0" />
-        {worlds.length > 1 && (
-          <select value={world} onChange={(e) => setWorld(e.target.value)} aria-label="Welt" className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-fg-soft outline-none focus:border-accent">
-            {worlds.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-            <option value="all">Alle Welten</option>
-          </select>
-        )}
       </div>
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 

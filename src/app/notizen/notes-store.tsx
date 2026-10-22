@@ -26,7 +26,6 @@ type Store = {
   tag: string | null;
   setTag: (t: string | null) => void;
   world: string;
-  setWorld: (w: string) => void;
   sort: Sort;
   setSort: (s: Sort) => void;
   q: string;
@@ -114,7 +113,8 @@ export function NotesProvider({
   }
   const [scope, setScope] = useState<Scope>("all");
   const [tag, setTag] = useState<string | null>(null);
-  const [world, setWorld] = useState<string>(activeWorldId && worlds.some((w) => w.id === activeWorldId) ? activeWorldId : "all");
+  // Nur die aktive Welt (plus Notizen ohne Welt); ohne aktive Welt alle
+  const world = activeWorldId && worlds.some((w) => w.id === activeWorldId) ? activeWorldId : "all";
   const [sort, setSortState] = useState<Sort>({ key: "updated", dir: "desc" });
   const [q, setQ] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -292,7 +292,6 @@ export function NotesProvider({
     tag,
     setTag,
     world,
-    setWorld,
     sort,
     setSort,
     q,
