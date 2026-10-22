@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, EyeOff, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
+import { Clock, EyeOff, FolderTree, MapPin, MessageCircle, Pen, Pin } from "lucide-react";
 import { RecapToggle } from "./recap-toggle";
 import { CharacterAvatar } from "./character-avatar";
 import { NarratorAvatar } from "./narrator-avatar";
@@ -33,6 +33,7 @@ export function EntryCard({
   inWorldTime,
   locationHrefBase,
   locationWikiId,
+  folder = null,
   yourTurn,
   narrator = false,
 }: {
@@ -61,6 +62,8 @@ export function EntryCard({
   locationHrefBase?: string;
   // Wiki-Seite zum Ort: der Klick führt dorthin statt zur gefilterten Liste
   locationWikiId?: string | null;
+  // Ordner der Szene (aus „Szenen ordnen“): kleine Marke, Klick filtert die Liste
+  folder?: { id: string; name: string } | null;
   yourTurn?: boolean;
   // Erzähler:in-Beitrag: neutral, ohne Charakter.
   narrator?: boolean;
@@ -111,13 +114,19 @@ export function EntryCard({
           ))}
         </div>
       )}
-      {(location || inWorldTime || yourTurn) && (
+      {(location || inWorldTime || yourTurn || folder) && (
         <div className="mb-2 flex flex-wrap gap-1.5 text-xs text-fg-soft">
           {yourTurn && (
             <span className="inline-flex items-center gap-1 rounded-full bg-accent-strong px-2.5 py-0.5 font-medium text-on-accent-strong">
               <Pen className="h-3 w-3" strokeWidth={2} />
               Du bist dran
             </span>
+          )}
+          {folder && (
+            <Link href={`/story?ordner=${folder.id}`} className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 transition hover:text-accent">
+              <FolderTree className="h-3 w-3" strokeWidth={2} />
+              {folder.name}
+            </Link>
           )}
           {location &&
             (locationWikiId || locationHrefBase ? (

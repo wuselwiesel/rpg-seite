@@ -662,6 +662,9 @@ export default async function HelpPage() {
             <strong>Rechte:</strong> Ordner anlegen kann jedes Mitglied. Umbenennen, verschieben und löschen dürfen die Person, die den Ordner angelegt hat, und die Welt-Admins. Eine Szene verschieben nur ihre Autor:in und die Welt-Admins. Wird ein Ordner gelöscht, bleiben die Szenen erhalten (dann ohne Ordner).
           </li>
           <li>
+            <strong>In der Szene:</strong> Karten und Zeilen zeigen eine kleine Ordner-Marke (Klick = nur dieser Ordner). In der Szene selbst legst du den Ordner unter „Ändern“ fest (Autor:in oder Welt-Admin).
+          </li>
+          <li>
             <strong>Im Feed:</strong> Unter „Filter“ steht „Ordner“. Ist ein Ordner gewählt, erscheinen seine Szenen (samt Unterordnern) in der Reihenfolge, die du festgelegt hast.
           </li>
         </ul>

@@ -116,3 +116,27 @@ export async function saveSceneOrder(worldId: string, folderId: string | null, o
   refresh();
   return { skipped };
 }
+
+// Eine Szene in einen anderen Ordner legen (null = ohne Ordner); sie steht dort zuletzt. Nur Autor:in oder Welt-Admin (RLS).
+export async function setSceneFolder(worldId: string, sceneId: string, folderId: string | null): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  if (folderId) {
+    const { data: f } = await supabase.from("story_folders").select("id").eq("id", folderId).eq("world_id", worldId).maybeSingle();
+    if (!f) return "Der Ordner existiert nicht mehr.";
+  }
+  let q = supabase.from("story_posts").select("sort_order").eq("world_id", worldId).not("sort_order", "is", null).order("sort_order", { ascending: false }).limit(1);
+  q = folderId ? q.eq("folder_id", folderId) : q.is("folder_id", null);
+  const { data: top } = await q.maybeSingle<{ sort_order: number }>();
+  const { data, error } = await supabase
+    .from("story_posts")
+    .update({ folder_id: folderId, sort_order: (top?.sort_order ?? -1) + 1 })
+    .eq("id", sceneId)
+    .eq("world_id", worldId)
+    .select("id");
+  if (error) return error.message;
+  if (!data?.length) return "Nur die Autor:in der Szene oder Welt-Admins können sie in einen Ordner legen.";
+  revalidatePath(`/story/${sceneId}`);
+  refresh();
+  return null;
+}

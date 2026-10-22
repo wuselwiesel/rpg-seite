@@ -206,6 +206,8 @@ export default async function StoryPostDetailPage({
     .order("created_at")
     .returns<{ id: string; url: string; title: string | null; added_by: string }[]>();
   const memberName = new Map(worldMembers.map((m) => [m.id, m.name]));
+  const { data: folderRows } = await supabase.from("story_folders").select("id, name, parent_id").eq("world_id", storyPost.world_id);
+  const sceneFolders = (folderRows ?? []).map((f) => ({ id: f.id as string, name: f.name as string, parentId: f.parent_id as string | null }));
   const tracks: SceneTrack[] = (trackRows ?? []).map((t) => ({
     id: t.id,
     url: t.url,
@@ -384,6 +386,9 @@ export default async function StoryPostDetailPage({
             <>
               <SceneMeta
                 storyPostId={storyPost.id}
+                worldId={storyPost.world_id}
+                folderId={(storyPost as { folder_id?: string | null }).folder_id ?? null}
+                folders={sceneFolders}
                 location={storyPost.location}
                 locationWikiId={findLocationPageId(wikiTerms, storyPost.location)}
                 inWorldTime={storyPost.in_world_time}
