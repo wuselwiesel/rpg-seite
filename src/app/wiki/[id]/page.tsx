@@ -104,10 +104,10 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   // Erwähnungen (@) werden zuerst zu Links, damit der Name darin nicht noch einmal automatisch verlinkt wird.
-  const withMentions = linkCharacterMentions(sanitizePostHtml(page.content), new Map(characters.map((c) => [c.id, c])));
+  const withMentions = linkCharacterMentions(sanitizePostHtml(page.content), new Map(characters.map((c) => [c.id, c])), { stripAt: true });
   const linked = autolinkHtml(withMentions, { wiki: wikiTerms, characters, excludeWikiId: page.id });
   // Steckbrief-Texte: Klartext, aber [[Seite]], Alternativnamen und Charaktere werden zu Links.
-  const fieldHtml = (text: string) => autolinkHtml(escapeHtml(text), { wiki: wikiTerms, characters, excludeWikiId: page.id });
+  const fieldHtml = (text: string) => autolinkHtml(escapeHtml(text.replace(/@\[([^\]]+)\]\([0-9a-f-]{36}\)/g, "$1").replace(/(^|\s)@(?=\S)/g, "$1")), { wiki: wikiTerms, characters, excludeWikiId: page.id });
   const { html, headings } = addHeadingIds(linked);
   // Wiki-Seite einer Figur: die öffentlichen ChaBo-Angaben stehen live im Steckbrief, darunter die eigenen Felder der Seite
   // (gleiche Bezeichnung = die eigene Angabe gilt).
@@ -134,6 +134,13 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         getCharacterStory({ id: page.character_id!, world_id: page.world_id }, ownsPage),
       ])
     : [[] as string[], [], { recent: [], knows: [], timeline: [], total: 0 }];
+  // „Beziehungen“: das Beziehungsnetz und wer oft mit der Figur schreibt in einer Liste (mit Zahl der gemeinsamen Szenen)
+  const mergedRelations = [...relations];
+  for (const k of story.knows) {
+    const i = mergedRelations.findIndex((r) => r.id === k.id);
+    if (i >= 0) mergedRelations[i] = { ...mergedRelations[i], note: [mergedRelations[i].note, k.note].filter(Boolean).join(" · ") };
+    else mergedRelations.push(k);
+  }
   const houseMembers = figureOn && !page.character_id && page.page_type === "organisation" ? await getHouseMembers(page.world_id, page.title) : [];
   const coverImage = isCharPage ? (chabo.portraitUrl ?? chabo.avatarUrl ?? page.cover_image_url) : page.cover_image_url;
   const gallery = [...new Set([...(page.gallery ?? []), ...charGallery])];
@@ -358,8 +365,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         </section>
       )}
 
-      <PersonCards id="beziehungen" title="Beziehungen" people={relations} />
-      <PersonCards id="kennt" title="Wer kennt wen" people={story.knows} />
+      <PersonCards id="beziehungen" title="Beziehungen" people={mergedRelations} />
       <RecentScenes scenes={story.recent} total={story.total} />
       <CharacterTimeline items={story.timeline} />
       <PersonCards id="mitglieder" title="Mitglieder" people={houseMembers} />

@@ -5,6 +5,7 @@ import { characterExcerpt, escapeLike, type CharacterTerm } from "@/lib/characte
 import { getCharacterSheet } from "@/lib/character-sheet-data";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { listCharacterFields, type ProfileFields } from "@/lib/character-fields";
+import { MENTION_REGEX } from "@/lib/mentions";
 
 // Alle Charaktere einer Welt für Links im Wiki (Erwähnungen, [[Name]], Hover-Vorschau).
 export const getWorldCharacterTerms = cache(async (worldId: string): Promise<CharacterTerm[]> => {
@@ -61,9 +62,11 @@ export async function getCharacterWikiRows(characterId: string): Promise<{ rows:
   const w = c.worlds;
   const fields = listCharacterFields(c, lists, sheet, { house: w?.house_enabled !== false, quote: false, status: false });
   const wanted = (g: string) => g === "Auswahllisten" || g === "ChaBo: Persönliches" || (g.startsWith("ChaBo: ") && !["ChaBo: Attribute", "ChaBo: Talente", "ChaBo: Notizen"].includes(g) && g !== "Profil");
+  // Die eigene Erwähnung („Meru @Meru Burns“) gehört nicht in den Steckbrief der Figur selbst
+  const selfMention = new RegExp(`\\s*@${c.name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "gi");
   const rows: CharacterWikiRow[] = [];
   for (const f of fields) {
-    const value = f.value.trim();
+    const value = f.value.replace(MENTION_REGEX, "$1").replace(selfMention, "").trim();
     if (!value || f.key === "s:familyTitle") continue;
     if (f.group === "Profil" ? ["p:house", "p:gender"].includes(f.key) : wanted(f.group)) rows.push({ icon: "", title: f.label, text: value });
   }

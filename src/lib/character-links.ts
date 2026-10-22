@@ -26,13 +26,14 @@ export function characterAnchor(c: CharacterTerm, label: string): string {
 
 // <span data-type="mention" data-id="…">@Name</span> (so speichert der Editor eine Erwähnung) -> Link mit Vorschau.
 // Unbekannte Personen bleiben unverändert.
-export function linkCharacterMentions(html: string, byId: Map<string, CharacterTerm>): string {
+// stripAt: der Link zeigt nur den Namen, ohne das @ (Wiki)
+export function linkCharacterMentions(html: string, byId: Map<string, CharacterTerm>, opts: { stripAt?: boolean } = {}): string {
   if (!html.includes('data-type="mention"')) return html;
   return html.replace(/<span\b([^>]*)>([^<]*)<\/span>/g, (whole, attrs: string, inner: string) => {
     if (!/data-type="mention"/.test(attrs)) return whole;
     const id = /data-id="([0-9a-f-]{36})"/.exec(attrs)?.[1];
     const c = id ? byId.get(id) : undefined;
-    return c ? characterAnchor(c, inner) : whole;
+    return c ? characterAnchor(c, opts.stripAt ? inner.replace(/^@/, "") : inner) : whole;
   });
 }
 
