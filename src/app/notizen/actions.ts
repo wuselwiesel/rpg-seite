@@ -7,6 +7,7 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import { LINK_COLUMN, MAX_FOLDER_DEPTH, canMoveFolder, folderPath, normalizeTag, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 import { getFaceclaimNames } from "@/lib/faceclaim-data";
+import { markdownToHtml } from "@/lib/note-markdown";
 import { notesForTarget, resolveLinks } from "@/lib/notes-data";
 import { BUILTIN_TEMPLATES, uncheckTasks } from "@/lib/note-templates";
 import { loadEntryItems, pickExcerptItems } from "@/lib/clip-server";
@@ -498,4 +499,58 @@ export async function bulkUpdateNotes(ids: string[], op: BulkOp): Promise<string
   if (error) return error.message;
   revalidatePath("/notizen");
   return null;
+}
+
+// Reihenfolge der Ordner auf einer Ebene speichern (Ziehen in der Seitenleiste)
+export async function reorderNoteFolders(orderedIds: string[]): Promise<string | null> {
+  const { supabase, user } = await authed();
+  if (!user) return "Nicht angemeldet.";
+  const ids = orderedIds.filter((i) => /^[0-9a-f-]{36}$/i.test(i)).slice(0, 200);
+  const results = await Promise.all(ids.map((id, position) => supabase.from("note_folders").update({ position }).eq("id", id).eq("user_id", user.id)));
+  const failed = results.find((r) => r.error);
+  if (failed?.error) return failed.error.message;
+  revalidatePath("/notizen");
+  return null;
+}
+
+// ---- Import ----
+
+const IMPORT_MAX_FILES = 100;
+const IMPORT_MAX_CHARS = 200_000;
+
+// Markdown-Dateien als Notizen anlegen: Titel aus der ersten „# “-Überschrift (sonst Dateiname), #Tags aus dem Text (wie bei Bear-Exporten)
+export async function importMarkdownNotes(files: { name: string; text: string }[], folderId: string | null = null): Promise<{ error: string } | { imported: number; skipped: number }> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "Nicht angemeldet." };
+  const world = await getActiveWorld(user.id);
+  const rows: Record<string, unknown>[] = [];
+  let skipped = 0;
+  for (const f of files.slice(0, IMPORT_MAX_FILES)) {
+    const text = (f.text ?? "").replace(/^﻿/, "");
+    if (!text.trim() || text.length > IMPORT_MAX_CHARS) {
+      skipped++;
+      continue;
+    }
+    let title = f.name.replace(/\.(md|markdown|txt)$/i, "").slice(0, 200);
+    let md = text;
+    const h = /^\s*#\s+(.+?)\s*\n/.exec(md);
+    if (h) {
+      title = h[1].slice(0, 200);
+      md = md.slice(h[0].length);
+    }
+    rows.push({
+      user_id: user.id,
+      world_id: world?.id ?? null,
+      folder_id: folderId,
+      title,
+      body: sanitizePostHtml(markdownToHtml(md)),
+      tags: inlineTags(md),
+    });
+  }
+  skipped += Math.max(0, files.length - IMPORT_MAX_FILES);
+  if (rows.length === 0) return { imported: 0, skipped };
+  const { error } = await supabase.from("notes").insert(rows);
+  if (error) return { error: error.message };
+  revalidatePath("/notizen");
+  return { imported: rows.length, skipped };
 }

@@ -46,7 +46,7 @@ export type NoteView = {
   links: NoteLinkView[];
 };
 
-export type NoteFolder = { id: string; name: string; parentId: string | null };
+export type NoteFolder = { id: string; name: string; parentId: string | null; position?: number };
 
 export type LinkTarget = { kind: LinkKind; id: string; label: string; sub?: string; avatar?: string | null };
 
@@ -156,3 +156,69 @@ export function setTaskInHtml(html: string, index: number, checked: boolean): st
 
 // Ordnerbäume liegen in folder-tree.ts (auch für Szenen-Ordner genutzt)
 export { MAX_FOLDER_DEPTH, buildFolderTree, flattenFolders, folderPath, descendantIds, subtreeHeight, canMoveFolder, type FolderNode } from "./folder-tree";
+
+// ---- Tag-Baum (verschachtelte Tags „plot/nebelhafen“) ----
+export type TagNode = { name: string; full: string; children: TagNode[] };
+
+export function buildTagTree(tags: string[]): TagNode[] {
+  const root: TagNode = { name: "", full: "", children: [] };
+  for (const tag of new Set(tags)) {
+    let cur = root;
+    let path = "";
+    for (const part of tag.split("/").filter(Boolean)) {
+      path = path ? `${path}/${part}` : part;
+      let next = cur.children.find((c) => c.name === part);
+      if (!next) {
+        next = { name: part, full: path, children: [] };
+        cur.children.push(next);
+      }
+      cur = next;
+    }
+  }
+  const sort = (list: TagNode[]) => {
+    list.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    for (const n of list) sort(n.children);
+  };
+  sort(root.children);
+  return root.children;
+}
+
+// ---- Gliederung und Notiz-Info ----
+export type OutlineItem = { level: 1 | 2 | 3; text: string; index: number };
+
+// Überschriften einer Notiz in Textreihenfolge (index = Position unter allen Überschriften, zum Springen)
+export function noteOutline(html: string): OutlineItem[] {
+  const out: OutlineItem[] = [];
+  let i = 0;
+  for (const m of html.matchAll(/<h([123])\b[^>]*>([\s\S]*?)<\/h\1>/g)) {
+    const text = stripHtml(m[2]);
+    if (text) out.push({ level: Number(m[1]) as 1 | 2 | 3, text, index: i });
+    i++;
+  }
+  return out;
+}
+
+export type NoteStats = { words: number; characters: number; charactersNoSpaces: number; readingMinutes: number; paragraphs: number };
+
+export function noteStats(html: string): NoteStats {
+  const text = stripHtml(html);
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const paragraphs = [...html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/g)].filter((m) => stripHtml(m[1]).length > 0).length;
+  return { words, characters: text.length, charactersNoSpaces: text.replace(/\s/g, "").length, readingMinutes: Math.max(words === 0 ? 0 : 1, Math.ceil(words / 200)), paragraphs };
+}
+
+// Alle Fundstellen (Anfangsindex) von „query“ in „text“, ohne Überlappung; ohne Groß-/Kleinschreibung, wenn caseSensitive aus ist
+export function findMatches(text: string, query: string, caseSensitive = false): number[] {
+  if (!query) return [];
+  const hay = caseSensitive ? text : text.toLowerCase();
+  const needle = caseSensitive ? query : query.toLowerCase();
+  const out: number[] = [];
+  let from = 0;
+  for (;;) {
+    const i = hay.indexOf(needle, from);
+    if (i === -1) break;
+    out.push(i);
+    from = i + needle.length;
+  }
+  return out;
+}

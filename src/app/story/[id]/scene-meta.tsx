@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Clock, ImagePlus, MapPin, Pencil, X } from "lucide-react";
+import { Clock, FolderTree, ImagePlus, MapPin, Pencil, X } from "lucide-react";
 import { EventDateRange } from "@/components/event-date-fields";
 import { formatRange, type PageDates, type WikiCalendar } from "@/lib/wiki-calendar";
 import { updateSceneAmbience, updateStoryMeta } from "../actions";
+import { setSceneFolder } from "../folder-actions";
+import { flattenFolders } from "@/lib/folder-tree";
 import { SceneTracks, type SceneTrack } from "./scene-tracks";
 import { chatImageError } from "@/lib/chat-image";
 import { uploadSceneImage } from "@/lib/scene-image";
@@ -13,6 +15,9 @@ import { uploadSceneImage } from "@/lib/scene-image";
 // Ort und Zeitpunkt (in der Spielwelt) einer Szene; die Autor:in kann beides nachträglich ändern.
 export function SceneMeta({
   storyPostId,
+  worldId = "",
+  folderId = null,
+  folders = [],
   location,
   locationWikiId = null,
   inWorldTime,
@@ -27,6 +32,10 @@ export function SceneMeta({
   selfName = "",
 }: {
   storyPostId: string;
+  worldId?: string;
+  // Ordner der Szene („Szenen ordnen“) und alle Ordner der Welt zur Auswahl
+  folderId?: string | null;
+  folders?: { id: string; name: string; parentId: string | null }[];
   location: string | null;
   // Wiki-Seite zum Ort: der Klick führt dorthin statt zur gefilterten Liste
   locationWikiId?: string | null;
@@ -48,6 +57,7 @@ export function SceneMeta({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [image, setImage] = useState(ambienceImage ?? "");
+  const [folder, setFolder] = useState(folderId ?? "");
   const [uploading, setUploading] = useState(false);
 
   async function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
@@ -75,6 +85,10 @@ export function SceneMeta({
         const ambienceError = await updateSceneAmbience(storyPostId, image);
         if (ambienceError) return setError(ambienceError);
       }
+      if ((folder || null) !== folderId && worldId) {
+        const folderError = await setSceneFolder(worldId, storyPostId, folder || null);
+        if (folderError) return setError(folderError);
+      }
       setEditing(false);
     });
   }
@@ -98,6 +112,20 @@ export function SceneMeta({
             className="w-56 rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
           />
         </div>
+        {folders.length > 0 && (
+          <label className="flex w-fit items-center gap-2 text-sm text-fg-soft">
+            <FolderTree className="h-4 w-4 text-muted" strokeWidth={2} />
+            <select value={folder} onChange={(e) => setFolder(e.target.value)} aria-label="Ordner" className="rounded-md border border-line bg-app px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent">
+              <option value="">Ohne Ordner</option>
+              {flattenFolders(folders).map((f) => (
+                <option key={f.id} value={f.id}>
+                  {"– ".repeat(f.depth - 1)}
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="flex flex-col gap-3">
           <EventDateRange calendar={calendar} dates={dates} />
         </div>
@@ -162,6 +190,12 @@ export function SceneMeta({
         >
           <MapPin className="h-3 w-3" strokeWidth={2} />
           {location}
+        </Link>
+      )}
+      {folderId && folders.some((f) => f.id === folderId) && (
+        <Link href={`/story?ordner=${folderId}`} className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 transition hover:text-accent">
+          <FolderTree className="h-3 w-3" strokeWidth={2} />
+          {folders.find((f) => f.id === folderId)?.name}
         </Link>
       )}
       {(dateLabel || inWorldTime) && (

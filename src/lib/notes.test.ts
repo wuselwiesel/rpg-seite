@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildTagTree, noteOutline, noteStats, tagMatches } from "./notes";
 import { BUILTIN_TEMPLATES, uncheckTasks } from "./note-templates";
 import { sanitizePostHtmlCore } from "./sanitize-core";
 import { buildFolderTree, canMoveFolder, descendantIds, flattenFolders, folderPath, noteTasks, openTasks, setTaskInHtml, inlineTags, inlineTargets, isLinkKind, noteMatches, normalizeTags, noteSnippet, noteTitle, type NoteView } from "./notes";
@@ -102,7 +103,7 @@ describe("Notizbuch", () => {
   });
 });
 
-import { noteDocument, noteToMarkdown } from "./note-markdown";
+import { markdownToHtml, noteDocument, noteToMarkdown } from "./note-markdown";
 
 describe("Notiz als Markdown", () => {
   it("wandelt Überschriften, Formatierung, Links und Zitate um", () => {
@@ -120,5 +121,69 @@ describe("Notiz als Markdown", () => {
   it("baut ein Dokument mit Titel und Tags", () => {
     expect(noteDocument({ title: "Idee", body: "<p>Text</p>", tags: ["plot", "szene"] })).toBe("# Idee\n\n#plot #szene\n\nText\n");
     expect(noteDocument({ title: "", body: "<p>x</p>", tags: [] })).toBe("# Ohne Titel\n\nx\n");
+  });
+  it("baut den Tag-Baum und kennt Unter-Tags", () => {
+    const tree = buildTagTree(["plot", "plot/nebelhafen", "plot/akt-1", "figuren", "plot"]);
+    expect(tree.map((n) => n.full)).toEqual(["figuren", "plot"]);
+    expect(tree[1].children.map((n) => n.full)).toEqual(["plot/akt-1", "plot/nebelhafen"]);
+    expect(tagMatches("plot/nebelhafen", "plot")).toBe(true);
+    expect(tagMatches("plotter", "plot")).toBe(false);
+    expect(normalizeTags(["#Plot/Nebelhafen", "a//b/c/d/e"])).toEqual(["plot/nebelhafen", "a/b/c"]);
+  });
+});
+
+describe("Markdown → HTML", () => {
+  it("wandelt Überschriften, Formatierung, Listen und Tabellen um", () => {
+    const html = markdownToHtml("# Titel\n\nEin **fetter** und ==markierter== Text.\n\n- a\n- b\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n");
+    expect(html).toContain("<h1>Titel</h1>");
+    expect(html).toContain("<strong>fetter</strong>");
+    expect(html).toContain("<mark>markierter</mark>");
+    expect(html).toContain("<li>a</li>");
+    expect(html).toContain("<table>");
+  });
+  it("macht aus - [ ] Aufgabenlisten", () => {
+    const html = markdownToHtml("- [x] Fertig\n- [ ] Offen\n");
+    expect(html).toContain('<ul data-type="taskList">');
+    expect(html).toContain('data-checked="true"');
+    expect(html).toContain('data-checked="false"');
+    expect(html).toContain("<p>Offen</p>");
+  });
+  it("lässt ==x== im Code in Ruhe", () => {
+    expect(markdownToHtml("`a==b==c`")).toContain("<code>a==b==c</code>");
+  });
+  it("Rundlauf Markdown → HTML → Markdown bleibt gleich", () => {
+    const md = "# Titel\n\nText mit **fett**.\n\n- [x] Fertig\n- [ ] Offen\n";
+    expect(noteToMarkdown(markdownToHtml(md))).toBe(md);
+  });
+});
+
+describe("Gliederung und Info", () => {
+  it("liest Überschriften mit Ebene und Position", () => {
+    const html = "<h1>Titel</h1><p>x</p><h2>Teil <em>eins</em></h2><h3></h3><h3>Unter</h3>";
+    expect(noteOutline(html)).toEqual([
+      { level: 1, text: "Titel", index: 0 },
+      { level: 2, text: "Teil eins", index: 1 },
+      { level: 3, text: "Unter", index: 3 },
+    ]);
+  });
+  it("zählt Wörter, Zeichen, Absätze und Lesezeit", () => {
+    const s = noteStats("<p>Ein kurzer Satz.</p><p></p><p>Zwei</p>");
+    expect(s).toEqual({ words: 4, characters: 21, charactersNoSpaces: 18, readingMinutes: 1, paragraphs: 2 });
+    expect(noteStats("").readingMinutes).toBe(0);
+    expect(noteStats("<p>" + "wort ".repeat(450) + "</p>").readingMinutes).toBe(3);
+  });
+});
+
+
+import { draftDiffers } from "./note-draft";
+
+describe("Entwurf", () => {
+  const server = { title: "T", body: "<p>a</p>", tags: ["x"], updatedAt: "2026-10-22T10:00:00Z" };
+  it("bietet nur neuere, abweichende Entwürfe an", () => {
+    const newer = new Date("2026-10-22T11:00:00Z").getTime();
+    const older = new Date("2026-10-22T09:00:00Z").getTime();
+    expect(draftDiffers({ title: "T", body: "<p>b</p>", tags: ["x"], at: newer }, server)).toBe(true);
+    expect(draftDiffers({ title: "T", body: "<p>a</p>", tags: ["x"], at: newer }, server)).toBe(false);
+    expect(draftDiffers({ title: "T", body: "<p>b</p>", tags: ["x"], at: older }, server)).toBe(false);
   });
 });

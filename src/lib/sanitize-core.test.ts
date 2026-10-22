@@ -74,3 +74,19 @@ describe("Notizen: Aufgabenlisten und Code", () => {
   });
 });
 
+describe("Notizen: Überschrift 1 und Markierstift", () => {
+  it("behält h1 und mark", () => {
+    expect(clean("<h1>Titel</h1><p>ein <mark>markierter</mark> Text</p>")).toBe("<h1>Titel</h1><p>ein <mark>markierter</mark> Text</p>");
+  });
+});
+
+describe("Notizen: Dateianhänge", () => {
+  it("behält die Datei-Karte mit dem Link zur eigenen Route", () => {
+    const html = '<div data-note-file><a href="/notizen/datei?p=abc%2Fd%2Fplan.zip" target="_blank" rel="noopener noreferrer">plan.zip</a></div>';
+    expect(clean(html)).toBe(html);
+  });
+  it("lässt gefährliche Links nicht durch", () => {
+    expect(clean('<div data-note-file><a href="javascript:alert(1)">x</a></div>')).not.toContain("javascript");
+  });
+});
+

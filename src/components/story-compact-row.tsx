@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, MessageCircle, Pin } from "lucide-react";
+import { FolderTree, MapPin, MessageCircle, Pin } from "lucide-react";
 import { CharacterAvatar } from "./character-avatar";
 import { NarratorAvatar } from "./narrator-avatar";
 import { timeAgoShort } from "@/lib/format";
@@ -15,6 +15,7 @@ export function StoryCompactRow({
   character,
   replyCount,
   location,
+  folderName = null,
   pinned,
   yourTurn,
   narrator = false,
@@ -26,6 +27,7 @@ export function StoryCompactRow({
   character: Character | null;
   replyCount: number;
   location?: string | null;
+  folderName?: string | null;
   pinned?: boolean;
   yourTurn?: boolean;
   narrator?: boolean;
@@ -48,6 +50,12 @@ export function StoryCompactRow({
         <div className="mt-0.5 flex items-center gap-2.5 text-xs text-muted">
           {yourTurn && <span className="rounded-full bg-accent-strong/15 px-2 py-px font-medium text-accent">Du bist dran</span>}
           {pinned && <Pin className="h-3 w-3" strokeWidth={2} aria-label="Angepinnt" />}
+          {folderName && (
+            <span className="flex min-w-0 items-center gap-1 truncate">
+              <FolderTree className="h-3 w-3 shrink-0" strokeWidth={2} />
+              <span className="truncate">{folderName}</span>
+            </span>
+          )}
           {location && (
             <span className="flex min-w-0 items-center gap-1 truncate">
               <MapPin className="h-3 w-3 shrink-0" strokeWidth={2} />

@@ -191,6 +191,13 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   // Orte mit Wiki-Seite führen beim Klick dorthin (nur nötig, wenn die Karten einen Ort zeigen)
   const wikiTerms = locations.length ? await getWikiTerms(activeWorld.id) : [];
 
+  // Ordner einer Szene (kleine Marke an Karte und Zeile)
+  const folderOf = (post: StoryPost) => {
+    const id = (post as { folder_id?: string | null }).folder_id;
+    const f = id ? folderList.find((x) => x.id === id) : undefined;
+    return f ? { id: f.id, name: f.name } : null;
+  };
+  const folderNameOf = (post: StoryPost) => folderOf(post)?.name ?? null;
   const filterCount = [arc, ort, ordner, onlyMyTurn, showArchived, bookmarkedOnly, q, tag, from || to].filter(Boolean).length;
   function sortHref(mode: "ordnung" | "neueste") {
     const next = new URLSearchParams();
@@ -459,6 +466,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               character={post.characters}
               replyCount={post.story_entries?.[0]?.count ?? 0}
               location={post.location}
+              folderName={folderNameOf(post)}
               pinned={post.pinned}
               yourTurn={!!post.turn_character_id && myCharIds.includes(post.turn_character_id)}
               narrator={!!post.narrator}
@@ -487,6 +495,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
               recapHtml={recapOf(post)}
               pinned={post.pinned}
               location={post.location}
+              folder={folderOf(post)}
               locationWikiId={findLocationPageId(wikiTerms, post.location)}
               inWorldTime={post.in_world_time}
               locationHrefBase="/story"

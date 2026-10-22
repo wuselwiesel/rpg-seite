@@ -8,6 +8,9 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import { EyeOff } from "lucide-react";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
+import Highlight from "@tiptap/extension-highlight";
+import { SearchReplace } from "@/lib/search-replace-extension";
+import { EditorSearch } from "@/components/editor-search";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -23,6 +26,7 @@ import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table
 import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
 import { Callout } from "@/lib/tiptap-callout";
 import { PdfFile } from "@/lib/tiptap-pdf";
+import { NoteFile } from "@/lib/tiptap-note-file";
 import { Spoiler } from "@/lib/tiptap-spoiler";
 import { BlockTools } from "@/components/editor-blocks";
 import { SymbolPicker } from "./symbol-picker";
@@ -269,15 +273,18 @@ function Toolbar({
   allowFontSelection,
   allowBlocks,
   notesTools,
+  onSearch,
   wikiPages,
 }: {
   editor: Editor;
   allowFontSelection?: boolean;
   allowBlocks?: boolean;
   notesTools?: boolean;
+  onSearch?: () => void;
   wikiPages?: { id: string; title: string }[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [symbolsOpen, setSymbolsOpen] = useState(false);
@@ -342,6 +349,37 @@ function Toolbar({
     editor.chain().focus().setImage({ src: data.publicUrl }).run();
   }
 
+  // Beliebige Datei an eine Notiz hängen (privater Speicher „note-files“, bis 20 MB)
+  async function handleAttachChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      setError("Datei ist zu groß (max. 20 MB).");
+      return;
+    }
+    setUploading(true);
+    setError(null);
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setUploading(false);
+      setError("Nicht angemeldet.");
+      return;
+    }
+    const safe = file.name.replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(-100) || "datei";
+    const path = `${user.id}/${crypto.randomUUID()}/${safe}`;
+    const { error: uploadError } = await supabase.storage.from("note-files").upload(path, file, { contentType: file.type || "application/octet-stream" });
+    setUploading(false);
+    if (uploadError) {
+      setError(uploadError.message);
+      return;
+    }
+    editor.chain().focus().setNoteFile({ path, name: file.name.slice(0, 120) }).run();
+  }
+
   function setLink() {
     const previousUrl = editor.getAttributes("link").href as string | undefined;
     const url = window.prompt("Link-URL:", previousUrl ?? "https://");
@@ -404,6 +442,11 @@ function Toolbar({
 
         <span className="mx-1 h-5 w-px bg-line" />
 
+        {notesTools && (
+          <ToolbarButton label="Überschrift ganz groß" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+            H1
+          </ToolbarButton>
+        )}
         <ToolbarButton
           label="Überschrift groß"
           active={editor.isActive("heading", { level: 2 })}
@@ -447,6 +490,20 @@ function Toolbar({
           <>
             <ToolbarButton label="Aufgabenliste" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}>
               ☑ Aufgaben
+            </ToolbarButton>
+            <ToolbarButton label="Markierstift" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()}>
+              🖍 Markieren
+            </ToolbarButton>
+            <ToolbarButton label="Code im Text" active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()}>
+              {"`Code`"}
+            </ToolbarButton>
+            {onSearch && (
+              <ToolbarButton label="Suchen und Ersetzen (Strg+F)" onClick={onSearch}>
+                🔍 Suchen
+              </ToolbarButton>
+            )}
+            <ToolbarButton label="Datei anhängen" onClick={() => attachInputRef.current?.click()}>
+              📎 Datei
             </ToolbarButton>
             <ToolbarButton label="Code-Block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
               {"</>"} Code
@@ -620,6 +677,7 @@ function Toolbar({
         </div>
       )}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      <input ref={attachInputRef} type="file" onChange={handleAttachChange} className="hidden" />
       <input
         ref={fileInputRef}
         type="file"
@@ -683,6 +741,8 @@ export function RichTextEditor({
   notesTools?: boolean;
 }) {
   const [html, setHtml] = useState(initialContent ?? "");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const notesToolsRef = useRef(notesTools);
   const enterSends = useEnterSends();
   const enterSendsRef = useRef(enterSends);
   const submitKeyRef = useRef(onSubmitKey);
@@ -711,7 +771,7 @@ export function RichTextEditor({
       TextStyle,
       FontSize,
       ...(allowFontSelection ? [FontFamily] : []),
-      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true })] : []),
+      ...(notesTools ? [TaskList, TaskItem.configure({ nested: true }), Highlight, SearchReplace, NoteFile] : []),
       ...(allowBlocks
         ? [Callout, PdfFile, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell, Details, DetailsSummary, DetailsContent]
         : []),
@@ -736,6 +796,12 @@ export function RichTextEditor({
     content: initialContent ?? "",
     editorProps: {
       handleKeyDown: (view, event) => {
+        // Strg/Cmd+F: Suchen und Ersetzen in der Notiz (statt der Browsersuche)
+        if (notesToolsRef.current && (event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "f") {
+          event.preventDefault();
+          setSearchOpen(true);
+          return true;
+        }
         if (!submitKeyRef.current || !isSendKey(event, enterSendsRef.current)) return false;
         // Während die @-Auswahl offen ist, wählt Enter den Charakter; leerer Text wird nicht abgeschickt.
         if (document.querySelector("[data-mention-popup]")) return false;
@@ -767,7 +833,8 @@ export function RichTextEditor({
   return (
     <div data-rte className="rounded-md border border-line bg-surface focus-within:border-accent">
       <input type="hidden" name={name} value={html} />
-      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} notesTools={notesTools} wikiPages={wikiPages} />}
+      {editor && searchOpen && <EditorSearch editor={editor} onClose={() => { setSearchOpen(false); editor.commands.focus(); }} />}
+      {editor && showToolbar && <Toolbar editor={editor} allowFontSelection={allowFontSelection} allowBlocks={allowBlocks} notesTools={notesTools} onSearch={notesTools ? () => setSearchOpen(true) : undefined} wikiPages={wikiPages} />}
       {editor && <SelectionMenu editor={editor} wikiPages={wikiPages} />}
       <EditorContent editor={editor} />
     </div>

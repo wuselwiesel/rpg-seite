@@ -3,9 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { archiveNote, createNoteFolder, deleteNote, deleteNoteFolder, emptyTrash, moveNoteFolder, renameNoteFolder, restoreNote, trashNote } from "./actions";
+import { archiveNote, bulkUpdateNotes, createNoteFolder, deleteNote, deleteNoteFolder, emptyTrash, moveNoteFolder, renameNoteFolder, reorderNoteFolders, restoreNote, trashNote, type BulkOp } from "./actions";
 import { NOTE_PATCH_EVENT, type NotePatch } from "@/lib/note-events";
-import { descendantIds, noteMatches, noteTitle, tagMatches, type NoteFolder, type NoteView } from "@/lib/notes";
+import { canMoveFolder, descendantIds, noteMatches, noteTitle, normalizeTag, tagMatches, type NoteFolder, type NoteView } from "@/lib/notes";
 
 // Gemeinsamer Zustand von Seitenleiste und Liste: Notizen, Ordner, gewählte Ansicht, Tag, Welt, Sortierung, Auswahl.
 // „all“, „recent“ (zuletzt geändert), „untagged“ (ohne Tag), „none“ (ohne Ordner), „archive“, „trash“, sonst die ID eines Ordners.
@@ -58,6 +58,10 @@ type Store = {
   createFolder: (name: string, parentId: string | null) => Promise<NoteFolder | null>;
   renameFolder: (id: string, name: string, parentId: string | null) => Promise<boolean>;
   removeFolder: (f: NoteFolder) => Promise<void>;
+  moveFolder: (id: string, parentId: string | null) => Promise<boolean>;
+  reorderFolders: (orderedIds: string[]) => Promise<void>;
+  // Mehrere Notizen ändern (Server + Anzeige): Verschieben, Tag, Anheften, Archiv, Papierkorb …
+  bulkApply: (ids: string[], op: BulkOp) => Promise<boolean>;
   undo: { id: string; title: string } | null;
   dismissUndo: () => void;
 };
@@ -170,7 +174,8 @@ export function NotesProvider({
   const archived = useMemo(() => inWorldAll.filter((n) => !n.deletedAt && n.archived), [inWorldAll]);
   const trashed = useMemo(() => inWorldAll.filter((n) => n.deletedAt).sort((a, b) => (b.deletedAt ?? "").localeCompare(a.deletedAt ?? "")), [inWorldAll]);
 
-  const recentCutoff = useMemo(() => new Date(Date.now() - RECENT_DAYS * 24 * 3600 * 1000).toISOString(), [notes]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [mountedAt] = useState(() => Date.now());
+  const recentCutoff = useMemo(() => new Date(mountedAt - RECENT_DAYS * 24 * 3600 * 1000).toISOString(), [mountedAt]);
   const recentCount = useMemo(() => live.filter((n) => n.updatedAt >= recentCutoff).length, [live, recentCutoff]);
   const untaggedCount = useMemo(() => live.filter((n) => n.tags.length === 0).length, [live]);
 
@@ -279,6 +284,64 @@ export function NotesProvider({
     router.refresh();
   }
 
+  async function moveFolder(id: string, parentId: string | null) {
+    if (!canMoveFolder(folders, id, parentId)) {
+      setError("Dorthin lässt sich der Ordner nicht verschieben.");
+      return false;
+    }
+    const err = await moveNoteFolder(id, parentId);
+    if (err) {
+      setError(err);
+      return false;
+    }
+    setFolders((cur) => cur.map((f) => (f.id === id ? { ...f, parentId } : f)));
+    return true;
+  }
+  async function reorderFolders(orderedIds: string[]) {
+    const pos = new Map(orderedIds.map((id, i) => [id, i]));
+    setFolders((cur) => cur.map((f) => (pos.has(f.id) ? { ...f, position: pos.get(f.id) as number } : f)));
+    const err = await reorderNoteFolders(orderedIds);
+    if (err) setError(err);
+  }
+  async function bulkApply(ids: string[], op: BulkOp) {
+    if (ids.length === 0) return false;
+    setError(null);
+    const err = await bulkUpdateNotes(ids, op);
+    if (err) {
+      setError(err);
+      return false;
+    }
+    const tag = op.kind === "addTag" || op.kind === "removeTag" ? normalizeTag(op.tag) : "";
+    if (op.kind === "delete") {
+      removeNotes(ids);
+      return true;
+    }
+    setNotes((cur) =>
+      cur.map((n) => {
+        if (!ids.includes(n.id)) return n;
+        switch (op.kind) {
+          case "move":
+            return { ...n, folderId: op.folderId };
+          case "pin":
+            return { ...n, pinned: op.pinned };
+          case "archive":
+            return { ...n, archived: op.archived };
+          case "trash":
+            return { ...n, deletedAt: new Date().toISOString() };
+          case "restore":
+            return { ...n, deletedAt: null };
+          case "addTag":
+            return { ...n, tags: [...new Set([...n.tags, tag])] };
+          case "removeTag":
+            return { ...n, tags: n.tags.filter((t) => t !== tag) };
+          default:
+            return n;
+        }
+      }),
+    );
+    return true;
+  }
+
   const value: Store = {
     notes,
     folders,
@@ -324,6 +387,9 @@ export function NotesProvider({
     createFolder,
     renameFolder,
     removeFolder,
+    moveFolder,
+    reorderFolders,
+    bulkApply,
     undo,
     dismissUndo: () => setUndo(null),
   };

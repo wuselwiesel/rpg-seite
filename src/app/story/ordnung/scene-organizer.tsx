@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, Folder, FolderPlus, GripVertical, MapPin, Pencil, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, Folder, FolderPlus, FolderInput, GripVertical, MapPin, Pencil, Trash2, X } from "lucide-react";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { MAX_FOLDER_DEPTH, canMoveFolder, descendantIds, flattenFolders } from "@/lib/folder-tree";
 import { compareScenes, placeScene, shiftScene } from "@/lib/scene-order";
@@ -175,12 +175,14 @@ export function SceneOrganizer({ worldId, initialFolders, initialScenes }: { wor
             <button type="button" onClick={() => void shift(s.id, folderId, 1)} disabled={i === list.length - 1} aria-label="Nach unten" title="Nach unten" className={iconBtn}>
               <ArrowDown className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
+            <span className="relative shrink-0">
+              <FolderInput className="pointer-events-none absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 text-muted sm:hidden" strokeWidth={2} aria-hidden />
             <select
               value={folderId ?? ""}
               onChange={(e) => void moveScene(s.id, e.target.value || null, null)}
               aria-label="Verschieben nach"
               title="Verschieben nach"
-              className="w-9 shrink-0 cursor-pointer rounded-full border border-line bg-surface py-1 text-xs text-fg-soft outline-none sm:w-28"
+              className="h-8 w-8 cursor-pointer appearance-none rounded-full border border-line bg-surface py-1 text-xs text-transparent outline-none sm:h-auto sm:w-28 sm:appearance-auto sm:pl-2 sm:text-fg-soft [&>option]:text-fg"
             >
               <option value="">Ohne Ordner</option>
               {flattenFolders(folderLikes).map((f) => (
@@ -190,6 +192,7 @@ export function SceneOrganizer({ worldId, initialFolders, initialScenes }: { wor
                 </option>
               ))}
             </select>
+            </span>
           </>
         )}
       </li>
