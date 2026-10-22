@@ -153,7 +153,11 @@ function BubbleInner({
   }, []);
 
   // Zähler exakt vom Server holen (statt blind hochzuzählen): richtiger Charakter, Lesezeitpunkte, keine eigenen Nachrichten.
-  const refreshCounts = useCallback(async () => {
+  const lastCountsAt = useRef(0);
+  const refreshCounts = useCallback(async (force = false) => {
+    // Höchstens einmal pro 45 s (Fokus, Sichtbarkeit und Zeitgeber lösen sonst kurz hintereinander aus; jede Abfrage ist ein Funktionsaufruf bei Vercel)
+    if (!force && Date.now() - lastCountsAt.current < 45_000) return;
+    lastCountsAt.current = Date.now();
     const next = await getBubbleUnread(rpCharacterRef.current);
     setRpUnread(next.rp);
     setAccUnread(next.account);
@@ -162,8 +166,8 @@ function BubbleInner({
   // Beim Start, bei Rückkehr zur App und regelmäßig abgleichen, damit nie eine Meldung "hängen bleibt" oder fehlt
   // (regelmäßig nur im sichtbaren Tab, sonst fragen Hintergrund-Tabs rund um die Uhr nach).
   useEffect(() => {
-    void refreshCounts();
-    const interval = setInterval(() => document.visibilityState === "visible" && void refreshCounts(), 90_000);
+    void refreshCounts(true);
+    const interval = setInterval(() => document.visibilityState === "visible" && void refreshCounts(), 4 * 60_000);
     const onVisible = () => document.visibilityState === "visible" && void refreshCounts();
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
@@ -195,7 +199,7 @@ function BubbleInner({
     // Mehrere Nachrichten kurz hintereinander ergeben nur eine Abfrage.
     const scheduleCounts = () => {
       if (countsTimer) clearTimeout(countsTimer);
-      countsTimer = setTimeout(() => void refreshCounts(), 400);
+      countsTimer = setTimeout(() => void refreshCounts(true), 400);
     };
 
     async function showPreview(kind: "account" | "rp", id: string, text: string) {

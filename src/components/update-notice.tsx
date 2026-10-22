@@ -17,7 +17,7 @@ export function UpdateNotice() {
     let stop = false;
     async function check(force = false) {
       const now = Date.now();
-      if (!force && now - last < 60_000) return;
+      if (!force && now - last < 5 * 60_000) return;
       last = now;
       try {
         const res = await fetch("/api/version", { cache: "no-store" });
@@ -32,7 +32,7 @@ export function UpdateNotice() {
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
     window.addEventListener(ACTION_FAILED_EVENT, onFailed);
-    const timer = window.setInterval(() => void check(), 5 * 60_000);
+    const timer = window.setInterval(() => void check(), 15 * 60_000);
     void check();
     return () => {
       stop = true;
