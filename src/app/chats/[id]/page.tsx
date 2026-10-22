@@ -7,7 +7,7 @@ import { EMPTY_CHAT_THEME, type ChatTheme } from "@/lib/chat-theme";
 import { ChatRoom } from "./chat-room";
 
 type ChatWithParticipants = Chat & {
-  chat_participants: { muted: boolean; archived: boolean; characters: Character }[];
+  chat_participants: { muted: boolean; archived: boolean; is_admin: boolean; characters: Character }[];
 };
 
 // Nur die neuesten Nachrichten laden; frühere lädt der Chat auf Wunsch nach.
@@ -31,7 +31,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
 
   const { data: chat } = await supabase
     .from("chats")
-    .select("*, chat_participants(muted, archived, characters(*))")
+    .select("*, chat_participants(muted, archived, is_admin, characters(*))")
     .eq("id", id)
     .maybeSingle<ChatWithParticipants>();
 
@@ -80,6 +80,9 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
   const windowMessages = (messages ?? []).slice(0, MESSAGE_WINDOW).reverse();
 
   const participants = chat.chat_participants.map((p) => p.characters);
+  // Gruppen-Admins: Figuren mit is_admin und die der Ersteller:in
+  const adminIds = chat.is_group ? chat.chat_participants.filter((p) => p.is_admin || p.characters.owner_id === chat.created_by).map((p) => p.characters.id) : [];
+  const isGroupAdmin = chat.is_group && chat.chat_participants.some((p) => p.characters.owner_id === user.id && adminIds.includes(p.characters.id));
   const title = chat.is_group
     ? chat.name
     : (participants.find((p) => p.id !== activeCharacter.id)?.name ?? chat.name ?? "Chat");
@@ -102,6 +105,9 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
       isGroup={chat.is_group}
       avatarUrl={chat.avatar_url ?? null}
       canDelete={!chat.is_group || chat.created_by === user.id}
+      isGroupAdmin={isGroupAdmin}
+      adminIds={adminIds}
+      creatorId={chat.created_by}
       participants={participants}
       availableCharacters={availableCharacters}
       initialMessages={windowMessages}

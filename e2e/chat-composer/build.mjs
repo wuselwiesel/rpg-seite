@@ -13,7 +13,7 @@ fs.writeFileSync(path.join(out, "shim-link.tsx"), `import React from "react"; ex
 fs.writeFileSync(path.join(out, "shim-nav.ts"), `export const usePathname = () => "/"; export const useSearchParams = () => new URLSearchParams(); export const useRouter = () => ({ push() {}, refresh() {}, replace() {} });`);
 fs.writeFileSync(path.join(out, "shim-dynamic.tsx"), `import React from "react"; export default function dynamic(){ return function Lazy(){ return <div>Emoji-Katalog</div>; }; }`);
 fs.writeFileSync(path.join(out, "stub-supabase.ts"), `const chain: any = new Proxy(function () {}, { get(_t, k) { if (k === "then") return (res: any) => (typeof res === "function" ? res({ data: [], error: null }) : undefined); if (k === "presenceState") return () => ({}); return () => chain; }, apply() { return chain; } });\nexport const createClient = () => chain; export const createServerClient = () => chain; export const createBrowserClient = () => chain;`);
-fs.writeFileSync(path.join(out, "stub-actions.ts"), `const f = async () => null; export const sendMessage = async (...a: any[]) => { (window as any).__sent.push(a); return null; }; export const addChatParticipant = f, deleteChat = f, deleteMessage = f, renameChat = f, setChatMuted = f, setChatArchived = f, updateMessage = f, saveChatTheme = f, setPresenceMode = f, toggleReaction = f, getPostReactors = f, setBonusLikes = f, createCustomEmoji = f, setCharacterPresence = f, deleteCustomEmoji = f;`);
+fs.writeFileSync(path.join(out, "stub-actions.ts"), `const f = async () => null; export const sendMessage = async (...a: any[]) => { (window as any).__sent.push(a); return null; }; export const addChatParticipant = f, deleteChat = f, deleteMessage = f, renameChat = f, setChatMuted = f, setChatArchived = f, updateMessage = f, saveChatTheme = f, setPresenceMode = f, toggleReaction = f, getPostReactors = f, setBonusLikes = f, createCustomEmoji = f, setCharacterPresence = f, deleteCustomEmoji = f, leaveChat = f, removeChatParticipant = f, setChatAdmin = f;`);
 fs.writeFileSync(path.join(out, "stub-null.tsx"), `export function AvatarUpload() { return null; }`);
 
 const stubs = {
@@ -43,6 +43,6 @@ const res = await build({
   external: ["node:*", "@opentelemetry/api", "next/dist/*"], logLevel: "error", metafile: true,
 });
 const cssFile = path.join(root, "src", "app", "globals.css");
-const css = await postcss([tailwind()]).process(fs.readFileSync(cssFile, "utf8"), { from: cssFile });
+const css = await postcss([tailwind({ base: root })]).process(fs.readFileSync(cssFile, "utf8"), { from: cssFile });
 fs.writeFileSync(path.join(out, "style.css"), css.css);
 fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><body style="background:var(--app);margin:0"><script>window.__sent=[]</script><div id="root"></div><script src="out.js"></script>`);
