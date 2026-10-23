@@ -1,15 +1,17 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { archiveNote, bulkUpdateNotes, createNoteFolder, deleteNote, deleteNoteFolder, emptyTrash, moveNoteFolder, renameNoteFolder, reorderNoteFolders, restoreNote, trashNote, type BulkOp } from "./actions";
 import { NOTE_PATCH_EVENT, type NotePatch } from "@/lib/note-events";
-import { canMoveFolder, descendantIds, noteMatches, noteTitle, normalizeTag, tagMatches, type NoteFolder, type NoteView } from "@/lib/notes";
+import { canMoveFolder, descendantIds, noteMatches, noteTitle, normalizeTag, openTasks, tagMatches, type NoteFolder, type NoteView } from "@/lib/notes";
+import { useNotebookNav } from "./notebook-nav";
 
 // Gemeinsamer Zustand von Seitenleiste und Liste: Notizen, Ordner, gewählte Ansicht, Tag, Welt, Sortierung, Auswahl.
-// „all“, „recent“ (zuletzt geändert), „untagged“ (ohne Tag), „none“ (ohne Ordner), „archive“, „trash“, sonst die ID eines Ordners.
-export type Scope = "all" | "recent" | "untagged" | "none" | "archive" | "trash" | string;
+// „all“, „pinned“ (angeheftet), „recent“ (zuletzt geändert), „untagged“ (ohne Tag), „none“ (ohne Ordner), „archive“, „trash“, sonst die ID eines Ordners.
+export type Scope = "all" | "pinned" | "recent" | "untagged" | "none" | "archive" | "trash" | string;
+const BUILT_IN_SCOPES = ["all", "pinned", "recent", "untagged", "none", "archive", "trash"];
+export const isFolderScope = (scope: Scope) => !BUILT_IN_SCOPES.includes(scope);
 export type SortKey = "updated" | "created" | "title";
 export type Sort = { key: SortKey; dir: "asc" | "desc" };
 
@@ -37,7 +39,9 @@ type Store = {
   archived: NoteView[];
   trashed: NoteView[];
   recentCount: number;
+  pinnedCount: number;
   untaggedCount: number;
+  openTaskCount: number;
   folderCount: Map<string, number>;
   tagCounts: [string, number][];
   shown: NoteView[];
@@ -93,6 +97,7 @@ export function NotesProvider({
   worlds,
   activeWorldId,
   openCount,
+  onScope,
   children,
 }: {
   notes: NoteView[];
@@ -100,9 +105,10 @@ export function NotesProvider({
   worlds: { id: string; name: string }[];
   activeWorldId: string | null;
   openCount: number;
+  onScope?: () => void;
   children: React.ReactNode;
 }) {
-  const router = useRouter();
+  const { reload } = useNotebookNav();
   const [notes, setNotes] = useState(initialNotes);
   const [seenNotes, setSeenNotes] = useState(initialNotes);
   if (seenNotes !== initialNotes) {
@@ -178,6 +184,8 @@ export function NotesProvider({
   const recentCutoff = useMemo(() => new Date(mountedAt - RECENT_DAYS * 24 * 3600 * 1000).toISOString(), [mountedAt]);
   const recentCount = useMemo(() => live.filter((n) => n.updatedAt >= recentCutoff).length, [live, recentCutoff]);
   const untaggedCount = useMemo(() => live.filter((n) => n.tags.length === 0).length, [live]);
+  const pinnedCount = useMemo(() => live.filter((n) => n.pinned).length, [live]);
+  const openTaskCount = useMemo(() => live.reduce((sum, n) => sum + openTasks(n.body).length, 0), [live]);
 
   const folderCount = useMemo(() => {
     const direct = new Map<string, number>();
@@ -199,8 +207,9 @@ export function NotesProvider({
 
   const shown = useMemo(() => {
     const base = scope === "archive" ? archived : scope === "trash" ? trashed : live;
-    const ids = !["all", "recent", "untagged", "none", "archive", "trash"].includes(scope) ? descendantIds(folders, scope) : null;
+    const ids = isFolderScope(scope) ? descendantIds(folders, scope) : null;
     const list = base.filter((n) => {
+      if (scope === "pinned" && !n.pinned) return false;
       if (scope === "recent" && n.updatedAt < recentCutoff) return false;
       if (scope === "untagged" && n.tags.length > 0) return false;
       if (scope === "none" && n.folderId !== null) return false;
@@ -212,7 +221,7 @@ export function NotesProvider({
   }, [live, archived, trashed, scope, folders, tag, q, sort, recentCutoff]);
 
   const exportQuery = new URLSearchParams({
-    ...(!["all", "recent", "untagged", "archive", "trash"].includes(scope) ? { ordner: scope } : {}),
+    ...(!["all", "pinned", "recent", "untagged", "archive", "trash"].includes(scope) ? { ordner: scope } : {}),
     ...(tag ? { tag } : {}),
     ...(world !== "all" ? { welt: world } : {}),
   }).toString();
@@ -271,7 +280,7 @@ export function NotesProvider({
       }
     }
     setFolders((cur) => cur.map((f) => (f.id === id ? { ...f, name, parentId } : f)));
-    router.refresh();
+    reload();
     return true;
   }
   async function removeFolder(f: NoteFolder) {
@@ -281,7 +290,7 @@ export function NotesProvider({
     const gone = descendantIds(folders, f.id);
     setFolders((cur) => cur.filter((x) => !gone.has(x.id)));
     setScope(f.parentId ?? "all");
-    router.refresh();
+    reload();
   }
 
   async function moveFolder(id: string, parentId: string | null) {
@@ -351,6 +360,7 @@ export function NotesProvider({
     setScope: (s) => {
       setScope(s);
       setSelected(new Set());
+      onScope?.();
     },
     tag,
     setTag,
@@ -365,7 +375,9 @@ export function NotesProvider({
     archived,
     trashed,
     recentCount,
+    pinnedCount,
     untaggedCount,
+    openTaskCount,
     folderCount,
     tagCounts,
     shown,

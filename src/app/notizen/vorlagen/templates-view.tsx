@@ -2,16 +2,16 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { adoptBuiltinTemplate, createNoteFromTemplate, deleteNote } from "../actions";
 import { BUILTIN_TEMPLATES } from "@/lib/note-templates";
 import { noteSnippet, noteTitle, type NoteView } from "@/lib/notes";
+import { useNotebook } from "@/components/notebook-host";
 
 export function TemplatesView({ templates: initial }: { templates: NoteView[] }) {
-  const router = useRouter();
+  const notebook = useNotebook();
   const [templates, setTemplates] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -21,7 +21,7 @@ export function TemplatesView({ templates: initial }: { templates: NoteView[] })
     start(async () => {
       const r = await createNoteFromTemplate(input);
       if (r.error || !r.id) return setError(r.error ?? "Konnte nicht angelegt werden.");
-      router.push(`/notizen/${r.id}`);
+      notebook.open({ noteId: r.id });
     });
   }
 
@@ -30,7 +30,7 @@ export function TemplatesView({ templates: initial }: { templates: NoteView[] })
     start(async () => {
       const r = await adoptBuiltinTemplate(builtinId);
       if ("error" in r) return setError(r.error);
-      router.push(`/notizen/${r.id}`);
+      notebook.open({ noteId: r.id });
     });
   }
 
@@ -78,8 +78,8 @@ export function TemplatesView({ templates: initial }: { templates: NoteView[] })
         <h2 className="mb-2 font-serif text-xl text-fg">Vorschläge</h2>
         <ul className="flex flex-col gap-2">
           {BUILTIN_TEMPLATES.map((t) => (
-            <li key={t.id} className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-3">
-              <p className="min-w-0 flex-1 truncate text-[15px] font-semibold text-fg">{t.title}</p>
+            <li key={t.id} className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-3">
+              <p className="min-w-0 flex-1 basis-full truncate text-[15px] font-semibold text-fg">{t.title}</p>
               <button type="button" disabled={pending} onClick={() => adopt(t.id)} className={btn}>
                 Als Vorlage übernehmen
               </button>

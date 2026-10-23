@@ -96,10 +96,10 @@ function NotesDialog({ kind, targetId, targetLabel, onClose, onCount }: { kind: 
           />
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-3">
-              <Link href="/notizen" className="text-xs text-muted hover:text-fg">
+              <Link href="/notizen" onClick={onClose} className="text-xs text-muted hover:text-fg">
                 Alle Notizen
               </Link>
-              <TemplateMenu link={{ kind, id: targetId }} className="[&>button]:px-2.5 [&>button]:py-1 [&>button]:text-xs [&>div]:left-0 [&>div]:right-auto" />
+              <TemplateMenu link={{ kind, id: targetId }} onCreated={onClose} className="[&>button]:px-2.5 [&>button]:py-1 [&>button]:text-xs [&>div]:left-0 [&>div]:right-auto" />
             </div>
             <button type="button" onClick={add} disabled={pending || !text.trim()} className="flex items-center gap-1 rounded-full bg-accent-strong px-3.5 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50">
               <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
@@ -113,7 +113,7 @@ function NotesDialog({ kind, targetId, targetLabel, onClose, onCount }: { kind: 
           {items?.length === 0 && <li className="px-3 py-3 text-sm text-muted">Noch keine Notizen dazu.</li>}
           {items?.map((n) => (
             <li key={n.id}>
-              <Link href={`/notizen/${n.id}`} className="block rounded-xl px-3 py-2 transition hover:bg-surface-2">
+              <Link href={`/notizen/${n.id}`} onClick={onClose} className="block rounded-xl px-3 py-2 transition hover:bg-surface-2">
                 <span className="block truncate text-sm font-medium text-fg">{n.title}</span>
                 {noteSnippet(n.body, 100) && n.title !== noteSnippet(n.body, 60) && <span className="line-clamp-2 text-xs text-fg-soft">{noteSnippet(n.body, 100)}</span>}
               </Link>

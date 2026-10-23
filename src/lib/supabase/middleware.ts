@@ -5,7 +5,7 @@ const PUBLIC_PATHS = ["/login", "/signup"];
 // Offen für alle, auch für Angemeldete (Passwort vergessen und der Link aus der Mail)
 const OPEN_PATHS = ["/passwort-vergessen", "/passwort-neu", "/datenschutz"];
 // Läuft ohne Anmeldung, prüft aber selbst das Cron-Geheimnis.
-const SELF_AUTHED_PATHS = ["/api/cron/"];
+const SELF_AUTHED_PATHS = ["/api/cron/", "/dev-login"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

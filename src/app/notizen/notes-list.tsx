@@ -1,47 +1,40 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, ArrowDownUp, Check, CheckSquare, Keyboard, Upload, Download, Folder, FolderPlus, Hash, Pencil, Pin, PinOff, Plus, Printer, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDownUp, CheckSquare, ChevronDown, Keyboard, FolderTree, Upload, Download, Folder, Pin, PinOff, Plus, Printer, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { RevealRow } from "@/components/reveal-row";
-import { NotesTabs } from "./notes-tabs";
+import { useNotebookNav } from "./notebook-nav";
 import { TemplateMenu } from "@/components/template-menu";
 import { NoteLinkChip } from "@/components/note-link-chip";
 import { createNote, importMarkdownNotes, type BulkOp } from "./actions";
+import { NotesSidebar } from "./notes-sidebar";
 import { SHORTCUTS_EVENT } from "./notes-shortcuts";
-import { useNotesStore, type SortKey } from "./notes-store";
-import { MAX_FOLDER_DEPTH, canMoveFolder, flattenFolders, folderPath, noteSnippet, noteTitle, type NoteView } from "@/lib/notes";
+import { isFolderScope as isFolderScopeOf, useNotesStore, type SortKey } from "./notes-store";
+import { flattenFolders, folderPath, noteSnippet, noteTitle, type NoteView } from "@/lib/notes";
 import { alertDialog, confirmDialog } from "@/components/confirm-dialog";
+import { EmojiText } from "@/components/custom-emoji-provider";
 
 const dayFormat = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
 
-const chip = (on: boolean) => `flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${on ? "bg-accent-strong text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`;
 const SORT_LABEL: Record<SortKey, string> = { updated: "Geändert", created: "Erstellt", title: "Titel" };
+const SCOPE_LABEL: Record<string, string> = { all: "Alle Notizen", pinned: "Angeheftet", recent: "Zuletzt geändert", untagged: "Ohne Tag", none: "Ohne Ordner", archive: "Archiv", trash: "Papierkorb" };
 
 export function NotesList() {
   const s = useNotesStore();
-  const router = useRouter();
-  const activeId = /^\/notizen\/([0-9a-f-]{36})/.exec(usePathname())?.[1] ?? null;
-  const { notes, folders, scope, setScope, tag, setTag, q, setQ, sort, setSort, shown, live, archived, trashed, folderCount, tagCounts, recentCount, untaggedCount, openCount, exportQuery, error, setError, selecting, setSelecting, selected, setSelected } = s;
+  const { activeId, openNote, reload } = useNotebookNav();
+  const { notes, folders, scope, tag, q, setQ, sort, setSort, shown, trashed, exportQuery, error, setError, selecting, setSelecting, selected, setSelected } = s;
   const [pending, start] = useTransition();
-  // Neuer Ordner („“ = Eingabefeld offen), Elternordner dafür; Umbenennen/Verschieben
-  const [newFolder, setNewFolder] = useState<string | null>(null);
-  const [newParent, setNewParent] = useState<string | null>(null);
-  const [renaming, setRenaming] = useState<string | null>(null);
-  const [renameText, setRenameText] = useState("");
-  const [renameParent, setRenameParent] = useState("");
   const [bulkTag, setBulkTag] = useState("");
   const lastClicked = useRef<string | null>(null);
+  const selectedTags = useMemo(() => {
+    const set = new Set<string>();
+    notes.filter((n) => selected.has(n.id)).forEach((n) => n.tags.forEach((t) => set.add(t)));
+    return [...set].sort((a, b) => a.localeCompare(b, "de"));
+  }, [notes, selected]);
 
-  const isFolderScope = !["all", "recent", "untagged", "none", "archive", "trash"].includes(scope);
-  const current = isFolderScope ? folders.find((f) => f.id === scope) : undefined;
-  const path = current ? folderPath(folders, current.id) : [];
-  const rootFolders = folders.filter((f) => f.parentId === null).sort((a, b) => a.name.localeCompare(b.name, "de"));
-  const subFolders = current ? folders.filter((f) => f.parentId === current.id).sort((a, b) => a.name.localeCompare(b.name, "de")) : [];
-  const canNest = path.length < MAX_FOLDER_DEPTH;
+  const current = isFolderScopeOf(scope) ? folders.find((f) => f.id === scope) : undefined;
   const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name;
-  const withoutFolder = folderCount.get("none") ?? 0;
 
   function add() {
     setError(null);
@@ -49,8 +42,7 @@ export function NotesList() {
       const r = await createNote({ folderId: current?.id ?? null });
       if (r.error || !r.id) setError(r.error ?? "Konnte nicht angelegt werden.");
       else {
-        router.push(`/notizen/${r.id}`);
-        router.refresh();
+        openNote(r.id);
       }
     });
   }
@@ -69,29 +61,8 @@ export function NotesList() {
       imported += r.imported;
       skipped += r.skipped;
     }
-    router.refresh();
+    reload();
     void alertDialog(`${imported} ${imported === 1 ? "Notiz" : "Notizen"} importiert${skipped ? `, ${skipped} übersprungen (leer oder zu groß)` : ""}.`);
-  }
-
-  function addFolder() {
-    const name = (newFolder ?? "").trim();
-    if (!name) return setNewFolder(null);
-    setError(null);
-    start(async () => {
-      const f = await s.createFolder(name, newParent);
-      if (f) {
-        setScope(f.id);
-        setNewFolder(null);
-      }
-    });
-  }
-
-  function rename() {
-    if (!renaming) return;
-    const id = renaming;
-    start(async () => {
-      if (await s.renameFolder(id, renameText.trim(), renameParent || null)) setRenaming(null);
-    });
   }
 
   // ---- Mehrfachauswahl ----
@@ -117,6 +88,7 @@ export function NotesList() {
 
   const selectedList = [...selected];
   const inTrash = scope === "trash";
+  const toolBtn = "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line transition";
 
   return (
     <div
@@ -131,38 +103,12 @@ export function NotesList() {
         }
       }}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h1 className="font-serif text-3xl text-fg">Notizen</h1>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setSelecting(!selecting)} aria-pressed={selecting} title="Mehrere auswählen" aria-label="Mehrere auswählen" className={`flex h-9 w-9 items-center justify-center rounded-full border border-line transition ${selecting ? "bg-accent-strong text-on-accent-strong" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}>
-            <CheckSquare className="h-4 w-4" strokeWidth={2} />
-          </button>
-          <label title="Markdown-Dateien importieren" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-line text-fg-soft transition hover:bg-surface-2 hover:text-fg">
-            <Upload className="h-4 w-4" strokeWidth={2} />
-            <span className="sr-only">Importieren</span>
-            <input
-              type="file"
-              accept=".md,.markdown,.txt,text/markdown,text/plain"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = e.target.files;
-                void importFiles(files).then(() => (e.target.value = ""));
-              }}
-            />
-          </label>
-          <button type="button" onClick={() => window.dispatchEvent(new Event(SHORTCUTS_EVENT))} title="Tastenkürzel" aria-label="Tastenkürzel" className="hidden h-9 w-9 items-center justify-center rounded-full border border-line text-fg-soft transition hover:bg-surface-2 hover:text-fg lg:flex">
-            <Keyboard className="h-4 w-4" strokeWidth={2} />
-          </button>
-          <TemplateMenu folderId={current?.id ?? null} />
-          <button type="button" onClick={add} disabled={pending} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60">
-            <Plus className="h-4 w-4" strokeWidth={2.25} />
-            Neue Notiz
-          </button>
-        </div>
-      </div>
-      <div className="mb-4">
-        <NotesTabs active="notizen" openCount={openCount} className="mb-0" />
+        <button type="button" onClick={add} disabled={pending} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent-strong px-3.5 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60">
+          <Plus className="h-4 w-4" strokeWidth={2.25} />
+          Neue Notiz
+        </button>
       </div>
       {error && (
         <p role="alert" className="mb-3 text-sm text-red-600">
@@ -170,155 +116,51 @@ export function NotesList() {
         </p>
       )}
 
-      <div className="-mx-3 mb-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 xl:hidden">
-        <button type="button" onClick={() => setScope("all")} aria-pressed={scope === "all"} className={chip(scope === "all")}>
-          Alle <span className="text-xs opacity-70">{live.length}</span>
-        </button>
-        {recentCount > 0 && (
-          <button type="button" onClick={() => setScope("recent")} aria-pressed={scope === "recent"} className={chip(scope === "recent")}>
-            Zuletzt geändert <span className="text-xs opacity-70">{recentCount}</span>
-          </button>
-        )}
-        {untaggedCount > 0 && (
-          <button type="button" onClick={() => setScope("untagged")} aria-pressed={scope === "untagged"} className={chip(scope === "untagged")}>
-            Ohne Tag <span className="text-xs opacity-70">{untaggedCount}</span>
-          </button>
-        )}
-        {rootFolders.map((f) => (
-          <button key={f.id} type="button" onClick={() => setScope(f.id)} aria-pressed={path[0]?.id === f.id} className={chip(path[0]?.id === f.id)}>
-            <Folder className="h-3.5 w-3.5" strokeWidth={2} />
-            {f.name} <span className="text-xs opacity-70">{folderCount.get(f.id) ?? 0}</span>
-          </button>
-        ))}
-        {folders.length > 0 && withoutFolder > 0 && (
-          <button type="button" onClick={() => setScope("none")} aria-pressed={scope === "none"} className={chip(scope === "none")}>
-            Ohne Ordner <span className="text-xs opacity-70">{withoutFolder}</span>
-          </button>
-        )}
-        {(archived.length > 0 || scope === "archive") && (
-          <button type="button" onClick={() => setScope("archive")} aria-pressed={scope === "archive"} className={chip(scope === "archive")}>
-            <Archive className="h-3.5 w-3.5" strokeWidth={2} />
-            Archiv <span className="text-xs opacity-70">{archived.length}</span>
-          </button>
-        )}
-        {(trashed.length > 0 || scope === "trash") && (
-          <button type="button" onClick={() => setScope("trash")} aria-pressed={scope === "trash"} className={chip(scope === "trash")}>
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-            Papierkorb <span className="text-xs opacity-70">{trashed.length}</span>
-          </button>
-        )}
-        {newFolder === null || newParent !== null ? (
-          <button type="button" onClick={() => { setNewParent(null); setNewFolder(""); }} title="Neuer Ordner" aria-label="Neuer Ordner" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
-            <FolderPlus className="h-4 w-4" strokeWidth={2} />
-          </button>
-        ) : (
-          <FolderNameForm value={newFolder} onChange={setNewFolder} onSubmit={addFolder} onCancel={() => setNewFolder(null)} />
-        )}
-      </div>
-
-      {current && (
-        <div className="mb-3 flex flex-wrap items-center gap-1.5 xl:hidden">
-          <nav aria-label="Ordnerpfad" className="flex items-center gap-1 text-sm">
-            <button type="button" onClick={() => setScope("all")} className="text-muted hover:text-fg">
-              Alle
-            </button>
-            {path.map((p, i) => (
-              <span key={p.id} className="flex items-center gap-1">
-                <span className="text-muted">›</span>
-                {i === path.length - 1 ? (
-                  <span className="font-medium text-fg">{p.name}</span>
-                ) : (
-                  <button type="button" onClick={() => setScope(p.id)} className="text-muted hover:text-fg">
-                    {p.name}
-                  </button>
-                )}
-              </span>
-            ))}
-          </nav>
-          {renaming === current.id ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                rename();
-              }}
-              className="flex flex-wrap items-center gap-1"
-            >
-              <input autoFocus value={renameText} onChange={(e) => setRenameText(e.target.value)} maxLength={60} aria-label="Neuer Name" className="w-44 rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent" />
-              <select value={renameParent} onChange={(e) => setRenameParent(e.target.value)} aria-label="Liegt in" className="rounded-full border border-line bg-surface px-2.5 py-1.5 text-sm text-fg-soft outline-none focus:border-accent">
-                <option value="">Oberste Ebene</option>
-                {flattenFolders(folders)
-                  .filter((o) => o.id !== current.id && canMoveFolder(folders, current.id, o.id))
-                  .map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {"– ".repeat(o.depth - 1)}
-                      {o.name}
-                    </option>
-                  ))}
-              </select>
-              <button type="submit" aria-label="Speichern" className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-strong text-on-accent-strong">
-                <Check className="h-4 w-4" strokeWidth={2.25} />
-              </button>
-              <button type="button" onClick={() => setRenaming(null)} aria-label="Abbrechen" className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-surface-2">
-                <X className="h-4 w-4" strokeWidth={2} />
-              </button>
-            </form>
-          ) : (
-            <>
-              <button type="button" onClick={() => { setRenaming(current.id); setRenameText(current.name); setRenameParent(current.parentId ?? ""); }} title="Ordner umbenennen oder verschieben" aria-label="Ordner umbenennen oder verschieben" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
-                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <button type="button" onClick={() => void s.removeFolder(current)} title="Ordner löschen" aria-label="Ordner löschen" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
-                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-            </>
-          )}
-          {subFolders.map((f) => (
-            <button key={f.id} type="button" onClick={() => setScope(f.id)} className={chip(false)}>
-              <Folder className="h-3.5 w-3.5" strokeWidth={2} />
-              {f.name} <span className="text-xs opacity-70">{folderCount.get(f.id) ?? 0}</span>
-            </button>
-          ))}
-          {canNest &&
-            (newFolder !== null && newParent === current.id ? (
-              <FolderNameForm value={newFolder} onChange={setNewFolder} onSubmit={addFolder} onCancel={() => setNewFolder(null)} />
-            ) : (
-              <button type="button" onClick={() => { setNewParent(current.id); setNewFolder(""); }} title="Neuer Unterordner" aria-label="Neuer Unterordner" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
-                <FolderPlus className="h-4 w-4" strokeWidth={2} />
-              </button>
-            ))}
-        </div>
-      )}
-
       {notes.length > 0 && (
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-2 flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={2} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="In Notizen suchen" className="w-full min-w-0 rounded-full border border-line bg-surface py-2.5 pl-10 pr-4 text-sm text-fg outline-none focus:border-accent" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" strokeWidth={2} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="In Notizen suchen" aria-label="In Notizen suchen" className="h-8 w-full min-w-0 rounded-full border border-line bg-surface pl-9 pr-3 text-sm text-fg outline-none focus:border-accent" />
           </div>
           <div className="flex shrink-0 items-center">
-            <select value={sort.key} onChange={(e) => setSort({ ...sort, key: e.target.value as SortKey })} aria-label="Sortieren nach" className="w-[6.6rem] rounded-l-full border border-r-0 border-line bg-surface py-2.5 pl-3 pr-1 text-sm text-fg-soft outline-none focus:border-accent">
+            <select value={sort.key} onChange={(e) => setSort({ ...sort, key: e.target.value as SortKey })} aria-label="Sortieren nach" className="h-8 w-[6.2rem] rounded-l-full border border-r-0 border-line bg-surface pl-2.5 pr-1 text-sm text-fg-soft outline-none focus:border-accent">
               {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
                 <option key={k} value={k}>
                   {SORT_LABEL[k]}
                 </option>
               ))}
             </select>
-            <button type="button" onClick={() => setSort({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })} title={sort.dir === "asc" ? "Aufsteigend" : "Absteigend"} aria-label={sort.dir === "asc" ? "Aufsteigend sortiert" : "Absteigend sortiert"} className="flex h-[42px] w-9 items-center justify-center rounded-r-full border border-line bg-surface text-fg-soft transition hover:text-fg">
-              <ArrowDownUp className={`h-4 w-4 transition ${sort.dir === "asc" ? "rotate-180" : ""}`} strokeWidth={2} />
+            <button type="button" onClick={() => setSort({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })} title={sort.dir === "asc" ? "Aufsteigend" : "Absteigend"} aria-label={sort.dir === "asc" ? "Aufsteigend sortiert" : "Absteigend sortiert"} className="flex h-8 w-8 items-center justify-center rounded-r-full border border-line bg-surface text-fg-soft transition hover:text-fg">
+              <ArrowDownUp className={`h-3.5 w-3.5 transition ${sort.dir === "asc" ? "rotate-180" : ""}`} strokeWidth={2} />
             </button>
           </div>
         </div>
       )}
-      {tagCounts.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-1.5 xl:hidden" aria-label="Tags">
-          {tagCounts.map(([t, n]) => (
-            <button key={t} type="button" onClick={() => setTag(tag === t ? null : t)} aria-pressed={tag === t} className={`flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-xs transition ${tag === t ? "bg-accent text-on-accent-strong" : "bg-surface-2 text-fg-soft hover:text-fg"}`}>
-              <Hash className="h-3 w-3" strokeWidth={2.25} />
-              {t} <span className="ml-0.5 opacity-60">{n}</span>
-            </button>
-          ))}
-        </div>
-      )}
+
+      <RegisterBar>
+        <button type="button" onClick={() => setSelecting(!selecting)} aria-pressed={selecting} title="Mehrere auswählen" aria-label="Mehrere auswählen" className={`${toolBtn} ${selecting ? "bg-accent-strong text-on-accent-strong" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}>
+          <CheckSquare className="h-4 w-4" strokeWidth={2} />
+        </button>
+        <label title="Markdown-Dateien importieren" className={`${toolBtn} cursor-pointer text-fg-soft hover:bg-surface-2 hover:text-fg`}>
+          <Upload className="h-4 w-4" strokeWidth={2} />
+          <span className="sr-only">Importieren</span>
+          <input
+            type="file"
+            accept=".md,.markdown,.txt,text/markdown,text/plain"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = e.target.files;
+              void importFiles(files).then(() => (e.target.value = ""));
+            }}
+          />
+        </label>
+        <button type="button" onClick={() => window.dispatchEvent(new Event(SHORTCUTS_EVENT))} title="Tastenkürzel" aria-label="Tastenkürzel" className={`${toolBtn} hidden text-fg-soft hover:bg-surface-2 hover:text-fg lg:flex`}>
+          <Keyboard className="h-4 w-4" strokeWidth={2} />
+        </button>
+        <TemplateMenu folderId={current?.id ?? null} compact />
+      </RegisterBar>
+
 
       {inTrash && trashed.length > 0 && (
         <div className="mb-3 flex justify-end">
@@ -395,6 +237,24 @@ export function NotesList() {
                       Hinzufügen
                     </button>
                   </form>
+                  {selectedTags.length > 0 && (
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const t = e.target.value;
+                        if (t) void bulk({ kind: "removeTag", tag: t });
+                      }}
+                      aria-label="Tag entfernen"
+                      className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-fg-soft outline-none"
+                    >
+                      <option value="">Tag entfernen …</option>
+                      {selectedTags.map((t) => (
+                        <option key={t} value={t}>
+                          #{t}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <BarButton onClick={() => void bulk({ kind: "pin", pinned: true })}>
                     <Pin className="h-3.5 w-3.5" strokeWidth={2} />
                     Anheften
@@ -486,18 +346,16 @@ export function NotesList() {
                         toggleSelect(n, e.shiftKey);
                       }
                     }}
-                    className="block px-4 pt-3.5"
+                    className="block px-4 pt-3"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <h2 className="min-w-0 truncate text-[15px] font-semibold text-fg">{noteTitle(n)}</h2>
-                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
-                        {n.pinned && <Pin className="h-3 w-3 text-accent" strokeWidth={2.25} aria-label="Angeheftet" />}
-                        {dayFormat.format(new Date(sort.key === "created" && n.createdAt ? n.createdAt : n.updatedAt))}
-                      </span>
-                    </div>
-                    {n.title.trim() && noteSnippet(n.body) && <p className="mt-1 line-clamp-2 text-sm text-fg-soft">{noteSnippet(n.body)}</p>}
+                    <h2 className="flex min-w-0 items-center gap-1.5 text-base font-semibold text-fg">
+                      {n.pinned && <Pin className="h-3 w-3 shrink-0 text-accent" strokeWidth={2.25} aria-label="Angeheftet" />}
+                      <span className="min-w-0 truncate"><EmojiText text={noteTitle(n)} /></span>
+                    </h2>
+                    {n.title.trim() && noteSnippet(n.body) && <p className="mt-1 line-clamp-2 text-sm text-fg-soft"><EmojiText text={noteSnippet(n.body)} /></p>}
                   </Link>
-                  <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3.5 pt-2.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-3 pt-2">
+                    <span className="text-xs text-muted">{dayFormat.format(new Date(sort.key === "created" && n.createdAt ? n.createdAt : n.updatedAt))}</span>
                     {scope === "all" && n.folderId && (
                       <span className="inline-flex items-center gap-1 text-xs text-muted">
                         <Folder className="h-3 w-3" strokeWidth={2} />
@@ -555,22 +413,43 @@ function BarButton({ onClick, danger = false, children }: { onClick: () => void;
   );
 }
 
-function FolderNameForm({ value, onChange, onSubmit, onCancel }: { value: string; onChange: (v: string) => void; onSubmit: () => void; onCancel: () => void }) {
+// Register: aufklappbares Inhaltsverzeichnis (Ansichten, Ordnerbaum, Tags) in der Breite der Seite, daneben die Werkzeuge
+function RegisterBar({ children }: { children: React.ReactNode }) {
+  const { folders, scope, tag, setScope, setTag, live } = useNotesStore();
+  const [open, setOpen] = useState(false);
+  const label = tag
+    ? `#${tag}`
+    : isFolderScopeOf(scope)
+      ? folderPath(folders, scope)
+          .map((f) => f.name)
+          .join(" › ") || "Ordner"
+      : (SCOPE_LABEL[scope] ?? "Alle Notizen");
+  const filtered = scope !== "all" || !!tag;
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-      className="flex shrink-0 items-center gap-1"
-    >
-      <input autoFocus value={value} onChange={(e) => onChange(e.target.value)} maxLength={60} placeholder="Name des Ordners" aria-label="Name des Ordners" className="w-40 rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent" />
-      <button type="submit" aria-label="Ordner anlegen" className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-strong text-on-accent-strong">
-        <Check className="h-4 w-4" strokeWidth={2.25} />
-      </button>
-      <button type="button" onClick={onCancel} aria-label="Abbrechen" className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-surface-2">
-        <X className="h-4 w-4" strokeWidth={2} />
-      </button>
-    </form>
+    <div className="mb-3">
+      <div className="flex items-center gap-1.5">
+        <div className="flex h-8 min-w-0 flex-1 items-center rounded-full border border-line bg-surface">
+          <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls="nb-register" title="Ordner und Tags" className="flex h-full min-w-0 flex-1 items-center gap-1.5 rounded-full pl-3 pr-2 text-left text-sm text-fg-soft transition hover:text-fg">
+            <FolderTree className="h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={2} />
+            <span className="min-w-0 flex-1 truncate">{label}</span>
+            {!filtered && <span className="text-xs text-muted">{live.length}</span>}
+            <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted transition ${open ? "rotate-180" : ""}`} strokeWidth={2} />
+          </button>
+          {filtered && (
+            <button type="button" onClick={() => { setScope("all"); setTag(null); }} aria-label="Filter aufheben" title="Filter aufheben" className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+          )}
+        </div>
+        {children}
+      </div>
+      <div id="nb-register" className="nb-register" data-open={open}>
+        <div className="nb-register-inner">
+          <div className="nb-register-card">
+            <NotesSidebar onPick={() => setOpen(false)} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

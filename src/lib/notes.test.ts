@@ -51,6 +51,14 @@ describe("Notizbuch", () => {
     ]);
     expect(openTasks(html).map((t) => t.text)).toEqual(["Offen wichtig"]);
   });
+  it("liest Aufgaben auch im Editor-Text (Attribute in anderer Reihenfolge)", () => {
+    const html = '<ul data-type="taskList"><li data-checked="false" data-type="taskItem"><label><input type="checkbox"><span></span></label><div><p>Glocke läuten</p></div></li><li data-checked="true" data-type="taskItem"><label><input type="checkbox" checked><span></span></label><div><p>Fertig</p></div></li></ul>';
+    expect(noteTasks(html)).toEqual([
+      { index: 0, text: "Glocke läuten", checked: false },
+      { index: 1, text: "Fertig", checked: true },
+    ]);
+    expect(openTasks(html).map((t) => t.text)).toEqual(["Glocke läuten"]);
+  });
   it("hakt eine Aufgabe ab und wieder auf", () => {
     const html = '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox" disabled="disabled" /><span></span></label><div><p>A</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox" disabled="disabled" /><span></span></label><div><p>B</p></div></li></ul>';
     const done = setTaskInHtml(html, 1, true) as string;

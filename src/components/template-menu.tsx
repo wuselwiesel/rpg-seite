@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronDown, FileText } from "lucide-react";
 import { createNoteFromTemplate, loadTemplateChoices } from "@/app/notizen/actions";
 import { BUILTIN_TEMPLATES } from "@/lib/note-templates";
+import { useNotebook } from "@/components/notebook-host";
 import type { LinkKind } from "@/lib/notes";
 
 // „Aus Vorlage“: eigene und mitgelieferte Vorlagen; legt eine neue Notiz an und öffnet sie
-export function TemplateMenu({ folderId = null, link, className = "" }: { folderId?: string | null; link?: { kind: LinkKind; id: string }; className?: string }) {
-  const router = useRouter();
+export function TemplateMenu({ folderId = null, link, className = "", onCreated, compact = false }: { folderId?: string | null; link?: { kind: LinkKind; id: string }; className?: string; onCreated?: () => void; compact?: boolean }) {
+  const notebook = useNotebook();
   const [open, setOpen] = useState(false);
   const [own, setOwn] = useState<{ id: string; title: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +25,13 @@ export function TemplateMenu({ folderId = null, link, className = "" }: { folder
     const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
     return () => {
       cancelled = true;
       document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
@@ -38,16 +41,17 @@ export function TemplateMenu({ folderId = null, link, className = "" }: { folder
       const r = await createNoteFromTemplate({ ...input, folderId, link });
       if (r.error || !r.id) return setError(r.error ?? "Konnte nicht angelegt werden.");
       setOpen(false);
-      router.push(`/notizen/${r.id}`);
+      notebook.open({ noteId: r.id });
+      onCreated?.();
     });
   }
 
   const item = "block w-full truncate rounded-lg px-3 py-2 text-left text-sm text-fg transition hover:bg-surface-2 disabled:opacity-50";
   return (
     <div className={`relative ${className}`} ref={ref}>
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-2 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label="Aus Vorlage" title="Aus Vorlage" className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg ${compact ? "h-8 px-2" : "px-3 py-2"}`}>
         <FileText className="h-4 w-4" strokeWidth={2} />
-        Aus Vorlage
+        {!compact && "Aus Vorlage"}
         <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
       {open && (

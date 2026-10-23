@@ -8,12 +8,10 @@ import { usePathname } from "next/navigation";
 export function AppFrame({ sidebar, children }: { sidebar: React.ReactNode; children: React.ReactNode }) {
   const pathname = usePathname();
   const wide = /^\/wiki(\/|$)/.test(pathname);
-  // Notizbuch: Liste und Notiz nebeneinander wie in Bear, dafür etwas mehr Breite
-  const roomy = /^\/notizen(\/|$)/.test(pathname);
   return (
     <div
       className={`mx-auto flex min-h-full flex-col lg:flex-row ${
-        wide ? "" : roomy ? "max-w-[1500px] min-[1800px]:max-w-[1800px]" : "max-w-6xl min-[1440px]:max-w-[1360px] min-[1800px]:max-w-[1640px]"
+        wide ? "" : "max-w-6xl min-[1440px]:max-w-[1360px] min-[1800px]:max-w-[1640px]"
       }`}
     >
       <div className={wide ? "contents lg:hidden" : "contents"}>{sidebar}</div>

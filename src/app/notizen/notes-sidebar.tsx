@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Archive, ChevronDown, ChevronRight, Clock, Folder, FolderPlus, Hash, Inbox, ListChecks, Pencil, StickyNote, Tag, Trash2, Check, X, FileText } from "lucide-react";
+import { Archive, ChevronDown, ChevronRight, Clock, Folder, FolderPlus, Hash, Inbox, Pencil, StickyNote, Tag, Trash2, Check, X } from "lucide-react";
 import { useNotesStore } from "./notes-store";
 import { MAX_FOLDER_DEPTH, buildFolderTree, buildTagTree, canMoveFolder, flattenFolders, tagMatches, type FolderNode, type NoteFolder, type TagNode } from "@/lib/notes";
 
@@ -14,10 +13,10 @@ const idle = "text-fg-soft hover:bg-surface-2 hover:text-fg";
 const on = "bg-accent-strong text-on-accent-strong";
 const iconBtn = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface hover:text-fg";
 
-// Linke Spalte wie in Bear: Ansichten, Ordnerbaum und Tag-Baum. Notizen aus der Liste lassen sich auf Ordner, Tags, Archiv und Papierkorb ziehen.
-export function NotesSidebar() {
+// Register des Notizbuchs: Ansichten, Ordnerbaum und Tag-Baum. Notizen aus der Liste lassen sich auf Ordner, Tags, Archiv und Papierkorb ziehen. onPick: nach dem Wählen einer Ansicht, eines Ordners oder Tags (schließt das Register).
+export function NotesSidebar({ onPick }: { onPick?: () => void } = {}) {
   const s = useNotesStore();
-  const { folders, scope, setScope, tag, setTag, live, archived, trashed, folderCount, recentCount, untaggedCount, openCount } = s;
+  const { folders, scope, setScope, tag, setTag, live, archived, trashed, folderCount, recentCount, untaggedCount } = s;
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<{ parentId: string | null; name: string } | null>(null);
   const [editing, setEditing] = useState<{ id: string; name: string; parentId: string } | null>(null);
@@ -94,7 +93,7 @@ export function NotesSidebar() {
   function view(key: string, label: string, count: number, icon: React.ReactNode, drop?: (ids: string[]) => void) {
     const active = scope === key && !tag;
     return (
-      <button key={key} type="button" onClick={() => { setScope(key); setTag(null); }} aria-pressed={active} className={`${row} ${active ? on : idle} ${ring(`view:${key}`)}`} {...(drop ? noteTarget(`view:${key}`, drop) : {})}>
+      <button key={key} type="button" onClick={() => { setScope(key); setTag(null); onPick?.(); }} aria-pressed={active} className={`${row} ${active ? on : idle} ${ring(`view:${key}`)}`} {...(drop ? noteTarget(`view:${key}`, drop) : {})}>
         {icon}
         <span className="min-w-0 flex-1 truncate">{label}</span>
         <span className="text-xs opacity-70">{count}</span>
@@ -209,12 +208,12 @@ export function NotesSidebar() {
             ) : (
               <span className="w-6 shrink-0" />
             )}
-            <button type="button" onClick={() => { setScope(n.id); setTag(null); }} aria-pressed={active} className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-1 text-left text-sm">
+            <button type="button" onClick={() => { setScope(n.id); setTag(null); onPick?.(); }} aria-pressed={active} className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-1 text-left text-sm">
               <Folder className="h-4 w-4 shrink-0" strokeWidth={2} />
               <span className="min-w-0 flex-1 truncate">{n.name}</span>
-              <span className="text-xs opacity-70 group-hover/f:hidden">{count}</span>
+              <span className={`text-xs opacity-70 ${active ? "hidden" : "group-hover/f:hidden"}`}>{count}</span>
             </button>
-            <span className="hidden shrink-0 items-center group-hover/f:flex">
+            <span className={`shrink-0 items-center ${active ? "flex [&>button]:text-on-accent-strong/80 [&>button:hover]:bg-white/15 [&>button:hover]:text-on-accent-strong" : "hidden group-hover/f:flex"}`}>
               {n.depth < MAX_FOLDER_DEPTH && (
                 <button type="button" onClick={() => setAdding({ parentId: n.id, name: "" })} aria-label="Neuer Unterordner" title="Neuer Unterordner" className={iconBtn}>
                   <FolderPlus className="h-3.5 w-3.5" strokeWidth={2} />
@@ -249,7 +248,7 @@ export function NotesSidebar() {
           ) : (
             <span className="w-6 shrink-0" />
           )}
-          <button type="button" onClick={() => { setTag(active ? null : n.full); if (!active) setScope("all"); }} aria-pressed={active} className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-2 text-left text-sm">
+          <button type="button" onClick={() => { setTag(active ? null : n.full); if (!active) setScope("all"); onPick?.(); }} aria-pressed={active} className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-2 text-left text-sm">
             <Hash className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             <span className="min-w-0 flex-1 truncate">{n.name}</span>
             <span className="text-xs opacity-70">{tagCount(n.full)}</span>
@@ -260,22 +259,15 @@ export function NotesSidebar() {
     );
   }
 
-  const heading = "px-2 pb-1 pt-3 text-xs font-medium text-muted";
+  const heading = "px-1 pb-1 pt-3 text-xs font-medium text-muted";
   return (
-    <nav aria-label="Ordner und Tags" className="flex flex-col gap-0.5 px-2 py-4">
-      {view("all", "Alle Notizen", live.length, <StickyNote className="h-4 w-4 shrink-0" strokeWidth={2} />)}
-      {view("recent", "Zuletzt geändert", recentCount, <Clock className="h-4 w-4 shrink-0" strokeWidth={2} />)}
-      {view("untagged", "Ohne Tag", untaggedCount, <Tag className="h-4 w-4 shrink-0" strokeWidth={2} />)}
-      {view("none", "Ohne Ordner", withoutFolder, <Inbox className="h-4 w-4 shrink-0" strokeWidth={2} />, (ids) => void s.bulkApply(ids, { kind: "move", folderId: null }))}
-      <Link href="/notizen/faeden" className={`${row} ${idle}`}>
-        <ListChecks className="h-4 w-4 shrink-0" strokeWidth={2} />
-        <span className="min-w-0 flex-1 truncate">Offene Fäden</span>
-        <span className="text-xs opacity-70">{openCount}</span>
-      </Link>
-      <Link href="/notizen/vorlagen" className={`${row} ${idle}`}>
-        <FileText className="h-4 w-4 shrink-0" strokeWidth={2} />
-        <span className="min-w-0 flex-1 truncate">Vorlagen</span>
-      </Link>
+    <nav aria-label="Ordner und Tags" className="flex flex-col gap-0.5">
+      <div className="grid grid-cols-2 gap-0.5">
+        {view("all", "Alle Notizen", live.length, <StickyNote className="h-4 w-4 shrink-0" strokeWidth={2} />)}
+        {view("recent", "Zuletzt geändert", recentCount, <Clock className="h-4 w-4 shrink-0" strokeWidth={2} />)}
+        {view("untagged", "Ohne Tag", untaggedCount, <Tag className="h-4 w-4 shrink-0" strokeWidth={2} />)}
+        {view("none", "Ohne Ordner", withoutFolder, <Inbox className="h-4 w-4 shrink-0" strokeWidth={2} />, (ids) => void s.bulkApply(ids, { kind: "move", folderId: null }))}
+      </div>
 
       <div className="flex items-center justify-between pr-1">
         <h2 className={heading}>Ordner</h2>
@@ -284,7 +276,7 @@ export function NotesSidebar() {
         </button>
       </div>
       {adding?.parentId === null && nameForm(adding.name, (v) => setAdding({ ...adding, name: v }), () => void submitAdd(), () => setAdding(null))}
-      {tree.length > 0 ? <ul className="flex flex-col gap-0.5">{tree.map((n) => folderNode(n))}</ul> : adding === null && <p className="px-2 text-xs text-muted">Keine Ordner.</p>}
+      {tree.length > 0 ? <ul className="flex flex-col gap-0.5">{tree.map((n) => folderNode(n))}</ul> : adding === null && <p className="px-1 text-xs text-muted">Keine Ordner.</p>}
 
       {tagTree.length > 0 && (
         <>
@@ -293,8 +285,8 @@ export function NotesSidebar() {
         </>
       )}
 
-      <div className="mt-3 flex flex-col gap-0.5 border-t border-line pt-3">
-        {(archived.length > 0 || scope === "archive") && view("archive", "Archiv", archived.length, <Archive className="h-4 w-4 shrink-0" strokeWidth={2} />, (ids) => void s.bulkApply(ids, { kind: "archive", archived: true }))}
+      <div className="mt-2 grid grid-cols-2 gap-0.5 border-t border-line pt-2">
+        {view("archive", "Archiv", archived.length, <Archive className="h-4 w-4 shrink-0" strokeWidth={2} />, (ids) => void s.bulkApply(ids, { kind: "archive", archived: true }))}
         {view("trash", "Papierkorb", trashed.length, <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2} />, (ids) => void s.bulkApply(ids, { kind: "trash" }))}
       </div>
     </nav>

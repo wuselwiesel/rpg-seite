@@ -1338,12 +1338,430 @@ html[data-menu-open] .chat-bubble-root {
 .post-content mark { background: color-mix(in srgb, #f5c542 55%, transparent); color: inherit; border-radius: 2px; padding: 0 0.1em; }
 
 /* Notizen: Darstellung (Schrift, Größe, Papier) */
-.note-surface[data-font="serif"] .ProseMirror { font-family: Georgia, Cambria, "Times New Roman", serif; }
-.note-surface[data-font="sans"] .ProseMirror { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-.note-surface[data-font="mono"] .ProseMirror { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.note-surface[data-size="s"] .ProseMirror { font-size: 0.875rem; }
-.note-surface[data-size="m"] .ProseMirror { font-size: 1rem; }
-.note-surface[data-size="l"] .ProseMirror { font-size: 1.15rem; line-height: 1.7; }
-.note-surface[data-size="xl"] .ProseMirror { font-size: 1.35rem; line-height: 1.7; }
-.note-surface[data-paper="sepia"] .ProseMirror { background: #f4ecd8; color: #433422; }
-.note-surface[data-paper="dark"] .ProseMirror { background: #26262b; color: #e8e6ee; }
+.note-surface[data-font="serif"] .ProseMirror,
+.note-surface[data-font="serif"] .note-view { font-family: Georgia, Cambria, "Times New Roman", serif; }
+.note-surface[data-font="sans"] .ProseMirror,
+.note-surface[data-font="sans"] .note-view { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.note-surface[data-font="mono"] .ProseMirror,
+.note-surface[data-font="mono"] .note-view { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.note-surface[data-font="lora"] .ProseMirror,
+.note-surface[data-font="lora"] .note-view { font-family: var(--font-lora), Georgia, serif; }
+.note-surface[data-font="playfair"] .ProseMirror,
+.note-surface[data-font="playfair"] .note-view { font-family: var(--font-playfair), Georgia, serif; }
+.note-surface[data-font="ebGaramond"] .ProseMirror,
+.note-surface[data-font="ebGaramond"] .note-view { font-family: var(--font-eb-garamond), Georgia, serif; }
+.note-surface[data-font="caveat"] .ProseMirror,
+.note-surface[data-font="caveat"] .note-view { font-family: var(--font-caveat), cursive; }
+.note-surface[data-font="handlee"] .ProseMirror,
+.note-surface[data-font="handlee"] .note-view { font-family: var(--font-handlee), cursive; }
+.note-surface[data-font="specialElite"] .ProseMirror,
+.note-surface[data-font="specialElite"] .note-view { font-family: var(--font-special-elite), ui-monospace, monospace; }
+.note-surface[data-size="s"] .ProseMirror,
+.note-surface[data-size="s"] .note-view { font-size: 0.875rem; }
+.note-surface[data-size="m"] .ProseMirror,
+.note-surface[data-size="m"] .note-view { font-size: 1rem; }
+.note-surface[data-size="l"] .ProseMirror,
+.note-surface[data-size="l"] .note-view { font-size: 1.15rem; line-height: 1.7; }
+.note-surface[data-size="xl"] .ProseMirror,
+.note-surface[data-size="xl"] .note-view { font-size: 1.35rem; line-height: 1.7; }
+.note-surface[data-paper="sepia"] .ProseMirror,
+.note-surface[data-paper="sepia"] .note-view { background: #f4ecd8; color: #433422; }
+.note-surface[data-paper="dark"] .ProseMirror,
+.note-surface[data-paper="dark"] .note-view { background: #26262b; color: #e8e6ee; }
+
+/* ---------- Notizbuch-Fenster (aufgeschlagenes Buch mit Ringen und Karteitabs) ---------- */
+.nb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  background: rgb(14 8 6 / 0.74);
+  animation: nb-fade 0.2s ease-out backwards;
+}
+.nb-book {
+  /* Papier und Tinte des Buchs, unabhängig von der gewählten Farbpalette der App */
+  --app: #fbf6ea;
+  --surface: #fffcf3;
+  --surface-2: #f0e7d1;
+  --surface-3: #f6ead0;
+  --line: #dccfb2;
+  --fg: #2e2923;
+  --fg-soft: #4d463c;
+  --muted: #6b6254;
+  --nb-edge-a: #ebe1c9;
+  --nb-edge-b: #cdbf9f;
+  --nb-shade: rgb(70 46 20 / 0.32);
+  /* Kleinere Schrift im Buch (die Tailwind-Stufen gelten hier verkleinert) */
+  --text-xs: 0.6875rem;
+  --text-sm: 0.75rem;
+  --text-base: 0.8125rem;
+  --text-lg: 0.9375rem;
+  --text-xl: 1.0625rem;
+  --text-2xl: 1.2rem;
+  --text-3xl: 1.4rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  outline: none;
+  color: var(--fg);
+  animation: nb-rise 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.dark .nb-book {
+  --app: #27231d;
+  --surface: #2f2a23;
+  --surface-2: #3a342b;
+  --surface-3: #403828;
+  --line: #4b4335;
+  --fg: #f1e9d9;
+  --fg-soft: #d9cfbc;
+  --muted: #b5a98f;
+  --nb-edge-a: #3b352b;
+  --nb-edge-b: #1d1a15;
+  --nb-shade: rgb(0 0 0 / 0.5);
+}
+@keyframes nb-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes nb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nb-backdrop,
+  .nb-book {
+    animation: none;
+  }
+}
+
+/* Ledereinband mit Naht */
+.nb-cover {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 6px 6px 6px 16px;
+  border-radius: 6px;
+  background-color: #4a2621;
+  background-image:
+    radial-gradient(ellipse at 18% 8%, rgb(255 255 255 / 0.13), transparent 55%),
+    repeating-linear-gradient(45deg, rgb(0 0 0 / 0.07) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 4px),
+    linear-gradient(135deg, #5d322b, #3a1b18);
+  box-shadow:
+    0 28px 60px -14px rgb(0 0 0 / 0.65),
+    0 0 0 1px rgb(0 0 0 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 -2px 4px rgb(0 0 0 / 0.35);
+}
+.nb-cover::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1.5px dashed rgb(232 202 158 / 0.5);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Die beiden Seiten mit sichtbarem Blattstapel am Rand */
+.nb-pages {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  border-radius: 3px;
+  background: var(--app);
+  box-shadow:
+    1px 1px 0 var(--nb-edge-a),
+    2px 2px 0 var(--nb-edge-b),
+    3px 3px 0 var(--nb-edge-a),
+    4px 4px 0 var(--nb-edge-b),
+    0 10px 22px -8px rgb(0 0 0 / 0.55);
+}
+.nb-page {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--app);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .34 0 0 0 0 .2 0 0 0 .075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.nb-left {
+  flex: 1 1 auto;
+  padding-left: 20px;
+  border-radius: 3px;
+}
+.nb-right {
+  display: none;
+  flex: 1 1 0;
+  padding-left: 20px;
+  border-radius: 3px;
+}
+.nb-book[data-note] .nb-left {
+  display: none;
+}
+.nb-book[data-note] .nb-right {
+  display: block;
+}
+.nb-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Spiralbindung: Ringe auf der Mittelfalte (am Handy am linken Rand) */
+.nb-gutter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.nb-spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -14px;
+  width: 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 0;
+}
+.nb-ring {
+  position: relative;
+  height: 11px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f8f8f8 0%, #aeb2b9 45%, #eceded 56%, #868a91 100%);
+  box-shadow:
+    0 2px 3px rgb(0 0 0 / 0.5),
+    inset 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+.nb-ring::before,
+.nb-ring::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #1a1410, #3b3023);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
+}
+.nb-ring::before {
+  left: -3px;
+}
+.nb-ring::after {
+  right: -3px;
+}
+
+/* Karteitabs: am Handy oben, am Computer am rechten Rand */
+.nb-tabs {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  overflow-x: auto;
+  padding: calc(env(safe-area-inset-top) + 8px) 52px 0 10px;
+  scrollbar-width: none;
+}
+.nb-tabs::-webkit-scrollbar {
+  display: none;
+}
+.nb-tab {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px 9px 0 0;
+  background: var(--tab);
+  color: #2e2923;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    0 -1px 3px rgb(0 0 0 / 0.3);
+  transition: filter 0.15s;
+}
+.nb-tab:hover {
+  filter: brightness(1.05);
+}
+.nb-tab:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+}
+.nb-tab[aria-selected="true"] {
+  background: var(--app);
+  color: var(--fg);
+  height: 38px;
+  align-self: flex-end;
+}
+.nb-tab-count {
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+.nb-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6px);
+  right: 10px;
+  z-index: 6;
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f6efdc;
+  color: #3a1b18;
+  cursor: pointer;
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 #fff;
+}
+.nb-close:hover {
+  background: #fff;
+}
+.nb-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .nb-backdrop {
+    align-items: center;
+    justify-content: center;
+    padding: 28px 104px 28px 40px;
+    background: radial-gradient(ellipse at 50% 40%, rgb(40 24 18 / 0.55), rgb(10 6 5 / 0.82));
+  }
+  .nb-book {
+    width: min(1240px, 100%);
+    height: min(820px, 100%);
+  }
+  .nb-cover {
+    padding: 18px;
+    border-radius: 10px 18px 18px 10px;
+  }
+  .nb-cover::after {
+    inset: 7px;
+    border-radius: 6px 12px 12px 6px;
+  }
+  .nb-left {
+    flex: 1 1 0;
+    padding-left: 0;
+    padding-right: 26px;
+    box-shadow: inset -28px 0 26px -24px var(--nb-shade);
+  }
+  .nb-right {
+    display: block;
+    padding-left: 26px;
+    box-shadow: inset 28px 0 26px -24px var(--nb-shade);
+  }
+  .nb-book[data-note] .nb-left {
+    display: block;
+  }
+  .nb-gutter {
+    left: 50%;
+  }
+  .nb-spine {
+    left: -23px;
+    width: 46px;
+    padding: 18px 0;
+  }
+  .nb-ring {
+    height: 13px;
+    border-radius: 7px;
+  }
+  .nb-ring::before,
+  .nb-ring::after {
+    top: 3px;
+  }
+  .nb-tabs {
+    position: absolute;
+    top: 76px;
+    left: calc(100% - 26px);
+    z-index: 5;
+    flex-direction: column;
+    gap: 7px;
+    padding: 0;
+    overflow: visible;
+  }
+  .nb-tab {
+    width: 118px;
+    height: 46px;
+    padding: 0 12px 0 16px;
+    border-radius: 0 12px 12px 0;
+    justify-content: space-between;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.55),
+      3px 3px 7px rgb(0 0 0 / 0.4);
+  }
+  .nb-tab[aria-selected="true"] {
+    width: 132px;
+    height: 46px;
+    align-self: flex-start;
+  }
+  .nb-close {
+    top: -12px;
+    right: -12px;
+  }
+}
+
+/* Inhalt im Buch etwas kleiner */
+.nb-book .note-surface[data-size="s"] .ProseMirror,
+.nb-book .note-surface[data-size="s"] .note-view { font-size: 0.8125rem; }
+.nb-book .note-surface[data-size="m"] .ProseMirror,
+.nb-book .note-surface[data-size="m"] .note-view { font-size: 0.9rem; }
+.nb-book .note-surface[data-size="l"] .ProseMirror,
+.nb-book .note-surface[data-size="l"] .note-view { font-size: 1.02rem; }
+.nb-book .note-surface[data-size="xl"] .ProseMirror,
+.nb-book .note-surface[data-size="xl"] .note-view { font-size: 1.18rem; }
+.nb-book .post-content h2 { font-size: 1.3rem; }
+.nb-book .post-content h3 { font-size: 1.1rem; }
+.nb-book .note-view { line-height: 1.65; }
+
+/* Register im Notizbuch: Inhaltsverzeichnis klappt in der Höhe auf */
+.nb-register {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+.nb-register[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.nb-register-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.nb-register-card {
+  margin-top: 8px;
+  max-height: 55dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-2) 70%, var(--app));
+  box-shadow: inset 0 1px 3px rgb(70 46 20 / 0.12);
+}
+.nb-register:not([data-open="true"]) .nb-register-card {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nb-register {
+    transition: none;
+  }
+}

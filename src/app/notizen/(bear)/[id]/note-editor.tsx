@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Archive, ArchiveRestore, ChevronLeft, Download, FileCode, FileText, Info, ListTree, Maximize2, Type, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pin, PinOff, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNotebookNav } from "@/app/notizen/notebook-nav";
+import { Archive, ArchiveRestore, Check, ChevronLeft, Download, FileCode, FileText, Info, ListTree, Maximize2, Type, Printer, Folder, Globe, Hash, Link2, MoreHorizontal, Pencil, Pin, PinOff, Trash2, X } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { markdownToHtml, noteToMarkdown } from "@/lib/note-markdown";
 import { NoteLinkChip } from "@/components/note-link-chip";
@@ -11,16 +10,19 @@ import { NoteLinkPicker } from "@/components/note-link-picker";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { addNoteLink, archiveNote, deleteNote, moveNote, removeNoteLink, saveNote, saveNoteAsTemplate, setNoteIsTemplate, setNotePinned, setNoteWorld, restoreNote, trashNote } from "@/app/notizen/actions";
 import { stripHtml } from "@/lib/strip-html";
+import { sanitizePostHtmlCore } from "@/lib/sanitize-core";
+import { useEmojiHtml } from "@/components/custom-emoji-provider";
+import { linkWikiBrackets } from "@/lib/autolink";
 import { emitNotePatch } from "@/lib/note-events";
 import { FOCUS_EVENT } from "@/app/notizen/notes-shortcuts";
 import { clearDraft, draftDiffers, loadDraft, saveDraft, type NoteDraft } from "@/lib/note-draft";
-import { MAX_NOTE_TAGS, flattenFolders, noteOutline, noteStats, normalizeTag, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
+import { MAX_NOTE_TAGS, flattenFolders, noteOutline, noteStats, normalizeTag, setTaskInHtml, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
 
 type SaveState = "saved" | "dirty" | "saving" | "error" | "offline";
 
 // Eine Notiz: Titel und Text speichern von selbst, darunter die Verknüpfungen.
 export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initialLinks, initialTags, initialFolderId, initialWorldId, initialIsTemplate, initialArchived, initialDeletedAt, createdAt, initialUpdatedAt, worlds, folders, allTags, backlinks, linkPages, linkCharacters }: { id: string; initialTitle: string; initialBody: string; initialPinned: boolean; initialLinks: NoteLinkView[]; initialTags: string[]; initialFolderId: string | null; initialWorldId: string | null; initialIsTemplate: boolean; initialArchived: boolean; initialDeletedAt: string | null; createdAt: string; initialUpdatedAt: string; worlds: { id: string; name: string }[]; folders: NoteFolder[]; allTags: string[]; backlinks: { id: string; title: string }[]; linkPages: { id: string; title: string }[]; linkCharacters: { id: string; name: string; avatar_url: string | null }[] }) {
-  const router = useRouter();
+  const nav = useNotebookNav();
   const [title, setTitle] = useState(initialTitle);
   const [pinned, setPinned] = useState(initialPinned);
   const [links, setLinks] = useState<NoteLinkView[]>(initialLinks);
@@ -34,6 +36,8 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const [worldId, setWorldId] = useState<string | null>(initialWorldId);
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const wordCount = (html: string) => stripHtml(html).split(/\s+/).filter(Boolean).length;
+  // Gespeicherte Notizen erscheinen wie eine fertige Seite; erst „Bearbeiten“ (oder ein Klick in den Text) zeigt den Editor. Leere neue Notizen starten gleich im Editor.
+  const [editing, setEditing] = useState(() => !initialTitle.trim() && !stripHtml(initialBody).trim());
   // Markdown-Quelltext statt Editor: der Text wird beim Umschalten hin- und zurückgewandelt
   const [source, setSource] = useState(false);
   const [md, setMd] = useState("");
@@ -221,7 +225,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     emitNotePatch({ id, worldId: next });
     await setNoteWorld(id, next);
     // Wiki-Seiten und Charaktere im Editor gehören zur Welt der Notiz
-    router.refresh();
+    nav.reload();
   }
 
   async function saveAsTemplate() {
@@ -237,7 +241,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     if (err) return setMenuMsg(err);
     setIsTemplate(next);
     setMenuOpen(false);
-    router.refresh();
+    nav.reload();
   }
 
   function toggleSource() {
@@ -256,6 +260,55 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     schedule();
   }
 
+  function startEditing() {
+    if (deletedAt) return;
+    setBodyInit(bodyRef.current);
+    setEditorKey((k) => k + 1);
+    setEditing(true);
+  }
+
+  async function finishEditing() {
+    if (source) {
+      const html = markdownToHtml(md);
+      bodyRef.current = html;
+      setBodyHtml(html);
+      setSource(false);
+    }
+    await flush();
+    setEditing(false);
+  }
+
+  // Fertige Seite: Kästchen lassen sich direkt abhaken, ein Klick in den Text öffnet den Editor
+  // :emoji: werden zu Bildern, [[Seiten]] und Figurennamen in [[ ]] zu Links (wie in Beiträgen und im Wiki)
+  const wikiTerms = useMemo(() => linkPages.map((p) => ({ id: p.id, title: p.title, category: "Wiki", excerpt: "" })), [linkPages]);
+  const charTerms = useMemo(() => linkCharacters.map((c) => ({ id: c.id, name: c.name, avatarUrl: c.avatar_url, excerpt: "" })), [linkCharacters]);
+  const linkedHtml = useMemo(() => linkWikiBrackets(sanitizePostHtmlCore(bodyHtml), wikiTerms, charTerms), [bodyHtml, wikiTerms, charTerms]);
+  const viewHtml = useEmojiHtml(linkedHtml);
+  const viewRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    viewRef.current?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((i) => (i.disabled = false));
+  }, [viewHtml, editing]);
+
+  function onViewClick(e: React.MouseEvent<HTMLDivElement>) {
+    const t = e.target as HTMLElement;
+    const box = t.closest<HTMLInputElement>('input[type="checkbox"]');
+    if (box) {
+      e.preventDefault();
+      const items = [...e.currentTarget.querySelectorAll('li[data-type="taskItem"]')];
+      const li = box.closest('li[data-type="taskItem"]');
+      const index = li ? items.indexOf(li) : -1;
+      if (index < 0 || !li) return;
+      const next = setTaskInHtml(bodyRef.current, index, li.getAttribute("data-checked") !== "true");
+      if (next === null) return;
+      bodyRef.current = next;
+      setBodyHtml(next);
+      schedule();
+      return;
+    }
+    if (t.closest("a, button, summary") || window.getSelection()?.toString()) return;
+    startEditing();
+  }
+
   async function togglePin() {
     const next = !pinned;
     setPinned(next);
@@ -269,8 +322,8 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     const err = await trashNote(id);
     if (err) return setMenuMsg(err);
     emitNotePatch({ id, deletedAt: new Date().toISOString() });
-    router.replace("/notizen");
-    router.refresh();
+    nav.closeNote();
+    nav.reload();
   }
 
   async function restore() {
@@ -278,7 +331,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     if (err) return setMenuMsg(err);
     setDeletedAt(null);
     emitNotePatch({ id, deletedAt: null });
-    router.refresh();
+    nav.reload();
   }
 
   async function removeForever() {
@@ -286,8 +339,8 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
     dirty.current = false;
     if (timer.current) clearTimeout(timer.current);
     await deleteNote(id);
-    router.replace("/notizen");
-    router.refresh();
+    nav.closeNote();
+    nav.reload();
   }
 
   async function toggleArchive() {
@@ -305,24 +358,40 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   return (
     <div data-font={look.font} data-size={look.size} data-paper={look.paper} className="note-surface mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <Link href="/notizen" className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg lg:invisible">
+        <button type="button" onClick={() => nav.closeNote()} className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg lg:invisible">
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
           Notizen
-        </Link>
+        </button>
         {isTemplate && <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">Vorlage</span>}
         <div className="flex flex-wrap items-center justify-end gap-1">
-          <span className={`mr-2 max-w-[14rem] text-right text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
-            {stateLabel}
-          </span>
+          {editing ? (
+            <button type="button" onClick={() => void finishEditing()} className="mr-1 flex items-center gap-1 rounded-full bg-accent-strong px-3 py-1 text-xs font-medium text-on-accent-strong transition hover:opacity-90">
+              <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
+              Fertig
+            </button>
+          ) : (
+            !deletedAt && (
+              <button type="button" onClick={startEditing} className="mr-1 flex items-center gap-1 rounded-full border border-line px-3 py-1 text-xs font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                Bearbeiten
+              </button>
+            )
+          )}
+          {(editing || state === "error" || state === "offline") && (
+            <span className={`mr-2 max-w-[14rem] text-right text-xs ${state === "error" ? "text-red-600" : "text-muted"}`} aria-live="polite">
+              {stateLabel}
+            </span>
+          )}
+          {editing && (
           <div className="relative">
-            <button type="button" onClick={() => setLookOpen((v) => !v)} aria-expanded={lookOpen} aria-label="Darstellung" title="Darstellung" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+            <button type="button" onClick={() => setLookOpen((v) => !v)} aria-expanded={lookOpen} aria-label="Darstellung" title="Darstellung" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
               <Type className="h-4 w-4" strokeWidth={2} />
             </button>
             {lookOpen && (
               <div role="dialog" aria-label="Darstellung" className="absolute right-0 top-full z-30 mt-1 w-64 rounded-2xl border border-line bg-surface p-3 shadow-lg">
                 {(
                   [
-                    ["font", "Schrift", [["serif", "Serif"], ["sans", "Sans"], ["mono", "Mono"]]],
+                    ["font", "Schrift", [["serif", "Serif"], ["sans", "Sans"], ["mono", "Mono"], ["lora", "Buchschrift"], ["playfair", "Elegant"], ["ebGaramond", "Zeitlos"], ["caveat", "Handschrift"], ["handlee", "Notizbuch"], ["specialElite", "Schreibmaschine"]]],
                     ["size", "Größe", [["s", "Klein"], ["m", "Normal"], ["l", "Groß"], ["xl", "Sehr groß"]]],
                     ["paper", "Papier", [["standard", "Standard"], ["sepia", "Sepia"], ["dark", "Dunkel"]]],
                   ] as [keyof typeof look, string, [string, string][]][]
@@ -341,17 +410,20 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
               </div>
             )}
           </div>
-          <button type="button" onClick={() => window.dispatchEvent(new Event(FOCUS_EVENT))} aria-label="Fokus-Modus" title="Fokus-Modus (Alt+F)" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+          )}
+          <button type="button" onClick={() => window.dispatchEvent(new Event(FOCUS_EVENT))} aria-label="Fokus-Modus" title="Fokus-Modus (Alt+F)" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
             <Maximize2 className="h-4 w-4" strokeWidth={2} />
           </button>
-          <button type="button" onClick={toggleSource} aria-pressed={source} aria-label="Markdown-Quelltext" title="Markdown-Quelltext" className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 ${source ? "text-accent" : "text-muted hover:text-fg"}`}>
+          {editing && (
+          <button type="button" onClick={toggleSource} aria-pressed={source} aria-label="Markdown-Quelltext" title="Markdown-Quelltext" className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-surface-2 ${source ? "text-accent" : "text-muted hover:text-fg"}`}>
             <FileCode className="h-4 w-4" strokeWidth={2} />
           </button>
-          <button type="button" onClick={togglePin} aria-label={pinned ? "Nicht mehr anheften" : "Anheften"} title={pinned ? "Nicht mehr anheften" : "Anheften"} className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-surface-2 ${pinned ? "text-accent" : "text-muted hover:text-fg"}`}>
+          )}
+          <button type="button" onClick={togglePin} aria-label={pinned ? "Nicht mehr anheften" : "Anheften"} title={pinned ? "Nicht mehr anheften" : "Anheften"} className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-surface-2 ${pinned ? "text-accent" : "text-muted hover:text-fg"}`}>
             {pinned ? <PinOff className="h-4 w-4" strokeWidth={2} /> : <Pin className="h-4 w-4" strokeWidth={2} />}
           </button>
           <div className="relative">
-            <button type="button" onClick={() => { setMenuOpen((v) => !v); setMenuMsg(null); }} aria-label="Mehr" aria-expanded={menuOpen} title="Mehr" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
+            <button type="button" onClick={() => { setMenuOpen((v) => !v); setMenuMsg(null); }} aria-label="Mehr" aria-expanded={menuOpen} title="Mehr" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg">
               <MoreHorizontal className="h-4 w-4" strokeWidth={2} />
             </button>
             {menuOpen && (
@@ -383,7 +455,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
             )}
           </div>
           {!deletedAt && (
-            <button type="button" onClick={() => void remove()} aria-label="In den Papierkorb" title="In den Papierkorb" className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
+            <button type="button" onClick={() => void remove()} aria-label="In den Papierkorb" title="In den Papierkorb" className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-red-600">
               <Trash2 className="h-4 w-4" strokeWidth={2} />
             </button>
           )}
@@ -421,33 +493,67 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
         </div>
       )}
 
-      <input
-        value={title}
-        onChange={(e) => {
-          setTitle(e.target.value);
-          titleRef.current = e.target.value;
-          schedule();
-        }}
-        maxLength={200}
-        placeholder="Titel"
-        aria-label="Titel"
-        className="w-full bg-transparent font-serif text-3xl text-fg outline-none placeholder:text-muted/60"
-      />
+      {editing ? (
+        <input
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            titleRef.current = e.target.value;
+            schedule();
+          }}
+          maxLength={200}
+          placeholder="Titel"
+          aria-label="Titel"
+          className="w-full bg-transparent font-serif text-3xl text-fg outline-none placeholder:text-muted/60"
+        />
+      ) : (
+        <h2 className="font-serif text-3xl text-fg [overflow-wrap:anywhere]">{title.trim() || <span className="text-muted/60">Ohne Titel</span>}</h2>
+      )}
 
+      {(editing || links.length > 0) && (
       <div className="flex flex-wrap items-center gap-2">
         {links.map((l) => (
           <NoteLinkChip key={l.id} link={l}>
-            <button type="button" onClick={() => void unlink(l)} aria-label={`${l.label} entfernen`} className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition hover:bg-surface hover:text-fg">
-              <X className="h-3 w-3" strokeWidth={2.25} />
-            </button>
+            {editing && (
+              <button type="button" onClick={() => void unlink(l)} aria-label={`${l.label} entfernen`} className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition hover:bg-surface hover:text-fg">
+                <X className="h-3 w-3" strokeWidth={2.25} />
+              </button>
+            )}
           </NoteLinkChip>
         ))}
-        <button type="button" onClick={() => setPicker(true)} className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
-          <Link2 className="h-3.5 w-3.5" strokeWidth={2} />
-          Verknüpfen
-        </button>
+        {editing && (
+          <button type="button" onClick={() => setPicker(true)} className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
+            <Link2 className="h-3.5 w-3.5" strokeWidth={2} />
+            Verknüpfen
+          </button>
+        )}
       </div>
+      )}
 
+      {!editing && (worldId || folderId || tags.length > 0) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
+          {worldId && (
+            <span className="inline-flex items-center gap-1">
+              <Globe className="h-3.5 w-3.5" strokeWidth={2} />
+              {worlds.find((w) => w.id === worldId)?.name}
+            </span>
+          )}
+          {folderId && (
+            <span className="inline-flex items-center gap-1">
+              <Folder className="h-3.5 w-3.5" strokeWidth={2} />
+              {folders.find((f) => f.id === folderId)?.name}
+            </span>
+          )}
+          {tags.map((t) => (
+            <span key={t} className="inline-flex items-center gap-0.5 rounded-full bg-surface-2 px-2 py-0.5 text-fg-soft">
+              <Hash className="h-3 w-3 text-muted" strokeWidth={2.25} />
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {editing && (
       <div className="flex flex-wrap items-center gap-2">
         {worlds.length > 0 && (
           <label className="flex items-center gap-1.5 text-xs text-muted">
@@ -515,8 +621,16 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
           </>
         )}
       </div>
+      )}
 
-      {source ? (
+      {!editing ? (
+        <div
+          ref={viewRef}
+          onClick={onViewClick}
+          dangerouslySetInnerHTML={{ __html: viewHtml }}
+          className={`post-content note-view min-h-[8rem] text-fg [overflow-wrap:anywhere] ${deletedAt ? "" : "cursor-text"}`}
+        />
+      ) : source ? (
         <textarea
           value={md}
           onChange={(e) => {
@@ -539,6 +653,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
           minHeight={320}
           allowBlocks
           notesTools
+          allowFontSelection
           wikiPages={linkPages}
           wikiCharacters={linkCharacters}
           onChange={(html) => {
@@ -571,7 +686,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
                     <button
                       type="button"
                       onClick={() => {
-                        const els = [...document.querySelectorAll(".ProseMirror")].find((e) => (e as HTMLElement).offsetParent !== null)?.querySelectorAll("h1, h2, h3");
+                        const els = [...document.querySelectorAll(".ProseMirror, .note-view")].find((e) => (e as HTMLElement).offsetParent !== null)?.querySelectorAll("h1, h2, h3");
                         els?.[h.index]?.scrollIntoView({ behavior: "smooth", block: "start" });
                         setPanel(null);
                       }}

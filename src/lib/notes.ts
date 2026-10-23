@@ -117,7 +117,8 @@ export function inlineTags(html: string): string[] {
 // ---- Aufgaben („Offene Fäden“) ----
 export type NoteTask = { index: number; text: string; checked: boolean };
 
-const TASK_OPEN = /<li data-type="taskItem" data-checked="(true|false)">/g;
+// Aufgaben-Zeile; die Reihenfolge der Attribute ist egal (gespeicherter Text und Editor-Text unterscheiden sich darin)
+const TASK_OPEN = /<li\b[^>]*\bdata-type="taskItem"[^>]*>/g;
 
 // Alle Aufgaben einer Notiz in Textreihenfolge; Text = erster Absatz der Aufgabe
 export function noteTasks(html: string): NoteTask[] {
@@ -126,7 +127,7 @@ export function noteTasks(html: string): NoteTask[] {
   for (const m of html.matchAll(TASK_OPEN)) {
     const rest = html.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 4000);
     const para = /<div>\s*<p>([\s\S]*?)<\/p>/.exec(rest)?.[1] ?? "";
-    out.push({ index: i++, text: stripHtml(para), checked: m[1] === "true" });
+    out.push({ index: i++, text: stripHtml(para), checked: /\bdata-checked="true"/.test(m[0]) });
   }
   return out;
 }

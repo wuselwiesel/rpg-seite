@@ -171,6 +171,8 @@ function SelectionMenu({ editor, wikiPages }: { editor: Editor; wikiPages?: { id
       options={{ placement: coarse ? "bottom" : "top", offset: 8, shift: ({ elements }) => {
           // nur am Editor ausrichten, wenn die Leiste hineinpasst; ist der Editor schmaler, gilt wie bisher die ganze Seite
           const wrap = editor.view.dom.closest("[data-rte]");
+          // Im Notizbuch ist die Seite schmal und schneidet Überstehendes ab: die Leiste wird so breit wie der Editor und scrollt seitlich
+          if (wrap?.closest(".nb-book")) elements.floating.style.maxWidth = `${Math.max(220, wrap.getBoundingClientRect().width - 16)}px`;
           return { padding: 8, boundary: wrap && elements.floating.getBoundingClientRect().width <= wrap.getBoundingClientRect().width - 16 ? wrap : undefined };
         },
       }}
@@ -329,24 +331,27 @@ function Toolbar({
 
     setUploading(true);
     setError(null);
-
     const supabase = createClient();
-    const ext = file.name.split(".").pop();
-    const path = `${crypto.randomUUID()}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("post-images")
-      .upload(path, file, UPLOAD_CACHE);
-
-    setUploading(false);
-
-    if (uploadError) {
-      setError(uploadError.message);
-      return;
+    if (notesTools) {
+      // Notiz-Bilder kommen in den privaten Bucket „note-files" (unter der Konto-ID)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setUploading(false); setError("Nicht angemeldet."); return; }
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("note-files").upload(path, file, UPLOAD_CACHE);
+      setUploading(false);
+      if (uploadError) { setError(uploadError.message); return; }
+      editor.chain().focus().setImage({ src: `/notizen/bild?p=${encodeURIComponent(path)}` }).run();
+    } else {
+      const ext = file.name.split(".").pop();
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("post-images").upload(path, file, UPLOAD_CACHE);
+      setUploading(false);
+      if (uploadError) { setError(uploadError.message); return; }
+      const { data } = supabase.storage.from("post-images").getPublicUrl(path);
+      editor.chain().focus().setImage({ src: data.publicUrl }).run();
     }
-
-    const { data } = supabase.storage.from("post-images").getPublicUrl(path);
-    editor.chain().focus().setImage({ src: data.publicUrl }).run();
   }
 
   // Beliebige Datei an eine Notiz hängen (privater Speicher „note-files“, bis 20 MB)

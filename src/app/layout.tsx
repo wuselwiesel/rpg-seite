@@ -90,6 +90,7 @@ import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { getEmojiMap } from "@/lib/custom-emoji-server";
 import { getAccountDefaultFont } from "@/lib/default-font-server";
 import { AppFrame } from "@/components/app-frame";
+import { NotebookProvider } from "@/components/notebook-host";
 import { DefaultFontSync } from "@/components/default-font-sync";
 import { MobileMain } from "@/components/mobile-main";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -325,9 +326,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <DiceProvider enabled={diceEnabled}>
             <WorldSecretsProvider allowed={activeWorld ? activeWorld.allow_secrets !== false : true}>
             <RightsProvider rights={rights}>
+            <NotebookProvider enabled={!!ownPresence?.userId}>
             <AppFrame sidebar={<Sidebar />}>
               <MobileMain>{children}</MobileMain>
             </AppFrame>
+            </NotebookProvider>
             </RightsProvider>
             </WorldSecretsProvider>
             </DiceProvider>

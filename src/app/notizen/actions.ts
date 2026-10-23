@@ -49,6 +49,18 @@ export async function createNote(input: { title?: string; text?: string; bodyHtm
   return { id: data.id };
 }
 
+// Pfade aus Dateianhängen und privaten Bildern im Notiz-HTML extrahieren (für Storage-Cleanup).
+function extractNoteStoragePaths(html: string): Set<string> {
+  const paths = new Set<string>();
+  for (const m of html.matchAll(/href="\/notizen\/datei\?p=([^"]+)"/g)) {
+    try { paths.add(decodeURIComponent(m[1])); } catch { /* ungültiger Pfad */ }
+  }
+  for (const m of html.matchAll(/src="\/notizen\/bild\?p=([^"]+)"/g)) {
+    try { paths.add(decodeURIComponent(m[1])); } catch { /* ungültiger Pfad */ }
+  }
+  return paths;
+}
+
 // Speichert Titel und Text. Im Text genannte Seiten ([[Titel]]) und Charaktere (@Name) werden dabei von selbst verknüpft;
 // Rückgabe: die aktuelle Liste der Verknüpfungen, falls neue dazugekommen sind.
 export async function saveNote(id: string, input: { title: string; body: string; tags?: string[] }): Promise<{ error: string } | { links: NoteLinkView[] | null; tags: string[] }> {
@@ -56,6 +68,10 @@ export async function saveNote(id: string, input: { title: string; body: string;
   if (!user) return { error: "Nicht angemeldet." };
   const body = sanitizePostHtml(input.body);
   if (body.length > 100000) return { error: "Die Notiz ist zu lang." };
+
+  // Alten Body holen, um danach gelöschte Dateien/Bilder aus dem Storage zu entfernen
+  const { data: oldNote } = await supabase.from("notes").select("body").eq("id", id).eq("user_id", user.id).maybeSingle<{ body: string }>();
+
   // #Tags im Text kommen zu den eingetragenen Tags dazu (nie weniger als vorher)
   const tags = normalizeTags([...(input.tags ?? []), ...inlineTags(body)]);
   const { data: note, error } = await supabase
@@ -67,6 +83,15 @@ export async function saveNote(id: string, input: { title: string; body: string;
     .maybeSingle<{ world_id: string | null }>();
   if (error) return { error: error.message };
   if (!note) return { error: "Notiz nicht gefunden." };
+
+  // Dateien und Bilder löschen, die im neuen Body nicht mehr vorkommen
+  if (oldNote?.body) {
+    const oldPaths = extractNoteStoragePaths(oldNote.body);
+    const newPaths = extractNoteStoragePaths(body);
+    const removed = [...oldPaths].filter((p) => !newPaths.has(p) && p.startsWith(`${user.id}/`));
+    if (removed.length > 0) await supabase.storage.from("note-files").remove(removed);
+  }
+
   revalidatePath("/notizen");
 
   const { wikiTitles, characterIds } = inlineTargets(body);

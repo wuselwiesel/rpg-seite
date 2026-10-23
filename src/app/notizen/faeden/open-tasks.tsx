@@ -8,9 +8,8 @@ import type { NoteLinkView } from "@/lib/notes";
 
 export type TaskGroup = { noteId: string; title: string; links: NoteLinkView[]; tasks: { index: number; text: string }[] };
 
-// Offene Aufgaben aller Notizen, nach Notiz gruppiert; Abhaken nimmt sie hier heraus und hakt sie in der Notiz ab.
-export function OpenTasks({ groups: initial }: { groups: TaskGroup[] }) {
-  const [groups, setGroups] = useState(initial);
+// Offene Aufgaben aller Notizen, nach Notiz gruppiert; Abhaken hakt sie in der Notiz ab (onChecked bringt die Liste auf den neuen Stand).
+export function OpenTasks({ groups, onChecked }: { groups: TaskGroup[]; onChecked: (noteId: string, index: number) => void }) {
   const [error, setError] = useState<string | null>(null);
   // Gerade abgehakt (kurz durchgestrichen sichtbar, bevor sie verschwindet)
   const [done, setDone] = useState<Set<string>>(new Set());
@@ -29,7 +28,12 @@ export function OpenTasks({ groups: initial }: { groups: TaskGroup[] }) {
       return setError(err);
     }
     window.setTimeout(() => {
-      setGroups((cur) => cur.map((g) => (g.noteId === noteId ? { ...g, tasks: g.tasks.filter((t) => t.index !== index) } : g)).filter((g) => g.tasks.length > 0));
+      onChecked(noteId, index);
+      setDone((cur) => {
+        const next = new Set(cur);
+        next.delete(key);
+        return next;
+      });
     }, 600);
   }
 

@@ -620,7 +620,7 @@ export default async function HelpPage() {
       <Section id="notizen" title="22. Notizen und Faceclaims (nur für dich)">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Notizbuch:</strong> Im Menü (☰) unter „Notizen“. Eine Notiz hat Titel und Text und speichert von selbst. Nur du siehst deine Notizen, auch Weltbesitzer:innen und Admins nicht.
+            <strong>Notizbuch:</strong> Im Menü (☰) unter „Notizen“ geht ein aufgeschlagenes Buch über der Seite auf; Esc, das Kreuz oder ein Klick daneben schließt es. Am rechten Rand (am Handy oben) sitzen Karteitabs: Alle · Angeheftet · Offene Fäden · Vorlagen · Archiv · Papierkorb. Eine gespeicherte Notiz erscheint als fertige Seite; „Bearbeiten“ oder ein Tipp in den Text öffnet den Editor, „Fertig“ schließt ihn. Kästchen lassen sich auf der Seite direkt abhaken. Beim Schreiben speichert die Notiz von selbst. Mit „Aa Schriftart“ ändert sich die Schrift des markierten Textes (über 60 Schriften), unter „Darstellung“ (Symbol „T“) die der ganzen Notiz. Nur du siehst deine Notizen, auch Weltbesitzer:innen und Admins nicht.
           </li>
           <li>
             <strong>Verknüpfen:</strong> In der Notiz auf „Verknüpfen“ tippen und Charaktere, Wiki-Seiten, Szenen, gespeicherte Ausschnitte oder andere Notizen wählen. Die Marken öffnen das Ziel; andere Notizen zeigen „Verlinkt in“. Wird ein Ziel gelöscht, verschwindet nur die Verknüpfung.
@@ -638,10 +638,10 @@ export default async function HelpPage() {
             <strong>Ordner und Tags:</strong> In der Liste das Ordner-Symbol antippen, um einen Ordner anzulegen. In der Notiz Ordner wählen und unter „#Tag“ Tags eintippen (Komma, Leerzeichen oder Enter). In der Liste filtern die Ordner und Tags; „#tag“ in der Suche geht auch. Wird ein Ordner gelöscht, bleiben die Notizen.
           </li>
           <li>
-            <strong>Wie Bear:</strong> Am Computer steht die Liste links und die Notiz rechts, am Handy erst die Liste und dann die Notiz. Im Text gehen Überschriften, Listen, Tabellen, Code-Blöcke und Aufgabenlisten mit Kästchen („☑ Aufgaben“). Ein „#Wort“ im Text wird von selbst zum Tag.
+            <strong>Wie Bear:</strong> Am Computer steht die Liste auf der linken Buchseite und die Notiz rechts, am Handy erst die Liste und dann die Notiz. Die Leiste unter der Suche („Alle Notizen“) klappt das Register auf: Ansichten, Ordnerbaum (anlegen, umbenennen, verschachteln, löschen) und Tags; Notizen lassen sich dorthin ziehen. Im Text gehen Überschriften, Listen, Tabellen, Code-Blöcke und Aufgabenlisten mit Kästchen („☑ Aufgaben“). Ein „#Wort“ im Text wird von selbst zum Tag.
           </li>
           <li>
-            <strong>Offene Fäden:</strong> Der Reiter sammelt alle nicht abgehakten Aufgaben aus allen Notizen. Ein Haken dort hakt sie auch in der Notiz ab.
+            <strong>Offene Fäden:</strong> Der Karteitab sammelt alle nicht abgehakten Aufgaben aus allen Notizen. Ein Haken dort hakt sie auch in der Notiz ab.
           </li>
           <li>
             <strong>Welten, Ordner, Vorlagen:</strong> Oben wählst du die Welt (Notizen ohne Welt gelten überall). Ordner lassen sich bis zu drei Ebenen tief verschachteln. Mit „…“ in der Notiz wird sie zur Vorlage; „Aus Vorlage“ legt eine neue Notiz daraus an. Mitgelieferte Vorschläge stehen unter „Vorlagen“.

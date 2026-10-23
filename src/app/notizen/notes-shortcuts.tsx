@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { Keyboard, Search, X } from "lucide-react";
 import { createNote } from "./actions";
-import { useNotesStore } from "./notes-store";
+import { isFolderScope, useNotesStore } from "./notes-store";
+import { useNotebookNav } from "./notebook-nav";
 import { noteMatches, noteTitle } from "@/lib/notes";
 
 export const SHORTCUTS_EVENT = "notes-open-shortcuts";
@@ -28,14 +28,13 @@ const editable = (t: EventTarget | null) => {
 // Tastenkürzel des Notizbuchs: neue Notiz, Schnellwechsler, Blättern in der Liste, Fokus-Modus, Übersicht
 export function NotesShortcuts() {
   const s = useNotesStore();
-  const router = useRouter();
-  const pathname = usePathname();
-  const activeId = /^\/notizen\/([0-9a-f-]{36})/.exec(pathname)?.[1] ?? null;
+  const nav = useNotebookNav();
+  const { activeId } = nav;
   const [switcher, setSwitcher] = useState(false);
   const [help, setHelp] = useState(false);
-  const stateRef = useRef({ s, activeId, router });
+  const stateRef = useRef({ s, activeId, nav });
   useEffect(() => {
-    stateRef.current = { s, activeId, router };
+    stateRef.current = { s, activeId, nav };
   });
 
   useEffect(() => {
@@ -46,15 +45,14 @@ export function NotesShortcuts() {
 
   useEffect(() => {
     async function onKey(e: KeyboardEvent) {
-      const { s, activeId, router } = stateRef.current;
+      const { s, activeId, nav } = stateRef.current;
       if (e.altKey && !e.metaKey && !e.ctrlKey) {
         if (e.code === "KeyN") {
           e.preventDefault();
-          const folder = !["all", "recent", "untagged", "none", "archive", "trash"].includes(s.scope) ? s.scope : null;
+          const folder = isFolderScope(s.scope) ? s.scope : null;
           const r = await createNote({ folderId: folder });
           if (r.id) {
-            router.push(`/notizen/${r.id}`);
-            router.refresh();
+            nav.openNote(r.id);
           }
         } else if (e.code === "KeyJ") {
           e.preventDefault();
@@ -67,20 +65,20 @@ export function NotesShortcuts() {
           if (n && !n.deletedAt) {
             e.preventDefault();
             await s.trash(n);
-            router.replace("/notizen");
+            nav.closeNote();
           }
         }
         return;
       }
       // Pfeile: in der Liste blättern, solange man nicht gerade schreibt
-      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && !editable(e.target) && (e.target as HTMLElement | null)?.closest?.("aside")) {
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && !editable(e.target) && (e.target as HTMLElement | null)?.closest?.("[data-nb-list]")) {
         const ids = s.shown.map((n) => n.id);
         if (ids.length === 0) return;
         const at = activeId ? ids.indexOf(activeId) : -1;
         const next = e.key === "ArrowDown" ? Math.min(ids.length - 1, at + 1) : Math.max(0, at === -1 ? 0 : at - 1);
         if (ids[next] && ids[next] !== activeId) {
           e.preventDefault();
-          router.push(`/notizen/${ids[next]}`);
+          nav.openNote(ids[next]);
         }
       }
     }
@@ -121,7 +119,7 @@ export function NotesShortcuts() {
 // Schnellwechsler: Suchfeld über alle Notizen, Pfeile und Enter
 function Switcher({ onClose }: { onClose: () => void }) {
   const s = useNotesStore();
-  const router = useRouter();
+  const nav = useNotebookNav();
   const [q, setQ] = useState("");
   const [at, setAt] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -134,7 +132,7 @@ function Switcher({ onClose }: { onClose: () => void }) {
   function go(id: string | undefined) {
     if (!id) return;
     onClose();
-    router.push(`/notizen/${id}`);
+    nav.openNote(id);
   }
 
   return (
