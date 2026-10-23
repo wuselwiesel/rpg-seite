@@ -1,4 +1,4 @@
-# Übergabe Wortwinkel (rpg-seite) – Stand 20. Oktober 2026 (letzter Commit dieser Sitzung: `45d6cbf` „Durchsicht“; davor PRs bis 82 und Commits direkt auf `main`; Vercel-Deploys nicht einzeln geprüft, siehe „Nicht geprüft“; Anleitung und Werbematerial siehe zweiten Abschnitt „Stand 20. Oktober“)
+# Übergabe Wortwinkel (rpg-seite) – Stand 23. Oktober 2026 (letzter Commit zum Zeitpunkt der Aktualisierung: `940f377` „Ungelesen: eine eigene Antwort macht die Nachrichten davor gelesen“, PR 118; Vercel pausiert, siehe „Stand 23. Oktober“; Anleitung und Werbematerial siehe Abschnitt „Stand 20. Oktober – Anleitung“)
 
 Von: Agent A (Sitzung im Ordner `~/Desktop/coding`) und Agent B (Branch `claude/modest-bardeen-q29kyy`, PRs in `wuselwiesel/rpg-seite`). Der **Wiki-Gesamtüberblick** (Agent B, 3. Oktober) steht im Abschnitt „Wiki: Gesamtüberblick“ unten; die Einzelheiten je Runde folgen weiter hinten unter „Von Agent B“.
 Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind v4, Vercel. Sprache der App und aller Antworten an die Nutzerin: **Deutsch**.
@@ -10,6 +10,29 @@ Stack: Next.js (eigene Version, siehe `AGENTS.md`), React 19, Supabase, Tailwind
 - Testaccount für localhost:3000: `logotestuser` (Welt „Testwelt“); das Passwort steht bewusst nicht im Repo, sondern in der Agent-Memory bzw. bei der Nutzerin.
 - Zuerst Desktop testen, dann Handy. Neue Badges/Erfolge sind inzwischen gewünscht und gebaut (siehe unten); weitere Ideen kurz mit der Nutzerin abstimmen.
 - **Vor dem Limit dieses Protokoll aktualisieren. Vor neuer Arbeit `git fetch` und prüfen, ob der andere Agent es schon gebaut hat** (Schrift-Vorschau und Status-Menü wurden doppelt gebaut).
+
+## Stand 23. Oktober 2026 – Überblick der Sitzungen 20.–23. Oktober – ganz zuerst lesen
+Die Einzelheiten (Dateien, Gründe, Prüfungen) stehen in den Absätzen des Abschnitts darunter (Notizbuch, Backup, Szenen-Ordner) und im Abschnitt „Stand 20. Oktober – Anleitung, Werbematerial, Welt-Schalter“ (PRs 83–118, vom anderen Agenten: Gruppenchats, Wiki-Einträge für Figuren, Verlauf, Umzugsvorbereitung). Hier die Landkarte und was offen ist.
+
+**Was seit dem 20. Oktober gebaut wurde (alles live auf `main`, alle Migrationen ausgeführt und in `schema.sql`)**
+- **Notizbuch komplett (nur für die Nutzerin sichtbar, RLS `user_id = auth.uid()`):** Notizen mit Verknüpfungen (Charaktere, Wiki, Szenen, Ausschnitte, andere Notizen), `@` und `[[ ]]`, Tags (verschachtelt mit `/`), Ordner (bis 3 Ebenen), Vorlagen, Offene Fäden (Aufgabenlisten), Suche (auch in `/search`), Verbindungen im Charakterprofil, PDF/Markdown-Export, Szene → Notiz. Teil 2 „wie Bear“: Papierkorb (30 Tage) und Archiv, Mehrfachauswahl, Sortierung, Seitenleiste mit Ordner- und Tag-Baum und Ziehen, Suchen/Ersetzen, Gliederung + H1, Markierung, Markdown-Quelltext, Notiz-Info, Dateianhänge (privater Bucket `note-files`), Kürzel, Offline-Entwurf, Import, Fokus-Modus, Darstellung. Zwei-Spalten-Ansicht in `src/app/notizen/(bear)/`; Notizen zeigen nur noch die aktive Welt plus Notizen ohne Welt.
+- **Faceclaims:** `character_private` (Name, Link, bis 8 Bilder), nur für die Besitzerin.
+- **Beiträge:** Fotos und Video gepostete Beiträge nachträglich ändern (`post-media-editor.tsx`).
+- **Szenen ordnen:** `/story/ordnung` (Ordnerbaum, Ziehen, ↑/↓, „Verschieben nach“), Feed-Filter nach Ordner, Ordner-Marke an Karte/Zeile/Szene, Ordner-Auswahl in der Szene. Der Anfangstext einer Szene steht in **Modern** statt Serif.
+- **Datenbank-Backup:** GitHub-Aktion, **einmal täglich** (nicht mehr zweimal), AES-256-verschlüsselt, 7 Tage; läuft seit 21. Oktober grün (Anleitung `docs/backup-wiederherstellen.md`).
+- **Migrationen dieser Sitzungen:** `migration_private_notes`, `_note_tags`, `_note_folders`, `_note_folders_nested`, `_note_templates`, `_note_trash_archive`, `_note_files`, `_story_folders` (alle `supabase/migration_*.sql`).
+- **Hilfe:** Abschnitt 22 „Notizen und Faceclaims (nur für dich)“, 23 „Szenen ordnen und Ordner“.
+
+**Hosting (wichtig):** Vercel hat das Projekt pausiert (HTTP 402 `DEPLOYMENT_DISABLED`, „Fluid Active CPU“ über der Grenze, Hobby-Plan, bis 20. November). Vorbereitet sind der Umzug auf **Railway** (`railway.json`, Cron per GitHub-Aktion, Versionskennung) und als Alternative Hetzner + Coolify (`Dockerfile`, Standalone-Build). Entscheidung der Nutzerin: Railway. **Offen:** Umzug selbst und DNS für `wortwinkel.xyz`, bis dahin ist die Seite nicht erreichbar, solange Vercel pausiert ist. Pushes auf `main` werden nicht mehr automatisch ausgeliefert, solange Vercel pausiert.
+
+**Offen / Aufgaben für die Nutzerin**
+- **Datenbank-Passwort drehen:** Das Passwort stand im Chat; im Supabase-Dashboard zurücksetzen und danach das GitHub-Secret `SUPABASE_DB_URL` neu setzen (`gh secret set SUPABASE_DB_URL`, Wert erst an der Eingabeaufforderung einfügen; nie die Adresse hinter den Namen schreiben). Danach `gh run list --workflow backup.yml` prüfen.
+- **Status „online“ lässt sich nicht setzen (Meldung der Nutzerin am 21. Oktober):** nicht reproduzierbar; Rückfrage nach Bildschirm, Gerät und Meldung ist offen.
+- **Szenen-Reihenfolge neu setzen:** Beim Aufräumen von Testdaten habe ich am 22. Oktober `story_posts.sort_order` für alle Szenen auf `null` gesetzt (statt nur für die Testwelt), damit ging die von Hand gesetzte Reihenfolge verloren. Auf `/story/ordnung` neu ordnen. Regel: Testdaten nur über feste IDs oder die Testwelt zurücksetzen.
+- **Reste lokal:** `/tmp/.bk_dbpw` (Datei mit dem Datenbank-Passwort von einer abgelehnten Aktion) bitte löschen (`rm /tmp/.bk_dbpw`); die Rolle `backup_reader` wurde **nicht** angelegt.
+- **Nicht geprüft:** echtes Ziehen mit der Maus (Notizen und Szenen, nur mit synthetischen Ereignissen), Handy-Ansicht der neuen Notiz-Teile und der Szenen-Ordnung auf einem echten Gerät, echtes Offline, Treffer über Formatgrenzen beim Suchen/Ersetzen, Löschen angehängter Notiz-Dateien (bleiben im Speicher), Bilder in Notizen liegen weiter im öffentlichen Bucket `post-images`, Ordner im PDF/E-Book der Szenen, Admin ordnet fremde Szenen (nur Rechteprüfung im Code).
+- **Prüfstand:** `tsc`, ESLint (eine bekannte Warnung in `switch-account-button`), Vitest (516 Tests), `next build` und alle Playwright-Suiten grün; Supabase-Berater ohne Befunde zu den neuen Tabellen.
+- **Arbeitsweise:** Vor neuer Arbeit `git fetch`; der andere Agent arbeitet parallel an `main` (PRs bis 118). Konflikte treten vor allem in `supabase/schema.sql` (beide hängen am Ende an: beide Blöcke behalten) und in diesem Protokoll auf.
 
 ## Stand 20. Oktober 2026 – Überblick der Claude-Sitzung 18.–20. Oktober (Commits direkt auf `main`) – zuerst lesen
 Die ausführlichen Einträge (mit Dateinamen, Gründen und Prüfungen) stehen im Abschnitt „Stand 18. Oktober“ weiter unten; hier die Landkarte. Parallel hat der andere Agent PRs 78–82 gebaut (Marke „Genehmigt“ ohne Ablehnen, Wesen/Schicksalswürfel/Haus·Familie/Zitat·Status-Zeile je Welt ausschaltbar; eigene Abschnitte weiter unten).
