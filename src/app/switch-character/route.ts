@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
+import { LAST_CHARACTERS_COOKIE, rememberLastCharacter } from "@/lib/last-characters";
 
 // Wechselt zum angegebenen (eigenen) Charakter und dessen Welt und leitet dann
 // weiter - z.B. aus einer Chat-Benachrichtigung heraus, damit der Chat des
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     const cookieOptions = SELECTION_COOKIE_OPTIONS;
     response.cookies.set(ACTIVE_CHARACTER_COOKIE, character.id, cookieOptions);
     response.cookies.set(ACTIVE_WORLD_COOKIE, character.world_id, cookieOptions);
+    response.cookies.set(LAST_CHARACTERS_COOKIE, rememberLastCharacter(request.cookies.get(LAST_CHARACTERS_COOKIE)?.value, character.world_id, character.id), cookieOptions);
   }
   return response;
 }

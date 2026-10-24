@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { worldOfLink } from "@/lib/link-world";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
+import { LAST_CHARACTERS_COOKIE, lastCharacterFor } from "@/lib/last-characters";
 
 // Wechselt zur Welt, zu der der Link gehört (z. B. aus einer Benachrichtigung), und leitet dann weiter.
 // Ohne Mitgliedschaft in dieser Welt bleibt die aktive Welt unverändert.
@@ -28,7 +29,10 @@ export async function GET(request: NextRequest) {
   const active = await getActiveWorld(user.id);
   if (active?.id !== worldId) {
     response.cookies.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
-    response.cookies.delete(ACTIVE_CHARACTER_COOKIE);
+    // Den Charakter wieder aktiv setzen, den man in dieser Welt zuletzt hatte
+    const last = lastCharacterFor(request.cookies.get(LAST_CHARACTERS_COOKIE)?.value, worldId);
+    if (last) response.cookies.set(ACTIVE_CHARACTER_COOKIE, last, SELECTION_COOKIE_OPTIONS);
+    else response.cookies.delete(ACTIVE_CHARACTER_COOKIE);
   }
   return response;
 }

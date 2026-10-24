@@ -35,7 +35,7 @@ export const getAllOwnCharacters = cache(async (userId: string): Promise<OwnChar
     .eq("is_npc", false)
     .eq("vacant", false)
     .is("deleted_at", null)
-    .order("created_at", { ascending: true })
+    .order("name", { ascending: true })
     .returns<{ id: string; name: string; avatar_url: string | null; world_id: string; worlds: { name: string } | null }[]>();
   return (data ?? []).map(({ worlds, ...c }) => ({ ...c, world_name: worlds?.name ?? "" }));
 });

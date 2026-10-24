@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
+import { LAST_CHARACTERS_COOKIE, rememberLastCharacter } from "@/lib/last-characters";
 import { getActiveWorld } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { hasErrors, normalizeSheet, validateSheet, withDerived, type SheetData } from "@/lib/sheet-rules";
@@ -191,6 +192,7 @@ export async function createCharacter(_prevState: string | null, formData: FormD
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_CHARACTER_COOKIE, data.id, SELECTION_COOKIE_OPTIONS);
+  cookieStore.set(LAST_CHARACTERS_COOKIE, rememberLastCharacter(cookieStore.get(LAST_CHARACTERS_COOKIE)?.value, activeWorld.id, data.id), SELECTION_COOKIE_OPTIONS);
   redirect("/");
 }
 
@@ -422,6 +424,10 @@ export async function setCharacterNpc(characterId: string, isNpc: boolean): Prom
 export async function setActiveCharacter(characterId: string) {
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_CHARACTER_COOKIE, characterId, SELECTION_COOKIE_OPTIONS);
+  // Je Welt merken, damit nach einem Weltwechsel wieder dieser Charakter aktiv ist
+  const supabase = await createClient();
+  const { data } = await supabase.from("characters").select("world_id").eq("id", characterId).maybeSingle<{ world_id: string }>();
+  if (data) cookieStore.set(LAST_CHARACTERS_COOKIE, rememberLastCharacter(cookieStore.get(LAST_CHARACTERS_COOKIE)?.value, data.world_id, characterId), SELECTION_COOKIE_OPTIONS);
   revalidatePath("/", "layout");
 }
 

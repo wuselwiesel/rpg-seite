@@ -1,6 +1,8 @@
 "use client";
 
-import { NotebookPen } from "lucide-react";
+import { IdCard, NotebookPen } from "lucide-react";
+import { chaboLabel } from "@/lib/chabo-label";
+import { useDiceEnabled } from "./dice-context";
 import { useAppMode } from "@/components/mode-context";
 import { navItems } from "@/lib/nav-model";
 import { NavLink } from "./nav-link";
@@ -32,13 +34,19 @@ export function SidebarNav({
 }) {
   const mode = useAppMode();
   const notebook = useNotebook();
+  const diceEnabled = useDiceEnabled();
   const items = navItems(mode, { activeCharacter });
 
   return (
     <>
       <nav className="flex flex-col gap-1">
         {items.map((item) =>
-          item.badge === "chats" ? (
+          item.id === "character" && activeCharacter ? (
+            // Am Computer steht hier der ChaBo (Steckbrief); das Profil öffnet „Du spielst“ oben über „Profil“
+            <NavLink key={item.id} href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
+              {chaboLabel(diceEnabled)}
+            </NavLink>
+          ) : item.badge === "chats" ? (
             <ChatsNavLink key={item.id} userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
           ) : (
             <NavLink
@@ -50,7 +58,7 @@ export function SidebarNav({
               badge={item.badge === "tickets" ? ticketUnread : undefined}
               icon={<NavIcon icon={item.icon} className={ICON} avatar={activeCharacter ? { name: activeCharacter.name, url: activeCharacter.avatar_url } : null} avatarSize={20} />}
             >
-              {item.id === "character" && activeCharacter ? activeCharacter.name : item.label}
+              {item.label}
             </NavLink>
           ),
         )}

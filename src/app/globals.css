@@ -1034,8 +1034,9 @@ html.kb-open .mobile-bottom-nav {
   .menu-pop, .feed-in { animation: none; }
 }
 
-/* Redaktion (Variante D): eigener Raum in Nachtblau mit Messing-Akzent - überschreibt die gewählte Palette.
-   Kopf, Seitenleiste und untere Leiste tragen die Klasse .chrome und werden ganz nachtblau (eigene Farbwerte im Bereich). */
+/* Redaktion (Variante D): eigener Raum in Nachtblau mit Altrosa-Akzent - überschreibt die gewählte Palette.
+   Hell: helle Leisten, Nachtblau für aktive Einträge und Knöpfe, Altrosa als Akzent. Dunkel: Kopf, Seitenleiste und untere Leiste
+   (Klasse .chrome) werden tief nachtblau. */
 html[data-mode="redaktion"] {
   --app: #f3f4f8;
   --surface: #ffffff;
@@ -1045,11 +1046,11 @@ html[data-mode="redaktion"] {
   --fg: #1c2236;
   --fg-soft: #3d4560;
   --muted: #5f6782;
-  --accent: #8a6a1f;
+  --accent: #a24a63;
   --accent-strong: #1c2540;
   --on-accent-strong: #ffffff;
-  --chip: #f6ecd6;
-  --on-chip: #5c4512;
+  --chip: #f8e4ea;
+  --on-chip: #7a2f45;
 }
 html[data-mode="redaktion"].dark {
   --app: #10141f;
@@ -1060,35 +1061,23 @@ html[data-mode="redaktion"].dark {
   --fg: #eceff6;
   --fg-soft: #c9cfe0;
   --muted: #9aa3bd;
-  --accent: #e0bf7a;
-  --accent-strong: #e0bf7a;
+  --accent: #eeb0c0;
+  --accent-strong: #eeb0c0;
   --on-accent-strong: #10141f;
-  --chip: #3a3322;
-  --on-chip: #f2d99c;
+  --chip: #3d2530;
+  --on-chip: #f4c6d2;
 }
-html[data-mode="redaktion"] .chrome {
-  --app: #1c2540;
-  --surface: #1c2540;
-  --surface-2: #26304f;
-  --surface-3: #2b3658;
-  --line: #2b3658;
+html[data-mode="redaktion"].dark .chrome {
   --fg: #eef0f7;
   --fg-soft: #d5daea;
   --muted: #a9b1c9;
-  --accent: #e6c47e;
-  --accent-strong: #d4b06a;
-  --on-accent-strong: #1c2540;
-  background-color: #1c2540;
-  color: #eef0f7;
-  border-color: #1c2540;
-}
-html[data-mode="redaktion"].dark .chrome {
+  --accent: #f0bccb;
   --app: #0d1222;
   --surface: #0d1222;
   --surface-2: #19203a;
   --surface-3: #222a47;
   --line: #222a47;
-  --accent-strong: #e0bf7a;
+  --accent-strong: #eeb0c0;
   --on-accent-strong: #0d1222;
   background-color: #0d1222;
   border-color: #0d1222;

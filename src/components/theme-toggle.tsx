@@ -2,6 +2,7 @@
 
 import { applyAppLogo, getStoredLogoId } from "@/lib/app-logos";
 import { useState, useSyncExternalStore } from "react";
+import { Moon, Sun } from "lucide-react";
 
 function subscribe() {
   return () => {};
@@ -33,9 +34,10 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       title={isDark ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
+      aria-label={isDark ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
       className="flex h-9 w-9 items-center justify-center rounded-full text-fg-soft transition hover:bg-surface-2 hover:text-fg"
     >
-      {isDark ? "☀️" : "🌙"}
+      {isDark ? <Sun className="h-[18px] w-[18px]" strokeWidth={2} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={2} />}
     </button>
   );
 }

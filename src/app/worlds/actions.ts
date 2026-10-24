@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { permissionsFromForm, strictPermissions, parsePermissions } from "@/lib/world-permissions";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
+import { LAST_CHARACTERS_COOKIE, lastCharacterFor } from "@/lib/last-characters";
 import { isDefaultTalents, parseTalentConfig } from "@/lib/talents";
 import { isDefaultNatures, parseNatureConfig } from "@/lib/natures";
 import { sanitizePostHtml } from "@/lib/sanitize";
@@ -59,11 +60,18 @@ export async function createWorld(_prevState: string | null, formData: FormData)
   redirect(`/worlds/${world.id}`);
 }
 
+// Beim Weltwechsel den Charakter wieder aktiv setzen, den man in dieser Welt zuletzt hatte (sonst gilt der erste)
+function restoreLastCharacter(cookieStore: Awaited<ReturnType<typeof cookies>>, worldId: string) {
+  const last = lastCharacterFor(cookieStore.get(LAST_CHARACTERS_COOKIE)?.value, worldId);
+  if (last) cookieStore.set(ACTIVE_CHARACTER_COOKIE, last, SELECTION_COOKIE_OPTIONS);
+  else cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+}
+
 // backTo: nur das Wiki darf als Ziel angegeben werden (sonst Startseite).
 export async function setActiveWorld(worldId: string, backTo?: string) {
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
-  cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  restoreLastCharacter(cookieStore, worldId);
   revalidatePath("/", "layout");
   redirect(backTo === "/wiki" ? "/wiki" : "/");
 }
@@ -83,7 +91,7 @@ export async function openInWorld(worldId: string, path: string) {
     const cookieStore = await cookies();
     if (cookieStore.get(ACTIVE_WORLD_COOKIE)?.value !== worldId) {
       cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
-      cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+      restoreLastCharacter(cookieStore, worldId);
     }
     revalidatePath("/", "layout");
   }
@@ -120,7 +128,7 @@ export async function joinWorld(worldId: string): Promise<string | null> {
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
-  cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  restoreLastCharacter(cookieStore, worldId);
 
   revalidatePath("/", "layout");
   // Ein Charakter ist nicht nötig: man darf die Welt erst erkunden
@@ -440,7 +448,7 @@ export async function joinWithInvite(worldId: string, token: string): Promise<st
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
-  cookieStore.delete(ACTIVE_CHARACTER_COOKIE);
+  restoreLastCharacter(cookieStore, worldId);
   revalidatePath("/", "layout");
   redirect("/");
 }

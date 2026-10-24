@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Compass, Plus, Settings, Users, X } from "lucide-react";
+import { ChevronDown, Compass, Plus, Search, Settings, Users, X } from "lucide-react";
 import { setActiveWorld } from "@/app/worlds/actions";
 import { useSwitchCharacter, WHO_OPEN_EVENT } from "@/lib/use-switch-character";
 import type { OwnCharacterLite } from "@/lib/active-character";
@@ -64,44 +64,96 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
 
   const c = activeCharacter;
   const badge = <WorldCover name={activeWorld.name} coverUrl={activeWorld.cover_image_url} className="absolute -bottom-1 -right-1 h-4 w-4 rounded-[5px] text-[9px] ring-2 ring-app" />;
-  const close = () => setOpenAt(null);
+  const close = () => {
+    setOpenAt(null);
+    setQuery("");
+    setViewWorld(null);
+  };
+  const [query, setQuery] = useState("");
+  // Welt, deren Charaktere gerade gezeigt werden (null = aktive Welt)
+  const [viewWorld, setViewWorld] = useState<string | null>(null);
 
-  // Nach Welt gruppiert, die aktive Welt zuerst
-  const groups = [activeWorld, ...worlds.filter((w) => w.id !== activeWorld.id)]
-    .map((w) => ({ world: w, list: characters.filter((own) => own.world_id === w.id) }))
-    .filter((g) => g.list.length > 0);
+  // Oben die Welten als Reiter (gewählt: aktive Welt), darunter deren Charaktere alphabetisch; bei vielen Charakteren eine Suche über alle
+  const shownWorldId = viewWorld && worlds.some((w) => w.id === viewWorld) ? viewWorld : activeWorld.id;
+  const shownWorld = worlds.find((w) => w.id === shownWorldId) ?? activeWorld;
+  const byName = (a: OwnCharacterLite, b: OwnCharacterLite) => a.name.localeCompare(b.name, "de", { sensitivity: "base" });
+  const q = query.trim().toLowerCase();
+  const list = (q ? characters.filter((own) => own.name.toLowerCase().includes(q)) : characters.filter((own) => own.world_id === shownWorldId)).sort(byName);
+  const countIn = (worldId: string) => characters.filter((own) => own.world_id === worldId).length;
+  const worldTabs = [activeWorld, ...worlds.filter((w) => w.id !== activeWorld.id)];
 
   const panel = (
-    <div className="flex flex-col gap-1">
-      <h2 className="px-1 pb-1 text-sm font-medium text-muted">Du spielst</h2>
-      {groups.map(({ world: w, list }) => (
-        <section key={w.id} aria-label={w.name} className="flex flex-col gap-0.5">
-          {groups.length > 1 && <h3 className="mt-1 px-1.5 font-serif text-[15px] text-muted">{w.name}</h3>}
-          {list.map((own) => {
-            const active = own.id === c?.id;
-            return (
-              <div key={own.id} className={`flex items-center gap-1 rounded-2xl pr-1.5 ${active ? "bg-surface-2" : ""}`}>
-                <button
-                  type="button"
-                  disabled={busy}
-                  aria-pressed={active}
-                  onClick={() => (active ? close() : switchTo(own, close))}
-                  className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1.5 py-1.5 text-left transition hover:bg-surface-2 disabled:opacity-60"
-                >
-                  <span className={`shrink-0 rounded-full p-0.5 ring-2 ${active ? "ring-fg" : "ring-transparent"}`}>
-                    <CharacterAvatar name={own.name} avatarUrl={own.avatar_url} size={36} />
-                  </span>
-                  <span className="min-w-0 truncate text-[15px] font-medium text-fg">{own.name}</span>
-                </button>
-                {active && c && <PresenceControl characterId={c.id} online={!!c.presence_online} />}
-                <Link href={profileHref(own)} onClick={close} className="shrink-0 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-fg transition hover:bg-surface-2">
-                  Profil
-                </Link>
-              </div>
-            );
-          })}
-        </section>
-      ))}
+    <div className="flex flex-col gap-2">
+      <h2 className="px-1 text-sm font-medium text-muted">Du spielst</h2>
+      <div role="tablist" aria-label="Welten" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
+        {worldTabs.map((w) => {
+          const on = !q && w.id === shownWorldId;
+          return (
+            <button
+              key={w.id}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => {
+                setQuery("");
+                setViewWorld(w.id);
+              }}
+              className={`flex h-9 shrink-0 items-center gap-2 rounded-xl border pl-1 pr-3 text-sm font-medium transition ${
+                on ? "border-fg/40 bg-surface-2 text-fg" : "border-line bg-surface text-fg-soft hover:bg-surface-2 hover:text-fg"
+              }`}
+            >
+              <WorldCover name={w.name} coverUrl={w.cover_image_url} className="h-7 w-7 rounded-lg text-xs" />
+              {w.name}
+              {countIn(w.id) > 0 && <span className="text-xs font-normal text-muted">{countIn(w.id)}</span>}
+            </button>
+          );
+        })}
+      </div>
+      {characters.length > 8 && (
+        <label className="flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-3.5 text-muted focus-within:border-accent">
+          <Search className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Charakter suchen" aria-label="Charakter suchen" className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-muted" />
+        </label>
+      )}
+      {!q && shownWorldId !== activeWorld.id && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => startWorld(() => setActiveWorld(shownWorldId))}
+          className="flex h-10 items-center justify-center gap-2 rounded-xl bg-accent-strong px-3 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-60"
+        >
+          Zu {shownWorld.name} wechseln
+        </button>
+      )}
+      <div className="flex flex-col gap-0.5">
+        {list.map((own) => {
+          const active = own.id === c?.id;
+          return (
+            <div key={own.id} className={`flex items-center gap-1 rounded-2xl pr-1.5 ${active ? "bg-surface-2" : ""}`}>
+              <button
+                type="button"
+                disabled={busy}
+                aria-pressed={active}
+                onClick={() => (active ? close() : switchTo(own, close))}
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1.5 py-1.5 text-left transition hover:bg-surface-2 disabled:opacity-60"
+              >
+                <span className={`shrink-0 rounded-full p-0.5 ring-2 ${active ? "ring-fg" : "ring-transparent"}`}>
+                  <CharacterAvatar name={own.name} avatarUrl={own.avatar_url} size={36} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[15px] font-medium text-fg">{own.name}</span>
+                  {q && <span className="block truncate text-xs text-muted">{own.world_name}</span>}
+                </span>
+              </button>
+              {active && c && <PresenceControl characterId={c.id} online={!!c.presence_online} />}
+              <Link href={profileHref(own)} onClick={close} className="shrink-0 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-fg transition hover:bg-surface-2">
+                Profil
+              </Link>
+            </div>
+          );
+        })}
+        {list.length === 0 && <p className="px-2 py-3 text-sm text-muted">{q ? "Kein Charakter gefunden." : `Noch kein Charakter in ${shownWorld.name}.`}</p>}
+      </div>
       <div className="flex gap-1">
         <Link href="/characters/new" onClick={close} className="flex flex-1 items-center gap-2 rounded-xl px-2 py-2 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg">
           <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
@@ -112,28 +164,7 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
           Meine Charaktere
         </Link>
       </div>
-      <div className="my-1.5 h-px bg-line" />
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Welt wechseln">
-        {worlds.map((w) => {
-          const active = w.id === activeWorld.id;
-          return (
-            <button
-              key={w.id}
-              type="button"
-              disabled={busy}
-              aria-pressed={active}
-              onClick={() => (active ? close() : startWorld(() => setActiveWorld(w.id)))}
-              className={`flex h-9 items-center gap-2 rounded-xl border pl-1 pr-3 text-sm font-medium transition disabled:opacity-60 ${
-                active ? "border-fg/40 bg-surface-2 text-fg" : "border-line bg-surface text-fg-soft hover:bg-surface-2 hover:text-fg"
-              }`}
-            >
-              <WorldCover name={w.name} coverUrl={w.cover_image_url} className="h-7 w-7 rounded-lg text-xs" />
-              {w.name}
-            </button>
-          );
-        })}
-      </div>
-      <div className="mt-1 flex flex-wrap gap-x-1">
+      <div className="flex flex-wrap gap-x-1 border-t border-line pt-1.5">
         {canManage && (
           <Link href={`/worlds/${activeWorld.id}`} onClick={close} className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
             <Settings className="h-3.5 w-3.5" strokeWidth={2} />
@@ -168,6 +199,8 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
           aria-expanded={open}
           aria-label={label}
           data-tour="world"
+          data-world-id={activeWorld.id}
+          data-character-id={c?.id}
           className="flex w-full items-center gap-3 rounded-xl px-1 py-1 text-left transition hover:bg-surface-3"
         >
           <span className="relative shrink-0">
@@ -198,6 +231,8 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
         aria-expanded={open}
         aria-label={label}
         data-tour="world"
+          data-world-id={activeWorld.id}
+          data-character-id={c?.id}
         className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full py-1 pl-0.5 pr-2 text-left transition active:bg-surface-2"
       >
         <span className="relative shrink-0">

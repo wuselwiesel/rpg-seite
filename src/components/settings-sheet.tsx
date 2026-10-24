@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, CircleHelp, Compass, Search, Settings, UserPlus, Users, X, type LucideIcon } from "lucide-react";
@@ -9,6 +9,9 @@ import { InstallAppButton } from "./install-app-button";
 import { ThemeToggle } from "./theme-toggle";
 import { BUBBLE_CHANGE_EVENT, BUBBLE_ENABLED_KEY, isBubbleEnabled } from "./chat-bubble";
 import { startTour } from "@/lib/tour";
+import { setActiveWorld } from "@/app/worlds/actions";
+import { WorldCover } from "./world-cover";
+import type { World } from "@/lib/types";
 
 // Event, mit dem das ≡ im eigenen Profil (Handy) den Einstellungen-Bogen öffnet
 export const SETTINGS_OPEN_EVENT = "ww:settings-open";
@@ -67,6 +70,37 @@ export function BubbleSwitch({ className = "" }: { className?: string }) {
   );
 }
 
+// „Meine Welten“: ein Tipp wechselt die Welt (mit dem dort zuletzt gewählten Charakter)
+function WorldList({ worlds, activeWorldId, onNavigate }: { worlds: World[]; activeWorldId: string | null; onNavigate: () => void }) {
+  const [pending, start] = useTransition();
+  return (
+    <Section title="Meine Welten">
+      {worlds.map((w) => {
+        const on = w.id === activeWorldId;
+        return (
+          <button
+            key={w.id}
+            type="button"
+            disabled={pending}
+            aria-current={on ? "true" : undefined}
+            onClick={() => {
+              if (on) return onNavigate();
+              start(() => setActiveWorld(w.id));
+            }}
+            className={`${ROW} disabled:opacity-60 ${on ? "bg-surface-2 text-fg" : ""}`}
+          >
+            <WorldCover name={w.name} coverUrl={w.cover_image_url} className="h-[22px] w-[22px] rounded-md text-[10px]" />
+            <span className="min-w-0 flex-1 truncate">{w.name}</span>
+          </button>
+        );
+      })}
+      <Row href="/worlds" icon={Settings} onNavigate={onNavigate}>
+        Welten verwalten
+      </Row>
+    </Section>
+  );
+}
+
 // Inhalt des Einstellungen-Bogens; dieselbe Liste steht in der Redaktion unter „Du“
 export function SettingsList({
   appAdmin = false,
@@ -74,6 +108,8 @@ export function SettingsList({
   onNavigate = () => {},
   search = true,
   you = true,
+  worlds = [],
+  activeWorldId = null,
 }: {
   appAdmin?: boolean;
   altAccount?: string | null;
@@ -82,6 +118,9 @@ export function SettingsList({
   search?: boolean;
   // Abschnitt „Du“ (in der Redaktion steht er schon auf der Seite)
   you?: boolean;
+  // Eigene Welten zum schnellen Wechseln
+  worlds?: World[];
+  activeWorldId?: string | null;
 }) {
   return (
     <>
@@ -92,6 +131,7 @@ export function SettingsList({
         </Link>
       )}
       <div className="flex flex-col gap-4">
+        {worlds.length > 0 && <WorldList worlds={worlds} activeWorldId={activeWorldId} onNavigate={onNavigate} />}
         {you && (
           <Section title="Du">
             <Row href="/characters" icon={Users} onNavigate={onNavigate}>
@@ -139,7 +179,7 @@ export function SettingsList({
 }
 
 // Handy: Einstellungen und seltener Gebrauchtes (früher das ≡-Menü oben). Öffnet sich per Event.
-export function SettingsSheet({ appAdmin = false, altAccount = null }: { appAdmin?: boolean; altAccount?: string | null }) {
+export function SettingsSheet({ appAdmin = false, altAccount = null, worlds = [], activeWorldId = null }: { appAdmin?: boolean; altAccount?: string | null; worlds?: World[]; activeWorldId?: string | null }) {
   const pathname = usePathname();
   const [openAt, setOpenAt] = useState<string | null>(null);
   const open = openAt !== null && openAt === pathname;
@@ -186,7 +226,7 @@ export function SettingsSheet({ appAdmin = false, altAccount = null }: { appAdmi
             <X className="h-5 w-5" strokeWidth={2} />
           </button>
         </div>
-        <SettingsList appAdmin={appAdmin} altAccount={altAccount} onNavigate={close} />
+        <SettingsList appAdmin={appAdmin} altAccount={altAccount} worlds={worlds} activeWorldId={activeWorldId} onNavigate={close} />
       </div>
     </>
   );

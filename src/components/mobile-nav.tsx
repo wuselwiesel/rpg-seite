@@ -75,7 +75,7 @@ export function MobileNav({
         <div className="flex items-center gap-2 px-4 py-2 max-[359px]:px-2">
           {mode === "redaktion" ? (
             <Link href="/redaktion/du" className="min-w-0 flex-1">
-              <span className="block font-serif text-[22px] leading-none text-[#f4ead6]">Redaktion</span>
+              <span className="block font-serif text-[22px] leading-none text-fg">Redaktion</span>
               <span className="block truncate text-[11px] text-muted">als {accountName}</span>
             </Link>
           ) : (
@@ -127,7 +127,7 @@ export function MobileNav({
         ))}
       </nav>
 
-      <SettingsSheet appAdmin={appAdmin} altAccount={altAccount} />
+      <SettingsSheet appAdmin={appAdmin} altAccount={altAccount} worlds={worlds} activeWorldId={activeWorld.id} />
     </>
   );
 }

@@ -75,7 +75,7 @@ export const TOURS: Tour[] = [
       {
         title: "Einstellungen und Hilfe",
         text: "In den Einstellungen findest du Konto, Freund:innen, Meine Charaktere, die Chat-Blase und die Rundgänge: am Computer über ≡ in der Seitenleiste, am Handy über ≡ in deinem Profil oder in der Redaktion unter „Du“. Die Seite „Hilfe“ erklärt Würfeln, Attribute, Talente und Tastenkürzel ausführlicher.",
-        route: "/",
+        route: "@profile|/",
         match: { attr: "account-menu" },
       },
       {
@@ -111,7 +111,7 @@ export const TOURS: Tour[] = [
         title: "Suche",
         text: "Die Suche (am Handy auf der Seite „Welt“, am Computer in der Seitenleiste) findet Charaktere, Welten und Beiträge, auch über Hashtags. Tippe auf ein Ergebnis, um das Profil oder den Beitrag zu öffnen.",
         route: "/",
-        match: { any: [{ name: "Suche" }, { attr: "search" }, { attr: "account-menu" }] },
+        match: { any: [{ name: "Suche" }, { attr: "search" }, { name: "Welt" }] },
       },
       {
         title: "Profile und Folgen",
@@ -215,7 +215,7 @@ export const TOURS: Tour[] = [
       {
         title: "Würfelverlauf",
         text: "Alle Würfe deiner Welt stehen im Würfelverlauf, filterbar nach Charakter und Ergebnis. Mehr dazu in der Hilfe.",
-        route: "/story",
+        route: "/welt",
         match: { name: "Würfelverlauf" },
       },
       {
@@ -264,15 +264,15 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "Das Wiki",
-        text: "Hier sammelt ihr, was zu eurer Welt gehört: Orte, Wesen, Gruppen, Personen, Ereignisse und Mythen. Alle Mitspielenden können lesen, anlegen und bearbeiten.",
-        route: "/wiki",
+        text: "Das Wiki findest du unter „Welt“. Dort sammelt ihr, was zu eurer Welt gehört: Orte, Wesen, Gruppen, Personen, Ereignisse und Mythen. Alle Mitspielenden können lesen, anlegen und bearbeiten.",
+        route: "/welt",
         match: { name: "Wiki" },
       },
       {
         title: "Artikel anlegen",
-        text: "Wähle eine Art, zum Beispiel Ort oder Person, und schreibe den Artikel. Die Art bringt passende Felder und Gliederungen mit. Mit „Entwurf“ bleibt er zunächst nur für dich sichtbar.",
-        route: "/wiki",
-        match: { href: "/wiki/new" },
+        text: "Über „+“ und „Wiki-Seite“ legst du einen Artikel an. Wähle eine Art, zum Beispiel Ort oder Person, und schreibe ihn. Die Art bringt passende Felder und Gliederungen mit. Mit „Entwurf“ bleibt er zunächst nur für dich sichtbar.",
+        route: "/welt",
+        match: { attr: "compose" },
       },
       {
         title: "Verlinken",

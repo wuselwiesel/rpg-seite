@@ -4,6 +4,7 @@ import { Award, BarChart3, ChevronRight, History, NotebookPen, UserPlus, UserRou
 import { createClient } from "@/lib/supabase/server";
 import { isAppAdmin } from "@/lib/account-marks";
 import { getAltAccountLabel } from "@/lib/account-switch";
+import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { SettingsList } from "@/components/settings-sheet";
 
@@ -29,10 +30,12 @@ export default async function RedaktionYouPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, appAdmin, altAccount] = await Promise.all([
+  const [{ data: profile }, appAdmin, altAccount, worlds, activeWorld] = await Promise.all([
     supabase.from("profiles").select("username, nickname, avatar_url").eq("id", user.id).maybeSingle<{ username: string; nickname: string | null; avatar_url: string | null }>(),
     isAppAdmin(),
     getAltAccountLabel(),
+    getUserWorlds(user.id),
+    getActiveWorld(user.id),
   ]);
   const name = profile?.nickname || profile?.username || "";
 
@@ -74,7 +77,7 @@ export default async function RedaktionYouPage() {
       </nav>
 
       <div className="rounded-2xl border border-line bg-surface p-2 shadow-[0_1px_2px_rgba(28,37,64,.06)]">
-        <SettingsList appAdmin={appAdmin} altAccount={altAccount} search={false} you={false} />
+        <SettingsList appAdmin={appAdmin} altAccount={altAccount} search={false} you={false} worlds={worlds} activeWorldId={activeWorld?.id ?? null} />
       </div>
     </div>
   );

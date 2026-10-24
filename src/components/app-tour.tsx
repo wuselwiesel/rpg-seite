@@ -68,15 +68,17 @@ function hrefOf(selector: string, pattern?: RegExp): string | null {
 }
 
 // Was sich auf der aktuellen Seite an Zielen für die Platzhalter-Routen finden lässt. Das Profil des aktiven Charakters
-// leitet sich aus seinem ChaBo-Link ab: Andere Links auf Charaktere (Beiträge, Follower …) dürfen nicht dafür gelten.
+// kommt aus der Marke am Knopf „Wer und wo“ (sonst aus einem ChaBo-Link): Andere Links auf Charaktere (Beiträge, Follower …) dürfen nicht dafür gelten.
 function scanRefs(): Partial<Refs> {
   const found: Partial<Refs> = {};
   const thread = hrefOf('[data-tour="story-list"] a[href^="/story/"]');
   if (thread) found.thread = thread;
-  const chabo = hrefOf('a[href$="/chabo"]', /^\/characters\/[0-9a-f-]{36}\/chabo$/);
+  // Aktiver Charakter: Marke am Knopf „Wer und wo“ (Variante D); sonst ein ChaBo-Link auf der Seite
+  const activeId = document.querySelector<HTMLElement>("[data-character-id]")?.dataset.characterId;
+  const chabo = activeId && /^[0-9a-f-]{36}$/.test(activeId) ? `/characters/${activeId}?tab=chabo` : hrefOf('a[href$="/chabo"]', /^\/characters\/[0-9a-f-]{36}\/chabo$/);
   if (chabo) {
     found.chabo = chabo;
-    found.profile = chabo.replace(/\/chabo$/, "");
+    found.profile = chabo.replace(/(\/chabo|\?tab=chabo)$/, "");
   }
   const chat = hrefOf('a[href^="/chats/"]', /^\/chats\/[0-9a-f-]{36}/);
   if (chat) found.chat = chat;

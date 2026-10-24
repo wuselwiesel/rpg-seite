@@ -113,7 +113,7 @@ page(head("Erste Schritte","So fängst du an") + '''
 <div class="tile"><h3>3 · Charakter anlegen</h3><p>Unter „Meine Charaktere“ legst du eine Figur an: Name, Profilbild, Haus, Zitat und Status-Zeile, je nach Einstellungen der Welt. Gibt es eine Prüfung, genehmigt die Welt-Leitung zuerst.</p></div>
 <div class="tile"><h3>4 · Steckbrief füllen</h3><p>Im Steckbrief trägst du Angaben, Beziehungen und Notizen ein, dazu ein großes Bild deiner Figur.</p></div>
 <div class="tile"><h3>5 · Szene betreten</h3><p>Im Bereich „Story“ liegen die Szenen. Öffne eine und schreibe weiter, sobald du dran bist. Ob und wann du dran bist, steht oben in der Szene.</p></div>
-<div class="tile"><h3>6 · Drei Bereiche</h3><p>Oben wechselst du zwischen <b>Ingame</b> (Feed, Steckbrief, Chats, Profil), <b>Story</b> (Szenen, Wiki, Charaktere) und <b>Redaktion</b> (Feed, Chat, Tickets, Verlauf, Profil).</p></div>
+<div class="tile"><h3>6 · Drei Bereiche</h3><p>Oben wechselst du zwischen <b>Ingame</b> (Feed) und <b>Story</b> (Szenen); Welt, Chats und dein Charakter stehen in beiden gleich, „+“ legt alles Neue an. Die <b>Redaktion</b> ist euer Raum außerhalb der Rolle: Neuigkeiten, Chat, Feedback und „Du“. Ein Tipp auf deinen Charakter oben wechselt Charakter und Welt.</p></div>
 </div>
 <div class="note"><b>Am Handy:</b> Die Seite läuft im Browser und lässt sich zum Startbildschirm hinzufügen. Dann verhält sie sich wie eine App. Die untere Leiste zeigt Symbol und Beschriftung.</div>
 <div class="note"><b>Hilfe jederzeit:</b> Unter „Hilfe“ findest du alles mit einem Suchfeld. Rundgänge erklären die wichtigsten Seiten Schritt für Schritt.</div>''')
@@ -254,7 +254,7 @@ page(head("Besetzung","Die Rollenliste einer Welt","Für Welten, die eine Serie 
 </div></div>''')
 
 # 19 Tickets
-page(head("Tickets","Fehler melden, Wünsche äußern, Fragen stellen","Unter Redaktion → Tickets liegt ein Postfach wie bei einer E-Mail. Die Liste links, der Verlauf eines Tickets rechts.") + f'''
+page(head("Tickets","Fehler melden, Wünsche äußern, Fragen stellen","Unter Redaktion → Feedback liegt ein Postfach wie bei einer E-Mail. Die Liste links, der Verlauf eines Tickets rechts.") + f'''
 <div class="cols" style="grid-template-columns:1fr 1.5fr">
 <div>{img("tickets")}<div class="cap">Deine Tickets nach Stand sortiert</div></div>
 <div>{img("ticket")}<div class="cap">Der Verlauf eines Tickets mit Antwortfeld</div></div></div>
@@ -277,7 +277,7 @@ page(head("Mitmachen","Besetzung, Chats, Welten, Zugang") + '''
 <div class="tile"><h3>📋 Besetzung (Rollenliste)</h3><p>Für Serien-Welten: Siehe Seite 12: Rollen mit Stand Frei, Reserviert, Vergeben oder NPC. Du fragst an, die Welt-Leitung sagt zu, dann legst du mit „Charakter anlegen“ die Figur an.</p></div>
 <div class="tile"><h3>💬 Chats</h3><p>Zu zweit oder in Gruppen, in der Welt oder in der Redaktion. Das Menü „…“ bietet <b>Archivieren</b> und <b>Chat löschen</b>. Eine neue Nachricht holt einen archivierten Chat zurück.</p></div>
 <div class="tile"><h3>📰 Redaktion</h3><p>Dein Konto-Bereich: Feed für Beiträge, Fotos, Videos und Umfragen, mit Erwähnungen, Reaktionen und Badges zum Verleihen. Beiträge lassen sich nachträglich bearbeiten.</p></div>
-<div class="tile"><h3>🎫 Tickets</h3><p>Fehler, Wünsche oder Fragen? Siehe Seite 13: Postfach unter „Redaktion → Tickets“, mit Nummer, Verlauf und Screenshots.</p></div>
+<div class="tile"><h3>🎫 Tickets</h3><p>Fehler, Wünsche oder Fragen? Siehe Seite 13: Postfach unter „Redaktion → Feedback“, mit Nummer, Verlauf und Screenshots.</p></div>
 <div class="tile"><h3>🌍 Eigene Welten</h3><p>Du gründest eine Welt, lädst per Einladungslink ein, vergibst Rollen und stellst die Regeln ein. Verwalten: Welt · Übersicht · Charaktere · Einstellungen.</p></div>
 <div class="tile"><h3>⚙️ Regeln pro Welt</h3><p>Einzeln ein- und ausschaltbar: Haus/Familie, Zitat, Status-Zeile, Wesen, Besetzung, „Neue Charaktere prüfen“, Meldungen je Ereignis.</p></div>
 </div>

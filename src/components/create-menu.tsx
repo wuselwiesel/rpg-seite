@@ -90,7 +90,7 @@ export function CreateMenu({ variant, characters, activeId }: { variant: "mobile
       <h2 className="text-sm font-medium text-muted">Erstellen</h2>
       {!inRed && characters.length > 1 && (
         <div role="group" aria-label="Erstellen als" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]">
-          {characters.map((c) => {
+          {[...characters].sort((a, b) => a.name.localeCompare(b.name, "de", { sensitivity: "base" })).map((c) => {
             const on = c.id === activeId;
             return (
               <button

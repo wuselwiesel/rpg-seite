@@ -146,7 +146,7 @@ export async function Sidebar() {
               initialUnreadCount={initialUnreadCount}
             />
             <ThemeToggle />
-            <SidebarMenu appAdmin={appAdmin} altAccount={altAccount} />
+            <SidebarMenu appAdmin={appAdmin} altAccount={altAccount} worlds={worlds} activeWorldId={activeWorld.id} />
           </div>
         </div>
       <SidebarWhoCard worlds={worlds} activeWorld={activeWorld} canManage={canManage} activeCharacter={activeCharacter} characters={allCharacters} accountName={accountName} />
