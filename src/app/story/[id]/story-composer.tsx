@@ -42,7 +42,7 @@ export function StoryComposer({
   calendar: WikiCalendar;
   locations: string[];
   sceneLocation: string | null;
-  // Eigenes Konto (für den Chat dieser Szene) und ob der Reiter „Chat der Szene“ gleich offen sein soll (Link aus einer Benachrichtigung)
+  // Eigenes Konto (für den Chat dieser Szene) und ob der Reiter „Chat“ gleich offen sein soll (Link aus einer Benachrichtigung)
   userId: string;
   // Mitglieder der Welt (für „… ist online“ im Schreibbereich)
   worldMembers: { id: string; name: string; avatarUrl: string | null }[];
@@ -240,7 +240,7 @@ export function StoryComposer({
               mode === "chat" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
-            Chat der Szene
+            Chat
             {chatUnread > 0 && mode !== "chat" && (
               <span aria-label={`${chatUnread} neue Nachrichten`} className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-accent-strong" />
             )}

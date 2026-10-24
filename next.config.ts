@@ -13,9 +13,9 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet, noimageindex" }] }];
   },
   experimental: {
-    // Besuchte Seiten bleiben kurz im Client-Cache, damit Vor/Zurück und Tab-Wechsel
-    // sofort reagieren (Mutationen invalidieren den Cache über revalidatePath).
-    staleTimes: { dynamic: 30, static: 180 },
+    // Dynamische Seiten nicht im Client-Cache halten: sonst zeigte ein Seitenwechsel kurz nach Weltwechsel oder Speichern
+    // noch den alten Stand (Feed der vorherigen Welt, alte Wiki-Startseite). Statische Teile dürfen bleiben.
+    staleTimes: { dynamic: 0, static: 180 },
   },
 };
 

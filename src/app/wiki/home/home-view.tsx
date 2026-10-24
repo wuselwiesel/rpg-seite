@@ -125,7 +125,8 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
     switch (b.type) {
       case "hero": {
         const title = b.title || world.name;
-        const ratio = { s: "aspect-[16/5]", m: "aspect-[16/7]", l: "aspect-[16/10]" }[b.size];
+        // Flach deutlich flacher als das zugeschnittene Titelbild (3:1), sonst sieht man keinen Unterschied
+        const ratio = { s: "aspect-[4/1]", m: "aspect-[16/7]", l: "aspect-[16/10]" }[b.size];
         const pad = { s: "p-4 @xl:p-6", m: "p-5 @xl:p-8", l: "p-6 @xl:p-12" }[b.size];
         const center = b.align === "center" ? "text-center [&_p]:mx-auto" : "";
         return (

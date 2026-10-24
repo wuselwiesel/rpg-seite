@@ -72,7 +72,9 @@ export function AvatarUpload({
   // asIcon: Welt-Bild ohne Hintergrund (PNG/SVG/WebP/GIF unverändert, Dateiname „icon-…“); sonst wie bisher
   async function upload(original: File, asIcon = false) {
     const keepAsIs = variant === "icon" || asIcon;
-    const file = keepAsIs ? original : await resizeImage(original, 1200);
+    // Titelbilder brauchen mehr Pixel (große Bildschirme, Retina), sonst wirken sie nach dem Speichern verpixelt
+    const wide = variant === "cover" || variant === "world";
+    const file = keepAsIs ? original : await resizeImage(original, wide ? 2400 : 1200, wide ? 0.9 : 0.85);
     const maxSize = keepAsIs ? 2 * 1024 * 1024 : MAX_SIZE;
 
     if (keepAsIs && !/^image\/(png|svg\+xml|webp|gif)$/.test(file.type)) {
