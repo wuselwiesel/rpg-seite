@@ -10,7 +10,12 @@ describe("navItems", () => {
     expect(ids(navItems("story", lyra))).toEqual(["story", "welt", "chats", "character"]);
   });
   it("Redaktion hat eine eigene Leiste", () => {
-    expect(navItems("redaktion", lyra).map((x) => x.label)).toEqual(["Neuigkeiten", "Chat", "Feedback", "Du"]);
+    expect(navItems("redaktion", lyra).map((x) => x.label)).toEqual(["Neuigkeiten", "Feedback", "Chat", "Du"]);
+  });
+  it("der Chat steht in allen Modi an dritter Stelle", () => {
+    for (const mode of ["ingame", "story", "redaktion"] as const) {
+      expect(navItems(mode, lyra).findIndex((x) => x.id === "chat" || x.id === "chats")).toBe(2);
+    }
   });
   it("der Charakter-Eintrag zeigt den Kurznamen und führt zum Profil", () => {
     const c = navItems("ingame", lyra).at(-1)!;
