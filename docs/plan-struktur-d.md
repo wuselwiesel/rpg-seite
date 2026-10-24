@@ -1,4 +1,4 @@
-# Plan: Neue App-Struktur „Variante D“ (Stand 24. Oktober 2026) – gebaut, lokal, noch nicht gepusht
+# Plan: Neue App-Struktur „Variante D“ (Stand 24. Oktober 2026) – gebaut und gepusht (Commit 7047032)
 
 Zum Weiterarbeiten nach einer Unterbrechung: Diese Datei zuerst lesen, dann `git log --oneline -8` und `git status`, dann beim ersten Schritt mit `[ ]` weitermachen. Nach jedem Schritt hier `[x]` setzen und kurz notieren, was abweicht.
 

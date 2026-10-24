@@ -1,7 +1,7 @@
 # Übergabe Wortwinkel (rpg-seite) – Stand 23. Oktober 2026 (letzter Commit zum Zeitpunkt der Aktualisierung: `940f377` „Ungelesen: eine eigene Antwort macht die Nachrichten davor gelesen”, PR 118; Vercel pausiert, siehe „Stand 23. Oktober”; Anleitung und Werbematerial siehe Abschnitt „Stand 20. Oktober – Anleitung”)
 
-## Stand 24. Oktober 2026 – Neue Struktur „Variante D“ (lokal, noch nicht committet/gepusht) – zuerst lesen
-Plan und Entscheidungen: `docs/plan-struktur-d.md`; Vorschau (Canvas, vierte Reihe): https://claude.ai/artifact/1qLMXJnthK3psLFkppnWj3. Die Nutzerin entscheidet, ob und wann gepusht wird.
+## Stand 24. Oktober 2026 – Neue Struktur „Variante D“ (Commit 7047032, gepusht) – zuerst lesen
+Plan und Entscheidungen: `docs/plan-struktur-d.md`; Vorschau (Canvas, vierte Reihe): https://claude.ai/artifact/1qLMXJnthK3psLFkppnWj3.
 - **Navigation aus einer Quelle:** `src/lib/nav-model.ts` (`navItems(mode, ctx)`, `isNavActive`, `WORLD_PATHS`, `shortName`, Tests). Handy-Leiste (`mobile-nav.tsx`) und Seitenleiste (`sidebar-nav.tsx`) bauen daraus. Ingame: Feed · Welt · + · Chats · Charakter; Story: Story · Welt · + · Chats · Charakter; Redaktion: Neuigkeiten · Chat · + · Feedback · Du. Am Computer zusätzlich „Notizen“ (öffnet das Buch-Fenster).
 - **Modus-Regeln** (`lib/app-mode.ts`): `/welt`, `/wiki…`, `/characters/relationships`, `/story/wuerfe`, `/story/charaktere` und der ChaBo sind jetzt **neutral** (übernehmen den gemerkten Modus Ingame/Story). E2E `mode-memory` angepasst.
 - **Welt-Seite** `/welt` (`app/welt/page.tsx`, `world-tiles.tsx`): Suche + Kacheln Wiki, Charaktere (`/story/charaktere`), Beziehungen, Karten, Zeitleiste, Kalender, Würfelverlauf (nur mit Würfeln), Mitglieder (Bogen über `MobileOnline` mit neuem `trigger`), Welt-Chat (Konto-Chat `kind = world`, steht auch in Redaktion › Chat), Welt verwalten (nur Besitzer:in/Admin).
