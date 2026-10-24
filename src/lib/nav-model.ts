@@ -46,8 +46,9 @@ export function navItems(mode: AppMode, ctx: NavContext): NavItem[] {
   if (mode === "redaktion") {
     return [
       { id: "news", label: "Neuigkeiten", href: "/redaktion", icon: "news", exact: true },
-      { id: "chat", label: "Chat", href: "/redaktion/chat", icon: "chat" },
       { id: "feedback", label: "Feedback", href: "/redaktion/tickets", icon: "feedback", badge: "tickets" },
+      // Chat steht an derselben (dritten) Stelle wie in den anderen Modi
+      { id: "chat", label: "Chat", href: "/redaktion/chat", icon: "chat" },
       { id: "du", label: "Du", href: "/redaktion/du", icon: "du", also: ["/redaktion/profil", "/redaktion/verlauf"] },
     ];
   }
