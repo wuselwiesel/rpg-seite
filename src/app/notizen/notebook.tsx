@@ -1,21 +1,55 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { NotebookPen, X } from "lucide-react";
+import { Layers, NotebookPen, X } from "lucide-react";
 import { loadNoteBundle, loadNotebook, type NoteBundle, type NotebookData } from "./notebook-actions";
 import { NotebookNavContext, useNotebookNav, type NotebookNav, type NotebookRequest, type NotebookView } from "./notebook-nav";
 import { NotesProvider, useNotesStore } from "./notes-store";
 import { NotesList } from "./notes-list";
 import { FOCUS_EVENT, NotesShortcuts } from "./notes-shortcuts";
-import { OpenTasks, type TaskGroup } from "./faeden/open-tasks";
 import { TemplatesView } from "./vorlagen/templates-view";
 import { NoteEditor } from "./(bear)/[id]/note-editor";
-import { noteTitle, openTasks, setTaskInHtml, type NoteView } from "@/lib/notes";
+import { type NoteView } from "@/lib/notes";
 
 // Karteitabs: Farbe je Reiter (Karton, immer dunkle Schrift)
-const TAB_COLOR: Record<string, string> = { all: "#e8d7a3", pinned: "#f1c7bb", threads: "#c9dcc0", templates: "#c8d9ea", archive: "#d9cdea", trash: "#e3cfb3" };
+const TAB_COLOR: Record<string, string> = { all: "#e8d7a3", pinned: "#f1c7bb", templates: "#c8d9ea", archive: "#d9cdea", trash: "#e3cfb3" };
 
-// Das Notizbuch als aufgeschlagenes Buch im Fenster: links Liste (oder Offene Fäden / Vorlagen), rechts die Notiz, Karteitabs am Rand.
+// Papiersorten des Buchs (Farben und Linien in globals.css, [data-nb-paper]); „auto“ folgt Hell/Dunkel
+const PAPERS = [
+  { id: "auto", label: "Automatisch" },
+  { id: "elfenbein", label: "Elfenbein" },
+  { id: "liniert", label: "Liniert" },
+  { id: "kariert", label: "Kariert" },
+  { id: "pergament", label: "Pergament" },
+  { id: "graphit", label: "Graphit" },
+  { id: "tinte", label: "Tinte" },
+] as const;
+type Paper = (typeof PAPERS)[number]["id"];
+const PAPER_KEY = "wortwinkel:nb-paper";
+
+// Gewähltes Papier, gemerkt in diesem Browser
+function usePaper(): [Paper, (p: Paper) => void] {
+  // Das Buch erscheint erst nach einem Klick (nie beim Server-Rendern), darum direkt aus dem Speicher lesen
+  const [paper, setPaper] = useState<Paper>(() => {
+    try {
+      const saved = localStorage.getItem(PAPER_KEY);
+      return saved && PAPERS.some((p) => p.id === saved) ? (saved as Paper) : "auto";
+    } catch {
+      return "auto";
+    }
+  });
+  const choose = (p: Paper) => {
+    setPaper(p);
+    try {
+      localStorage.setItem(PAPER_KEY, p);
+    } catch {
+      /* nur für diese Sitzung */
+    }
+  };
+  return [paper, choose];
+}
+
+// Das Notizbuch als aufgeschlagenes Buch im Fenster: links Liste (oder Vorlagen), rechts die Notiz, Karteitabs am Rand.
 export function Notebook({ request, onClose }: { request: NotebookRequest; onClose: () => void }) {
   const [data, setData] = useState<NotebookData | null>(null);
   const [failed, setFailed] = useState(false);
@@ -31,6 +65,7 @@ export function Notebook({ request, onClose }: { request: NotebookRequest; onClo
   }
   const [bundle, setBundle] = useState<NoteBundle | null>(null);
   const [focus, setFocus] = useState(false);
+  const [paper, setPaper] = usePaper();
   const rootRef = useRef<HTMLDivElement>(null);
   const focusRef = useRef(false);
   const dataRef = useRef<NotebookData | null>(null);
@@ -147,12 +182,12 @@ export function Notebook({ request, onClose }: { request: NotebookRequest; onClo
           if (downOnBackdrop.current && e.target === e.currentTarget) onClose();
         }}
       >
-        <div ref={rootRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Notizbuch" className="nb-book" data-note={activeId ? "" : undefined}>
+        <div ref={rootRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Notizbuch" className="nb-book" data-nb-paper={paper} data-note={activeId ? "" : undefined}>
           {data ? (
             <NotesProvider notes={data.notes} folders={data.folders} worlds={data.worlds} activeWorldId={data.activeWorldId} openCount={data.openCount} onScope={() => setView("notes")}>
               <NotesShortcuts />
-              <Frame tabs={<Tabs templateCount={data.templates.length} />} onClose={onClose}>
-                <section className="nb-page nb-left" aria-label={view === "threads" ? "Offene Fäden" : view === "templates" ? "Vorlagen" : "Notizen"}>
+              <Frame tabs={<Tabs templateCount={data.templates.length} />} onClose={onClose} paper={paper} onPaper={setPaper}>
+                <section className="nb-page nb-left" aria-label={view === "templates" ? "Vorlagen" : "Notizen"}>
                   <LeftPage templates={data.templates} templatesKey={dataVersion} />
                 </section>
                 <section className={focus ? "fixed inset-0 z-[80] block overflow-y-auto bg-app" : "nb-page nb-right"} aria-label="Notiz">
@@ -163,7 +198,7 @@ export function Notebook({ request, onClose }: { request: NotebookRequest; onClo
               </Frame>
             </NotesProvider>
           ) : (
-            <Frame tabs={null} onClose={onClose}>
+            <Frame tabs={null} onClose={onClose} paper={paper} onPaper={setPaper}>
               <section className="nb-page nb-left">
                 <p role={failed ? "alert" : "status"} className="p-6 text-sm text-muted">
                   {failed ? "Das Notizbuch konnte nicht geladen werden." : "Lädt …"}
@@ -178,11 +213,12 @@ export function Notebook({ request, onClose }: { request: NotebookRequest; onClo
   );
 }
 
-// Einband, Ringe und Schließen-Knopf um die beiden Seiten
-function Frame({ tabs, onClose, children }: { tabs: React.ReactNode; onClose: () => void; children: React.ReactNode }) {
+// Einband, Ringe, Papierwahl und Schließen-Knopf um die beiden Seiten
+function Frame({ tabs, onClose, paper, onPaper, children }: { tabs: React.ReactNode; onClose: () => void; paper: Paper; onPaper: (p: Paper) => void; children: React.ReactNode }) {
   return (
     <>
       {tabs}
+      <PaperPicker paper={paper} onPaper={onPaper} />
       <button type="button" onClick={onClose} aria-label="Notizbuch schließen" title="Schließen (Esc)" className="nb-close">
         <X className="h-4 w-4" strokeWidth={2.25} />
       </button>
@@ -202,14 +238,52 @@ function Frame({ tabs, onClose, children }: { tabs: React.ReactNode; onClose: ()
   );
 }
 
+function PaperPicker({ paper, onPaper }: { paper: Paper; onPaper: (p: Paper) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+  return (
+    <div ref={ref}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label="Papier wählen" title="Papier" className="nb-paper-btn">
+        <Layers className="h-4 w-4" strokeWidth={2.25} />
+      </button>
+      {open && (
+        // role="dialog": Esc schließt erst die Auswahl, nicht das Buch
+        <div role="dialog" aria-label="Papier" className="nb-paper-menu">
+          <div role="radiogroup" aria-label="Papier" className="nb-paper-grid">
+            {PAPERS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                role="radio"
+                aria-checked={paper === p.id}
+                onClick={() => onPaper(p.id)}
+                onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+                className="nb-swatch"
+              >
+                <span className="nb-swatch-chip" data-nb-paper={p.id} />
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Tabs({ templateCount }: { templateCount: number }) {
   const s = useNotesStore();
   const nav = useNotebookNav();
-  const active = nav.view === "threads" ? "threads" : nav.view === "templates" ? "templates" : s.scope === "pinned" ? "pinned" : s.scope === "archive" ? "archive" : s.scope === "trash" ? "trash" : "all";
+  const active = nav.view === "templates" ? "templates" : s.scope === "pinned" ? "pinned" : s.scope === "archive" ? "archive" : s.scope === "trash" ? "trash" : "all";
   const tabs: { id: string; label: string; count: number | null; go: () => void }[] = [
     { id: "all", label: "Alle", count: s.live.length, go: () => s.setScope("all") },
     { id: "pinned", label: "Angeheftet", count: s.pinnedCount, go: () => s.setScope("pinned") },
-    { id: "threads", label: "Offene Fäden", count: s.openTaskCount, go: () => nav.setView("threads") },
     { id: "templates", label: "Vorlagen", count: templateCount, go: () => nav.setView("templates") },
     { id: "archive", label: "Archiv", count: s.archived.length, go: () => s.setScope("archive") },
     { id: "trash", label: "Papierkorb", count: s.trashed.length, go: () => s.setScope("trash") },
@@ -240,7 +314,6 @@ function Tabs({ templateCount }: { templateCount: number }) {
 
 function LeftPage({ templates, templatesKey }: { templates: NoteView[]; templatesKey: number }) {
   const nav = useNotebookNav();
-  if (nav.view === "threads") return <ThreadsView />;
   if (nav.view === "templates") {
     return (
       <div className="nb-scroll px-3 py-4">
@@ -252,34 +325,6 @@ function LeftPage({ templates, templatesKey }: { templates: NoteView[]; template
   return (
     <div data-nb-list className="nb-scroll min-w-0">
       <NotesList />
-    </div>
-  );
-}
-
-// Offene Aufgaben aller Notizen; die Liste folgt dem Text der Notizen, auch wenn man sie rechts abhakt
-function ThreadsView() {
-  const s = useNotesStore();
-  const nav = useNotebookNav();
-  const groups = useMemo<TaskGroup[]>(
-    () =>
-      s.live
-        .map((n) => ({ noteId: n.id, title: noteTitle(n), links: n.links, tasks: openTasks(n.body).map((t) => ({ index: t.index, text: t.text })) }))
-        .filter((g) => g.tasks.length > 0),
-    [s.live],
-  );
-  return (
-    <div className="nb-scroll px-3 py-4">
-      <h1 className="mb-4 font-serif text-3xl text-fg">Offene Fäden</h1>
-      <OpenTasks
-        groups={groups}
-        onChecked={(noteId, index) => {
-          const n = s.notes.find((x) => x.id === noteId);
-          const next = n ? setTaskInHtml(n.body, index, true) : null;
-          if (next !== null) s.patchNote(noteId, { body: next });
-          // Ist genau diese Notiz rechts offen, bekommt der Editor den neuen Haken (sonst überschreibt sein Autospeichern ihn)
-          if (nav.activeId === noteId) nav.refreshNote();
-        }}
-      />
     </div>
   );
 }

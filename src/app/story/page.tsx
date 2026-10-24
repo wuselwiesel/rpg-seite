@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, ChevronLeft, ChevronRight, ArrowDownUp, FolderTree, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, FolderTree, LayoutList, MapPin, Rows3, Skull, SlidersHorizontal } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -114,8 +114,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
     storyQuery = storyQuery.in("folder_id", [...descendantIds(folderList, ordner)]);
   }
   const manualOrder = ordner !== "" && ordner !== "none" && folderList.some((f) => f.id === ordner);
-  // Reihenfolge der Liste: „Nach Ordnung“ (Standard, sobald die Welt Ordner hat) oder „Neueste zuerst“
-  const byOrder = !manualOrder && (params.sortierung === "ordnung" || (params.sortierung !== "neueste" && folderList.length > 0));
+  // Reihenfolge der Liste: immer „Nach Ordnung“ (Ordner in Baumreihenfolge, darin von Hand geordnet)
+  const byOrder = !manualOrder;
   storyQuery = manualOrder
     ? storyQuery.order("pinned", { ascending: false }).order("sort_order", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false })
     : storyQuery.order("pinned", { ascending: false }).order("created_at", { ascending: false });
@@ -199,15 +199,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   };
   const folderNameOf = (post: StoryPost) => folderOf(post)?.name ?? null;
   const filterCount = [arc, ort, ordner, onlyMyTurn, showArchived, bookmarkedOnly, q, tag, from || to].filter(Boolean).length;
-  function sortHref(mode: "ordnung" | "neueste") {
-    const next = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (key === "sortierung" || key === "seite" || value === undefined) continue;
-      for (const v of Array.isArray(value) ? value : [value]) next.append(key, v);
-    }
-    next.set("sortierung", mode);
-    return `/story?${next.toString()}`;
-  }
   function viewHref(view: "karten" | "kompakt") {
     const next = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
@@ -277,22 +268,6 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
             <LayoutList className="h-4 w-4" strokeWidth={2} />
           </Link>
         </div>
-      {!manualOrder && (
-        <div className="mb-3 flex w-fit rounded-full border border-line bg-surface p-0.5 text-sm" role="group" aria-label="Reihenfolge">
-          {([["ordnung", "Nach Ordnung", FolderTree], ["neueste", "Neueste zuerst", ArrowDownUp]] as const).map(([mode, label, Icon]) => (
-            <Link
-              key={mode}
-              href={sortHref(mode)}
-              replace
-              aria-current={(mode === "ordnung") === byOrder ? "true" : undefined}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 transition ${(mode === "ordnung") === byOrder ? "bg-accent-strong text-on-accent-strong" : "text-fg-soft hover:text-fg"}`}
-            >
-              <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-              {label}
-            </Link>
-          ))}
-        </div>
-      )}
       <details className="group" open={filterCount > 0}>
         <summary data-tour="story-filter" className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="h-4 w-4" strokeWidth={2} />

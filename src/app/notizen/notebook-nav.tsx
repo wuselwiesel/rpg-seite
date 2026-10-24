@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 
 // Welche Seite des Notizbuchs links steht: die Liste, die offenen Fäden oder die Vorlagen
-export type NotebookView = "notes" | "threads" | "templates";
+export type NotebookView = "notes" | "templates";
 
 // Was das Notizbuch öffnen soll (aus dem Menü, einem Notiz-Link oder einer Notiz-Adresse)
 // view null: Ansicht beibehalten

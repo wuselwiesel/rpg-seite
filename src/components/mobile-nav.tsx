@@ -127,7 +127,7 @@ export function MobileNav({
         ))}
       </nav>
 
-      <SettingsSheet appAdmin={appAdmin} altAccount={altAccount} worlds={worlds} activeWorldId={activeWorld.id} />
+      <SettingsSheet appAdmin={appAdmin} altAccount={altAccount} />
     </>
   );
 }

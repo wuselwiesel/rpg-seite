@@ -22,13 +22,13 @@ export function useNotebook(): Ctx {
   return useContext(NotebookContext);
 }
 
-// Adressen des Notizbuchs: /notizen, /notizen/faeden, /notizen/vorlagen, /notizen/<id>
+// Adressen des Notizbuchs: /notizen, /notizen/vorlagen, /notizen/<id> (alte Links auf /notizen/faeden öffnen die Liste)
 const NOTEBOOK_HREF = /^\/notizen(?:\/(faeden|vorlagen|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}))?\/?(?:[?#].*)?$/;
 
 export function parseNotebookHref(href: string): OpenOptions | null {
   const m = NOTEBOOK_HREF.exec(href);
   if (!m) return null;
-  if (m[1] === "faeden") return { view: "threads" };
+  if (m[1] === "faeden") return { view: "notes" };
   if (m[1] === "vorlagen") return { view: "templates" };
   return { noteId: m[1] ?? null };
 }

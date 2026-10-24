@@ -1381,10 +1381,6 @@ html[data-menu-open] .chat-bubble-root {
 .note-surface[data-size="l"] .note-view { font-size: 1.15rem; line-height: 1.7; }
 .note-surface[data-size="xl"] .ProseMirror,
 .note-surface[data-size="xl"] .note-view { font-size: 1.35rem; line-height: 1.7; }
-.note-surface[data-paper="sepia"] .ProseMirror,
-.note-surface[data-paper="sepia"] .note-view { background: #f4ecd8; color: #433422; }
-.note-surface[data-paper="dark"] .ProseMirror,
-.note-surface[data-paper="dark"] .note-view { background: #26262b; color: #e8e6ee; }
 
 /* ---------- Notizbuch-Fenster (aufgeschlagenes Buch mit Ringen und Karteitabs) ---------- */
 .nb-backdrop {
@@ -1426,18 +1422,104 @@ html[data-menu-open] .chat-bubble-root {
   color: var(--fg);
   animation: nb-rise 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
-.dark .nb-book {
-  --app: #27231d;
-  --surface: #2f2a23;
-  --surface-2: #3a342b;
-  --surface-3: #403828;
-  --line: #4b4335;
-  --fg: #f1e9d9;
-  --fg-soft: #d9cfbc;
-  --muted: #b5a98f;
-  --nb-edge-a: #3b352b;
-  --nb-edge-b: #1d1a15;
+/* Papiersorten (Knopf „Papier“ oben im Buch, gemerkt je Gerät). „auto“ = Elfenbein hell, Graphit dunkel.
+   Gelten für das Buch und für die Papierproben in der Auswahl. */
+[data-nb-paper="elfenbein"],
+[data-nb-paper="auto"] {
+  --app: #fbf6ea;
+  --surface: #fffcf3;
+  --surface-2: #f0e7d1;
+  --surface-3: #f6ead0;
+  --line: #dccfb2;
+  --fg: #2e2923;
+  --fg-soft: #4d463c;
+  --muted: #6b6254;
+  --nb-edge-a: #ebe1c9;
+  --nb-edge-b: #cdbf9f;
+  --nb-pattern: none;
+}
+[data-nb-paper="liniert"] {
+  --app: #fdfcf7;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --surface-3: #e6ebf2;
+  --line: #d6dde7;
+  --fg: #263040;
+  --fg-soft: #3f4a5c;
+  --muted: #687386;
+  --nb-edge-a: #eceee9;
+  --nb-edge-b: #cfd3cc;
+  --nb-pattern:
+    linear-gradient(to right, transparent 30px, rgb(214 120 120 / 0.45) 30px 31px, transparent 31px),
+    repeating-linear-gradient(to bottom, transparent 0 25px, rgb(140 170 205 / 0.32) 25px 26px);
+}
+[data-nb-paper="kariert"] {
+  --app: #fbfaf5;
+  --surface: #ffffff;
+  --surface-2: #eff0ec;
+  --surface-3: #e8eae4;
+  --line: #d8dbd3;
+  --fg: #2a2c30;
+  --fg-soft: #43464d;
+  --muted: #6a6d74;
+  --nb-edge-a: #ecebe5;
+  --nb-edge-b: #cfcec6;
+  --nb-pattern:
+    repeating-linear-gradient(to bottom, rgb(120 140 170 / 0.18) 0 1px, transparent 1px 20px),
+    repeating-linear-gradient(to right, rgb(120 140 170 / 0.18) 0 1px, transparent 1px 20px);
+}
+[data-nb-paper="pergament"] {
+  --app: #efe0bd;
+  --surface: #f6ead0;
+  --surface-2: #e5d3aa;
+  --surface-3: #e9d8b0;
+  --line: #ccb68a;
+  --fg: #3a2a18;
+  --fg-soft: #54402a;
+  --muted: #7a6446;
+  --nb-edge-a: #e2cfa4;
+  --nb-edge-b: #c3a978;
+  --nb-pattern:
+    radial-gradient(ellipse at 12% 8%, rgb(160 110 50 / 0.16), transparent 45%),
+    radial-gradient(ellipse at 90% 95%, rgb(150 100 40 / 0.18), transparent 50%),
+    radial-gradient(ellipse at 60% 40%, rgb(255 250 230 / 0.35), transparent 60%);
+}
+[data-nb-paper="graphit"],
+.dark [data-nb-paper="auto"] {
+  --app: #26272b;
+  --surface: #2e2f34;
+  --surface-2: #36383e;
+  --surface-3: #3c3e45;
+  --line: #45474e;
+  --fg: #ece8df;
+  --fg-soft: #d3cfc6;
+  --muted: #a5a29b;
+  --nb-edge-a: #34363b;
+  --nb-edge-b: #18191c;
   --nb-shade: rgb(0 0 0 / 0.5);
+  --nb-pattern: none;
+  color-scheme: dark;
+}
+[data-nb-paper="tinte"] {
+  --app: #1c2232;
+  --surface: #232a3d;
+  --surface-2: #2b3347;
+  --surface-3: #313a50;
+  --line: #3a4359;
+  --fg: #ebe6da;
+  --fg-soft: #cfcabd;
+  --muted: #a1a6b5;
+  --nb-edge-a: #283048;
+  --nb-edge-b: #12161f;
+  --nb-shade: rgb(0 0 0 / 0.55);
+  --nb-pattern: repeating-linear-gradient(to bottom, transparent 0 25px, rgb(150 170 220 / 0.09) 25px 26px);
+  color-scheme: dark;
+}
+.dark .nb-book[data-nb-paper="elfenbein"],
+.dark .nb-book[data-nb-paper="liniert"],
+.dark .nb-book[data-nb-paper="kariert"],
+.dark .nb-book[data-nb-paper="pergament"] {
+  color-scheme: light;
 }
 @keyframes nb-fade {
   from {
@@ -1506,7 +1588,8 @@ html[data-menu-open] .chat-bubble-root {
   min-height: 0;
   overflow: hidden;
   background-color: var(--app);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .34 0 0 0 0 .2 0 0 0 .075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: var(--nb-pattern, none), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .34 0 0 0 0 .2 0 0 0 .075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-attachment: local, local;
 }
 .nb-left {
   flex: 1 1 auto;
@@ -1585,7 +1668,7 @@ html[data-menu-open] .chat-bubble-root {
   flex: none;
   gap: 4px;
   overflow-x: auto;
-  padding: calc(env(safe-area-inset-top) + 8px) 52px 0 10px;
+  padding: calc(env(safe-area-inset-top) + 8px) 96px 0 10px;
   scrollbar-width: none;
 }
 .nb-tabs::-webkit-scrollbar {
@@ -1649,8 +1732,101 @@ html[data-menu-open] .chat-bubble-root {
     0 2px 6px rgb(0 0 0 / 0.5),
     inset 0 1px 0 #fff;
 }
-.nb-close:hover {
+.nb-close:hover,
+.nb-paper-btn:hover {
   background: #fff;
+}
+.nb-paper-btn {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6px);
+  right: 52px;
+  z-index: 6;
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f6efdc;
+  color: #3a1b18;
+  cursor: pointer;
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 #fff;
+}
+.nb-paper-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.nb-paper-menu {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 46px);
+  right: 10px;
+  z-index: 7;
+  width: min(332px, calc(100vw - 20px));
+  padding: 12px;
+  border-radius: 14px;
+  background: #f6efdc;
+  color: #3a1b18;
+  box-shadow: 0 18px 40px -10px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(58 27 24 / 0.15);
+}
+.nb-paper-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 8px;
+}
+.nb-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.nb-swatch-chip {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 4px 7px 7px 4px;
+  background-color: var(--app);
+  background-image: var(--nb-pattern, none);
+  background-size: auto;
+  box-shadow:
+    1px 1px 0 var(--nb-edge-a),
+    2px 2px 0 var(--nb-edge-b),
+    0 3px 8px -2px rgb(0 0 0 / 0.35);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color 0.15s, transform 0.15s;
+}
+.nb-swatch-chip::after {
+  content: "Aa";
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  color: var(--fg);
+  font-family: var(--font-cormorant, Georgia), Georgia, serif;
+  font-size: 1rem;
+}
+.nb-swatch:hover .nb-swatch-chip {
+  transform: translateY(-2px);
+}
+.nb-swatch[aria-checked="true"] .nb-swatch-chip {
+  outline-color: #8a3b33;
+}
+.nb-swatch[aria-checked="true"] {
+  font-weight: 600;
+}
+.nb-swatch:focus-visible {
+  outline: none;
+}
+.nb-swatch:focus-visible .nb-swatch-chip {
+  outline-color: #3a1b18;
 }
 .nb-close:focus-visible {
   outline: 2px solid #fff;
@@ -1734,6 +1910,14 @@ html[data-menu-open] .chat-bubble-root {
   .nb-close {
     top: -12px;
     right: -12px;
+  }
+  .nb-paper-btn {
+    top: -12px;
+    right: 30px;
+  }
+  .nb-paper-menu {
+    top: 30px;
+    right: 0;
   }
 }
 

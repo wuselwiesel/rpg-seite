@@ -179,11 +179,13 @@ export async function searchLinkTargets(q: string, kind: LinkKind, excludeNoteId
   const term = escapePostgrestValue(q.trim().slice(0, 80));
   const world = await getActiveWorld(user.id);
   const LIMIT = 12;
+  // Streng nach Welt getrennt: nur Ziele der aktiven Welt (Notizen: dieser Welt oder ohne Welt), archivierte Szenen nicht
+  if (!world && kind !== "note") return [];
 
   if (kind === "character") {
     let query = supabase.from("characters").select("id, name, username, avatar_url, is_npc, worlds(name)").is("deleted_at", null);
+    query = query.eq("world_id", world!.id);
     if (term) query = query.or(`name.ilike.%${term}%,username.ilike.%${term}%`);
-    else if (world) query = query.eq("world_id", world.id);
     const { data } = await query.order("name").limit(LIMIT);
     const faceclaims = await getFaceclaimNames(supabase, user.id, ((data ?? []) as { id: string }[]).map((c) => c.id));
     return ((data ?? []) as unknown as { id: string; name: string; username: string | null; avatar_url: string | null; is_npc: boolean; worlds: { name: string } | { name: string }[] | null }[]).map((c) => ({
@@ -196,15 +198,15 @@ export async function searchLinkTargets(q: string, kind: LinkKind, excludeNoteId
   }
   if (kind === "wiki") {
     let query = supabase.from("wiki_pages").select("id, title, worlds(name)");
+    query = query.eq("world_id", world!.id);
     if (term) query = query.ilike("title", `%${term}%`);
-    else if (world) query = query.eq("world_id", world.id);
     const { data } = await query.order(term ? "title" : "updated_at", { ascending: !!term }).limit(LIMIT);
     return ((data ?? []) as unknown as { id: string; title: string; worlds: { name: string } | { name: string }[] | null }[]).map((w) => ({ kind, id: w.id, label: w.title, sub: (Array.isArray(w.worlds) ? w.worlds[0] : w.worlds)?.name }));
   }
   if (kind === "scene") {
     let query = supabase.from("story_posts").select("id, title, location, worlds(name)");
+    query = query.eq("world_id", world!.id).eq("archived", false);
     if (term) query = query.or(`title.ilike.%${term}%,location.ilike.%${term}%`);
-    else if (world) query = query.eq("world_id", world.id);
     const { data } = await query.order("created_at", { ascending: false }).limit(LIMIT);
     return ((data ?? []) as unknown as { id: string; title: string; location: string | null; worlds: { name: string } | { name: string }[] | null }[]).map((s) => ({
       kind,
@@ -214,12 +216,13 @@ export async function searchLinkTargets(q: string, kind: LinkKind, excludeNoteId
     }));
   }
   if (kind === "clip") {
-    let query = supabase.from("scene_clips").select("id, title, scene_title").eq("owner_id", user.id);
+    let query = supabase.from("scene_clips").select("id, title, scene_title, story_posts!inner(world_id, archived)").eq("owner_id", user.id).eq("story_posts.world_id", world!.id).eq("story_posts.archived", false);
     if (term) query = query.or(`title.ilike.%${term}%,scene_title.ilike.%${term}%`);
     const { data } = await query.order("created_at", { ascending: false }).limit(LIMIT);
     return ((data ?? []) as { id: string; title: string; scene_title: string }[]).map((c) => ({ kind, id: c.id, label: c.title, sub: c.scene_title || undefined }));
   }
   let query = supabase.from("notes").select("id, title, body").eq("user_id", user.id);
+  if (world) query = query.or(`world_id.eq.${world.id},world_id.is.null`);
   if (excludeNoteId) query = query.neq("id", excludeNoteId);
   if (term) query = query.or(`title.ilike.%${term}%,body.ilike.%${term}%`);
   const { data } = await query.order("updated_at", { ascending: false }).limit(LIMIT);
@@ -331,7 +334,6 @@ export async function setNoteTask(noteId: string, index: number, checked: boolea
   const { error } = await supabase.from("notes").update({ body: sanitizePostHtml(next), updated_at: new Date().toISOString() }).eq("id", noteId).eq("user_id", user.id);
   if (error) return error.message;
   revalidatePath("/notizen");
-  revalidatePath("/notizen/faeden");
   revalidatePath(`/notizen/${noteId}`);
   return null;
 }

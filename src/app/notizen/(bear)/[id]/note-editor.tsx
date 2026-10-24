@@ -44,8 +44,8 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const [bodyInit, setBodyInit] = useState(initialBody);
   const [editorKey, setEditorKey] = useState(0);
   const [bodyHtml, setBodyHtml] = useState(initialBody);
-  // Darstellung (nur in diesem Browser): Schrift, Größe, Papier
-  const [look, setLook] = useState({ font: "serif", size: "m", paper: "standard" });
+  // Darstellung (nur in diesem Browser): Schrift, Größe; das Papier gilt fürs ganze Buch (Knopf oben im Notizbuch)
+  const [look, setLook] = useState({ font: "serif", size: "m" });
   const lookRef = useRef(look);
   const [lookOpen, setLookOpen] = useState(false);
   useEffect(() => {
@@ -356,7 +356,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
   const stateLabel = { saved: "Gespeichert", dirty: "Ungespeichert …", saving: "Speichert …", error: "Speichern fehlgeschlagen", offline: "Offline – wird gespeichert, sobald du wieder online bist" }[state];
 
   return (
-    <div data-font={look.font} data-size={look.size} data-paper={look.paper} className="note-surface mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
+    <div data-font={look.font} data-size={look.size} className="note-surface mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <button type="button" onClick={() => nav.closeNote()} className="flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg lg:invisible">
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
@@ -393,7 +393,6 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
                   [
                     ["font", "Schrift", [["serif", "Serif"], ["sans", "Sans"], ["mono", "Mono"], ["lora", "Buchschrift"], ["playfair", "Elegant"], ["ebGaramond", "Zeitlos"], ["caveat", "Handschrift"], ["handlee", "Notizbuch"], ["specialElite", "Schreibmaschine"]]],
                     ["size", "Größe", [["s", "Klein"], ["m", "Normal"], ["l", "Groß"], ["xl", "Sehr groß"]]],
-                    ["paper", "Papier", [["standard", "Standard"], ["sepia", "Sepia"], ["dark", "Dunkel"]]],
                   ] as [keyof typeof look, string, [string, string][]][]
                 ).map(([k, label, opts]) => (
                   <div key={k} className="mb-2 last:mb-0">

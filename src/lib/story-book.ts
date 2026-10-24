@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 import { createClient } from "@/lib/supabase/server";
 import { stripHtml } from "@/lib/strip-html";
 import { flattenFolders } from "@/lib/folder-tree";
+import { compareScenes } from "@/lib/scene-order";
 
 export type BookEntry = {
   kind: "entry" | "narrator" | "chapter" | "roll";
@@ -67,19 +68,19 @@ async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data
   return out;
 }
 
-// Lesereihenfolge wie in „Szenen ordnen“: Ordner in Baumreihenfolge, darin die von Hand geordneten Szenen, dann der Rest
-// nach Anlegezeit (ältestes zuerst, wie ein Buch); Szenen ohne Ordner zuletzt. Ohne Ordner und Handordnung bleibt es nach Datum.
+// Reihenfolge im Buch: Ordner wie in der Liste „Nach Ordnung“, darin die Szenen von unten nach oben gelesen
+// (in der Liste steht das Neueste oben), damit das Buch zeitlich von vorn nach hinten läuft.
 async function orderLikeStory(supabase: Awaited<ReturnType<typeof createClient>>, rows: SceneRow[]) {
   const worldId = rows[0].world_id;
   const { data: folders } = await supabase.from("story_folders").select("id, name, parent_id").eq("world_id", worldId);
   const rank = new Map(flattenFolders((folders ?? []).map((f) => ({ id: f.id as string, name: f.name as string, parentId: f.parent_id as string | null }))).map((f, i) => [f.id, i]));
   const rankOf = (id: string | null) => (id ? (rank.get(id) ?? rank.size) : rank.size + 1);
-  rows.sort((a, b) => {
-    if (rankOf(a.folder_id) !== rankOf(b.folder_id)) return rankOf(a.folder_id) - rankOf(b.folder_id);
-    if (a.sort_order !== null && b.sort_order !== null && a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
-    if ((a.sort_order === null) !== (b.sort_order === null)) return a.sort_order === null ? 1 : -1;
-    return a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
-  });
+  rows.sort(
+    (a, b) =>
+      rankOf(a.folder_id) - rankOf(b.folder_id) ||
+      compareScenes({ id: b.id, sortOrder: b.sort_order, createdAt: b.created_at }, { id: a.id, sortOrder: a.sort_order, createdAt: a.created_at }) ||
+      a.id.localeCompare(b.id),
+  );
 }
 
 export async function loadBook(scope: { sceneId: string } | { arcId: string } | { worldId: string }): Promise<Book | null> {

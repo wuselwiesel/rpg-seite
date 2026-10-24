@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
@@ -15,13 +16,19 @@ export default async function WorldsPage() {
 
   if (!user) redirect("/login");
 
-  const [worlds, activeWorld] = await Promise.all([getUserWorlds(user.id), getActiveWorld(user.id)]);
+  const [worlds, activeWorld, { data: adminRows }] = await Promise.all([
+    getUserWorlds(user.id),
+    getActiveWorld(user.id),
+    supabase.from("world_members").select("world_id").eq("user_id", user.id).eq("role", "admin"),
+  ]);
+  // Besitzer:in oder Admin: darf die Welt bearbeiten
+  const adminOf = new Set((adminRows ?? []).map((r) => r.world_id as string));
 
   return (
     <div className="mx-auto max-w-2xl xl:max-w-3xl 2xl:max-w-4xl px-4 py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div>
-          <h1 className="font-serif text-3xl text-fg">Deine Welten</h1>
+          <h1 className="font-serif text-3xl text-fg">Meine Welten</h1>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Link
@@ -72,6 +79,17 @@ export default async function WorldsPage() {
                 )}
               </div>
             </Link>
+            {(world.created_by === user.id || adminOf.has(world.id)) && (
+              <Link
+                href={`/worlds/${world.id}/edit`}
+                aria-label={`${world.name} bearbeiten`}
+                title="Welt bearbeiten"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                <span className="hidden sm:inline">Bearbeiten</span>
+              </Link>
+            )}
             {world.created_by !== user.id && <LeaveWorldButton worldId={world.id} worldName={world.name} variant="icon" />}
             {isActive ? (
               <Link href="/" className="shrink-0 rounded-full bg-accent-strong px-4 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90">
