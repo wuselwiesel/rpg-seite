@@ -9,10 +9,12 @@ import { getCharacterBadges, syncCharacterBadges, visibleBadges } from "@/lib/ba
 import { EmojiText } from "@/components/custom-emoji-provider";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronDown, Clock, Grid3x3, IdCard, Images, MessageCircle, Pencil, Pin, Rows3 } from "lucide-react";
+import { ChevronDown, Clock, Grid3x3, History, IdCard, Images, MessageCircle, NotebookPen, Pencil, Pin, Rows3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter, getOwnCharacters } from "@/lib/active-character";
+import { SettingsMenuButton } from "@/components/settings-menu-button";
+import { ProfileNotes } from "./profile-notes";
 import { POST_SELECT, toFeedPost } from "@/lib/feed";
 import { SocialPostCard } from "@/components/social-post-card";
 import { FollowButton } from "@/components/follow-button";
@@ -35,7 +37,7 @@ import { NpcBadge } from "@/components/npc-badge";
 import { FaceclaimButton } from "@/components/faceclaim-button";
 import { getFaceclaim } from "@/lib/faceclaim-data";
 import { TargetNotesButton } from "@/components/target-notes-button";
-import { connectionsForCharacter, noteCountForTarget } from "@/lib/notes-data";
+import { connectionsForCharacter, noteCountForTarget, notesForTarget } from "@/lib/notes-data";
 import { CharacterConnections } from "@/components/character-connections";
 import { ReviewChip } from "@/components/review-chip";
 import { AvailabilityBadge, AvailabilityControl } from "@/components/character-availability";
@@ -85,7 +87,7 @@ export default async function CharacterProfilePage({
   // Frei: normaler Charakter, aber noch ohne Spieler:in; folgen und anschreiben ist dann sinnlos
   const isVacantProfile = character.vacant === true;
   const gone = Boolean(character.deleted_at);
-  const tab = tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : "posts";
+  const tab = tabParam === "chabo" ? "chabo" : tabParam === "scheduled" && isOwnerView ? "scheduled" : tabParam === "notizen" && isOwnerView ? "notizen" : "posts";
   const [sheet, mentionCharacters, randomLists] = await Promise.all([
     getCharacterSheet(id, canEdit),
     getMentionableCharacters(user.id, character.world_id),
@@ -198,11 +200,12 @@ export default async function CharacterProfilePage({
       theme={{ font: character.theme_font, accent: character.theme_accent, bg: character.theme_bg }}
     >
       <div className="mx-auto max-w-[935px] xl:max-w-[1040px] sm:px-4 sm:pt-6">
-        <div className="h-32 overflow-hidden bg-gradient-to-br from-accent/40 to-accent-strong/40 sm:h-52 sm:rounded-2xl">
+        <div className="relative h-32 overflow-hidden bg-gradient-to-br from-accent/40 to-accent-strong/40 sm:h-52 sm:rounded-2xl">
           {character.banner_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img loading="lazy" decoding="async" src={character.banner_url} alt="" className="h-full w-full object-cover" />
           )}
+          {isOwnerView && <SettingsMenuButton className="absolute right-3 top-3 lg:hidden" />}
         </div>
 
         <div className="px-4 sm:px-6">
@@ -467,6 +470,7 @@ export default async function CharacterProfilePage({
           {[
             { id: "posts", label: "Beiträge", icon: Grid3x3, show: true },
             { id: "chabo", label: chaboLabel(await getWorldDiceEnabled(character.world_id)), icon: IdCard, show: Boolean(sheet) || canEdit },
+            { id: "notizen", label: "Notizen", icon: NotebookPen, show: isOwnerView },
             { id: "scheduled", label: "Geplant", icon: Clock, show: isOwnerView },
           ]
             .filter((t) => t.show)
@@ -487,8 +491,18 @@ export default async function CharacterProfilePage({
             ))}
         </div>
 
-        {tab === "chabo" ? (
+        {tab === "notizen" ? (
+          <ProfileNotes notes={await notesForTarget(supabase, user.id, "character", character.id)} characterId={character.id} characterName={character.name} />
+        ) : tab === "chabo" ? (
           <div className="px-3 pb-24 pt-4 sm:px-0 lg:pb-10">
+            {!character.is_npc && (
+              <div className="mb-2 flex justify-end">
+                <Link href={`/redaktion/verlauf?charakter=${character.id}`} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
+                  <History className="h-3.5 w-3.5" strokeWidth={2} />
+                  Änderungsverlauf
+                </Link>
+              </div>
+            )}
             <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} talentDefs={await getWorldTalents(character.world_id)} natureDefs={await getWorldNatures(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" choices={choiceList} />
           </div>
         ) : (

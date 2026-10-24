@@ -8,7 +8,6 @@ import { FeedList } from "@/components/feed-list";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { fetchFeedPage } from "@/lib/feed";
 import { StoriesStrip } from "@/components/stories-strip";
-import { FeedSidebar } from "@/components/feed-sidebar";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { WorldOnboarding } from "@/components/world-onboarding";
 import { FirstSteps, type FirstStep } from "@/components/first-steps";
@@ -107,12 +106,6 @@ export default async function FeedPage({ searchParams }: PageProps<"/">) {
           }
         />
       </div>
-
-      <aside className="hidden w-48 shrink-0 xl:block">
-        <Suspense fallback={null}>
-          <FeedSidebar userId={user.id} worldId={activeWorld.id} />
-        </Suspense>
-      </aside>
     </div>
     </PullToRefresh>
   );

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { TicketList } from "./ticket-list";
 import { ListSkeleton } from "./ticket-skeleton";
 
-export const metadata = { title: "Tickets" };
+export const metadata = { title: "Feedback" };
 
 export default function TicketsPage() {
   return (

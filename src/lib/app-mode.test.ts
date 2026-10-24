@@ -7,28 +7,32 @@ describe("getAppMode", () => {
     expect(getAppMode("/search")).toBe("ingame");
     expect(getAppMode("/chats/abc")).toBe("ingame");
     expect(getAppMode("/story")).toBe("story");
-    expect(getAppMode("/story/wuerfe")).toBe("story");
+    expect(getAppMode("/story/abc")).toBe("story");
+    expect(getAppMode("/story/new")).toBe("story");
     expect(getAppMode("/ausschnitte/druck")).toBe("story");
-    expect(getAppMode("/wiki/graph")).toBe("story");
     expect(getAppMode("/redaktion/verlauf")).toBe("redaktion");
-    expect(getAppMode("/characters/relationships")).toBe("story");
-    expect(getAppMode("/characters/abc/chabo")).toBe("story");
     expect(getAppMode("/hilfe")).toBe("story");
     expect(getAppMode(null)).toBe("ingame");
   });
-  it("Charakterprofile übernehmen den gemerkten Modus (Profil in der Story bleibt in der Story)", () => {
-    for (const p of ["/characters/abc", "/characters/abc/follows", "/characters/abc/edit", "/characters/abc/highlights/new"]) {
+  it("Charakterprofile samt ChaBo übernehmen den gemerkten Modus (Profil in der Story bleibt in der Story)", () => {
+    for (const p of ["/characters/abc", "/characters/abc/follows", "/characters/abc/edit", "/characters/abc/highlights/new", "/characters/abc/chabo"]) {
       expect(isNeutralPath(p)).toBe(true);
       expect(getAppMode(p, "story")).toBe("story");
       expect(getAppMode(p, "ingame")).toBe("ingame");
       expect(getAppMode(p)).toBe("ingame");
     }
   });
-  it("die Charakterliste, neue Charaktere und das Beziehungsnetz sind nicht neutral", () => {
-    for (const p of ["/characters", "/characters/new", "/characters/relationships", "/characters/abc/chabo", "/story", "/"]) expect(isNeutralPath(p)).toBe(false);
+  it("Welt-Seite und alles dahinter übernehmen den gemerkten Modus", () => {
+    for (const p of ["/welt", "/wiki", "/wiki/graph", "/characters/relationships", "/story/wuerfe", "/story/charaktere"]) {
+      expect(isNeutralPath(p)).toBe(true);
+      expect(getAppMode(p, "story")).toBe("story");
+      expect(getAppMode(p, "ingame")).toBe("ingame");
+    }
+  });
+  it("die Charakterliste und neue Charaktere sind nicht neutral", () => {
+    for (const p of ["/characters", "/characters/new", "/story", "/story/abc", "/", "/wikipedia"]) expect(isNeutralPath(p)).toBe(false);
     expect(getAppMode("/characters", "story")).toBe("ingame");
     expect(getAppMode("/characters/new", "story")).toBe("ingame");
-    expect(getAppMode("/characters/relationships", "ingame")).toBe("story");
     expect(isNeutralPath(null)).toBe(false);
   });
   it("Redaktion und Story ignorieren den gemerkten Modus", () => {

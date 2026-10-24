@@ -7,7 +7,20 @@ import { useOnline } from "@/components/online-status";
 import { MemberList, useOnlineMembers, type OnlineMember } from "@/components/online-list";
 
 // Handy: Punkt in der Kopfzeile (grün = jemand online, grau = niemand); Antippen öffnet die Mitgliederliste von unten
-export function MobileOnline({ members, selfId, variant = "icon", onOpen }: { members: OnlineMember[]; selfId: string; variant?: "icon" | "row"; onOpen?: () => void }) {
+export function MobileOnline({
+  members,
+  selfId,
+  variant = "icon",
+  onOpen,
+  trigger,
+}: {
+  members: OnlineMember[];
+  selfId: string;
+  variant?: "icon" | "row";
+  onOpen?: () => void;
+  // Eigener Auslöser (z. B. die Kachel „Mitglieder“ auf der Welt-Seite) statt Punkt oder Menüzeile
+  trigger?: (open: () => void, onlineCount: number) => React.ReactNode;
+}) {
   const { enabled } = useOnline();
   const online = useOnlineMembers(members, selfId);
   const [open, setOpen] = useState(false);
@@ -27,7 +40,9 @@ export function MobileOnline({ members, selfId, variant = "icon", onOpen }: { me
   };
   return (
     <>
-      {variant === "row" ? (
+      {trigger ? (
+        trigger(openList, online.length)
+      ) : variant === "row" ? (
         <button type="button" onClick={openList} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg">
           <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
             <Users className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />

@@ -3,18 +3,14 @@ import { getAltAccountLabel } from "@/lib/account-switch";
 import { SwitchAccountButton } from "./switch-account-button";
 import { CircleHelp, Search, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getOwnCharacters, getActiveCharacter } from "@/lib/active-character";
+import { getOwnCharacters, getActiveCharacter, getAllOwnCharacters } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
 import { getUnreadCounts } from "@/lib/chat-reads";
 import { getWorldMembers } from "@/lib/world-members";
 import { SidebarOnline } from "./sidebar-online";
 import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
 import { getOnlyActiveWorld } from "@/lib/notification-prefs";
-import type { Profile } from "@/lib/types";
-import { CharacterSwitcher } from "./character-switcher";
-import { CharacterAvatar } from "./character-avatar";
-import { PresenceControl } from "./character-presence";
-import { WorldSwitcher } from "./world-switcher";
+import { SidebarWhoCard } from "./sidebar-who-card";
 import { ModeSwitch } from "./mode-switch";
 import { SidebarNav } from "./sidebar-nav";
 import { isAppAdmin } from "@/lib/account-marks";
@@ -32,11 +28,11 @@ export async function Sidebar() {
 
   if (!user) return null;
 
-  const [worlds, profileResult] = await Promise.all([
+  const [worlds, { data: account }] = await Promise.all([
     getUserWorlds(user.id),
-    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle<Profile>(),
+    supabase.from("profiles").select("username, nickname").eq("id", user.id).maybeSingle<{ username: string; nickname: string | null }>(),
   ]);
-  const profile = profileResult.data;
+  const accountName = account?.nickname || account?.username || "";
 
   const activeWorld = await getActiveWorld(user.id);
 
@@ -107,11 +103,12 @@ export async function Sidebar() {
     );
   }
 
-  const [characters, activeCharacter, { data: myMembership }, worldMembers] = await Promise.all([
+  const [characters, activeCharacter, { data: myMembership }, worldMembers, allCharacters] = await Promise.all([
     getOwnCharacters(user.id, activeWorld.id),
     getActiveCharacter(user.id, activeWorld.id),
     supabase.from("world_members").select("role").eq("world_id", activeWorld.id).eq("user_id", user.id).maybeSingle(),
     getWorldMembers(activeWorld.id),
+    getAllOwnCharacters(user.id),
   ]);
 
   const myCharacterIds = characters.map((c) => c.id);
@@ -126,7 +123,7 @@ export async function Sidebar() {
 
   return (
     <>
-      <aside className="hidden h-dvh w-72 shrink-0 flex-col border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:z-40 lg:flex">
+      <aside className="chrome hidden h-dvh w-72 shrink-0 flex-col border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:z-40 lg:flex">
         <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
           <Link href="/" className="block shrink-0" aria-label="Wortwinkel">
             <Wordmark height={40} />
@@ -149,45 +146,25 @@ export async function Sidebar() {
               initialUnreadCount={initialUnreadCount}
             />
             <ThemeToggle />
-            <SidebarMenu appAdmin={appAdmin} />
+            <SidebarMenu appAdmin={appAdmin} altAccount={altAccount} />
           </div>
         </div>
-      <div className="mb-3">
-        <WorldSwitcher worlds={worlds} activeWorld={activeWorld} canManage={canManage} />
-      </div>
+      <SidebarWhoCard worlds={worlds} activeWorld={activeWorld} canManage={canManage} activeCharacter={activeCharacter} characters={allCharacters} accountName={accountName} />
       <div className="-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 pb-3 [mask-image:linear-gradient(to_bottom,black_calc(100%-14px),transparent)]">
       <div className="mb-4">
         <ModeSwitch />
       </div>
-
-      {activeCharacter && characters.length > 1 && (
-        <div className="mb-4">
-          <CharacterSwitcher characters={characters} activeId={activeCharacter.id} className="w-full" />
-        </div>
-      )}
 
       <SidebarNav
         userId={user.id}
         myCharacterIds={myCharacterIds}
         unreadCounts={unreadCounts}
         activeCharacter={activeCharacter}
+        characters={characters}
         ticketUnread={ticketUnread}
       />
       </div>
       <SidebarOnline members={worldMembers} selfId={user.id} />
-      {activeCharacter && (
-        <div className="mt-2 flex shrink-0 items-center gap-2.5 rounded-xl bg-surface-2 px-2.5 py-2">
-          <div className="relative shrink-0">
-            <Link href={`/characters/${activeCharacter.id}`} aria-label={activeCharacter.name}>
-              <CharacterAvatar name={activeCharacter.name} avatarUrl={activeCharacter.avatar_url} size={34} />
-            </Link>
-            <PresenceControl characterId={activeCharacter.id} online={!!activeCharacter.presence_online} placement="bottom-right" direction="up" />
-          </div>
-          <Link href={`/characters/${activeCharacter.id}`} className="min-w-0 flex-1 truncate text-sm font-medium text-fg hover:text-accent">
-            {activeCharacter.name}
-          </Link>
-        </div>
-      )}
       <div className="mt-2 shrink-0">
         <Link
           href="/hilfe"
@@ -214,14 +191,14 @@ export async function Sidebar() {
       altAccount={altAccount}
       activeCharacter={activeCharacter}
       characters={characters}
-      profile={profile}
+      allCharacters={allCharacters}
+      accountName={accountName}
       userId={user.id}
       initialNotifications={initialNotifications}
       initialUnreadCount={initialUnreadCount}
       worldFilter={worldFilter}
       myCharacterIds={myCharacterIds}
       unreadCounts={unreadCounts}
-      worldMembers={worldMembers}
     />
     </>
   );

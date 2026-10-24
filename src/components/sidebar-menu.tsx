@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { BarChart3, Compass, Menu, NotebookPen, Settings, UserPlus, Users } from "lucide-react";
-import { InstallAppButton } from "./install-app-button";
-import { startTour } from "@/lib/tour";
+import { Menu } from "lucide-react";
+import { SettingsList } from "./settings-sheet";
 
-// Hamburger-Menü in der Desktop-Seitenleiste: seltener genutzte Bereiche: Freund:innen, Charaktere, Konto.
-export function SidebarMenu({ appAdmin = false }: { appAdmin?: boolean }) {
+// ≡ in der Seitenleiste (Computer): Einstellungen und Seltenes, dieselbe Liste wie der Einstellungen-Bogen am Handy.
+export function SidebarMenu({ appAdmin = false, altAccount = null }: { appAdmin?: boolean; altAccount?: string | null }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -15,12 +13,16 @@ export function SidebarMenu({ appAdmin = false }: { appAdmin?: boolean }) {
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
-    if (open) document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    if (open) {
+      document.addEventListener("mousedown", onDown);
+      document.addEventListener("keydown", onKey);
+    }
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
-
-  const item =
-    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg";
 
   return (
     <div className="relative" ref={ref}>
@@ -35,41 +37,8 @@ export function SidebarMenu({ appAdmin = false }: { appAdmin?: boolean }) {
         <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-60 rounded-2xl border border-line bg-surface p-2 shadow-lg">
-          <Link href="/friends" onClick={() => setOpen(false)} className={item}>
-            <UserPlus className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Freund:innen
-          </Link>
-          <Link href="/notizen" onClick={() => setOpen(false)} className={item}>
-            <NotebookPen className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Notizen
-          </Link>
-          <Link href="/characters" onClick={() => setOpen(false)} className={item}>
-            <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Meine Charaktere
-          </Link>
-          {appAdmin && (
-            <Link href="/redaktion/ueberblick" onClick={() => setOpen(false)} className={item}>
-              <BarChart3 className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              Überblick
-            </Link>
-          )}
-          <Link href="/profile" onClick={() => setOpen(false)} className={item}>
-            <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Konto &amp; Einstellungen
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              startTour();
-            }}
-            className={item}
-          >
-            <Compass className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            Rundgänge
-          </button>
-          <InstallAppButton className={item} onDone={() => setOpen(false)} />
+        <div className="menu-pop absolute left-0 top-full z-50 mt-2 max-h-[80vh] w-72 overflow-y-auto rounded-2xl border border-line bg-surface p-2 shadow-lg">
+          <SettingsList appAdmin={appAdmin} altAccount={altAccount} search={false} onNavigate={() => setOpen(false)} />
         </div>
       )}
     </div>

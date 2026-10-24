@@ -42,7 +42,7 @@ export function StoryComposer({
   calendar: WikiCalendar;
   locations: string[];
   sceneLocation: string | null;
-  // Eigenes Konto (für den Chat dieser Szene) und ob der Reiter „Chat“ gleich offen sein soll (Link aus einer Benachrichtigung)
+  // Eigenes Konto (für den Chat dieser Szene) und ob der Reiter „Chat der Szene“ gleich offen sein soll (Link aus einer Benachrichtigung)
   userId: string;
   // Mitglieder der Welt (für „… ist online“ im Schreibbereich)
   worldMembers: { id: string; name: string; avatarUrl: string | null }[];
@@ -211,7 +211,7 @@ export function StoryComposer({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-1 sm:gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
         <div className="flex w-fit shrink-0 gap-0.5 rounded-lg bg-surface-2 p-1 sm:gap-1">
           <button
             type="button"
@@ -236,17 +236,17 @@ export function StoryComposer({
           <button
             type="button"
             onClick={() => setMode("chat")}
-            className={`relative rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
+            className={`relative whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
               mode === "chat" ? "bg-surface text-fg" : "text-muted hover:text-fg-soft"
             }`}
           >
-            Chat
+            Chat der Szene
             {chatUnread > 0 && mode !== "chat" && (
               <span aria-label={`${chatUnread} neue Nachrichten`} className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-accent-strong" />
             )}
           </button>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="ml-auto flex items-center gap-0.5">
           {/* Am Handy steht der Punkt schon in der Kopfzeile */}
           <OnlineLine members={worldMembers} selfId={userId} className="hidden lg:block" />
           {mode === "roll" && (

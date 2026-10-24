@@ -23,6 +23,23 @@ export const getOwnCharacters = cache(async (userId: string, worldId: string): P
   return data ?? [];
 });
 
+// Eigene Charaktere aller Welten (ohne NPCs) für den Bogen „Du spielst“: ein Tipp wechselt Charakter und, wenn nötig, die Welt.
+export type OwnCharacterLite = { id: string; name: string; avatar_url: string | null; world_id: string; world_name: string };
+
+export const getAllOwnCharacters = cache(async (userId: string): Promise<OwnCharacterLite[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("characters")
+    .select("id, name, avatar_url, world_id, worlds(name)")
+    .eq("owner_id", userId)
+    .eq("is_npc", false)
+    .eq("vacant", false)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .returns<{ id: string; name: string; avatar_url: string | null; world_id: string; worlds: { name: string } | null }[]>();
+  return (data ?? []).map(({ worlds, ...c }) => ({ ...c, world_name: worlds?.name ?? "" }));
+});
+
 // NPCs, die man selbst angelegt hat (nur sie darf man in Szenen schreiben lassen).
 export const getOwnNpcs = cache(async (userId: string, worldId: string): Promise<Character[]> => {
   const supabase = await createClient();

@@ -1,133 +1,69 @@
 "use client";
 
-import { chaboLabel } from "@/lib/chabo-label";
-import { useDiceEnabled } from "./dice-context";
-import { useWorldRights } from "./rights-context";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Users, House, Search, BookOpen, Library, PenLine, UserRound, Newspaper, MessageCircle, IdCard, History, Dices, Inbox } from "lucide-react";
+import { NotebookPen } from "lucide-react";
 import { useAppMode } from "@/components/mode-context";
+import { navItems } from "@/lib/nav-model";
 import { NavLink } from "./nav-link";
+import { NavIcon } from "./nav-icon";
 import { ChatsNavLink } from "./chats-nav-link";
+import { CreateMenu } from "./create-menu";
+import { useNotebook } from "./notebook-host";
 import type { Character } from "@/lib/types";
 
 const ICON = "h-[18px] w-[18px] shrink-0";
 
+// Einträge der Seitenleiste aus derselben Quelle wie die Handy-Leiste (lib/nav-model.ts), dazu „Notizen“ und „+ Erstellen“.
 export function SidebarNav({
   userId,
   myCharacterIds,
   unreadCounts,
   activeCharacter,
+  characters,
   ticketUnread = 0,
 }: {
   userId: string;
   myCharacterIds: string[];
   unreadCounts: Record<string, number>;
   activeCharacter: Character | null;
-  // Ungelesene Tickets (Zahl am Eintrag „Tickets“)
+  // Eigene Charaktere der aktiven Welt („Erstellen als“)
+  characters: Character[];
+  // Ungelesene Tickets (Zahl am Eintrag „Feedback“)
   ticketUnread?: number;
 }) {
-  const pathname = usePathname();
   const mode = useAppMode();
-  const diceEnabled = useDiceEnabled();
-  const rights = useWorldRights();
-  const inWiki = pathname?.startsWith("/wiki") || pathname?.startsWith("/characters/relationships");
-
-  if (mode === "redaktion") {
-    return (
-      <>
-        <nav className="flex flex-col gap-1">
-          <NavLink href="/redaktion" icon={<Newspaper className={ICON} strokeWidth={2} />} exact>
-            Redaktion-Feed
-          </NavLink>
-          <NavLink href="/redaktion/chat" icon={<MessageCircle className={ICON} strokeWidth={2} />}>
-            Chat
-          </NavLink>
-          <NavLink href="/redaktion/tickets" icon={<Inbox className={ICON} strokeWidth={2} />} badge={ticketUnread}>
-            Tickets
-          </NavLink>
-          <NavLink href="/redaktion/verlauf" icon={<History className={ICON} strokeWidth={2} />}>
-            Verlauf
-          </NavLink>
-          <NavLink href={`/redaktion/profil/${userId}`} icon={<UserRound className={ICON} strokeWidth={2} />}>
-            Profil
-          </NavLink>
-        </nav>
-        <Link
-          href="/redaktion/new"
-          data-tour="compose"
-          className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
-        >
-          <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
-          Neuer Beitrag
-        </Link>
-      </>
-    );
-  }
-
-  if (mode === "story") {
-    return (
-      <>
-        <nav className="flex flex-col gap-1">
-          <NavLink href="/story" icon={<BookOpen className={ICON} strokeWidth={2} />} exclude={["/story/wuerfe", "/story/charaktere"]}>
-            Story
-          </NavLink>
-          <NavLink href="/story/charaktere" icon={<Users className={ICON} strokeWidth={2} />}>
-            Charaktere
-          </NavLink>
-          <NavLink href="/wiki" icon={<Library className={ICON} strokeWidth={2} />} also={["/characters/relationships"]}>
-            Wiki
-          </NavLink>
-          {diceEnabled && (
-            <NavLink href="/story/wuerfe" icon={<Dices className={ICON} strokeWidth={2} />}>
-              Würfelverlauf
-            </NavLink>
-          )}
-          {activeCharacter && (
-            <NavLink href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
-              {chaboLabel(diceEnabled)}
-            </NavLink>
-          )}
-        </nav>
-        {(inWiki ? rights.wikiCreate : rights.storyCreate) && (
-          <Link
-            href={inWiki ? "/wiki/new" : "/story/new"}
-            data-tour="compose"
-            className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
-          >
-            <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
-            {inWiki ? "Neuer Wiki-Eintrag" : "Neue Story"}
-          </Link>
-        )}
-      </>
-    );
-  }
+  const notebook = useNotebook();
+  const items = navItems(mode, { activeCharacter });
 
   return (
     <>
       <nav className="flex flex-col gap-1">
-        <NavLink href="/" icon={<House className={ICON} strokeWidth={2} />} exact>
-          Feed
-        </NavLink>
-        {activeCharacter ? (
-          <NavLink href={`/characters/${activeCharacter.id}/chabo`} icon={<IdCard className={ICON} strokeWidth={2} />}>
-            {chaboLabel(diceEnabled)}
-          </NavLink>
-        ) : (
-          <NavLink href="/search" icon={<Search className={ICON} strokeWidth={2} />}>
-            Suche
-          </NavLink>
+        {items.map((item) =>
+          item.badge === "chats" ? (
+            <ChatsNavLink key={item.id} userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
+          ) : (
+            <NavLink
+              key={item.id}
+              href={item.href}
+              exact={item.exact}
+              also={item.also}
+              exclude={item.exclude}
+              badge={item.badge === "tickets" ? ticketUnread : undefined}
+              icon={<NavIcon icon={item.icon} className={ICON} avatar={activeCharacter ? { name: activeCharacter.name, url: activeCharacter.avatar_url } : null} avatarSize={20} />}
+            >
+              {item.id === "character" && activeCharacter ? activeCharacter.name : item.label}
+            </NavLink>
+          ),
         )}
-        <ChatsNavLink userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
+        <button
+          type="button"
+          onClick={() => notebook.open()}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+        >
+          <NotebookPen className={ICON} strokeWidth={2} />
+          Notizen
+        </button>
       </nav>
-      <Link
-        href="/posts/new"
-        data-tour="compose"
-        className="mt-4 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 py-2.5 text-[15px] font-medium text-on-accent-strong transition hover:opacity-90"
-      >
-        <PenLine className="h-[18px] w-[18px]" strokeWidth={2} />
-        Neuer Beitrag
-      </Link>
+      <CreateMenu variant="sidebar" characters={characters} activeId={activeCharacter?.id ?? null} />
     </>
   );
 }

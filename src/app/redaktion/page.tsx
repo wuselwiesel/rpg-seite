@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -6,7 +5,6 @@ import { fetchRedaktionPage } from "@/lib/redaktion-feed";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { SearchFilterBar } from "@/components/search-filter-bar";
 import { RedaktionFeedList } from "./redaktion-feed-list";
-import { RedaktionSidebar } from "./redaktion-sidebar";
 import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
 import { WelcomeStrip } from "@/components/welcome-strip";
 import { getWelcomeCards } from "@/lib/welcome-data";
@@ -61,12 +59,6 @@ export default async function RedaktionPage({ searchParams }: PageProps<"/redakt
             }
           />
         </div>
-
-        <aside className="hidden w-48 shrink-0 xl:block">
-          <Suspense fallback={null}>
-            <RedaktionSidebar userId={user.id} />
-          </Suspense>
-        </aside>
       </div>
     </PullToRefresh>
   );

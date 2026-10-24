@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, History } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
 
@@ -40,6 +40,9 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
   const raw = Array.isArray(sp.seite) ? sp.seite[0] : sp.seite;
   const page = Math.max(1, Number.parseInt(raw ?? "", 10) || 1);
   const rawAccount = Array.isArray(sp.account) ? sp.account[0] : sp.account;
+  // Nur ein Charakter (Link „Änderungsverlauf“ im ChaBo)
+  const rawCharacter = Array.isArray(sp.charakter) ? sp.charakter[0] : sp.charakter;
+  const characterId = rawCharacter && /^[0-9a-f-]{36}$/i.test(rawCharacter) ? rawCharacter : null;
 
   const supabase = await createClient();
   const {
@@ -61,10 +64,12 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
     .select(COLUMNS, { count: "exact" })
     .order("updated_at", { ascending: false });
   if (account) query = query.eq("actor_id", account);
+  if (characterId) query = query.eq("character_id", characterId);
   const { data, count } = await query
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
     .returns<LogRow[]>();
   const rows = data ?? [];
+  const { data: filterCharacter } = characterId ? await supabase.from("characters").select("name").eq("id", characterId).maybeSingle<{ name: string }>() : { data: null };
 
   const actorIds = Array.from(new Set(rows.map((r) => r.actor_id)));
   const { data: profileRows } = actorIds.length ? await supabase.from("profiles").select("id, username, nickname, avatar_url").in("id", actorIds).returns<Profile[]>() : { data: [] as Profile[] };
@@ -73,6 +78,7 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
   const hrefFor = (nextPage: number, nextAccount: string | null) => {
     const q = new URLSearchParams();
     if (nextAccount) q.set("account", nextAccount);
+    if (characterId) q.set("charakter", characterId);
     if (nextPage > 1) q.set("seite", String(nextPage));
     const qs = q.toString();
     return qs ? `/redaktion/verlauf?${qs}` : "/redaktion/verlauf";
@@ -90,8 +96,19 @@ export default async function VerlaufPage({ searchParams }: PageProps<"/redaktio
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 xl:max-w-3xl">
       <h1 className="flex items-center gap-3 font-serif text-3xl text-fg">
         <History className="h-6 w-6 text-accent" strokeWidth={1.75} />
-        Verlauf
+        Änderungsverlauf
       </h1>
+
+      {characterId && (
+        <Link
+          href={account ? `/redaktion/verlauf?account=${account}` : "/redaktion/verlauf"}
+          aria-label="Filter aufheben"
+          className="flex w-fit items-center gap-2 rounded-full bg-accent-strong py-1.5 pl-3.5 pr-2.5 text-sm text-on-accent-strong transition hover:opacity-90"
+        >
+          {filterCharacter?.name ?? "Charakter"}
+          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+        </Link>
+      )}
 
       {accounts.length > 1 && (
         <nav aria-label="Nach Account filtern" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">

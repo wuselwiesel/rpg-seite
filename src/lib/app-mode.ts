@@ -8,26 +8,28 @@ export function parseRememberedMode(raw: string | null | undefined): Exclude<App
 }
 
 // Seiten, die zu keinem Bereich gehören und den Modus übernehmen, in dem man gerade ist: Charakterprofile samt Unterseiten
-// (Folgen, Bearbeiten, Highlights). So bleibt man mit „Profil“ in der Story in der Story.
+// (Folgen, Bearbeiten, Highlights, ChaBo) und die Welt-Seite mit allem dahinter (Wiki, Beziehungen, Würfelverlauf,
+// Charakterliste). So bleibt man aus dem Ingame über „Welt › Wiki“ im Ingame und aus der Story in der Story.
 export function isNeutralPath(pathname: string | null): boolean {
   if (!pathname) return false;
-  const m = /^\/characters\/([^/]+)(\/([^/]+))?/.exec(pathname);
+  if (/^\/(welt|wiki)(\/|$)/.test(pathname)) return true;
+  if (/^\/story\/(wuerfe|charaktere)(\/|$)/.test(pathname)) return true;
+  const m = /^\/characters\/([^/]+)/.exec(pathname);
   if (!m) return false;
-  if (m[1] === "relationships" || m[1] === "new") return false;
-  return m[3] !== "chabo";
+  return m[1] !== "new";
 }
 
-// "Story-Modus" = die Autor:innen-Seite (Story schreiben, Wiki, Beziehungen, ChaBo).
+// "Story-Modus" = die Autor:innen-Seite (Szenen schreiben, Hilfe, Ausschnitte).
 // "Redaktion" = der welt-/charakterunabhängige Account-Bereich - zählt bewusst nicht als
 // "Ingame", damit der Modus-Schalter dort keinen der beiden Reiter aktiv zeigt.
-// Alles andere ist "Ingame" (Feed, Chats, Charakterliste). Charakterprofile übernehmen den zuletzt benutzten Modus (`remembered`).
+// Alles andere ist "Ingame" (Feed, Chats, Charakterliste). Charakterprofile und die Welt-Seiten übernehmen den zuletzt
+// benutzten Modus (`remembered`).
 export function getAppMode(pathname: string | null, remembered: Exclude<AppMode, "redaktion"> = "ingame"): AppMode {
   if (!pathname) return "ingame";
   if (/^\/redaktion(\/|$)/.test(pathname)) return "redaktion";
-  if (/^\/(story|wiki)(\/|$)/.test(pathname)) return "story";
-  if (/^\/characters\/relationships(\/|$)/.test(pathname)) return "story";
-  // ChaBo (Charakterbogen) und Hilfe gehören zum Spielen und Schreiben
-  if (/^\/characters\/[^/]+\/chabo(\/|$)/.test(pathname) || /^\/(hilfe|ausschnitte)(\/|$)/.test(pathname)) return "story";
   if (isNeutralPath(pathname)) return remembered;
+  if (/^\/story(\/|$)/.test(pathname)) return "story";
+  // Hilfe und Ausschnitte gehören zum Schreiben
+  if (/^\/(hilfe|ausschnitte)(\/|$)/.test(pathname)) return "story";
   return "ingame";
 }

@@ -43,7 +43,7 @@ const TOC = [
   ["verlassen", "Welt verlassen, Besitz übertragen, Konto löschen"],
   ["benachrichtigungen", "Benachrichtigungen aus mehreren Welten"],
   ["passwort-vergessen", "Passwort vergessen"],
-  ["melden", "Tickets: etwas melden"],
+  ["melden", "Feedback: etwas melden"],
   ["buch", "Szenen als PDF oder E-Book"],
   ["chats-archiv", "Chats archivieren und löschen"],
   ["notizen", "Notizen und Faceclaims (nur für dich)"],
@@ -152,7 +152,7 @@ export default async function HelpPage() {
       {showRolls && (
       <Section id="verlauf" title="2. Würfelverlauf">
         <p className={p}>
-          Alle Würfe deiner aktuellen Welt stehen im <strong>Würfelverlauf</strong>, neueste zuerst. Du findest ihn links in der Seitenleiste unter „Würfelverlauf“ (am Handy im Menü „Mehr“). Mit den Filtern zeigst du nur einen Charakter oder nur
+          Alle Würfe deiner aktuellen Welt stehen im <strong>Würfelverlauf</strong>, neueste zuerst. Du findest ihn unter „Welt“ als Kachel „Würfelverlauf“. Mit den Filtern zeigst du nur einen Charakter oder nur
           Erfolge beziehungsweise Misserfolge. Ein Klick auf einen Wurf führt direkt zu seiner Zeile in der Szene und hebt sie kurz hervor. Mit dem Papierkorb löschst du eigene Würfe. Ein gelöschter Wurf verschwindet auch aus der Szene. Würfe aus privaten Szenen siehst du nur, wenn du die Szene auch sonst sehen darfst.
         </p>
       </Section>
@@ -264,7 +264,7 @@ export default async function HelpPage() {
           <li>
             <strong>ChaBo oder Steckbrief:</strong> Es ist dasselbe Blatt deines Charakters. In Welten, in denen gewürfelt wird, heißt es <strong>ChaBo</strong> (Charakterbogen) und hat zusätzlich Attribute, Talente und die besondere Natur. In Welten ohne Würfeln heißt es <strong>Steckbrief</strong> und zeigt Bild, persönliche Angaben mit allen eigenen Feldern, die du hinzufügst, Familie und Notizen, nur ohne Attribute, Talente und Natur. Wo in dieser Hilfe „ChaBo“ steht, ist in solchen Welten der Steckbrief gemeint.
           </li>
-          <li>Du findest ihn in der Seitenleiste unter „ChaBo“ bzw. „Steckbrief“, im Profil eines Charakters als Reiter und in jeder Szene über das Bogen-Symbol neben „Würfeln“.</li>
+          <li>Du findest ihn im Profil eines Charakters als Reiter (Tipp auf deinen Charakter unten bzw. in der Seitenleiste) und in jeder Szene über das Bogen-Symbol neben „Würfeln“.</li>
           <li>Bearbeiten kann nur, wem der Charakter gehört. Alle anderen in der Welt können ihn ansehen.</li>
           <li>Änderungen werden automatisch gespeichert, sobald alle Werte gültig sind. Ungültige Felder sind rot markiert, solange wird nicht gespeichert.</li>
           <li>Das Bild im ChaBo ist unabhängig vom Profilbild des Charakters.</li>
@@ -505,7 +505,7 @@ export default async function HelpPage() {
             <strong>Übergabe und Zurückgeben:</strong> Bei der Übergabe wechselt der Charakter samt Beiträgen, Bogen, Geheimem und Verlauf auf das Konto der neuen Besitzer:in und ist dann ein normaler Charakter (kein NPC, nicht mehr frei). Wer einen Charakter nicht mehr spielen möchte, gibt ihn unter „Bearbeiten“ → „An die Welt zurückgeben“ zurück. Alle Admins der Welt dürfen NPCs und freie Charaktere bearbeiten.
           </li>
           <li>
-            <strong>Kopfleiste am Handy:</strong> Oben links steht die Welt (ein Tipp wechselt sie), rechts folgen Glocke, der Schalter für Ingame, Story und Redaktion und das Menü. Suche, Mitglieder (mit Online-Anzeige) und der Charakterwechsel („Wechseln“ unter deinem Namen) stehen ganz oben im Menü.
+            <strong>Aufbau der App:</strong> Oben steht, als wer und in welcher Welt du bist; ein Tipp darauf öffnet „Du spielst“ (Charakter wechseln, „Profil“, Welten). Daneben Glocke, Notizbuch und der Schalter für Ingame, Story und Redaktion. Die untere Leiste (am Computer die Seitenleiste) zeigt in Ingame und Story dasselbe: Feed bzw. Story, Welt, „+“, Chats und deinen Charakter. „Welt“ bündelt Wiki, Charaktere, Beziehungen, Karten, Zeitleiste, Kalender, Würfelverlauf, Mitglieder und Welt-Chat, mit Suche. Ein zweiter Tipp (oder langes Drücken) auf deinen Charakter unten öffnet ebenfalls „Du spielst“. „+“ legt alles Neue an (Beitrag, Story, Szene, Wiki-Seite, Notiz, Charakter), oben wählst du, als wer. Die Redaktion ist dunkelblau und hat eigene Einträge: Neuigkeiten, Chat, Feedback und „Du“ (Spielerprofil, Meine Charaktere, Freund:innen, Badges, Änderungsverlauf, Einstellungen). Die Einstellungen öffnest du am Handy über ≡ in deinem Profil, am Computer über ≡ in der Seitenleiste.
           </li>
           <li>
             <strong>Besetzung (Rollenliste):</strong> Admins schalten unter „Einstellungen“ die „Besetzung (Rollenliste im Wiki)“ ein, zum Beispiel für Welten nach einer Serie. Im Wiki steht dann „Besetzung“: alle Rollen mit Alter, Wesen, Serie und Stand (Frei, Reserviert, Vergeben, NPC), mit Suche, Anfangsbuchstaben und Filtern. Ein Tipp auf eine Rolle zeigt die Beschreibung.
@@ -520,7 +520,7 @@ export default async function HelpPage() {
             <strong>Ohne Charakter erkunden:</strong> Nach dem Beitritt musst du nicht gleich einen Charakter anlegen. Du kannst Feed, Story, Wiki, Figuren und die Weltseite ansehen. Zum Schreiben, Liken und Chatten brauchst du einen Charakter; ein Hinweis mit „Charakter anlegen“ und „Freie Rollen ansehen“ begleitet dich, bis du einen hast.
           </li>
           <li>
-            <strong>Alle Charaktere der Welt:</strong> Im Story-Bereich steht oben neben „Szenen“ der Reiter „Charaktere“ (am Computer auch in der Seitenleiste). Er listet jeden Charakter der Welt mit seinem Stand: frei, gespielt von …, dein Charakter oder NPC. Du kannst nach Namen, Spieler:in und Wesen suchen. Die Knöpfe „Frei“, „Vergeben“, „Meine“ und „NPCs“ filtern nach Stand; ein zweiter Tipp auf den gewählten Knopf schaltet den Filter wieder aus. Unter „Filtern“ wählst du eine bestimmte Spieler:in (zum Beispiel alle Charaktere von Hörnchen) oder ein Wesen und stellst die Sortierung ein. Admins sehen zusätzlich, wie viele Mitglieder noch keinen Charakter haben, und können freie Charaktere direkt anbieten. Die Liste lädt in Schritten, auch bei vielen Mitgliedern.
+            <strong>Alle Charaktere der Welt:</strong> Unter „Welt“ steht die Kachel „Charaktere“, im Story-Bereich zusätzlich der Reiter neben „Szenen“. Er listet jeden Charakter der Welt mit seinem Stand: frei, gespielt von …, dein Charakter oder NPC. Du kannst nach Namen, Spieler:in und Wesen suchen. Die Knöpfe „Frei“, „Vergeben“, „Meine“ und „NPCs“ filtern nach Stand; ein zweiter Tipp auf den gewählten Knopf schaltet den Filter wieder aus. Unter „Filtern“ wählst du eine bestimmte Spieler:in (zum Beispiel alle Charaktere von Hörnchen) oder ein Wesen und stellst die Sortierung ein. Admins sehen zusätzlich, wie viele Mitglieder noch keinen Charakter haben, und können freie Charaktere direkt anbieten. Die Liste lädt in Schritten, auch bei vielen Mitgliedern.
           </li>
           <li>
             <strong>Freund:innen finden:</strong> Tritt jemand einer Welt bei, sehen die Mitglieder dieser Welt oben in der Redaktion eine Karte „Willkommen, Name!“ mit „Befreunden“ und „Begrüßen“. In der Mitgliederliste einer Welt steht neben jedem Namen „Befreunden“, und auf der Freunde-Seite schlägt „Kennst du schon?“ Mitglieder deiner Welten vor. Unter „Konto“ → „Sichtbarkeit“ schaltest du die Ankündigung deines Beitritts aus, oder du stellst dich allen in der Redaktion vor.
@@ -575,10 +575,10 @@ export default async function HelpPage() {
         </ul>
       </Section>
 
-      <Section id="melden" title="19. Tickets: etwas melden">
+      <Section id="melden" title="19. Feedback: etwas melden">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Postfach:</strong> In der Redaktion gibt es den Eintrag „Tickets“ (am Handy im Menü). Dort schreibst du mit „Neu“ einen Fehler, einen Wunsch oder eine Frage auf, mit Titel, Beschreibung und bis zu vier Screenshots. Gerät und Browser werden automatisch mitgeschickt, die Seite davor ebenfalls (du kannst sie ändern oder leeren). Eine Kategorie (Szene, Wiki, Chat, Besetzung …) ist optional und passt sich der Seite an.
+            <strong>Postfach:</strong> In der Redaktion gibt es den Eintrag „Feedback“. Dort schreibst du mit „Neu“ einen Fehler, einen Wunsch oder eine Frage auf, mit Titel, Beschreibung und bis zu vier Screenshots. Gerät und Browser werden automatisch mitgeschickt, die Seite davor ebenfalls (du kannst sie ändern oder leeren). Eine Kategorie (Szene, Wiki, Chat, Besetzung …) ist optional und passt sich der Seite an.
           </li>
           <li>
             <strong>Nummer und Verlauf:</strong> Jedes Ticket bekommt eine Nummer (zum Beispiel #12). Im Ticket siehst du den Stand (Offen, In Arbeit, Erledigt, Abgelehnt) und die Antworten. Antworten und Statuswechsel erscheinen sofort, ohne neu zu laden. Die Liste ist nach Stand gruppiert (Offen, In Arbeit, Abgeschlossen) und lässt sich durchsuchen. Ungelesene Tickets sind fett und haben einen Punkt, der Zähler steht am Eintrag „Tickets“. Über die drei Punkte im Ticket kopierst du den Link.
@@ -620,7 +620,7 @@ export default async function HelpPage() {
       <Section id="notizen" title="22. Notizen und Faceclaims (nur für dich)">
         <ul className="flex list-disc flex-col gap-2 pl-5">
           <li>
-            <strong>Notizbuch:</strong> Im Menü (☰) unter „Notizen“ geht ein aufgeschlagenes Buch über der Seite auf; Esc, das Kreuz oder ein Klick daneben schließt es. Am rechten Rand (am Handy oben) sitzen Karteitabs: Alle · Angeheftet · Offene Fäden · Vorlagen · Archiv · Papierkorb. Eine gespeicherte Notiz erscheint als fertige Seite; „Bearbeiten“ oder ein Tipp in den Text öffnet den Editor, „Fertig“ schließt ihn. Kästchen lassen sich auf der Seite direkt abhaken. Beim Schreiben speichert die Notiz von selbst. Mit „Aa Schriftart“ ändert sich die Schrift des markierten Textes (über 60 Schriften), unter „Darstellung“ (Symbol „T“) die der ganzen Notiz. Nur du siehst deine Notizen, auch Weltbesitzer:innen und Admins nicht.
+            <strong>Notizbuch:</strong> Über das Notizbuch-Symbol oben (Handy) bzw. „Notizen“ in der Seitenleiste geht ein aufgeschlagenes Buch über der Seite auf; die Notizen zu einem Charakter stehen auch im Reiter „Notizen“ seines Profils; Esc, das Kreuz oder ein Klick daneben schließt es. Am rechten Rand (am Handy oben) sitzen Karteitabs: Alle · Angeheftet · Offene Fäden · Vorlagen · Archiv · Papierkorb. Eine gespeicherte Notiz erscheint als fertige Seite; „Bearbeiten“ oder ein Tipp in den Text öffnet den Editor, „Fertig“ schließt ihn. Kästchen lassen sich auf der Seite direkt abhaken. Beim Schreiben speichert die Notiz von selbst. Mit „Aa Schriftart“ ändert sich die Schrift des markierten Textes (über 60 Schriften), unter „Darstellung“ (Symbol „T“) die der ganzen Notiz. Nur du siehst deine Notizen, auch Weltbesitzer:innen und Admins nicht.
           </li>
           <li>
             <strong>Verknüpfen:</strong> In der Notiz auf „Verknüpfen“ tippen und Charaktere, Wiki-Seiten, Szenen, gespeicherte Ausschnitte oder andere Notizen wählen. Die Marken öffnen das Ziel; andere Notizen zeigen „Verlinkt in“. Wird ein Ziel gelöscht, verschwindet nur die Verknüpfung.

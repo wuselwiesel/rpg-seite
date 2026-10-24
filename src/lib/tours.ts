@@ -4,7 +4,7 @@
 
 // Wie ein Ziel-Element gefunden wird:
 // attr = data-tour-Marke · title = title-Attribut · name = sichtbarer Name eines Links/Knopfs · href = Link mit genau diesem Ziel
-// any = mehrere Möglichkeiten, das erste sichtbare Ziel gilt (z. B. am Handy der Menü-Knopf, wenn die Weltauswahl nur im Menü steht)
+// any = mehrere Möglichkeiten, das erste sichtbare Ziel gilt (z. B. am Handy „Wer und wo“, wenn die Charakterreihe nur am Computer steht)
 export type TourMatch = { attr: string } | { title: string } | { name: string } | { href: string } | { any: TourMatch[] };
 
 // route: feste Seite oder ein Platzhalter für etwas, das erst gefunden werden muss:
@@ -33,36 +33,36 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "Willkommen bei Wortwinkel",
-        text: "Wortwinkel ist ein Ort für gemeinsames Rollenspiel: ihr schreibt Szenen, spielt mit euren Charakteren und baut zusammen eine Welt auf. Dieser Rundgang zeigt die Grundlagen. Mit „Weiter“ geht es los, mit dem Kreuz oben brichst du ab. Weitere Rundgänge findest du jederzeit im Menü unter „Rundgänge“.",
+        text: "Wortwinkel ist ein Ort für gemeinsames Rollenspiel: ihr schreibt Szenen, spielt mit euren Charakteren und baut zusammen eine Welt auf. Dieser Rundgang zeigt die Grundlagen. Mit „Weiter“ geht es los, mit dem Kreuz oben brichst du ab. Weitere Rundgänge findest du jederzeit in den Einstellungen unter „Rundgänge“.",
         route: "/",
       },
       {
         title: "Deine Welt",
-        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Hier siehst du, in welcher Welt du gerade bist, und wechselst zu einer anderen. Am Handy tippst du dafür oben auf den Weltnamen, die Liste deiner Welten klappt direkt auf. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
+        text: "Alles gehört zu einer Welt: Szenen, Wiki, Charaktere und Chats. Oben siehst du, als wer und in welcher Welt du gerade bist. Ein Tipp darauf öffnet „Du spielst“: dort wechselst du Charakter und Welt. Alles, was zur Welt gehört (Wiki, Charaktere, Beziehungen, Karten, Zeitleiste, Mitglieder), findest du unter „Welt“. Neue Welten legst du unter „Deine Welten“ an oder trittst per Einladung bei.",
         route: "/",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
       {
         title: "Welten entdecken und üben",
-        text: "Über die Weltauswahl (am Handy im Menü oben rechts) kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt in Schattenmoor ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen; aufgeräumt wird bei Bedarf von Hand.",
+        text: "Unter „Du spielst“ kommst du zu „Welten entdecken“: öffentliche Welten, in die du direkt beitreten oder eine Anfrage schicken kannst. Manche lassen dich vorher stöbern. Die Übungswelt in Schattenmoor ist zum Ausprobieren da: Dort darfst du Charaktere, Szenen und Wiki-Seiten anlegen; aufgeräumt wird bei Bedarf von Hand.",
         route: "/",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
       {
         title: "Dein Charakter",
-        text: "Du schreibst immer als einer deiner Charaktere. Am Computer wählst du hier, wer gerade aktiv ist; am Handy steht „Wechseln“ ganz oben im Menü. Wechselst du, ändern sich Profil, ChaBo (bzw. Steckbrief) und Chats mit. Wie viele Charaktere du hast, bestimmst du selbst.",
+        text: "Du schreibst immer als einer deiner Charaktere. Ein Tipp auf dein Charakterbild oben öffnet „Du spielst“; dort wechselst du, wer gerade aktiv ist (am Handy auch: zweimal auf deinen Charakter unten tippen). Wechselst du, ändern sich Profil, ChaBo (bzw. Steckbrief) und Chats mit. Wie viele Charaktere du hast, bestimmst du selbst.",
         route: "/",
-        match: { any: [{ attr: "character" }, { attr: "account-menu" }] },
+        match: { attr: "world" },
       },
       {
         title: "Ingame, Story und Redaktion",
-        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit Feed, ChaBo (Steckbrief) und Chats. Die Suche steht am Handy ganz oben im Menü, am Computer in der Seitenleiste. „Story“ ist das eigentliche Rollenspiel: Szenen, Wiki und ChaBo (Steckbrief). „Redaktion“ ist für euch als Spieler:innen, außerhalb der Rolle, mit eigenem Feed und Chat.",
+        text: "Drei Bereiche für verschiedene Dinge. „Ingame“ ist das soziale Netz eurer Charaktere mit dem Feed. „Story“ ist das eigentliche Rollenspiel mit den Szenen. Welt, Chats und dein Charakter stehen in beiden gleich. „Redaktion“ ist euer eigener Raum als Spieler:innen, außerhalb der Rolle, mit Neuigkeiten, Chat, Feedback und „Du“.",
         route: "/",
         match: { attr: "mode-switch" },
       },
       {
         title: "Neu erstellen",
-        text: "Der „+“-Knopf legt je nach Bereich etwas Neues an: im Feed einen Beitrag, in der Story eine Szene, im Wiki einen Artikel.",
+        text: "Der „+“-Knopf legt alles Neue an: Beitrag, Story, Szene, Wiki-Seite, Notiz oder Charakter. Oben wählst du, als welcher Charakter.",
         route: "/",
         match: { attr: "compose" },
       },
@@ -73,8 +73,8 @@ export const TOURS: Tour[] = [
         match: { title: "Benachrichtigungen" },
       },
       {
-        title: "Menü und Hilfe",
-        text: "Im Menü findest du Konto, Freund:innen, Meine Charaktere und die Rundgänge. Die Seite „Hilfe“ erklärt Würfeln, Attribute, Talente und Tastenkürzel ausführlicher.",
+        title: "Einstellungen und Hilfe",
+        text: "In den Einstellungen findest du Konto, Freund:innen, Meine Charaktere, die Chat-Blase und die Rundgänge: am Computer über ≡ in der Seitenleiste, am Handy über ≡ in deinem Profil oder in der Redaktion unter „Du“. Die Seite „Hilfe“ erklärt Würfeln, Attribute, Talente und Tastenkürzel ausführlicher.",
         route: "/",
         match: { attr: "account-menu" },
       },
@@ -109,7 +109,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Suche",
-        text: "Die Suche (am Handy ganz oben im Menü, am Computer in der Seitenleiste) findet Charaktere, Welten und Beiträge, auch über Hashtags. Tippe auf ein Ergebnis, um das Profil oder den Beitrag zu öffnen.",
+        text: "Die Suche (am Handy auf der Seite „Welt“, am Computer in der Seitenleiste) findet Charaktere, Welten und Beiträge, auch über Hashtags. Tippe auf ein Ergebnis, um das Profil oder den Beitrag zu öffnen.",
         route: "/",
         match: { any: [{ name: "Suche" }, { attr: "search" }, { attr: "account-menu" }] },
       },
@@ -495,7 +495,7 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "Eigene Welt verwalten",
-        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über die Weltauswahl (am Handy: der Weltname oben wechselt direkt die Welt, die übrigen Punkte stehen im Menü oben rechts) erreichst du „Welten verwalten“, „Diese Welt bearbeiten“ (Besitzer:in und Admins), „Welten entdecken“ und „Neue Welt erschaffen“.",
+        text: "Dieser Rundgang zeigt, was Besitzer:innen und Admins an einer Welt einstellen können. Als normales Mitglied siehst du davon nur die Mitgliederliste. Über „Du spielst“ (oben, ein Tipp auf deinen Charakter und die Welt) erreichst du „Welten verwalten“, „Diese Welt bearbeiten“ (Besitzer:in und Admins), „Welten entdecken“ und „Neue Welt erschaffen“.",
         route: "/worlds",
         match: { any: [{ attr: "world" }, { attr: "account-menu" }] },
       },
@@ -628,7 +628,7 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: "Konto & Einstellungen",
-        text: "Hier stellst du Profil, Benachrichtigungen, Aussehen und mehr ein. Am Handy öffnest du es über das Menü oben rechts.",
+        text: "Hier stellst du Profil, Benachrichtigungen, Aussehen und mehr ein. Am Handy öffnest du es über ≡ in deinem Profil.",
         route: "/profile",
         match: { attr: "account-menu" },
       },
@@ -654,7 +654,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "App installieren und Daten",
-        text: "Wortwinkel lässt sich als App auf den Startbildschirm legen. Über das Menü installierst du sie. Deine Daten kannst du exportieren, Szenen auch als Buch oder E-Book.",
+        text: "Wortwinkel lässt sich als App auf den Startbildschirm legen. In den Einstellungen installierst du sie. Deine Daten kannst du exportieren, Szenen auch als Buch oder E-Book.",
         route: "/profile",
       },
     ],

@@ -1034,36 +1034,64 @@ html.kb-open .mobile-bottom-nav {
   .menu-pop, .feed-in { animation: none; }
 }
 
-/* Redaktion: eigenes, nüchternes Zeitungs-Schema (Papiergrau, Tintenschwarz, Redaktionsrot) - überschreibt die gewählte Palette. */
+/* Redaktion (Variante D): eigener Raum in Nachtblau mit Messing-Akzent - überschreibt die gewählte Palette.
+   Kopf, Seitenleiste und untere Leiste tragen die Klasse .chrome und werden ganz nachtblau (eigene Farbwerte im Bereich). */
 html[data-mode="redaktion"] {
-  --app: #f3f3f0;
+  --app: #f3f4f8;
   --surface: #ffffff;
-  --surface-2: #e9e9e4;
-  --surface-3: #e3e6ee;
-  --line: #d6d6d0;
-  --fg: #1f2125;
-  --fg-soft: #43464d;
-  --muted: #5c6068;
-  --accent: #b3261e;
-  --accent-strong: #1f2937;
+  --surface-2: #eceef4;
+  --surface-3: #e1e4ec;
+  --line: #e1e4ec;
+  --fg: #1c2236;
+  --fg-soft: #3d4560;
+  --muted: #5f6782;
+  --accent: #8a6a1f;
+  --accent-strong: #1c2540;
   --on-accent-strong: #ffffff;
-  --chip: #d9dde6;
-  --on-chip: #1f2937;
+  --chip: #f6ecd6;
+  --on-chip: #5c4512;
 }
 html[data-mode="redaktion"].dark {
-  --app: #121316;
-  --surface: #1b1c20;
-  --surface-2: #25272c;
-  --surface-3: #2a2c33;
-  --line: #34363d;
-  --fg: #eceae6;
-  --fg-soft: #cfcdc8;
-  --muted: #a3a3a8;
-  --accent: #ff8a80;
-  --accent-strong: #e8e6e1;
-  --on-accent-strong: #17181b;
-  --chip: #3a3d46;
-  --on-chip: #eceae6;
+  --app: #10141f;
+  --surface: #171c2a;
+  --surface-2: #1f2537;
+  --surface-3: #283048;
+  --line: #283048;
+  --fg: #eceff6;
+  --fg-soft: #c9cfe0;
+  --muted: #9aa3bd;
+  --accent: #e0bf7a;
+  --accent-strong: #e0bf7a;
+  --on-accent-strong: #10141f;
+  --chip: #3a3322;
+  --on-chip: #f2d99c;
+}
+html[data-mode="redaktion"] .chrome {
+  --app: #1c2540;
+  --surface: #1c2540;
+  --surface-2: #26304f;
+  --surface-3: #2b3658;
+  --line: #2b3658;
+  --fg: #eef0f7;
+  --fg-soft: #d5daea;
+  --muted: #a9b1c9;
+  --accent: #e6c47e;
+  --accent-strong: #d4b06a;
+  --on-accent-strong: #1c2540;
+  background-color: #1c2540;
+  color: #eef0f7;
+  border-color: #1c2540;
+}
+html[data-mode="redaktion"].dark .chrome {
+  --app: #0d1222;
+  --surface: #0d1222;
+  --surface-2: #19203a;
+  --surface-3: #222a47;
+  --line: #222a47;
+  --accent-strong: #e0bf7a;
+  --on-accent-strong: #0d1222;
+  background-color: #0d1222;
+  border-color: #0d1222;
 }
 
 /* Eigene Emojis (:name:) laufen mit der Textgröße mit. */
