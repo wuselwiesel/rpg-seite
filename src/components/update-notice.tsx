@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
-const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+// Leer zählt wie „nicht vorhanden“ (z. B. wenn der Bau die Kennung nicht mitbekam): dann nie „Neu laden“ anzeigen
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
 export const ACTION_FAILED_EVENT = "wortwinkel:action-failed";
 
 // Hinweis „Neu laden“, sobald eine neuere Version der App läuft als die, die diese Seite geladen hat
