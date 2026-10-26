@@ -5,12 +5,12 @@ import { PrintButton } from "./print-button";
 
 // Buchansicht einer Szene oder eines Handlungsstrangs: Titelseite, Inhaltsverzeichnis, Text.
 // Über "Als PDF speichern" (Druckdialog des Browsers) entsteht das PDF, über den Link das E-Book (EPUB).
-export function BookView({ book, epubHref }: { book: Book; epubHref: string }) {
+export function BookView({ book, epubHref, pdfHref }: { book: Book; epubHref: string; pdfHref?: string }) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 print:max-w-none print:p-0">
       <div className="no-print mb-6 flex flex-wrap items-center gap-3 rounded-xl bg-surface-2 p-3 text-sm">
         <span className="flex-1 text-fg-soft">Deine Geschichte als Buch.</span>
-        <PrintButton />
+        <PrintButton pdfHref={pdfHref} />
         <a href={epubHref} className="rounded-md border border-line px-3 py-1.5 font-medium text-fg-soft transition hover:bg-surface-3 hover:text-fg">
           E-Book (EPUB) laden
         </a>
