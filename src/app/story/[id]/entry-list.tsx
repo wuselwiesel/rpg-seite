@@ -6,7 +6,7 @@ import { AtSign, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import type { Character, StoryEntry } from "@/lib/types";
-import { HIGHLIGHT_EVENT } from "@/lib/scene-quote";
+import { HIGHLIGHT_EVENT, highlightEntries } from "@/lib/scene-quote";
 import { EarlierEntries } from "./earlier-entries";
 import { StoryEntryItem } from "./story-entry-item";
 import { captureScrollAnchor } from "@/lib/keep-scroll";
@@ -142,6 +142,15 @@ export function EntryList({
         if (!id || !seenIds.current.has(id)) return;
         setDeletedIds((prev) => new Set(prev).add(id));
         // Serverseitig gerenderte Teile (z. B. die Vorschau des letzten Beitrags) mitziehen.
+        router.refresh();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "story_entries", filter: `story_post_id=eq.${storyPostId}` }, (payload) => {
+        const row = payload.new as StoryEntry;
+        if (!row?.id || !seenIds.current.has(row.id)) return;
+        // Beitrag in der live-Liste aktualisieren (falls er dort liegt, ansonsten reicht router.refresh)
+        setLive((prev) => prev.map((e) => e.id === row.id ? { ...e, content: row.content, updated_at: row.updated_at } : e));
+        // Hervorhebung (für alle, die die Szene offen haben) und Inhalt aktualisieren
+        window.setTimeout(() => highlightEntries([row.id]), 50);
         router.refresh();
       })
       .subscribe();

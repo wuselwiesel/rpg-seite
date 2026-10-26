@@ -4,6 +4,8 @@ import { confirmDialog, alertDialog } from "@/components/confirm-dialog";
 import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { highlightEntries } from "@/lib/scene-quote";
 import { Bookmark, Check, Clover, Copy, Dices, EyeOff, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
 import { copyEntries } from "@/lib/entry-copy";
 import { useClipSelection } from "./clip-selection";
@@ -73,9 +75,35 @@ export function StoryEntryItem({
   const wasPending = useRef(false);
 
   useEffect(() => {
-    if (wasPending.current && !pending && !error) setEditing(false);
+    if (wasPending.current && !pending && !error) {
+      setEditing(false);
+      // Kurze Hervorhebung der soeben bearbeiteten Nachricht
+      window.setTimeout(() => highlightEntries([entry.id]), 100);
+    }
     wasPending.current = pending;
-  }, [pending, error]);
+  }, [pending, error, entry.id]);
+
+  // Solange das Bearbeiten-Formular offen ist, sehen andere im Composer „bearbeitet eine Nachricht…"
+  useEffect(() => {
+    if (!editing) return;
+    const supabase = createClient();
+    const channel = supabase.channel(`story-typing-${storyPostId}`);
+    let timer: ReturnType<typeof setInterval> | undefined;
+    channel.subscribe((status) => {
+      if (status !== "SUBSCRIBED") return;
+      const payload = {
+        characterId: entry.character_id,
+        name: isNarrator ? "Erzähler:in" : (entry.characters?.name ?? "Jemand"),
+        kind: "edit" as const,
+      };
+      void channel.send({ type: "broadcast", event: "typing", payload });
+      timer = setInterval(() => void channel.send({ type: "broadcast", event: "typing", payload }), 3000);
+    });
+    return () => {
+      if (timer !== undefined) clearInterval(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [editing, storyPostId, entry.character_id, entry.characters?.name, isNarrator]);
 
   const router = useRouter();
   const [markOpen, setMarkOpen] = useState(false);
