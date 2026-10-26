@@ -12,5 +12,5 @@ export default async function SceneBookPage({ params }: PageProps<"/story/[id]/b
   if (!user) redirect("/login");
   const book = await loadBook({ sceneId: id });
   if (!book) notFound();
-  return <BookView book={book} epubHref={`/story/${id}/epub`} />;
+  return <BookView book={book} epubHref={`/story/${id}/epub`} pdfHref={`/story/${id}/pdf`} />;
 }
