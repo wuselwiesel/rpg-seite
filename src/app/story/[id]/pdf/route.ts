@@ -22,7 +22,10 @@ const styles = StyleSheet.create({
   divider: { borderBottomWidth: 0.5, borderBottomColor: "#ccc", marginVertical: 16 },
 });
 
+export const dynamic = "force-dynamic";
+
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
   const { id } = await params;
   const supabase = await createClient();
   const {
@@ -98,4 +101,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       "Cache-Control": "private, no-store",
     },
   });
+  } catch (err) {
+    console.error("[pdf/route]", err);
+    return new NextResponse(`PDF-Fehler: ${String(err)}`, { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
 }
