@@ -141,7 +141,7 @@ export function StoryComposer({
   const [showChapter, setShowChapter] = useState(false);
 
   // Zeigt anderen, die diese Szene gerade offen haben, wer hier schreibt (wie bei den Chats).
-  const [typing, setTyping] = useState<Record<string, { name: string; until: number; kind: "write" | "roll" }>>({});
+  const [typing, setTyping] = useState<Record<string, { name: string; until: number; kind: "write" | "roll" | "edit" }>>({});
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const lastTypingSent = useRef(0);
   const { setWriting } = useOnline();
@@ -151,7 +151,7 @@ export function StoryComposer({
     const channel = supabase
       .channel(`story-typing-${storyPostId}`)
       .on("broadcast", { event: "typing" }, ({ payload }) => {
-        const { characterId, name, kind } = payload as { characterId: string; name: string; kind?: "write" | "roll" };
+        const { characterId, name, kind } = payload as { characterId: string; name: string; kind?: "write" | "roll" | "edit" };
         setTyping((prev) => ({ ...prev, [characterId]: { name, kind: kind ?? "write", until: Date.now() + 4000 } }));
       })
       .subscribe();
@@ -317,7 +317,7 @@ export function StoryComposer({
             <span className="typing-dot [animation-delay:300ms]" />
           </span>
           {Object.values(typing)
-            .map((t) => `${t.name} ${t.kind === "roll" ? "würfelt" : "schreibt"}`)
+            .map((t) => `${t.name} ${t.kind === "roll" ? "würfelt" : t.kind === "edit" ? "bearbeitet eine Nachricht" : "schreibt"}`)
             .join(", ")}
           …
         </div>
