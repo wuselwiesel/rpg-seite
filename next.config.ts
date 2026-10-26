@@ -12,8 +12,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet, noimageindex" }] }];
   },
-  // @react-pdf/renderer nicht ins Server-Bundle einbetten (standalone-Modus kopiert es als externen Import)
-  serverExternalPackages: ["@react-pdf/renderer"],
   experimental: {
     // Dynamische Seiten nicht im Client-Cache halten: sonst zeigte ein Seitenwechsel kurz nach Weltwechsel oder Speichern
     // noch den alten Stand (Feed der vorherigen Welt, alte Wiki-Startseite). Statische Teile dürfen bleiben.
