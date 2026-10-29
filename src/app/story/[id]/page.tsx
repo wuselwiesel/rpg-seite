@@ -178,6 +178,9 @@ export default async function StoryPostDetailPage({
     .map((r) => ({ id: r.id as string, title: r.title as string }));
   const locations = Array.from(new Set((locationRows ?? []).map((r) => r.location as string))).sort();
 
+  // Kontoname für „… schreibt“ im Erzähler-Modus
+  const { data: accountProfile } = await supabase.from("profiles").select("username, nickname").eq("id", user.id).maybeSingle<{ username: string; nickname: string | null }>();
+  const accountName = accountProfile?.nickname || accountProfile?.username || "Erzähler:in";
   const [{ data: world }, { data: bookmark }] = await Promise.all([
     supabase.from("worlds").select("created_by, dice_enabled").eq("id", storyPost.world_id).maybeSingle<{ created_by: string; dice_enabled: boolean | null }>(),
     supabase
@@ -574,6 +577,7 @@ export default async function StoryPostDetailPage({
             locations={locations}
             sceneLocation={storyPost.location}
             userId={user.id}
+            accountName={accountName}
             worldMembers={worldMembers}
             startInChat={chatParam === "1"}
             diceEnabled={world?.dice_enabled !== false}

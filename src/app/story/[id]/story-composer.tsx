@@ -27,6 +27,7 @@ export function StoryComposer({
   locations,
   sceneLocation,
   userId,
+  accountName = "Erzähler:in",
   worldMembers,
   startInChat = false,
   diceEnabled = true,
@@ -44,6 +45,8 @@ export function StoryComposer({
   sceneLocation: string | null;
   // Eigenes Konto (für den Chat dieser Szene) und ob der Reiter „Chat“ gleich offen sein soll (Link aus einer Benachrichtigung)
   userId: string;
+  // Name des eigenen Kontos: im Erzähler-Modus schreibt man als Konto, nicht als Charakter
+  accountName?: string;
   // Mitglieder der Welt (für „… ist online“ im Schreibbereich)
   worldMembers: { id: string; name: string; avatarUrl: string | null }[];
   startInChat?: boolean;
@@ -186,7 +189,7 @@ export function StoryComposer({
       event: "typing",
       payload: {
         characterId: writerId,
-        name: kind === "write" && narrator ? "Erzähler:in" : (writer?.name ?? "Jemand"),
+        name: kind === "write" && narrator ? accountName : (writer?.name ?? "Jemand"),
         kind,
       },
     });
@@ -301,7 +304,7 @@ export function StoryComposer({
       )}
       {mode === "write" && narrator && (
         <p className="text-xs text-muted">
-          Du schreibst als <span className="text-sm font-medium text-fg-soft">Erzähler:in</span> – ohne Charakter.
+          <span className="text-sm font-medium text-fg-soft">{accountName}</span> schreibt
         </p>
       )}
 
