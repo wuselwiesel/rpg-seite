@@ -142,7 +142,7 @@ export function ClipSelectionProvider({
         <div
           role="toolbar"
           aria-label="Auswahl"
-          className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-sm flex-col gap-2 rounded-2xl border border-line bg-surface px-3 py-2.5 shadow-lg lg:bottom-6"
+          className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-lg flex-col gap-2 rounded-2xl border border-line bg-surface px-3 py-2.5 shadow-lg lg:bottom-6"
         >
           <div className="flex items-center gap-2">
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{selected.length === 1 ? "1 Nachricht gewählt" : `${selected.length} Nachrichten gewählt`}</span>
@@ -151,7 +151,7 @@ export function ClipSelectionProvider({
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() =>
@@ -163,7 +163,7 @@ export function ClipSelectionProvider({
               }
               title="Kopieren"
               aria-label="Kopieren"
-              className="flex items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+              className="flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
             >
               <Copy className="h-3.5 w-3.5" strokeWidth={2} />
               Kopieren
@@ -173,7 +173,7 @@ export function ClipSelectionProvider({
                 type="button"
                 onClick={() => void quote()}
                 disabled={saving}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+                className="flex shrink-0 grow items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
               >
                 <Quote className="h-3.5 w-3.5" strokeWidth={2} />
                 Im Chat zitieren
@@ -190,7 +190,7 @@ export function ClipSelectionProvider({
                   setToast("Als Notiz gespeichert");
                 })
               }
-              className="flex items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+              className="flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg"
             >
               <NotebookPen className="h-3.5 w-3.5" strokeWidth={2} />
               Notiz
@@ -198,7 +198,7 @@ export function ClipSelectionProvider({
             <button
               type="button"
               onClick={() => setDialog(true)}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+              className="flex shrink-0 grow items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
             >
               <Bookmark className="h-3.5 w-3.5" strokeWidth={2} />
               Speichern
@@ -465,7 +465,7 @@ function SelectionActions({
   if (!sel || typeof document === "undefined") return null;
   // Am Handy erscheint über der Markierung das Menü des Systems: die Knöpfe stehen darunter
   const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const width = canQuote ? 290 : 190;
+  const width = canQuote ? 330 : 200;
   const left = Math.min(Math.max(8, sel.rect.left + sel.rect.width / 2 - width / 2), window.innerWidth - width - 8);
   const top = coarse ? Math.min(sel.rect.bottom + 14, window.innerHeight - 56) : Math.max(8, sel.rect.top - 48);
   if (sel.rect.bottom < 0 || sel.rect.top > window.innerHeight) return null;
@@ -496,7 +496,7 @@ function SelectionActions({
             type="button"
             disabled={busy}
             onClick={() => void quote()}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
           >
             <Quote className="h-3.5 w-3.5" strokeWidth={2} />
             Im Chat zitieren
@@ -514,7 +514,7 @@ function SelectionActions({
             window.getSelection()?.removeAllRanges();
             setSel(null);
           }}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+          className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-fg-soft transition hover:bg-surface-2 hover:text-fg disabled:opacity-50"
         >
           <NotebookPen className="h-3.5 w-3.5" strokeWidth={2} />
           Notiz
@@ -527,7 +527,7 @@ function SelectionActions({
             setSel(null);
             onSave(excerpts);
           }}
-          className="flex items-center gap-1.5 rounded-full bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+          className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent-strong px-3 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
         >
           <Bookmark className="h-3.5 w-3.5" strokeWidth={2} />
           Speichern
