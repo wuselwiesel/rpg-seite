@@ -13,6 +13,7 @@ import {
   LifeBuoy,
   Newspaper,
   Palette,
+  SlidersHorizontal,
   SmilePlus,
   Trash2,
   UserRound,
@@ -33,9 +34,10 @@ const GROUPS: { title: string; items: Item[] }[] = [
     ],
   },
   {
-    title: "Darstellung und Meldungen",
+    title: "App und Meldungen",
     items: [
       { href: "/profile/aussehen", label: "Aussehen", hint: "Farbpalette und App-Logo", Icon: Palette },
+      { href: "/profile/personalisieren", label: "Personalisieren", hint: "Chat-Blase, Senden mit Enter, Badges", Icon: SlidersHorizontal },
       { href: "/profile/benachrichtigungen", label: "Benachrichtigungen", hint: "Push, Ruhezeiten, Stummschalten", Icon: Bell },
     ],
   },

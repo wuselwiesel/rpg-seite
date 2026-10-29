@@ -3,9 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { SettingsHeader } from "@/components/settings-back";
 import { PaletteSwitcher } from "@/components/palette-switcher";
 import { AppLogoPicker } from "@/components/app-logo-picker";
-import { ChatBubbleToggle } from "@/components/chat-bubble-toggle";
-import { BadgePrefs } from "@/components/badge-prefs";
-import { SendKeyPref } from "@/components/send-key-pref";
 
 export default async function AppearanceSettingsPage() {
   const supabase = await createClient();
@@ -22,18 +19,6 @@ export default async function AppearanceSettingsPage() {
       <div className="mt-8 border-t border-line pt-6">
         <h3 className="mb-3 font-serif text-lg text-fg">App-Logo</h3>
         <AppLogoPicker />
-      </div>
-      <div className="mt-8 border-t border-line pt-6">
-        <h3 className="mb-3 font-serif text-lg text-fg">Chat-Blase</h3>
-        <ChatBubbleToggle />
-      </div>
-      <div className="mt-8 border-t border-line pt-6">
-        <h3 className="mb-3 font-serif text-lg text-fg">Senden mit Enter</h3>
-        <SendKeyPref />
-      </div>
-      <div className="mt-8 border-t border-line pt-6">
-        <h3 className="mb-3 font-serif text-lg text-fg">Badges</h3>
-        <BadgePrefs />
       </div>
     </>
   );
