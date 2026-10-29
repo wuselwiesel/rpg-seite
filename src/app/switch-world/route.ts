@@ -4,6 +4,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { worldOfLink } from "@/lib/link-world";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 import { LAST_CHARACTERS_COOKIE, lastCharacterFor } from "@/lib/last-characters";
+import { appUrl } from "@/lib/app-url";
 
 // Wechselt zur Welt, zu der der Link gehört (z. B. aus einer Benachrichtigung), und leitet dann weiter.
 // Ohne Mitgliedschaft in dieser Welt bleibt die aktive Welt unverändert.
@@ -15,12 +16,12 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(target)}`, request.url));
+  if (!user) return NextResponse.redirect(appUrl(request, `/login?next=${encodeURIComponent(target)}`));
 
   const requested = request.nextUrl.searchParams.get("world");
   const worldId = requested && /^[0-9a-f-]{36}$/.test(requested) ? requested : await worldOfLink(supabase, target);
 
-  const response = NextResponse.redirect(new URL(target, request.url));
+  const response = NextResponse.redirect(appUrl(request, target));
   if (!worldId) return response;
 
   const { data: membership } = await supabase.from("world_members").select("world_id").eq("world_id", worldId).eq("user_id", user.id).maybeSingle();

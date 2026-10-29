@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
 import { LAST_CHARACTERS_COOKIE, rememberLastCharacter } from "@/lib/last-characters";
+import { appUrl } from "@/lib/app-url";
 
 // Wechselt zum angegebenen (eigenen) Charakter und dessen Welt und leitet dann
 // weiter - z.B. aus einer Chat-Benachrichtigung heraus, damit der Chat des
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/login", request.url));
+  if (!user) return NextResponse.redirect(appUrl(request, "/login"));
 
   const { data: character } = await supabase
     .from("characters")
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     .is("deleted_at", null)
     .maybeSingle();
 
-  const response = NextResponse.redirect(new URL(target, request.url));
+  const response = NextResponse.redirect(appUrl(request, target));
   if (character) {
     const cookieOptions = SELECTION_COOKIE_OPTIONS;
     response.cookies.set(ACTIVE_CHARACTER_COOKIE, character.id, cookieOptions);

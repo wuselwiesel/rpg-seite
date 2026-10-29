@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { appUrl } from "@/lib/app-url";
 
 export async function GET(request: Request) {
   if (process.env.NODE_ENV !== "development") {
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
     return new Response(error.message, { status: 500 });
   }
 
-  const response = NextResponse.redirect(new URL(target, request.url));
+  const response = NextResponse.redirect(appUrl(request, target));
   for (const { name, value, options } of setCookies) {
     response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2]);
   }

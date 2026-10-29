@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { appUrl } from "@/lib/app-url";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
 // Offen für alle, auch für Angemeldete (Passwort vergessen und der Link aus der Mail)
@@ -44,15 +45,11 @@ export async function updateSession(request: NextRequest) {
   );
 
   if (!user && !isPublicPath) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(appUrl(request, "/login"));
   }
 
   if (user && isPublicPath) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(appUrl(request, "/"));
   }
 
   return supabaseResponse;
