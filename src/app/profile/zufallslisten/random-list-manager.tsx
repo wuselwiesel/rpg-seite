@@ -122,7 +122,7 @@ export function RandomListManager({
         {mine.length === 0 ? (
           <p className="text-sm text-muted">Noch keine eigenen Einträge.</p>
         ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {mine.map((e) => (
               <RevealRow
                 key={e.id}

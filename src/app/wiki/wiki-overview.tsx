@@ -162,7 +162,7 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
           <h2 id="entwuerfe" className={sectionTitle}>
             Meine Entwürfe <span className="text-base text-muted">{drafts.length}</span>
           </h2>
-          <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @2xl:grid-cols-2">
             {drafts.map((p) => (
               <li key={p.id}>
                 <PageLine p={p} folders={folders} note="Entwurf" />
@@ -178,7 +178,7 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
             <Star className="h-5 w-5 text-accent" strokeWidth={2} fill="currentColor" />
             Favoriten
           </h2>
-          <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @2xl:grid-cols-2">
             {favorites.map((p) => (
               <li key={p.id}>
                 <PageLine p={p} folders={folders} />
@@ -254,7 +254,7 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
           <h2 id="zuletzt" className={sectionTitle}>
             Zuletzt bearbeitet
           </h2>
-          <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @2xl:grid-cols-2">
             {recent.map((p) => (
               <li key={p.id}>
                 <PageLine p={p} folders={folders} note={p.updated_at ? formatDate(p.updated_at.slice(0, 10)) : ""} />
@@ -269,7 +269,7 @@ export async function WikiOverview({ canEditHome = false, hasHome = false }: { c
           <h2 id="neu" className={sectionTitle}>
             Neu im Wiki
           </h2>
-          <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @2xl:grid-cols-2">
             {newest.map((p) => (
               <li key={p.id}>
                 <PageLine p={p} folders={folders} note={p.created_at ? formatDate(p.created_at.slice(0, 10)) : ""} />

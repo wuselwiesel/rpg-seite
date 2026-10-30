@@ -131,7 +131,7 @@ export default async function WorldPreviewPage({ params, searchParams }: { param
       {tab === "besetzung" && <PreviewCast rows={cast} />}
 
       {tab === "figuren" && (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {((characters.data ?? []) as CharRow[]).length === 0 && <li className="text-sm text-muted">Noch keine Figuren.</li>}
           {((characters.data ?? []) as CharRow[]).map((c) => (
             <li key={c.id}>

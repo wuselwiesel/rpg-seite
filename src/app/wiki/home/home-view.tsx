@@ -73,7 +73,7 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
   function listItems(b: ListBlock): React.ReactNode {
     const n = b.count;
     const lines = (rows: PageRow[], note?: (p: PageRow) => string) => (
-      <ul className="grid gap-x-6 gap-y-1 @2xl:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @2xl:grid-cols-2">
         {rows.slice(0, n).map((p) => (
           <li key={p.id}>
             <PageLine p={p} folders={folders} note={note?.(p)} />

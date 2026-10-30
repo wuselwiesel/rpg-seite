@@ -354,7 +354,7 @@ export function MapViewer({
               </CustomEmojiPicker>
             </div>
           </div>
-          <div className="grid gap-3 @xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 @xl:grid-cols-2">
             <label className="flex flex-col gap-1 text-xs text-muted">
               Führt zur Wiki-Seite
               <select value={draft.pageId} onChange={(e) => setDraft({ ...draft, pageId: e.target.value })} className={field}>

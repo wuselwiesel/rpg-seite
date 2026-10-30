@@ -7,6 +7,8 @@ import { buildLinkEdges } from "@/lib/wiki-links";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { WikiGraph, type GraphPage } from "./wiki-graph";
 
+export const metadata = { title: "Graph" };
+
 export default async function WikiGraphPage({ searchParams }: PageProps<"/wiki/graph">) {
   const sp = await searchParams;
   const fokus = Array.isArray(sp.fokus) ? sp.fokus[0] : sp.fokus;

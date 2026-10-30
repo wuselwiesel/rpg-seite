@@ -6,6 +6,8 @@ import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { getAcceptedFriends } from "@/lib/friends";
 import { SchicksalForm, type WorldOption } from "./schicksal-form";
 
+export const metadata = { title: "Schicksalswürfel" };
+
 export default async function SchicksalPage() {
   const supabase = await createClient();
   const {

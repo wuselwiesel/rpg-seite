@@ -243,7 +243,7 @@ const personalizationFontVariables = [
   .join(" ");
 
 export const metadata: Metadata = {
-  title: "Wortwinkel",
+  title: { default: "Wortwinkel", template: "%s · Wortwinkel" },
   description: "Ein textbasiertes Rollenspiel für Freunde",
   // Nicht für Suchmaschinen: die Seite ist für Freunde gedacht
   robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false, noimageindex: true } },

@@ -3,6 +3,8 @@ import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { AccountChatList } from "./account-chat-list";
 
+export const metadata = { title: "Chat" };
+
 export default async function RedaktionChatPage() {
   const supabase = await createClient();
   const {

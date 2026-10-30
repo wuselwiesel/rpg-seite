@@ -8,6 +8,8 @@ import type { StoryArc } from "@/lib/types";
 import { NewStoryPostForm } from "./new-story-post-form";
 import { NoCharacterBanner } from "@/components/no-character-banner";
 
+export const metadata = { title: "Neue Szene" };
+
 export default async function NewStoryPostPage() {
   const supabase = await createClient();
   const {

@@ -6,6 +6,8 @@ import { getActiveWorld } from "@/lib/worlds";
 import type { CustomFateRow } from "@/lib/fate-custom";
 import { CustomFateManager } from "./manager";
 
+export const metadata = { title: "Eigene Schicksale" };
+
 export default async function EigeneSchicksalePage() {
   const supabase = await createClient();
   const {

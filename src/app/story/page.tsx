@@ -23,6 +23,8 @@ import { descendantIds, flattenFolders } from "@/lib/folder-tree";
 import { compareScenes } from "@/lib/scene-order";
 import type { StoryArc, StoryPost } from "@/lib/types";
 
+export const metadata = { title: "Story" };
+
 // Szenen pro Seite im Story-Feed - ohne Grenze wuerde die Abfrage mit wachsendem
 // Content immer langsamer werden, weil sie bislang ausnahmslos alle Posts der Welt laed.
 const PAGE_SIZE = 20;

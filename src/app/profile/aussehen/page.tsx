@@ -4,6 +4,8 @@ import { SettingsHeader } from "@/components/settings-back";
 import { PaletteSwitcher } from "@/components/palette-switcher";
 import { AppLogoPicker } from "@/components/app-logo-picker";
 
+export const metadata = { title: "Aussehen" };
+
 export default async function AppearanceSettingsPage() {
   const supabase = await createClient();
   const {

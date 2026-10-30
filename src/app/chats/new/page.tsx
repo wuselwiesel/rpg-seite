@@ -5,6 +5,8 @@ import { getActiveWorld } from "@/lib/worlds";
 import { NewChatForm } from "./new-chat-form";
 import type { Character } from "@/lib/types";
 
+export const metadata = { title: "Neuer Chat" };
+
 export default async function NewChatPage({ searchParams }: PageProps<"/chats/new">) {
   const params = await searchParams;
   const withId = typeof params.with === "string" ? params.with : "";

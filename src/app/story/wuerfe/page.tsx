@@ -7,6 +7,8 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
 import { RollRow } from "./roll-row";
 
+export const metadata = { title: "Würfelverlauf" };
+
 const PAGE_SIZE = 40;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 

@@ -16,6 +16,8 @@ import { WorldSecretsProvider } from "@/components/world-secrets-context";
 import { canonicalLabel } from "@/lib/family-sync";
 import type { RelationshipConflict } from "./relationship-list";
 
+export const metadata = { title: "Beziehungsnetz" };
+
 const VIEWS = [
   { id: "netz", label: "Netz" },
   { id: "verlauf", label: "Verlauf" },
@@ -188,7 +190,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<"/ch
           {houses.length > 0 && (
             <div className="mt-6">
               <h2 className="mb-3 font-serif text-lg text-fg">Häuser und Familien</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {houses
                   .filter((h) => !haus || h === haus)
                   .map((h) => (

@@ -8,6 +8,8 @@ import { getWorldCharacterTerms } from "@/lib/wiki-characters";
 import { getWikiCalendar } from "@/lib/wiki-calendar-data";
 import { WikiForm } from "../wiki-form";
 
+export const metadata = { title: "Neuer Artikel" };
+
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export default async function NewWikiPagePage({ searchParams }: PageProps<"/wiki/new">) {

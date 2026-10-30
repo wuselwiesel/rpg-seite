@@ -8,6 +8,8 @@ import { EnterWorldButton } from "./enter-world-button";
 import { LeaveWorldButton } from "./[id]/leave-world-button";
 import { PendingWorldInvites } from "./world-invites";
 
+export const metadata = { title: "Meine Welten" };
+
 export default async function WorldsPage() {
   const supabase = await createClient();
   const {

@@ -14,6 +14,8 @@ import { FirstSteps, type FirstStep } from "@/components/first-steps";
 import { TourOffer } from "@/components/tour-offer";
 import { NoCharacterBanner } from "@/components/no-character-banner";
 
+export const metadata = { title: "Feed · Wortwinkel" };
+
 export default async function FeedPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";

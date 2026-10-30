@@ -92,7 +92,7 @@ export default async function HelpPage() {
           <h1 className="font-serif text-3xl text-fg">Hilfe: Wie funktioniert das System?</h1>
         </div>
         <nav aria-label="Inhaltsverzeichnis" className="rounded-2xl border border-line bg-surface p-4">
-          <ol className="grid gap-1 text-sm sm:grid-cols-2">
+          <ol className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
             {TOC.map(([id, label], i) => (showRolls || id !== "verlauf") && (
               <li key={id}>
                 <a href={`#${id}`} className="flex gap-2 rounded-lg px-2 py-1 text-fg-soft transition hover:bg-surface-2 hover:text-accent">
@@ -247,7 +247,7 @@ export default async function HelpPage() {
         <p className={p}>
           Wenn in der Welt gewürfelt wird, kannst du im ChaBo unter „Besondere Natur“ eine Natur wählen, standardmäßig Werwolf oder Vampir. Dann tragen sich feste Boni bei den Attributen ein. Wechselst du zurück auf „Keine“, verschwinden sie wieder. Admins legen unter „Bearbeiten“ → „Besondere Naturen“ eigene Naturen mit eigenen Boni an, so viele sie wollen. Ohne Würfeln gibt es keine besondere Natur.
         </p>
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <li className="rounded-xl border border-line bg-surface px-4 py-3 text-sm text-fg-soft">
             <p className="font-medium text-fg">Werwolf</p>
             Mut +3, Gewandtheit +5, Konstitution +5, Körperkraft +5, Charisma +1, Selbstbeherrschung −5

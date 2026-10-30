@@ -9,6 +9,8 @@ import { getOfficialAccountId } from "@/lib/account-marks";
 import { FriendSuggestions } from "./friend-suggestions";
 import { getFriendSuggestions } from "@/lib/welcome-data";
 
+export const metadata = { title: "Freund:innen" };
+
 export default async function FriendsPage() {
   const supabase = await createClient();
   const {

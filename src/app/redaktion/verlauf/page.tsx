@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, History, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterAvatar } from "@/components/character-avatar";
 
+export const metadata = { title: "Änderungsverlauf" };
+
 const PAGE_SIZE = 40;
 
 type LogRow = {

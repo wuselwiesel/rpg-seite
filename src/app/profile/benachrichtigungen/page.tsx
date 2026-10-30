@@ -5,6 +5,8 @@ import { PushSubscribeToggle } from "@/components/push-subscribe-toggle";
 import { DEFAULT_PREFS } from "@/lib/notification-prefs";
 import { NotificationSettings } from "../notification-settings";
 
+export const metadata = { title: "Benachrichtigungen" };
+
 export default async function NotificationSettingsPage() {
   const supabase = await createClient();
   const {

@@ -18,6 +18,8 @@ import { WikiCrumbs } from "../wiki-crumbs";
 import { PdfButton } from "@/components/pdf-button";
 import { TimelineEventForm } from "./event-form";
 
+export const metadata = { title: "Zeitleiste" };
+
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 

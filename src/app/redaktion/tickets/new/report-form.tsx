@@ -77,7 +77,7 @@ export function ReportForm() {
       <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Titel" aria-label="Titel" className={input} />
       <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} rows={6} placeholder="Beschreibung" aria-label="Beschreibung" className={input} />
       <ImagePicker files={files} onChange={setFiles} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <input value={page} onChange={(e) => setPage(e.target.value)} maxLength={300} placeholder="Seite (optional)" aria-label="Seite" className={input} />
         <select
           value={category ?? ""}

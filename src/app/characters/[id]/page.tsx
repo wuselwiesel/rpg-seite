@@ -48,6 +48,13 @@ import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { choiceEntries } from "@/lib/choice-lists";
 import type { Character, Highlight, Post, Story } from "@/lib/types";
 
+export async function generateMetadata({ params }: PageProps<"/characters/[id]">) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from("characters").select("name").eq("id", id).maybeSingle<{ name: string }>();
+  return { title: data?.name ?? "Charakter" };
+}
+
 export default async function CharacterProfilePage({
   params,
   searchParams,
@@ -344,7 +351,7 @@ export default async function CharacterProfilePage({
           )}
 
           {(character.custom_fields?.length ?? 0) > 0 && (
-            <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+            <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {character.custom_fields!.map((f, i) => (
                 <div key={i} className="rounded-xl bg-surface-2 px-3 py-2.5">
                   <dt className="flex items-center gap-1.5 text-xs font-medium text-muted">

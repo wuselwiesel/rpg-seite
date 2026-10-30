@@ -5,6 +5,8 @@ import { ChatBubbleToggle } from "@/components/chat-bubble-toggle";
 import { BadgePrefs } from "@/components/badge-prefs";
 import { SendKeyPref } from "@/components/send-key-pref";
 
+export const metadata = { title: "Personalisieren" };
+
 // Wie sich die App verhält (nicht, wie sie aussieht): Chat-Blase, Senden mit Enter, Badges
 export default async function PersonalizeSettingsPage() {
   const supabase = await createClient();

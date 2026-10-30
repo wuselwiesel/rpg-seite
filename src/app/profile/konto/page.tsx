@@ -7,6 +7,8 @@ import { PasswordForm } from "./password-form";
 import { DeleteAccountSection } from "./delete-account-section";
 import { WelcomePrefs } from "./welcome-prefs";
 
+export const metadata = { title: "Konto" };
+
 export default async function AccountSettingsPage({ searchParams }: PageProps<"/profile/konto">) {
   const params = await searchParams;
   const supabase = await createClient();

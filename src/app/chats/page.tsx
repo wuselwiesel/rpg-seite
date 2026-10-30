@@ -6,6 +6,8 @@ import { getActiveWorld } from "@/lib/worlds";
 import { ChatList } from "./chat-list";
 import { ChatsEmptyPane } from "./empty-pane";
 
+export const metadata = { title: "Chats" };
+
 export default async function ChatsPage() {
   const supabase = await createClient();
   const {

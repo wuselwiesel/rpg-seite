@@ -12,6 +12,8 @@ import { stripHtml } from "@/lib/strip-html";
 import { WikiTile } from "@/components/wiki-tile";
 import { WikiTypeBadge } from "@/components/wiki-type-icon";
 
+export const metadata = { title: "Wiki-Suche" };
+
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const field = "rounded-lg border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
@@ -73,7 +75,7 @@ export default async function WikiSearchPage({ searchParams }: PageProps<"/wiki/
               className="w-full bg-transparent py-2 text-fg outline-none"
             />
           </label>
-          <div className="grid gap-3 @xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 @xl:grid-cols-3">
             <label className="flex flex-col gap-1 text-xs text-muted">
               Art
               <select name="type" defaultValue={type} className={field}>

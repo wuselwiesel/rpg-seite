@@ -6,6 +6,8 @@ import { getActiveWorld } from "@/lib/worlds";
 import { getActiveCharacter } from "@/lib/active-character";
 import { getAccountBadges, getCharacterBadges } from "@/lib/badges-server";
 import { FeaturedPicker, VisibilityList } from "../badge-controls";
+
+export const metadata = { title: "Badges verwalten" };
 export default async function ManageBadgesPage({ searchParams }: PageProps<"/badges/verwalten">) {
   const sp = await searchParams;
   const rawTab = Array.isArray(sp.bereich) ? sp.bereich[0] : sp.bereich;

@@ -6,6 +6,8 @@ import { defaultHome, parseWikiHome, visibleBlocks } from "@/lib/wiki-home";
 import { HomeView } from "./home/home-view";
 import { HomeEditorPage } from "./home/home-editor-page";
 
+export const metadata = { title: "Wiki" };
+
 // „Wiki“: öffnet immer zuerst die Startseite der Welt (eigene Seite ohne Ordner); die Übersicht liegt unter /wiki/uebersicht
 export default async function WikiHomePage({ searchParams }: PageProps<"/wiki">) {
   const sp = await searchParams;

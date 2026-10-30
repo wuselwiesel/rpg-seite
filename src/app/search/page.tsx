@@ -21,6 +21,8 @@ import type { Friendship, Profile, World } from "@/lib/types";
 import { AddFriendButton } from "./add-friend-button";
 import { FollowWorldButton } from "./follow-world-button";
 
+export const metadata = { title: "Suche" };
+
 type WorldWithCreator = World & { creator: Pick<Profile, "username" | "nickname"> | null };
 type SearchTab = "all" | "characters" | "users" | "worlds" | "scenes" | "wiki" | "posts" | "notes";
 const TABS: { key: SearchTab; label: string; placeholder: string }[] = [

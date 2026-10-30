@@ -73,7 +73,7 @@ export function RedaktionPostCard({
           <div className="min-w-0 flex-1 leading-tight">
             <p className="flex items-baseline gap-1.5 text-[13px] text-fg">
               <span className="truncate font-semibold">{handle}</span>
-              <NameBadge userId={post.author_id} />
+              <NameBadge userId={post.author_id} inLink />
               <time
                 dateTime={post.created_at}
                 title={new Date(post.created_at).toLocaleString("de-DE")}

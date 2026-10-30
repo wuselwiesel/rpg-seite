@@ -4,6 +4,8 @@ import { getActiveWorld } from "@/lib/worlds";
 import { SettingsHeader } from "@/components/settings-back";
 import { EmojiManager } from "./emoji-manager";
 
+export const metadata = { title: "Emojis" };
+
 export default async function EmojiSettingsPage() {
   const supabase = await createClient();
   const {

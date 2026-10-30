@@ -17,6 +17,8 @@ import { BadgeSections } from "@/components/badge-sections";
 import { BadgeCard } from "@/components/badge-card";
 import { AccountAwardControls, AwardControls, CreateBadgeForm, DeleteDefButton, RevokeButton } from "./badge-controls";
 
+export const metadata = { title: "Badges" };
+
 const TABS = [
   { id: "charakter", label: "Charakter-Erfolge" },
   { id: "redaktion", label: "Redaktion" },
@@ -122,7 +124,7 @@ export default async function BadgesPage({ searchParams }: PageProps<"/badges">)
         <section aria-label="Eigene Abzeichen">
           <h2 className="mb-3 font-serif text-xl text-fg">Eigene Abzeichen</h2>
           {ownDefs.length > 0 && (
-            <ul className="mb-4 grid gap-3 sm:grid-cols-2">
+            <ul className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {ownDefs.map((d) => {
                 const recipients = given.filter((a) => a.def_id === d.id && a.recipient);
                 const have = new Set(recipients.map((a) => a.recipient!.id));
@@ -195,7 +197,7 @@ export default async function BadgesPage({ searchParams }: PageProps<"/badges">)
             In dieser Welt gibt es noch keine eigenen Badges. Gestalte unten das erste.
           </p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {defs.map((d) => {
               const given = awards.filter((a) => a.def_id === d.id && a.characters);
               const mine = d.created_by === user.id;

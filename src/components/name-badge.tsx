@@ -55,7 +55,7 @@ function subscribePrefs(callback: () => void) {
 
 // Zeichen und Haupt-Badge neben einem Namen (Beitrag, Kommentar). Lädt gesammelt nach. Das gewählte Zeichen erscheint
 // immer, das Haupt-Badge nur, wenn die Anzeige in den Einstellungen nicht abgeschaltet ist.
-export function NameBadge({ characterId, userId, symbolOnly = false, sealOnly = false }: { characterId?: string | null; userId?: string | null; symbolOnly?: boolean; sealOnly?: boolean }) {
+export function NameBadge({ characterId, userId, symbolOnly = false, sealOnly = false, inLink = false }: { characterId?: string | null; userId?: string | null; symbolOnly?: boolean; sealOnly?: boolean; inLink?: boolean }) {
   const badgesEnabled = useSyncExternalStore(subscribePrefs, () => badgePrefEnabled(BADGE_NAMES_KEY), () => false);
   const [, rerender] = useState(0);
 
@@ -76,6 +76,7 @@ export function NameBadge({ characterId, userId, symbolOnly = false, sealOnly = 
   if (!decor) return null;
   // symbolOnly: nur das gewählte Zeichen (z. B. in Zeilen, die selbst ein Link sind)
   // sealOnly: nur das Konto-Siegel (Seiten, die das Zeichen schon selbst zeigen)
+  // inLink: das Badge steht schon in einem Link und wird deshalb ohne eigenen Link gezeigt (Links dürfen nicht verschachtelt sein)
   if (sealOnly) return decor.mark ? <AccountSeal kind={decor.mark} /> : null;
   const badge = badgesEnabled && !symbolOnly ? decor.badge : null;
   if (!badge && !decor.symbol && !decor.mark) return null;
@@ -91,7 +92,16 @@ export function NameBadge({ characterId, userId, symbolOnly = false, sealOnly = 
           <NameSymbol symbol={decor.symbol} />
         </span>
       )}
-      {badge && (
+      {badge && inLink && (
+        <span
+          title={badge.name}
+          className="inline-flex shrink-0 items-center self-center rounded-full px-1 text-[11px] leading-none"
+          style={{ backgroundColor: `${badge.color}26` }}
+        >
+          <EmojiText text={badge.icon} />
+        </span>
+      )}
+      {badge && !inLink && (
         <Link
           href={href}
           title={`${badge.name} – Sammlung ansehen`}

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+export const metadata = { title: "Einstellungen" };
+
 // Am Handy zeigt das Layout hier die Liste; am Desktop steht rechts nur ein Hinweis.
 export default async function ProfilePage() {
   const supabase = await createClient();

@@ -30,7 +30,7 @@ const btnPrimary = "rounded-full bg-accent-strong px-4 py-1.5 text-sm font-mediu
 
 function Diff({ oldValue, newValue }: { oldValue: string; newValue: string }) {
   return (
-    <div className="grid gap-2 text-sm sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
       <p className="whitespace-pre-wrap break-words rounded-lg bg-surface-2 px-3 py-2 text-fg-soft line-through decoration-fg-soft/40">{oldValue || "leer"}</p>
       <p className="whitespace-pre-wrap break-words rounded-lg bg-accent/10 px-3 py-2 text-fg">{newValue || "leer"}</p>
     </div>

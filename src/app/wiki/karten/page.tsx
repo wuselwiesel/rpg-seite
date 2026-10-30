@@ -8,6 +8,8 @@ import { WikiCrumbs } from "../wiki-crumbs";
 import { NewMapForm } from "./new-map-form";
 import { MapMenu } from "./map-menu";
 
+export const metadata = { title: "Karten" };
+
 export default async function WikiMapsPage() {
   const supabase = await createClient();
   const {

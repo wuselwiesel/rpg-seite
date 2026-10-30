@@ -9,6 +9,8 @@ import { getOfficialAccountId, isAppAdmin } from "@/lib/account-marks";
 import { WelcomeStrip } from "@/components/welcome-strip";
 import { getWelcomeCards } from "@/lib/welcome-data";
 
+export const metadata = { title: "Neuigkeiten" };
+
 export default async function RedaktionPage({ searchParams }: PageProps<"/redaktion">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";

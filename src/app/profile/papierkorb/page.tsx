@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { SettingsHeader } from "@/components/settings-back";
 import { TrashList, type TrashItem } from "./trash-list";
 
+export const metadata = { title: "Papierkorb" };
+
 // Gelöschte Nachrichten und Beziehungen der letzten 30 Tage
 export default async function TrashPage() {
   const supabase = await createClient();

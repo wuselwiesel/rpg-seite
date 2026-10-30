@@ -6,6 +6,8 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { NpcBadge } from "@/components/npc-badge";
 import { DeletedCharacterActions } from "./deleted-character-actions";
 
+export const metadata = { title: "Gelöschte Charaktere" };
+
 type Row = {
   id: string;
   name: string;

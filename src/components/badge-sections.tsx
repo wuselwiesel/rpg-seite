@@ -53,7 +53,7 @@ export function BadgeSections({
                 {done} von {list.length}
               </span>
             </h2>
-            <ul className="grid gap-3 sm:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {list.map((d) => {
                 const award = got.get(d.key);
                 return (
@@ -88,7 +88,7 @@ export function SpecialBadges({ badges }: { badges: BadgeView[] }) {
         Besondere Badges
         <span className="font-sans text-xs text-muted">{badges.length}</span>
       </h2>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {badges.map((b) => (
           <BadgeCard
             key={b.awardId}

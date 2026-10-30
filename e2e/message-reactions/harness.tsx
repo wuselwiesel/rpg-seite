@@ -2,8 +2,10 @@
 import { createRoot } from "react-dom/client";
 import { MessageBubble } from "@/app/chats/[id]/message-bubble";
 
-const me: any = { id: "c1", name: "Scott", avatar_url: null };
-const msg = (id: string, content: string): any => ({ id, chat_id: "x", character_id: "c2", content, created_at: "2026-10-22T20:00:00Z", characters: { id: "c2", name: "Dana", avatar_url: null } });
+type Props = React.ComponentProps<typeof MessageBubble>;
+
+const me = ({ id: "c1", name: "Scott", avatar_url: null }) as unknown as Props["activeCharacter"];
+const msg = (id: string, content: string) => ({ id, chat_id: "x", character_id: "c2", content, created_at: "2026-10-22T20:00:00Z", characters: { id: "c2", name: "Dana", avatar_url: null } }) as unknown as Props["message"];
 const noop = () => {};
 
 function App() {

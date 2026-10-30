@@ -37,6 +37,13 @@ import { noteCountForTarget } from "@/lib/notes-data";
 import { PublishButton } from "./publish-button";
 import { RevealSecretButton } from "./reveal-secret-button";
 
+export async function generateMetadata({ params }: PageProps<"/wiki/[id]">) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from("wiki_pages").select("title").eq("id", id).maybeSingle<{ title: string }>();
+  return { title: data?.title ?? "Wiki" };
+}
+
 export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[id]">) {
   const { id } = await params;
   const supabase = await createClient();

@@ -125,7 +125,7 @@ export default async function RedaktionProfilePage({ params }: PageProps<"/redak
           )}
 
           {fields.length > 0 && (
-            <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+            <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {fields.map((f, i) => (
                 <div key={i} className="rounded-xl bg-surface-2 px-3 py-2.5">
                   <dt className="flex items-center gap-1.5 text-xs font-medium text-muted">

@@ -5,6 +5,8 @@ import { getActiveCharacter, getMentionableCharacters } from "@/lib/active-chara
 import { NewPostForm } from "./new-post-form";
 import { NoCharacterBanner } from "@/components/no-character-banner";
 
+export const metadata = { title: "Neuer Beitrag" };
+
 export default async function NewPostPage() {
   const supabase = await createClient();
   const {

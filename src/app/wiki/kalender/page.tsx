@@ -12,6 +12,8 @@ import { CalendarEventAdd } from "./event-add";
 import { CalendarDay } from "./calendar-day";
 import { PdfButton } from "@/components/pdf-button";
 
+export const metadata = { title: "Kalender" };
+
 type SceneRow = {
   id: string;
   title: string;

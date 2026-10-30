@@ -10,7 +10,18 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   // Auch als Antwort-Kopfzeile (gilt für jede Seite, Bilder und Dateien): nicht indexieren, nicht folgen
   async headers() {
-    return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet, noimageindex" }] }];
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet, noimageindex" },
+          // Auch auf dem eigenen Server (Hetzner) setzen, nicht nur dort, wo der Host sie von sich aus mitgibt
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
   },
   experimental: {
     // Dynamische Seiten nicht im Client-Cache halten: sonst zeigte ein Seitenwechsel kurz nach Weltwechsel oder Speichern

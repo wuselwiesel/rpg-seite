@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getAcceptedFriends } from "@/lib/friends";
 import { NewGroupForm } from "./new-group-form";
 
+export const metadata = { title: "Neue Gruppe" };
+
 export default async function NewAccountGroupPage() {
   const supabase = await createClient();
   const {

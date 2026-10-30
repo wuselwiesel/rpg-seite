@@ -7,6 +7,8 @@ import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { TypesManager } from "./types-manager";
 
+export const metadata = { title: "Wiki-Einstellungen" };
+
 export default async function WikiSettingsPage() {
   const supabase = await createClient();
   const {

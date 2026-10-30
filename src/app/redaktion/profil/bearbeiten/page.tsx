@@ -6,6 +6,8 @@ import { stripHtml } from "@/lib/strip-html";
 import type { Profile, RedaktionProfile } from "@/lib/types";
 import { EditRedaktionProfileForm } from "./edit-form";
 
+export const metadata = { title: "Redaktions-Profil bearbeiten" };
+
 export default async function EditRedaktionProfilePage() {
   const supabase = await createClient();
   const {

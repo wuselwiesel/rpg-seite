@@ -169,7 +169,7 @@ export function WikiForm({
 
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Wo liegt die Seite?</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm text-fg-soft">
             Ordner
             <select

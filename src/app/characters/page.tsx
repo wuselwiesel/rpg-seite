@@ -19,6 +19,8 @@ import { CreatedList, type CreatedCharacter } from "./created-list";
 import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { speciesLabelOf, speciesListOf } from "@/lib/world-species";
 
+export const metadata = { title: "Charaktere" };
+
 export default async function CharactersPage({ searchParams }: PageProps<"/characters">) {
   const sp = await searchParams;
   const tabParam = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;

@@ -45,7 +45,7 @@ export function NextSceneForm({
       <input type="hidden" name="character_id" value={writerId} />
       <input type="text" name="title" required maxLength={100} placeholder="Titel der neuen Szene, z. B. Der Nebel steigt" className={field} />
       <RichTextEditor name="content" placeholder="Erzähl, wie es weitergeht..." allowFontSelection minHeight={90} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <input type="text" name="location" list="next-scene-locations" maxLength={80} defaultValue={location ?? ""} placeholder="Ort (optional)" aria-label="Ort" className={field} />
         <input type="text" name="in_world_time" maxLength={80} placeholder="Zeit, z. B. Abenddämmerung" aria-label="Zeit" className={field} />
         <datalist id="next-scene-locations">

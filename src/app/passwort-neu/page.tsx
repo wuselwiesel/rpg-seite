@@ -1,6 +1,8 @@
 import { cleanTokenHash } from "@/lib/recovery-token";
 import { NewPasswordForm } from "./new-password-form";
 
+export const metadata = { title: "Neues Passwort" };
+
 export default async function NewPasswordPage({ searchParams }: { searchParams: Promise<{ token_hash?: string }> }) {
   const { token_hash } = await searchParams;
 
