@@ -147,6 +147,9 @@ export function StoryComposer({
   const [typing, setTyping] = useState<Record<string, { name: string; until: number; kind: "write" | "roll" | "edit" }>>({});
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const lastTypingSent = useRef(0);
+  // Erzähler-Modus: „<Kontoname> schreibt“ nur, solange man wirklich tippt
+  const [narratorTyping, setNarratorTyping] = useState(false);
+  const narratorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { setWriting } = useOnline();
 
   useEffect(() => {
@@ -165,6 +168,10 @@ export function StoryComposer({
     };
   }, [storyPostId]);
 
+  useEffect(() => () => {
+    if (narratorTimer.current) clearTimeout(narratorTimer.current);
+  }, []);
+
   // "schreibt gerade..." verschwindet nach ein paar Sekunden ohne neues Signal.
   useEffect(() => {
     if (Object.keys(typing).length === 0) return;
@@ -181,6 +188,11 @@ export function StoryComposer({
   function announceTyping(kind: "write" | "roll") {
     // kontoweit (Seitenleiste): „schreibt gerade“
     setWriting(true);
+    if (kind === "write" && narrator) {
+      setNarratorTyping(true);
+      if (narratorTimer.current) clearTimeout(narratorTimer.current);
+      narratorTimer.current = setTimeout(() => setNarratorTyping(false), 4000);
+    }
     const now = Date.now();
     if (now - lastTypingSent.current < 2500) return;
     lastTypingSent.current = now;
@@ -302,8 +314,8 @@ export function StoryComposer({
       {mode !== "chat" && (mode === "roll" || !narrator) && (
         <WriterSelect shortcuts characters={ownCharacters} value={writerId} onChange={changeWriter} />
       )}
-      {mode === "write" && narrator && (
-        <p className="text-xs text-muted">
+      {mode === "write" && narrator && narratorTyping && (
+        <p className="text-xs text-muted" role="status">
           <span className="text-sm font-medium text-fg-soft">{accountName}</span> schreibt
         </p>
       )}
