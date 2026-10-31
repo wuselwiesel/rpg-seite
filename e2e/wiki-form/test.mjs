@@ -24,18 +24,17 @@ async function fresh() {
   await page.locator(".ProseMirror").waitFor();
   return { ctx, page, errors, type: () => page.locator('input[name="page_type"]').inputValue(), body: () => page.locator('input[name="content"]').inputValue() };
 }
-const fieldTitles = (page) => page.locator('input[name$="title"], input[placeholder*="Titel"]').evaluateAll((els) => els.map((e) => e.value));
 
 // 1. Typ Ereignis auf leerer Seite: Gliederung und Felder
 {
-  const { ctx, page, errors, type, body } = await fresh();
+  const { ctx, page, errors, type } = await fresh();
   await page.getByRole("radio", { name: "Ereignis" }).click();
   await page.waitForTimeout(200);
   check("Typ wird gesetzt", (await type()) === "ereignis");
   const html = await page.locator(".ProseMirror").innerHTML();
   check("Gliederung steht im Editor", html.includes("Was geschah?") && html.includes("Folgen"), html.slice(0, 120));
   const text = await page.locator("form").innerText();
-  check("Steckbrief hat die Felder des Typs", ["Datum", "Beteiligte"].every((t) => text.length > 0) && (await page.locator('input[value="Beteiligte"]').count()) === 1);
+  check("Steckbrief hat die Felder des Typs", text.length > 0 && (await page.locator('input[value="Beteiligte"]').count()) === 1);
   check("keine Seitenfehler", errors.length === 0, errors.join("|"));
   await ctx.close();
 }

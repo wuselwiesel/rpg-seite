@@ -29,7 +29,7 @@ const stubs = {
   },
 };
 
-const res = await build({
+await build({
   entryPoints: [path.join(here, "harness.tsx")],
   bundle: true,
   outfile: path.join(out, "out.js"),

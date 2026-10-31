@@ -19,7 +19,8 @@ export function SwitchAccountButton({ label, className, iconClassName = "h-[18px
           startTransition(async () => {
             const err = await switchAccount();
             if (err) setError(err);
-            else window.location.href = "/";
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+            else window.location.assign("/");
           });
         }}
         className={className}
