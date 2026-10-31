@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { redirectToRoute } from "@/lib/redirect-to-route";
 import { SceneSummary } from "./scene-summary";
 import { recapToHtml } from "@/lib/recap-html";
 import { segmentsToPlain } from "@/lib/segments";
@@ -94,7 +95,7 @@ export default async function StoryPostDetailPage({
       .eq("owner_id", user.id)
       .maybeSingle();
     if (wanted) {
-      redirect(`/switch-character?character=${wanted.id}&next=${encodeURIComponent(`/story/${id}?ziel=ende`)}`);
+      return redirectToRoute(`/switch-character?character=${wanted.id}&next=${encodeURIComponent(`/story/${id}?ziel=ende`)}`);
     }
   }
 

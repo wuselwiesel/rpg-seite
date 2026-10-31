@@ -4,6 +4,7 @@ import { getActiveCharacter } from "@/lib/active-character";
 import { getActiveWorld } from "@/lib/worlds";
 import type { Character, Chat, Message } from "@/lib/types";
 import { EMPTY_CHAT_THEME, type ChatTheme } from "@/lib/chat-theme";
+import { redirectToRoute } from "@/lib/redirect-to-route";
 import { ChatRoom } from "./chat-room";
 
 type ChatWithParticipants = Chat & {
@@ -44,14 +45,14 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
     const wanted =
       ownParticipants.find((p) => p.characters.id === asCharacterId) ?? ownParticipants[0] ?? null;
     if (!wanted) notFound();
-    redirect(`/switch-character?character=${wanted.characters.id}&next=${encodeURIComponent(`/chats/${id}`)}`);
+    return redirectToRoute(`/switch-character?character=${wanted.characters.id}&next=${encodeURIComponent(`/chats/${id}`)}`);
   }
   if (typeof asCharacterId === "string" && asCharacterId !== activeCharacter.id) {
     const wanted = chat.chat_participants.find(
       (p) => p.characters.id === asCharacterId && p.characters.owner_id === user.id,
     );
     if (wanted) {
-      redirect(`/switch-character?character=${wanted.characters.id}&next=${encodeURIComponent(`/chats/${id}`)}`);
+      return redirectToRoute(`/switch-character?character=${wanted.characters.id}&next=${encodeURIComponent(`/chats/${id}`)}`);
     }
   }
 
