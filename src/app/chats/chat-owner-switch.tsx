@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
 import { setActiveCharacter } from "@/app/characters/actions";
 import { CharacterAvatar } from "@/components/character-avatar";
@@ -11,6 +11,7 @@ type Own = { id: string; name: string; username: string | null; avatar_url: stri
 // Kopf der Chatliste: Name der aktiven Figur; mit mehreren eigenen Figuren öffnet ein Tipp darauf die Auswahl, danach zeigt die Liste deren Nachrichten.
 export function ChatOwnerSwitch({ characters, activeId, subtitle, unread = {} }: { characters: Own[]; activeId: string; subtitle: string; unread?: Record<string, number> }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
@@ -45,7 +46,7 @@ export function ChatOwnerSwitch({ characters, activeId, subtitle, unread = {} }:
       <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Charakter wechseln" className="flex max-w-full items-center gap-1.5 text-left">
         <h1 className="truncate font-serif text-2xl text-fg">{title}</h1>
         <ChevronDown className={`h-5 w-5 shrink-0 text-muted transition ${open ? "rotate-180" : ""}`} strokeWidth={2} />
-        {othersWaiting && <span aria-label="Bei einer anderen Figur warten Nachrichten" className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />}
+        {othersWaiting && <span aria-label="Bei einem anderen Charakter warten Nachrichten" className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />}
       </button>
       <p className="truncate text-xs text-muted">{subtitle}</p>
       {open && (
@@ -61,7 +62,9 @@ export function ChatOwnerSwitch({ characters, activeId, subtitle, unread = {} }:
                   if (c.id === activeId) return;
                   start(async () => {
                     await setActiveCharacter(c.id);
-                    router.refresh();
+                    // Ein geöffneter Chat gehört dem alten Charakter und würde sofort zurückwechseln: zur Liste des neuen gehen
+                    if (/^\/chats\/[0-9a-f-]{36}/.test(pathname)) router.push("/chats");
+                    else router.refresh();
                   });
                 }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-fg transition hover:bg-surface-2"
