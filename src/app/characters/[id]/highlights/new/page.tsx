@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NewHighlightForm } from "./new-highlight-form";
 import type { Character, Story } from "@/lib/types";
 
+export const metadata = { title: "Neues Highlight" };
+
 export default async function NewHighlightPage({ params }: PageProps<"/characters/[id]/highlights/new">) {
   const { id } = await params;
   const supabase = await createClient();

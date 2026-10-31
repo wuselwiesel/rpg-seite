@@ -223,7 +223,7 @@ export function ReactionBar({
               onClick={openCharPicker}
               title="Mit einem anderen Charakter liken"
               aria-label="Mit einem anderen Charakter liken"
-              className="flex h-7 w-5 items-center justify-center text-muted transition hover:text-fg active:scale-90"
+              className="relative flex h-7 w-5 items-center justify-center text-muted transition before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-[''] hover:text-fg active:scale-90"
             >
               <ChevronDown className="h-4 w-4" strokeWidth={2} />
             </button>
@@ -235,7 +235,7 @@ export function ReactionBar({
       {heart && (boostedHeartCount > 0 || (total > 0 && heartCount === 0) || isOwn) && (
         <div className="flex w-fit items-center gap-1.5">
           {boostedHeartCount > 0 ? (
-            <button type="button" onClick={openList} className="text-left text-sm font-semibold text-fg hover:underline">
+            <button type="button" onClick={openList} className="relative text-left text-sm font-semibold text-fg before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] hover:underline">
               {heartEntry?.sampleName
                 ? boostedHeartCount > 1
                   ? `${heartEntry.sampleName} und ${boostedHeartCount - 1} ${boostedHeartCount - 1 === 1 ? "anderem" : "anderen"} gefällt der Beitrag`
@@ -245,7 +245,7 @@ export function ReactionBar({
                   : `${boostedHeartCount} Personen gefällt der Beitrag`}
             </button>
           ) : total > 0 ? (
-            <button type="button" onClick={openList} className="text-left text-sm font-semibold text-fg hover:underline">
+            <button type="button" onClick={openList} className="relative text-left text-sm font-semibold text-fg before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] hover:underline">
               {total === 1 ? "1 Reaktion" : `${total} Reaktionen`}
             </button>
           ) : null}
@@ -255,7 +255,7 @@ export function ReactionBar({
               onClick={openBoost}
               title="Like-Anzahl anpassen"
               aria-label="Like-Anzahl anpassen"
-              className="rounded-full p-0.5 text-muted/60 transition hover:text-fg"
+              className="relative rounded-full p-0.5 text-muted/60 transition before:absolute before:-inset-3 before:content-[''] hover:text-fg"
             >
               <Pencil className="h-3 w-3" strokeWidth={2} />
             </button>
@@ -268,7 +268,7 @@ export function ReactionBar({
           key={r.emoji}
           type="button"
           onClick={() => handleToggle(r.emoji)}
-          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition ${
+          className={`relative flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] ${
             onBubble
               ? r.reactedByMe
                 ? "bg-current/25 text-current ring-1 ring-current/60"
@@ -289,7 +289,7 @@ export function ReactionBar({
         <button
           type="button"
           onClick={openList}
-          className={`ml-1 text-xs transition hover:underline ${onBubble ? "text-current" : "text-muted hover:text-fg"}`}
+          className={`relative ml-1 text-xs transition before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] hover:underline ${onBubble ? "text-current" : "text-muted hover:text-fg"}`}
         >
           {total === 1 ? "1 Reaktion" : `${total} Reaktionen`}
         </button>
@@ -313,7 +313,7 @@ export function ReactionBar({
                   type="button"
                   onClick={() => setListOpen(false)}
                   title="Schließen"
-                  className="rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                  className="rounded-full p-2 text-muted transition hover:bg-surface-2 hover:text-fg"
                 >
                   <X className="h-4 w-4" strokeWidth={2} />
                 </button>
@@ -359,7 +359,7 @@ export function ReactionBar({
                   type="button"
                   onClick={() => setBoostOpen(false)}
                   title="Schließen"
-                  className="rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                  className="rounded-full p-2 text-muted transition hover:bg-surface-2 hover:text-fg"
                 >
                   <X className="h-4 w-4" strokeWidth={2} />
                 </button>
@@ -411,7 +411,7 @@ export function ReactionBar({
                   type="button"
                   onClick={() => setCharPickerOpen(false)}
                   title="Schließen"
-                  className="rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                  className="rounded-full p-2 text-muted transition hover:bg-surface-2 hover:text-fg"
                 >
                   <X className="h-4 w-4" strokeWidth={2} />
                 </button>

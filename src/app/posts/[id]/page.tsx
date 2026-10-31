@@ -23,6 +23,8 @@ import { CharacterThemed } from "@/components/character-themed";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 
+export const metadata = { title: "Beitrag" };
+
 export default async function PostDetailPage({
   params,
 }: PageProps<"/posts/[id]">) {

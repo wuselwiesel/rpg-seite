@@ -4,6 +4,8 @@ import { getAllMentionableCharacters } from "@/lib/redaktion";
 import { NewRedaktionPostForm } from "./new-redaktion-post-form";
 import { isAppAdmin } from "@/lib/account-marks";
 
+export const metadata = { title: "Neuer Beitrag" };
+
 export default async function NewRedaktionPostPage() {
   const supabase = await createClient();
   const {

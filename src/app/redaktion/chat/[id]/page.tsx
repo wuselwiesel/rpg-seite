@@ -6,6 +6,8 @@ import { getAcceptedFriends } from "@/lib/friends";
 import { AccountChatRoom, type AccountMessage } from "./account-chat-room";
 import type { AccountReaction } from "@/lib/use-account-chat";
 
+export const metadata = { title: "Chat" };
+
 // Nur die neuesten Nachrichten laden; frühere lädt der Chat auf Wunsch nach.
 const MESSAGE_WINDOW = 100;
 

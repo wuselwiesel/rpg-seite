@@ -172,11 +172,11 @@ export function NotesList() {
       )}
       {shown.length > 0 && !inTrash && !selecting && (
         <div className="mb-3 flex items-center justify-end gap-1">
-          <a href={`/notizen/druck?${exportQuery}`} target="_blank" rel="noreferrer" title="Auswahl als PDF" aria-label="Auswahl als PDF" className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
+          <a href={`/notizen/druck?${exportQuery}`} target="_blank" rel="noreferrer" title="Auswahl als PDF" aria-label="Auswahl als PDF" className="flex items-center gap-1 rounded-full px-2.5 py-2 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
             <Printer className="h-3.5 w-3.5" strokeWidth={2} />
             PDF
           </a>
-          <a href={`/notizen/export?${exportQuery}`} download title="Auswahl als Text" aria-label="Auswahl als Text" className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
+          <a href={`/notizen/export?${exportQuery}`} download title="Auswahl als Text" aria-label="Auswahl als Text" className="flex items-center gap-1 rounded-full px-2.5 py-2 text-xs text-muted transition hover:bg-surface-2 hover:text-fg">
             <Download className="h-3.5 w-3.5" strokeWidth={2} />
             Text
           </a>
@@ -271,11 +271,11 @@ export function NotesList() {
                     <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                     Papierkorb
                   </BarButton>
-                  <a href={`/notizen/druck?ids=${selectedList.join(",")}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-fg-soft hover:bg-surface-2">
+                  <a href={`/notizen/druck?ids=${selectedList.join(",")}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full px-2.5 py-2 text-xs text-fg-soft hover:bg-surface-2">
                     <Printer className="h-3.5 w-3.5" strokeWidth={2} />
                     PDF
                   </a>
-                  <a href={`/notizen/export?ids=${selectedList.join(",")}`} download className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-fg-soft hover:bg-surface-2">
+                  <a href={`/notizen/export?ids=${selectedList.join(",")}`} download className="flex items-center gap-1 rounded-full px-2.5 py-2 text-xs text-fg-soft hover:bg-surface-2">
                     <Download className="h-3.5 w-3.5" strokeWidth={2} />
                     Text
                   </a>

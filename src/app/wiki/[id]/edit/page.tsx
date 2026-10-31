@@ -11,6 +11,8 @@ import type { SecretItem } from "@/lib/secret-items";
 import { missingPublicRows, missingSecretRows, parseTemplate } from "@/lib/wiki-template";
 import { WikiForm } from "../../wiki-form";
 
+export const metadata = { title: "Wiki-Seite bearbeiten" };
+
 export default async function EditWikiPagePage({ params }: PageProps<"/wiki/[id]/edit">) {
   const { id } = await params;
   const supabase = await createClient();

@@ -5,6 +5,8 @@ import { accountMetrics, getAccountBadges, syncAccountBadges, visibleBadges } fr
 import { BadgeFilterTabs, BadgeSections, FocusedBadge, SpecialBadges } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
+export const metadata = { title: "Badges" };
+
 export default async function AccountBadgeCollectionPage({ params, searchParams }: PageProps<"/badges/konto/[userId]">) {
   const { userId } = await params;
   const sp = await searchParams;

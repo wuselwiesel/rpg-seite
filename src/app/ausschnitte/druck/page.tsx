@@ -5,6 +5,8 @@ import { EmojiHtml } from "@/components/custom-emoji-provider";
 import { PdfButton } from "@/components/pdf-button";
 import { formatDateTime } from "@/lib/format";
 
+export const metadata = { title: "Ausschnitte drucken" };
+
 // Druckansicht einer Sammlung „Wichtige Momente“ (im Druckdialog „Als PDF speichern“ wählen).
 export default async function AusschnittDruckPage({ searchParams }: PageProps<"/ausschnitte/druck">) {
   const { sammlung } = await searchParams;

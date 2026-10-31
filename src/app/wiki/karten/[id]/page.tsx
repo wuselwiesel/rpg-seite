@@ -7,6 +7,8 @@ import { WikiCrumbs } from "../../wiki-crumbs";
 import { MapViewer } from "./map-viewer";
 import { MapMenu } from "../map-menu";
 
+export const metadata = { title: "Karte" };
+
 export default async function WikiMapPage({ params, searchParams }: PageProps<"/wiki/karten/[id]">) {
   const { id } = await params;
   const sp = await searchParams;

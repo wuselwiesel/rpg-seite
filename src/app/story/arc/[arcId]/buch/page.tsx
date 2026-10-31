@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { loadBook } from "@/lib/story-book";
 import { BookView } from "@/components/book-view";
 
+export const metadata = { title: "Handlung als Buch" };
+
 export default async function ArcBookPage({ params }: PageProps<"/story/arc/[arcId]/buch">) {
   const { arcId } = await params;
   const supabase = await createClient();

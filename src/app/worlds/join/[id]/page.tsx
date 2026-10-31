@@ -7,6 +7,8 @@ import { JoinOrRequestButton } from "../../join-or-request-button";
 import { JoinWithInviteButton } from "./join-with-invite-button";
 import { StaleLinkRequest } from "./stale-link-request";
 
+export const metadata = { title: "Welt beitreten" };
+
 export default async function JoinWorldPage({ params, searchParams }: PageProps<"/worlds/join/[id]">) {
   const { id } = await params;
   const sp = await searchParams;

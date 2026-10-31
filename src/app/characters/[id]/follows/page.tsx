@@ -8,6 +8,8 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { FollowButton } from "@/components/follow-button";
 import type { Character } from "@/lib/types";
 
+export const metadata = { title: "Folgt" };
+
 export default async function FollowsPage({
   params,
   searchParams,

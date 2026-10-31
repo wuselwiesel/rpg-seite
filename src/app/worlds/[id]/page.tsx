@@ -46,6 +46,13 @@ function MemberFigures({ figures, fallbackName }: { figures: { id: string; name:
 
 type WorldMemberRow = { user_id: string; role: "member" | "admin"; profiles: Profile };
 
+export async function generateMetadata({ params }: PageProps<"/worlds/[id]">) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from("worlds").select("name").eq("id", id).maybeSingle<{ name: string }>();
+  return { title: data?.name ?? "Welt" };
+}
+
 export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id]">) {
   const { id } = await params;
   const supabase = await createClient();

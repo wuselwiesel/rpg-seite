@@ -7,6 +7,8 @@ import { getWorldChoiceLists } from "@/lib/choice-lists-data";
 import { parseTemplate } from "@/lib/wiki-template";
 import { NewCharacterForm } from "./new-character-form";
 
+export const metadata = { title: "Neuer Charakter" };
+
 export default async function NewCharacterPage({ searchParams }: PageProps<"/characters/new">) {
   const sp = await searchParams;
   const supabase = await createClient();

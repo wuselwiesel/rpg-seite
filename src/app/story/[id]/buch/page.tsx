@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { loadBook } from "@/lib/story-book";
 import { BookView } from "@/components/book-view";
 
+export const metadata = { title: "Szene als Buch" };
+
 export default async function SceneBookPage({ params }: PageProps<"/story/[id]/buch">) {
   const { id } = await params;
   const supabase = await createClient();

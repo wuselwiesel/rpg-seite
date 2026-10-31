@@ -90,7 +90,7 @@ export function RedaktionReactionBar({
       </div>
 
       {total > 0 && (
-        <button type="button" onClick={openList} className="w-fit text-left text-sm font-semibold text-fg hover:underline">
+        <button type="button" onClick={openList} className="relative w-fit text-left text-sm font-semibold text-fg before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] hover:underline">
           {heart?.sampleName
             ? heart.count > 1
               ? `${heart.sampleName} und ${heart.count - 1} ${heart.count - 1 === 1 ? "anderem" : "anderen"} gefällt der Beitrag`
@@ -112,7 +112,7 @@ export function RedaktionReactionBar({
               key={r.emoji}
               type="button"
               onClick={() => toggle(r.emoji)}
-              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition ${
+              className={`relative flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] ${
                 r.reactedByMe ? "bg-accent-strong/20 text-accent" : "bg-surface-2 text-fg-soft hover:bg-surface-3"
               }`}
             >
@@ -134,7 +134,7 @@ export function RedaktionReactionBar({
                   type="button"
                   onClick={() => setListOpen(false)}
                   title="Schließen"
-                  className="rounded-full p-1 text-muted transition hover:bg-surface-2 hover:text-fg"
+                  className="rounded-full p-2 text-muted transition hover:bg-surface-2 hover:text-fg"
                 >
                   <X className="h-4 w-4" strokeWidth={2} />
                 </button>
@@ -185,7 +185,7 @@ export function RedaktionReactionBar({
                   type="button"
                   onClick={() => setPickerOpen(false)}
                   title="Schließen"
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg"
                 >
                   <X className="h-4 w-4" strokeWidth={2} />
                 </button>

@@ -17,6 +17,8 @@ import { fetchRedaktionPage } from "@/lib/redaktion-feed";
 import { ProfilePosts } from "./profile-posts";
 import type { Profile, RedaktionProfile } from "@/lib/types";
 
+export const metadata = { title: "Profil" };
+
 export default async function RedaktionProfilePage({ params }: PageProps<"/redaktion/profil/[userId]">) {
   const { userId } = await params;
   const supabase = await createClient();

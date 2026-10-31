@@ -55,7 +55,7 @@ export function SocialPostCard({
             </Link>
             <div className="min-w-0 flex-1 leading-tight">
               <p className="flex items-baseline gap-1.5 text-[13px] text-fg">
-                <Link href={characterHref} className="truncate font-semibold">{handle}</Link>
+                <Link href={characterHref} className="relative min-w-0 font-semibold before:absolute before:-inset-y-3 before:inset-x-0 before:content-['']"><span className="block truncate">{handle}</span></Link>
                 <NameBadge characterId={post.characterId} />
                 {post.pinned && <Pin className="h-3 w-3 shrink-0 self-center text-muted" strokeWidth={2} aria-label="Angepinnt" />}
                 <time
@@ -130,7 +130,7 @@ export function SocialPostCard({
 
         {readOnly ? (
           <div className="px-3 pt-3 sm:px-1">
-            <Link href={detailHref} className="text-sm text-fg-soft hover:text-fg hover:underline">
+            <Link href={detailHref} className="relative text-sm text-fg-soft hover:text-fg hover:underline before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']">
               Beitrag und Kommentare ansehen
             </Link>
           </div>
@@ -157,7 +157,7 @@ export function SocialPostCard({
         )}
 
         {!image && !media && !gallery && preview.length > 260 && (
-          <Link href={detailHref} className="mt-2 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1">
+          <Link href={detailHref} className="relative mt-2 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1 before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']">
             Weiterlesen
           </Link>
         )}
@@ -171,9 +171,9 @@ export function SocialPostCard({
         )}
 
         {tags.length > 0 && tagHrefBase && (
-          <p className="mt-1 flex flex-wrap gap-x-2 px-3 text-sm sm:px-1">
+          <p className="mt-1 flex flex-wrap gap-x-2 gap-y-3 px-3 text-sm sm:px-1">
             {tags.map((tag) => (
-              <Link key={tag} href={`${tagHrefBase}?tag=${encodeURIComponent(tag)}`} className="text-accent hover:underline">
+              <Link key={tag} href={`${tagHrefBase}?tag=${encodeURIComponent(tag)}`} className="relative text-accent hover:underline before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']">
                 #{tag}
               </Link>
             ))}
@@ -181,7 +181,7 @@ export function SocialPostCard({
         )}
 
         {post.replyCount > 0 && (
-          <Link href={detailHref} className="mt-1 block px-3 text-sm text-muted hover:text-fg-soft sm:px-1">
+          <Link href={detailHref} className="relative mt-1 block px-3 text-sm text-muted hover:text-fg-soft sm:px-1 before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']">
             Alle {post.replyCount} {post.replyCount === 1 ? "Kommentar" : "Kommentare"} ansehen
           </Link>
         )}

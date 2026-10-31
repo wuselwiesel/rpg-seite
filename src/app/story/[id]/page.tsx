@@ -49,6 +49,13 @@ import { WorldSwitchRedirect } from "@/components/world-switch-redirect";
 
 const ENTRY_WINDOW = 80;
 
+export async function generateMetadata({ params }: PageProps<"/story/[id]">) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from("story_posts").select("title").eq("id", id).maybeSingle<{ title: string | null }>();
+  return { title: data?.title || "Szene" };
+}
+
 export default async function StoryPostDetailPage({
   params,
   searchParams,

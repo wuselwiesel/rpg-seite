@@ -45,7 +45,7 @@ export function MobileModeButton({ compact = false }: { compact?: boolean }) {
             href={href}
             aria-label={label}
             aria-current={active ? "page" : undefined}
-            className={`flex h-8 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`relative flex h-8 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-all before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${
               active ? `bg-accent-strong text-on-accent-strong shadow-sm ${compact ? "w-8" : "w-8 min-[440px]:w-auto min-[440px]:px-3"}` : "w-8 text-muted hover:text-fg"
             }`}
           >

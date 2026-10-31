@@ -11,6 +11,8 @@ import type { Character } from "@/lib/types";
 import { EditCharacterForm } from "./edit-character-form";
 import { DeleteCharacterButton } from "./delete-character-button";
 
+export const metadata = { title: "Charakter bearbeiten" };
+
 export default async function EditCharacterPage({
   params,
 }: PageProps<"/characters/[id]/edit">) {

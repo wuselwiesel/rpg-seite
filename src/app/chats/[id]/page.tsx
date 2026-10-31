@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCharacter } from "@/lib/active-character";
@@ -13,6 +15,31 @@ type ChatWithParticipants = Chat & {
 
 // Nur die neuesten Nachrichten laden; frühere lädt der Chat auf Wunsch nach.
 const MESSAGE_WINDOW = 100;
+
+// Ein Abruf je Anfrage für Seite und Seitentitel
+const loadChat = cache(async (id: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("chats")
+    .select("*, chat_participants(muted, archived, is_admin, characters(*))")
+    .eq("id", id)
+    .maybeSingle<ChatWithParticipants>();
+  return data;
+});
+
+export async function generateMetadata({ params }: PageProps<"/chats/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const chat = await loadChat(id);
+  if (!chat) return { title: "Chat" };
+  if (chat.is_group) return { title: chat.name ?? "Gruppenchat" };
+  // Zweier-Chat: das Gegenüber ist, wer keinem meiner Konten gehört
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const others = chat.chat_participants.map((p) => p.characters);
+  return { title: (others.find((c) => c.owner_id !== user?.id) ?? others[0])?.name ?? chat.name ?? "Chat" };
+}
 
 export default async function ChatDetailPage({ params, searchParams }: PageProps<"/chats/[id]">) {
   const { id } = await params;
@@ -30,11 +57,7 @@ export default async function ChatDetailPage({ params, searchParams }: PageProps
   const activeCharacter = await getActiveCharacter(user.id, activeWorld.id);
   if (!activeCharacter) redirect("/chats");
 
-  const { data: chat } = await supabase
-    .from("chats")
-    .select("*, chat_participants(muted, archived, is_admin, characters(*))")
-    .eq("id", id)
-    .maybeSingle<ChatWithParticipants>();
+  const chat = await loadChat(id);
 
   if (!chat) notFound();
 

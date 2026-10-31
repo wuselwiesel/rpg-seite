@@ -10,6 +10,8 @@ import { FolderActionsBar } from "../../folder-actions-bar";
 import { FolderCard, PageCard } from "../../wiki-cards";
 import { WikiCrumbs } from "../../wiki-crumbs";
 
+export const metadata = { title: "Wiki-Ordner" };
+
 export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner/[id]">) {
   const { id } = await params;
   const supabase = await createClient();

@@ -5,6 +5,8 @@ import { getWorldAdminFlag } from "@/lib/world-admin";
 import { parseWikiHome } from "@/lib/wiki-home";
 import { WikiOverview } from "../wiki-overview";
 
+export const metadata = { title: "Wiki-Übersicht" };
+
 export default async function WikiOverviewPage() {
   const supabase = await createClient();
   const {

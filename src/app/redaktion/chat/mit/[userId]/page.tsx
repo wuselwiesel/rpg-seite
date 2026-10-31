@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+export const metadata = { title: "Chat" };
+
 // Startet (oder öffnet) den Chat mit einer befreundeten Person und leitet dorthin weiter.
 export default async function StartAccountChatPage({ params }: PageProps<"/redaktion/chat/mit/[userId]">) {
   const { userId } = await params;

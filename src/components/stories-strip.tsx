@@ -96,7 +96,7 @@ export async function StoriesStrip({ worldId, activeCharacterId }: { worldId: st
                 <Link
                   href="/stories/new"
                   aria-label="Neue Story erstellen"
-                  className="absolute right-[9px] top-[34px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong"
+                  className="absolute right-[9px] top-[34px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-app bg-accent-strong text-on-accent-strong before:absolute before:-inset-2 before:content-['']"
                 >
                   <Plus className="h-3 w-3" strokeWidth={3} />
                 </Link>

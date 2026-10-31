@@ -4,6 +4,8 @@ import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { previewHtml } from "@/lib/world-preview";
 
+export const metadata = { title: "Vorschau: Wiki" };
+
 type Row = { id: string; world_id: string; title: string; page_type: string | null; lead: string | null; content: string; cover_image_url: string | null };
 
 export default async function PreviewWikiPage({ params }: { params: Promise<{ id: string; pageId: string }> }) {

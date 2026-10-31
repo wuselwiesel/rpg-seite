@@ -11,7 +11,7 @@ const FOLDER_MIME = "application/x-note-folder";
 const row = "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition";
 const idle = "text-fg-soft hover:bg-surface-2 hover:text-fg";
 const on = "bg-accent-strong text-on-accent-strong";
-const iconBtn = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface hover:text-fg";
+const iconBtn = "relative flex h-6 w-6 shrink-0 before:absolute before:-inset-1.5 before:content-[''] items-center justify-center rounded-full text-muted transition hover:bg-surface hover:text-fg";
 
 // Register des Notizbuchs: Ansichten, Ordnerbaum und Tag-Baum. Notizen aus der Liste lassen sich auf Ordner, Tags, Archiv und Papierkorb ziehen. onPick: nach dem Wählen einer Ansicht, eines Ordners oder Tags (schließt das Register).
 export function NotesSidebar({ onPick }: { onPick?: () => void } = {}) {

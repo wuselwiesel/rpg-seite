@@ -92,7 +92,7 @@ export function RedaktionPostCard({
             onClick={() => setEditing((v) => !v)}
             aria-label="Beitrag bearbeiten"
             aria-pressed={editing}
-            className={`rounded-full p-1.5 transition hover:bg-surface-2 hover:text-fg ${editing ? "text-accent" : "text-muted"}`}
+            className={`rounded-full p-2.5 transition hover:bg-surface-2 hover:text-fg ${editing ? "text-accent" : "text-muted"}`}
           >
             <Pencil className="h-4 w-4" strokeWidth={2} />
           </button>
@@ -102,7 +102,7 @@ export function RedaktionPostCard({
             type="button"
             onClick={handleDelete}
             aria-label="Beitrag löschen"
-            className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-red-500"
+            className="rounded-full p-2.5 text-muted transition hover:bg-surface-2 hover:text-red-500"
           >
             <Trash2 className="h-4 w-4" strokeWidth={2} />
           </button>
@@ -156,7 +156,7 @@ export function RedaktionPostCard({
         <EmojiHtml className="post-content px-3 pt-1 text-[15px] text-fg [&_p]:my-1.5 sm:px-1" html={contentHtml} />
       )}
       {!editing && !hasMedia && preview.length > 320 && (
-        <Link href={detailHref} className="mt-1 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1">
+        <Link href={detailHref} className="relative mt-1 block px-3 text-sm font-medium text-fg-soft hover:text-fg sm:px-1 before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']">
           Weiterlesen
         </Link>
       )}
@@ -167,7 +167,7 @@ export function RedaktionPostCard({
             type="button"
             onClick={() => setPollOpen((v) => !v)}
             aria-expanded={pollOpen}
-            className="mb-2 flex w-full items-center justify-between text-sm font-medium text-fg"
+            className="flex w-full items-center justify-between py-2 text-sm font-medium text-fg"
           >
             <span className="flex items-center gap-1.5">
               <BarChart3 className="h-4 w-4" strokeWidth={2} />
@@ -215,9 +215,9 @@ export function RedaktionPostCard({
       )}
 
       {tags.length > 0 && (
-        <p className="mt-1 flex flex-wrap gap-x-2 px-3 text-sm sm:px-1">
+        <p className="mt-1 flex flex-wrap gap-x-2 gap-y-3 px-3 text-sm sm:px-1">
           {tags.map((tag) => (
-            <Link key={tag} href={`/redaktion?tag=${encodeURIComponent(tag)}`} className="text-accent hover:underline">
+            <Link key={tag} href={`/redaktion?tag=${encodeURIComponent(tag)}`} className="relative text-accent hover:underline before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']">
               #{tag}
             </Link>
           ))}
@@ -225,7 +225,7 @@ export function RedaktionPostCard({
       )}
 
       {commentCount > 0 && (
-        <Link href={detailHref} className="mt-1 block px-3 text-sm text-muted hover:text-fg-soft sm:px-1">
+        <Link href={detailHref} className="relative mt-1 block px-3 text-sm text-muted hover:text-fg-soft sm:px-1 before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']">
           Alle {commentCount} {commentCount === 1 ? "Kommentar" : "Kommentare"} ansehen
         </Link>
       )}

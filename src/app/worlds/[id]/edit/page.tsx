@@ -12,6 +12,8 @@ import { DEFAULT_TALENTS, parseTalentConfig } from "@/lib/talents";
 import { DEFAULT_NATURES, parseNatureConfig } from "@/lib/natures";
 import { parseMutedEvents } from "@/lib/world-admin-events";
 
+export const metadata = { title: "Welt bearbeiten" };
+
 export default async function EditWorldPage({ params }: PageProps<"/worlds/[id]/edit">) {
   const { id } = await params;
   const supabase = await createClient();

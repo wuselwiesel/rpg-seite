@@ -6,6 +6,8 @@ import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
 import { previewHtml } from "@/lib/world-preview";
 
+export const metadata = { title: "Vorschau: Szene" };
+
 type Scene = {
   id: string;
   world_id: string;

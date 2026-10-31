@@ -5,6 +5,8 @@ import { characterMetrics, getCharacterBadges, syncCharacterBadges, visibleBadge
 import { BadgeFilterTabs, BadgeSections, FocusedBadge, SpecialBadges } from "@/components/badge-sections";
 import { BadgeCollectionHeader } from "@/components/badge-collection-header";
 
+export const metadata = { title: "Badge-Sammlung" };
+
 export default async function CharacterBadgeCollectionPage({ params, searchParams }: PageProps<"/badges/sammlung/[characterId]">) {
   const { characterId } = await params;
   const sp = await searchParams;

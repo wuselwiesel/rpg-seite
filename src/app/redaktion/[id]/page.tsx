@@ -15,6 +15,8 @@ import { RedaktionReactionBar } from "../redaktion-reaction-bar";
 import { summarizeReactions } from "@/lib/redaktion-feed";
 import type { RedaktionComment, RedaktionPost, RedaktionPollOption } from "@/lib/types";
 
+export const metadata = { title: "Neuigkeit" };
+
 type OptionRow = RedaktionPollOption & {
   character: { id: string; name: string; avatar_url: string | null } | null;
   votes: { voter_id: string; voter: { id: string; username: string; nickname: string | null } | null }[];
