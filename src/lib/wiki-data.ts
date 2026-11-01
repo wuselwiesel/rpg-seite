@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { FolderRow, PageRow } from "@/lib/wiki-tree";
+import type { FolderRow, PageRow, WikiOrder } from "@/lib/wiki-tree";
 import type { WikiType } from "@/lib/wiki-types";
 
 // Ordner und (schlanke) Seitenliste einer Welt für Navigation und Auswahlfelder. Pro Anfrage nur einmal geladen.
@@ -23,6 +23,13 @@ export const getWikiPageRows = cache(async (worldId: string): Promise<PageRow[]>
     .eq("world_id", worldId)
     .returns<PageRow[]>();
   return data ?? [];
+});
+
+// Eigene Reihenfolge der Seitenleiste. Fehlt die Tabelle noch oder ist nichts gespeichert, bleibt es alphabetisch.
+export const getWikiOrder = cache(async (worldId: string): Promise<WikiOrder> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("wiki_order").select("container, ids").eq("world_id", worldId);
+  return Object.fromEntries((data ?? []).map((r) => [r.container as string, (r.ids as string[]) ?? []]));
 });
 
 export type WikiLinkPage = {

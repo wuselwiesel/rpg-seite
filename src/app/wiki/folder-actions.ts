@@ -60,3 +60,37 @@ export async function deleteWikiFolder(id: string): Promise<string | null> {
   if (error) return error.message;
   return done();
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CONTAINER = /^(root|(folder|page):[0-9a-f-]{36})$/i;
+
+// Eigene Reihenfolge einer Ebene der Wiki-Seitenleiste speichern (gilt für die ganze Welt). Das Recht „Struktur ändern“ prüft die Datenbank.
+export async function saveWikiOrder(container: string, ids: string[]): Promise<string | null> {
+  if (!CONTAINER.test(container) || ids.length > 2000 || !ids.every((id) => UUID.test(id))) return "Ungültige Reihenfolge.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const world = await getActiveWorld(user.id);
+  if (!world) return "Keine Welt gewählt.";
+  const { error } = await supabase
+    .from("wiki_order")
+    .upsert({ world_id: world.id, container, ids: [...new Set(ids)], updated_at: new Date().toISOString() }, { onConflict: "world_id,container" });
+  if (error) return permissionError(error);
+  return done();
+}
+
+// Zurück zur alphabetischen Reihenfolge: alle gespeicherten Ebenen der Welt verwerfen.
+export async function resetWikiOrder(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const world = await getActiveWorld(user.id);
+  if (!world) return "Keine Welt gewählt.";
+  const { error } = await supabase.from("wiki_order").delete().eq("world_id", world.id);
+  if (error) return permissionError(error);
+  return done();
+}

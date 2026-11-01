@@ -39,6 +39,17 @@ async function mouseDrag(page, from, to) {
   await page.waitForTimeout(150);
 }
 
+// Wie mouseDrag, aber an den Rand der Zielzeile (frac 0.1 = oberer Rand: davor, 0.9 = unterer Rand: danach)
+async function mouseDragEdge(page, from, to, frac) {
+  const a = await from.boundingBox();
+  const b = await to.boundingBox();
+  await page.mouse.move(a.x + 40, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(a.x + 50, a.y + a.height / 2 + 4, { steps: 3 });
+  await page.mouse.move(b.x + 40, b.y + b.height * frac, { steps: 12 });
+  await page.waitForTimeout(80);
+}
+
 // 1. Seite in einen Ordner
 {
   const { ctx, moves, row, page, errors } = await fresh();
@@ -96,6 +107,42 @@ async function mouseDrag(page, from, to) {
   check("Klick ohne Ziehen verschiebt nichts", (await moves()).length === 0);
   await ctx.close();
 }
+// 6b. Umsortieren: an den Rand einer Zeile ziehen = davor/danach statt hinein
+{
+  const { ctx, moves, row, page } = await fresh();
+  // Reihenfolge ohne Eingriff: NPCs, Orte (A–Z). Orte vor NPCs ziehen.
+  await mouseDragEdge(page, row("Orte"), row("NPCs"), 0.1);
+  check("Rand: Linie über der Zielzeile erscheint", (await page.locator('[role="treeitem"] > div > span.bg-accent.top-0').count()) === 1);
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+  const m = await moves();
+  check("Ordner vor Ordner: nur die Reihenfolge wird gespeichert", m.length === 1 && m[0].type === "order" && m[0].container === "root" && m[0].ids.slice(0, 2).join() === [ID("f1"), ID("f4")].join(), JSON.stringify(m));
+  await ctx.close();
+}
+{
+  const { ctx, moves, row, page } = await fresh();
+  // Lose Seite zwischen Seiten eines Ordners: zieht um und steht an der gewählten Stelle
+  await mouseDragEdge(page, row("Lose Seite"), row("Nebelhafen"), 0.1);
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+  const m = await moves();
+  check(
+    "Seite vor Seite eines anderen Ordners: zieht um und wird einsortiert",
+    m.length === 2 && m[0].type === "page" && m[0].id === ID("a4") && m[0].folderId === ID("f2") && m[1].type === "order" && m[1].container === `folder:${ID("f2")}` && m[1].ids.join() === [ID("a4"), ID("a1")].join(),
+    JSON.stringify(m),
+  );
+  await ctx.close();
+}
+{
+  const { ctx, moves, row, page } = await fresh();
+  // Ordner an den Rand einer Seite: nicht erlaubt (Ordner stehen nur zwischen Ordnern), und die Mitte einer Zeile legt weiter hinein
+  await mouseDragEdge(page, row("NPCs"), row("Lose Seite"), 0.1);
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+  check("Ordner am Rand einer Seite: nichts passiert", (await moves()).length === 0, JSON.stringify(await moves()));
+  await ctx.close();
+}
+
 // 7. Touch: langes Drücken
 {
   const { ctx, moves, row, page } = await fresh({ hasTouch: true });

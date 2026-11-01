@@ -17,6 +17,8 @@ fs.writeFileSync(
   `const log = (e: unknown) => (window as any).__moves.push(e);
 export async function moveWikiFolder(id: string, parentId: string | null) { log({ type: "folder", id, parentId }); return null; }
 export async function moveWikiPage(id: string, folderId: string | null, parentPageId: string | null) { log({ type: "page", id, folderId, parentPageId }); return null; }
+export async function saveWikiOrder(container: string, ids: string[]) { log({ type: "order", container, ids }); return null; }
+export async function resetWikiOrder() { log({ type: "reset" }); return null; }
 export async function createWikiFolder() { return null; }
 export async function renameWikiFolder() { return null; }
 export async function deleteWikiFolder() { return null; }`,

@@ -9,6 +9,7 @@ import {
   pageOptions,
   pageSubtreeIds,
   planMove,
+  planReorder,
   type FolderRow,
   type PageRow,
 } from "./wiki-tree";
@@ -133,5 +134,69 @@ describe("planMove (Ziehen und Ablegen)", () => {
   it("Seite auf die oberste Ebene: ohne Ordner und ohne Oberseite", () => {
     expect(move({ kind: "page", id: "p2" }, { kind: "root" })).toEqual({ type: "page", id: "p2", folderId: null, parentPageId: null });
     expect(move({ kind: "page", id: "p4" }, { kind: "root" })).toBeNull();
+  });
+});
+
+describe("Eigene Reihenfolge", () => {
+  const fs = [folder("a", "Alpha"), folder("b", "Beta"), folder("c", "Gamma"), folder("sub", "Unter", "a")];
+  const ps = [page("p1", "Anna", null), page("p2", "Berta", null), page("p3", "Cora", null), page("q1", "Dora", "a"), page("q2", "Emil", "a"), page("k", "Kind", "a", "q1")];
+
+  it("ohne gespeicherte Reihenfolge alphabetisch", () => {
+    const tree = buildWikiTree(fs, ps);
+    expect(tree.folders.map((f) => f.id)).toEqual(["a", "b", "c"]);
+    expect(tree.loose.map((p) => p.id)).toEqual(["p1", "p2", "p3"]);
+  });
+
+  it("gespeicherte Reihenfolge gilt je Ebene, Neues steht alphabetisch dahinter", () => {
+    const tree = buildWikiTree(fs, ps, { root: ["c", "a", "p3", "p1"], "folder:a": ["q2", "q1"] });
+    expect(tree.folders.map((f) => f.id)).toEqual(["c", "a", "b"]);
+    expect(tree.loose.map((p) => p.id)).toEqual(["p3", "p1", "p2"]);
+    expect(findFolder(tree.folders, "a")!.pages.map((p) => p.id)).toEqual(["q2", "q1"]);
+  });
+
+  it("Ids, die es nicht mehr gibt, stören nicht", () => {
+    const tree = buildWikiTree(fs, ps, { root: ["gone", "b"] });
+    expect(tree.folders.map((f) => f.id)).toEqual(["b", "a", "c"]);
+  });
+
+  describe("planReorder", () => {
+    const tree = buildWikiTree(fs, ps);
+    const reorder = (item: { kind: "folder" | "page"; id: string }, id: string, position: "before" | "after") => planReorder(tree, fs, ps, item, { kind: item.kind, id, position });
+
+    it("Ordner hinter einen anderen Ordner schieben", () => {
+      expect(reorder({ kind: "folder", id: "a" }, "c", "after")).toEqual({ move: null, container: "root", ids: ["b", "c", "a", "p1", "p2", "p3"] });
+    });
+
+    it("Seite vor eine andere Seite derselben Ebene", () => {
+      expect(reorder({ kind: "page", id: "p3" }, "p1", "before")).toEqual({ move: null, container: "root", ids: ["a", "b", "c", "p3", "p1", "p2"] });
+    });
+
+    it("an der Stelle, wo er schon steht, passiert nichts", () => {
+      expect(reorder({ kind: "page", id: "p2" }, "p1", "after")).toBeNull();
+      expect(reorder({ kind: "folder", id: "b" }, "c", "before")).toBeNull();
+    });
+
+    it("zwischen Seiten eines anderen Ordners: zieht um und steht dort an der Stelle", () => {
+      const plan = reorder({ kind: "page", id: "p1" }, "q2", "before");
+      expect(plan?.move).toEqual({ type: "page", id: "p1", folderId: "a", parentPageId: null });
+      expect(plan?.container).toBe("folder:a");
+      expect(plan?.ids).toEqual(["sub", "q1", "p1", "q2"]);
+    });
+
+    it("Ordner nie in den eigenen Unterordner, Ordner nur zwischen Ordnern", () => {
+      expect(reorder({ kind: "folder", id: "a" }, "sub", "after")).toBeNull();
+      expect(planReorder(tree, fs, ps, { kind: "folder", id: "a" }, { kind: "page", id: "p1", position: "after" })).toBeNull();
+    });
+
+    it("Unterseite einer Seite wird Geschwister einer anderen Unterseite", () => {
+      const plan = reorder({ kind: "page", id: "q2" }, "k", "after");
+      expect(plan?.move).toEqual({ type: "page", id: "q2", folderId: "a", parentPageId: "q1" });
+      expect(plan?.container).toBe("page:q1");
+      expect(plan?.ids).toEqual(["k", "q2"]);
+    });
+
+    it("Seite nie unter sich selbst oder die eigene Unterseite", () => {
+      expect(reorder({ kind: "page", id: "q1" }, "k", "after")).toBeNull();
+    });
   });
 });

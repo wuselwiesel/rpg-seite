@@ -19,6 +19,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragMoveEvent,
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
@@ -28,19 +29,22 @@ import { WikiBreadcrumbs } from "./wiki-breadcrumbs";
 import { FolderGlyph } from "@/components/folder-glyph";
 import { FolderDialog, type FolderDialogState } from "./folder-dialog";
 import { useNavHidden, useOpenState } from "./use-open-folders";
-import { moveWikiFolder } from "./folder-actions";
+import { moveWikiFolder, resetWikiOrder, saveWikiOrder } from "./folder-actions";
 import { moveWikiPage } from "./actions";
 import {
   buildWikiTree,
+  findFolder,
   folderPath,
   pageAncestors,
   planMove,
+  planReorder,
   type DragItem,
   type DropTarget,
   type FolderRow,
   type PageRow,
   type TreeFolder,
   type TreePage,
+  type WikiOrder,
 } from "@/lib/wiki-tree";
 
 type Props = {
@@ -49,6 +53,8 @@ type Props = {
   worlds: { id: string; name: string }[];
   folders: FolderRow[];
   pages: PageRow[];
+  // Eigene Reihenfolge der Leiste (je Ebene), leer = alphabetisch
+  order?: WikiOrder;
   userId: string;
   isWorldOwner: boolean;
   // Besetzung ist eingeschaltet (Admins sehen den Eintrag immer, um sie einzuschalten)
@@ -114,13 +120,14 @@ function ToolLinks({ tools, pathname, castRequests, variant, onNavigate }: { too
   );
 }
 
-export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, showCast, showFigures = false, castRequests = 0, children }: Props) {
+export function WikiShell({ worldId, worldName, worlds, folders, pages, order, userId, isWorldOwner, showCast, showFigures = false, castRequests = 0, children }: Props) {
   const tools = WIKI_TOOLS.filter((t) => (showCast || t.href !== "/wiki/besetzung") && (showFigures || t.href !== "/wiki/figuren"));
   const rights = useWorldRights();
   const pathname = usePathname();
   const router = useRouter();
   const cur = currentFromPath(pathname);
-  const tree = useMemo(() => buildWikiTree(folders, pages), [folders, pages]);
+  const tree = useMemo(() => buildWikiTree(folders, pages, order), [folders, pages, order]);
+  const hasOrder = Object.values(order ?? {}).some((ids) => ids.length > 0);
   const { state: stored, save } = useOpenState(worldId);
   const { hidden: navHidden, setHidden: setNavHidden } = useNavHidden();
   const [query, setQuery] = useState("");
@@ -137,8 +144,12 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
     useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
   );
   const validFor = useCallback(
-    (target: DropTarget) => (activeItem ? planMove(folders, pages, activeItem, target) !== null : false),
-    [activeItem, folders, pages],
+    (target: DropTarget) => {
+      if (!activeItem) return false;
+      if (target.position) return rights.wikiStructure && planReorder(tree, folders, pages, activeItem, target) !== null;
+      return planMove(folders, pages, activeItem, target) !== null;
+    },
+    [activeItem, folders, pages, tree, rights.wikiStructure],
   );
   // Verschieben darf, wer es bearbeiten darf: Ordner nur mit dem Recht „Struktur ändern“, Seiten nur mit Bearbeitungsrecht.
   const canDrag = useCallback(
@@ -149,7 +160,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
     },
     [rights, pages, userId],
   );
-  const dnd: DndApi = { active: activeItem, validFor, canDrag };
+  const dnd: DndApi = { active: activeItem, hover: overTarget, validFor, canDrag };
 
   const targetOf = (id: unknown): DropTarget | null => {
     const raw = String(id ?? "");
@@ -161,13 +172,46 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
     setMoveError(null);
     setActiveItem((e.active.data.current as DragItem | undefined) ?? null);
   };
-  const onDragOver = (e: DragOverEvent) => setOverTarget(e.over ? targetOf(e.over.id) : null);
+  // Über einer Zeile: am oberen oder unteren Rand zwischen zwei Einträge einsortieren (nur mit dem Recht „Struktur ändern“,
+  // Ordner nur zwischen Ordnern, Seiten nur zwischen Seiten), in der Mitte hinein ablegen.
+  const targetAt = (e: DragOverEvent | DragMoveEvent): DropTarget | null => {
+    const target = e.over ? targetOf(e.over.id) : null;
+    if (!target || target.kind === "root" || !e.over || !activeItem || !rights.wikiStructure || target.kind !== activeItem.kind) return target;
+    const start = e.activatorEvent as MouseEvent & TouchEvent;
+    const y = (start.touches?.[0]?.clientY ?? start.clientY) + e.delta.y;
+    const rel = (y - e.over.rect.top) / Math.max(e.over.rect.height, 1);
+    // Hinter einem aufgeklappten Eintrag stehen seine Kinder: dort gibt es keine Stelle „danach“.
+    const expanded =
+      target.kind === "folder"
+        ? isOpen(target.id!) && Boolean(findFolder(tree.folders, target.id!)?.children.length || findFolder(tree.folders, target.id!)?.pages.length)
+        : isOpen(target.id!) && pages.some((p) => p.parent_page_id === target.id);
+    if (rel < 0.28) return { ...target, position: "before" };
+    if (rel > 0.72 && !expanded) return { ...target, position: "after" };
+    return target;
+  };
+  const onDragOver = (e: DragOverEvent) => setOverTarget(targetAt(e));
+  const onDragMove = (e: DragMoveEvent) => {
+    const next = targetAt(e);
+    setOverTarget((prev) => (prev?.kind === next?.kind && prev?.id === next?.id && prev?.position === next?.position ? prev : next));
+  };
   const onDragEnd = (e: DragEndEvent) => {
     const item = activeItem;
-    const target = e.over ? targetOf(e.over.id) : null;
+    const target = overTarget && e.over && targetOf(e.over.id)?.id === overTarget.id ? overTarget : e.over ? targetOf(e.over.id) : null;
     setActiveItem(null);
     setOverTarget(null);
     if (!item || !target) return;
+    if (target.position) {
+      const plan = planReorder(tree, folders, pages, item, target);
+      if (!plan) return;
+      startMove(async () => {
+        if (plan.move) {
+          const err = plan.move.type === "folder" ? await moveWikiFolder(plan.move.id, plan.move.parentId) : await moveWikiPage(plan.move.id, plan.move.folderId, plan.move.parentPageId);
+          if (err) return setMoveError(err);
+        }
+        setMoveError(await saveWikiOrder(plan.container, plan.ids));
+      });
+      return;
+    }
     const plan = planMove(folders, pages, item, target);
     if (!plan) return;
     startMove(async () => {
@@ -395,6 +439,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                   collisionDetection={pointerWithin}
                   onDragStart={onDragStart}
                   onDragOver={onDragOver}
+                  onDragMove={onDragMove}
                   onDragEnd={onDragEnd}
                   onDragCancel={onDragCancel}
                 >
@@ -421,8 +466,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                     />
                   ))}
                   {tree.loose.length > 0 && (
-                    <li className="mt-2 border-t border-line pt-2">
-                      <p className="px-2 pb-1 text-xs text-muted">Ohne Ordner</p>
+                    <li className={tree.folders.length > 0 ? "mt-2 border-t border-line pt-2" : undefined}>
                       <ul>
                         {tree.loose.map((p) => (
                           <PageNode key={p.id} page={p} isOpen={isOpen} toggle={toggle} cur={cur} depth={0} onNavigate={() => setNavOpen(false)} dnd={dnd} />
@@ -455,6 +499,17 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
                 </DragOverlay>
                 </DndContext>
                 {moving && <p className="mt-1 px-2 text-xs text-muted">Verschiebe …</p>}
+                {rights.wikiStructure && hasOrder && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Die selbst gewählte Reihenfolge verwerfen? Ordner und Seiten stehen danach wieder von A bis Z.")) startMove(async () => setMoveError(await resetWikiOrder()));
+                    }}
+                    className="mt-2 w-full rounded-lg px-2 py-1 text-left text-xs text-muted transition hover:bg-surface-2 hover:text-fg"
+                  >
+                    Reihenfolge zurücksetzen (A–Z)
+                  </button>
+                )}
                 {folders.length === 0 && pages.length === 0 && (
                   <p className="px-2 py-1 text-sm text-muted">Noch nichts in {worldName}. Leg den ersten Ordner oder Artikel an.</p>
                 )}
@@ -493,7 +548,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
   );
 }
 
-type DndApi = { active: DragItem | null; validFor: (t: DropTarget) => boolean; canDrag: (item: DragItem) => boolean };
+type DndApi = { active: DragItem | null; hover: DropTarget | null; validFor: (t: DropTarget) => boolean; canDrag: (item: DragItem) => boolean };
 
 // Ablagefläche für „oberste Ebene“ / „Ohne Ordner“, nur sichtbar, solange etwas gezogen wird.
 function RootDropZone({ dnd, kind }: { dnd: DndApi; kind: "folder" | "page" }) {
@@ -524,8 +579,11 @@ function useRowDnd(item: DragItem, dnd: DndApi) {
     },
     [setDrag, setDrop],
   );
-  const over = drop.isOver && dnd.validFor({ kind: item.kind, id: item.id });
-  return { setRef, listeners: drag.listeners, dragging: drag.isDragging, over };
+  // „over“: wird hineingelegt; „edge“: wird davor oder dahinter einsortiert (Linie am Rand der Zeile)
+  const hover = drop.isOver && dnd.hover?.id === item.id ? dnd.hover : null;
+  const over = drop.isOver && !hover?.position && dnd.validFor({ kind: item.kind, id: item.id });
+  const edge = hover?.position && dnd.validFor(hover) ? hover.position : null;
+  return { setRef, listeners: drag.listeners, dragging: drag.isDragging, over, edge };
 }
 
 type NodeCommon = {
@@ -562,7 +620,7 @@ function FolderNode({
 }) {
   const { isOpen, toggle, cur, onNavigate, dnd } = common;
   const rights = useWorldRights();
-  const { setRef: setRowRef, listeners: rowListeners, dragging, over } = useRowDnd({ kind: "folder", id: folder.id }, dnd);
+  const { setRef: setRowRef, listeners: rowListeners, dragging, over, edge } = useRowDnd({ kind: "folder", id: folder.id }, dnd);
   const hasContent = folder.children.length + folder.pages.length > 0;
   const open = isOpen(folder.id) && hasContent;
   const active = cur.folder === folder.id;
@@ -617,6 +675,7 @@ function FolderNode({
           over ? "bg-accent/15 ring-2 ring-accent" : active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"
         }`}
       >
+        {edge && <span aria-hidden className={`pointer-events-none absolute inset-x-1 z-10 h-0.5 rounded bg-accent ${edge === "before" ? "top-0" : "bottom-0"}`} />}
         {hasContent ? (
           <Chevron open={open} label={`${folder.name} ${open ? "einklappen" : "aufklappen"}`} onClick={() => toggle(folder.id)} />
         ) : (
@@ -686,7 +745,7 @@ function FolderNode({
 
 function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; depth: number }) {
   const { isOpen, toggle, cur, onNavigate, dnd } = common;
-  const { setRef: setRowRef, listeners: rowListeners, dragging, over } = useRowDnd({ kind: "page", id: page.id }, dnd);
+  const { setRef: setRowRef, listeners: rowListeners, dragging, over, edge } = useRowDnd({ kind: "page", id: page.id }, dnd);
   const hasKids = page.children.length > 0;
   const open = isOpen(page.id) && hasKids;
   const active = cur.page === page.id;
@@ -696,10 +755,11 @@ function PageNode({ page, depth, ...common }: NodeCommon & { page: TreePage; dep
         ref={setRowRef}
         {...rowListeners}
         style={{ touchAction: "manipulation" }}
-        className={`flex items-center rounded-lg ${dragging ? "opacity-40" : ""} ${
+        className={`relative flex items-center rounded-lg ${dragging ? "opacity-40" : ""} ${
           over ? "bg-accent/15 ring-2 ring-accent" : active ? "bg-accent/10 shadow-[inset_3px_0_0_var(--accent)]" : "hover:bg-surface-2"
         }`}
       >
+        {edge && <span aria-hidden className={`pointer-events-none absolute inset-x-1 z-10 h-0.5 rounded bg-accent ${edge === "before" ? "top-0" : "bottom-0"}`} />}
         {hasKids ? (
           <Chevron open={open} label={`${page.title} ${open ? "einklappen" : "aufklappen"}`} onClick={() => toggle(page.id)} />
         ) : (
