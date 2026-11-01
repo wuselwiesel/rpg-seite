@@ -1,3 +1,5 @@
+import { WikiPageIcon } from "./wiki-page-icon";
+
 // Vorschau-Kachel einer Wiki-Seite: das Titelbild, sonst der Anfangsbuchstabe auf einem Farbton der gewählten Palette.
 const TINTS = [
   "bg-surface-2 text-accent-strong",
@@ -35,10 +37,7 @@ export function WikiTile({
 }) {
   const base = `${SIZES[size]} shrink-0 overflow-hidden`;
   if (icon) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={icon} alt="" loading="lazy" className={`${ICON_SIZES[size]} shrink-0 object-contain`} />
-    );
+    return <WikiPageIcon value={icon} className={`${ICON_SIZES[size]} shrink-0`} />;
   }
   if (cover) {
     return (

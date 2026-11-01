@@ -6,6 +6,7 @@ import { Lock, Plus } from "lucide-react";
 import { createWikiPage, updateWikiPage } from "./actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { PageIconField } from "./page-icon-field";
 import { GalleryUpload } from "@/components/gallery-upload";
 import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import { SecretItemsEditor, type ShareTarget } from "@/components/secret-items-editor";
@@ -283,14 +284,8 @@ export function WikiForm({
         </div>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
           Icon (optional, kann durchsichtig sein)
-          <AvatarUpload
-            name="icon_url"
-            initialUrl={page?.icon_url}
-            displayName={page?.title ?? "Wiki-Seite"}
-            bucket="wiki-covers"
-            variant="icon"
-          />
-          <span className="text-xs text-muted">Ein PNG, SVG oder WebP ohne Hintergrund: hochladen, ins Feld ziehen oder dort mit Strg/Cmd+V einfügen. Es ersetzt das Bild in Karten und im Artikelkopf und wird nicht zugeschnitten.</span>
+          <PageIconField initial={page?.icon_url} displayName={page?.title ?? "Wiki-Seite"} />
+          <span className="text-xs text-muted">Eigenes Bild (PNG, SVG oder WebP ohne Hintergrund: hochladen, ins Feld ziehen oder mit Strg/Cmd+V einfügen) oder ein vorhandenes Symbol. Es ersetzt das Bild in Karten und im Artikelkopf und wird nicht zugeschnitten.</span>
         </div>
         <div className="flex flex-col gap-1 text-sm text-fg-soft">
           Galerie

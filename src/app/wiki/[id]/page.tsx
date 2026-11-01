@@ -4,6 +4,7 @@ import { PdfEmbeds } from "@/components/pdf-embeds";
 import { ShareWikiButton } from "../share-wiki-button";
 import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
 import { WikiGallery } from "@/components/wiki-gallery";
+import { WikiPageIcon } from "@/components/wiki-page-icon";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Clock, MapPin, Network, Pencil, Plus, UserRound, Lock, LockOpen } from "lucide-react";
@@ -185,9 +186,8 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
 
         <div className="flex items-start gap-4 @xl:gap-5">
           {page.icon_url ? (
-            // Icon: durchsichtig, ohne Rahmen und Zuschnitt
-            // eslint-disable-next-line @next/next/no-img-element
-            <img loading="lazy" decoding="async" src={page.icon_url} alt={page.title} className="h-24 w-24 shrink-0 object-contain @xl:h-32 @xl:w-32 @4xl:h-40 @4xl:w-40" />
+            // Icon: durchsichtig, ohne Rahmen und Zuschnitt (hochgeladenes Bild oder gewähltes Symbol)
+            <WikiPageIcon value={page.icon_url} alt={page.title} className="h-24 w-24 shrink-0 @xl:h-32 @xl:w-32 @4xl:h-40 @4xl:w-40" />
           ) : coverImage ? (
             // Titelbild in normalem Format neben dem Namen (Person: Hochformat, sonst 4:3), nie als breiter Streifen.
             // eslint-disable-next-line @next/next/no-img-element

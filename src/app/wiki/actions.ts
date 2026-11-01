@@ -12,6 +12,7 @@ import { pageSubtreeIds } from "@/lib/wiki-tree";
 import { parseWikiType } from "@/lib/wiki-types";
 import { getWikiTypes } from "@/lib/wiki-data";
 import { parseTags } from "@/lib/wiki-tags";
+import { parsePageIcon } from "@/lib/wiki-page-icon";
 import { cleanDateLabel, columnsFromDates, parsePageDates, type EventColumns } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 import { permissionError } from "@/lib/world-permissions";
@@ -29,11 +30,6 @@ function parseAliases(raw: FormDataEntryValue | null): string[] {
         .filter((a) => a.length >= 2),
     ),
   ).slice(0, 12);
-}
-
-function parseIconUrl(raw: FormDataEntryValue | null): string | null {
-  const url = String(raw ?? "").trim();
-  return /^https?:\/\//.test(url) && url.length <= 500 ? url : null;
 }
 
 // Nur http(s)-Adressen aus dem eigenen Speicher; Reihenfolge bleibt erhalten.
@@ -119,7 +115,7 @@ async function readPageForm(
       content: sanitizePostHtml(String(formData.get("content") ?? "").trim()),
       aliases: parseAliases(formData.get("aliases")),
       cover_image_url: String(formData.get("cover_image_url") ?? "").trim() || null,
-      icon_url: parseIconUrl(formData.get("icon_url")),
+      icon_url: parsePageIcon(String(formData.get("icon_url") ?? "")),
       gallery: parseGallery(formData),
       fields: parseProfileFields(formData),
       folder_id: folderId,
