@@ -1966,3 +1966,42 @@ html[data-menu-open] .chat-bubble-root {
     transition: none;
   }
 }
+
+/* Wiki-Design einer Welt (lib/wiki-style.ts, Wiki-Einstellungen). Gilt nur innerhalb von .wiki-styled. */
+.wiki-styled[data-wiki-accent] {
+  --accent: var(--wiki-accent-light);
+}
+.dark .wiki-styled[data-wiki-accent] {
+  --accent: var(--wiki-accent-dark);
+}
+.wiki-styled[data-wiki-font] :is(h1, h2, h3, .font-serif) {
+  font-family: var(--wiki-font);
+}
+.wiki-styled[data-wiki-tint] .bg-surface:is(.rounded-xl, .rounded-2xl) {
+  background-color: color-mix(in srgb, var(--wiki-tint-light) 9%, var(--surface));
+}
+.dark .wiki-styled[data-wiki-tint] .bg-surface:is(.rounded-xl, .rounded-2xl) {
+  background-color: color-mix(in srgb, var(--wiki-tint-dark) 12%, var(--surface));
+}
+.wiki-styled[data-wiki-cards="flat"] .bg-surface:is(.rounded-xl, .rounded-2xl) {
+  border-color: transparent;
+  background-color: var(--surface-2);
+}
+.wiki-styled[data-wiki-cards="line"] .bg-surface:is(.rounded-xl, .rounded-2xl) {
+  background-color: transparent;
+}
+.wiki-styled[data-wiki-radius="s"] :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl) {
+  border-radius: 0.25rem;
+}
+.wiki-styled[data-wiki-radius="l"] :is(.rounded-md, .rounded-lg) {
+  border-radius: 0.875rem;
+}
+.wiki-styled[data-wiki-radius="l"] :is(.rounded-xl, .rounded-2xl) {
+  border-radius: 1.75rem;
+}
+.wiki-styled[data-wiki-width="narrow"] .wiki-prose {
+  max-width: 52ch;
+}
+.wiki-styled[data-wiki-width="wide"] .wiki-prose {
+  max-width: 88ch;
+}

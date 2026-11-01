@@ -6,6 +6,8 @@ import { getWorldRights } from "@/lib/world-rights";
 import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { TypesManager } from "./types-manager";
+import { StyleManager } from "./style-manager";
+import { parseWikiStyle } from "@/lib/wiki-style";
 
 export const metadata = { title: "Wiki-Einstellungen" };
 
@@ -17,7 +19,8 @@ export default async function WikiSettingsPage() {
   if (!user) redirect("/login");
   const world = await getActiveWorld(user.id);
   if (!world) redirect("/worlds");
-  if (!(await getWorldRights(world.id, user.id)).wikiStructure) redirect("/wiki");
+  const rights = await getWorldRights(world.id, user.id);
+  if (!rights.wikiStructure) redirect("/wiki");
 
   const [types, pages] = await Promise.all([getWikiTypes(world.id), getWikiPageRows(world.id)]);
   const rows = types.map((type) => ({
@@ -48,6 +51,15 @@ export default async function WikiSettingsPage() {
         </div>
         <TypesManager rows={rows} />
       </section>
+
+      {rights.isAdmin && (
+        <section aria-labelledby="design" className="flex flex-col gap-4">
+          <h2 id="design" className="font-serif text-2xl text-fg">
+            Aussehen
+          </h2>
+          <StyleManager worldId={world.id} initial={parseWikiStyle(world.wiki_style)} />
+        </section>
+      )}
     </div>
   );
 }

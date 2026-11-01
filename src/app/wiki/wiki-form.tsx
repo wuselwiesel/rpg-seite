@@ -13,6 +13,8 @@ import type { SecretItem } from "@/lib/secret-items";
 import { useDraft } from "@/lib/use-draft";
 import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf, type WikiType } from "@/lib/wiki-types";
 import { ExtraTypesPicker } from "./extra-types-picker";
+import { TocSettings } from "./toc-settings";
+import { parseToc } from "@/lib/wiki-toc";
 import { TypeDialog } from "./einstellungen/types-manager";
 import { useWikiTypes } from "@/components/wiki-types-context";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
@@ -264,6 +266,8 @@ export function WikiForm({
           />
         )}
       </section>
+
+      <TocSettings initial={parseToc(page?.toc)} bodyHtml={currentBody} />
 
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Bilder</h2>

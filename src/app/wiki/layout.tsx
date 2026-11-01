@@ -5,6 +5,7 @@ import { getWikiFolders, getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { getWorldAdminIds } from "@/lib/npc-data";
 import { WikiShell } from "./wiki-shell";
 import { WikiTypesProvider } from "@/components/wiki-types-context";
+import { parseWikiStyle, wikiStyleProps } from "@/lib/wiki-style";
 
 export default async function WikiLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -23,6 +24,8 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
     getUserWorlds(user.id),
   ]);
 
+  const design = wikiStyleProps(parseWikiStyle(world.wiki_style));
+
   // Offene Rollenanfragen: nur Admins sehen sie, als Zahl am Reiter „Besetzung“
   const isAdmin = adminIds.includes(user.id);
   const { count: castRequests } =
@@ -32,6 +35,7 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
 
   return (
     <WikiTypesProvider types={types}>
+    <div className="wiki-styled contents" style={design.style} {...design.data}>
     <WikiShell
       worldId={world.id}
       worldName={world.name}
@@ -46,6 +50,7 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
     >
       {children}
     </WikiShell>
+    </div>
     </WikiTypesProvider>
   );
 }

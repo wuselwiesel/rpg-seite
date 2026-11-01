@@ -1,5 +1,6 @@
 "use server";
 
+import { parseTocField, type WikiToc } from "@/lib/wiki-toc";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -64,6 +65,8 @@ type PageInput = {
   is_draft: boolean;
   event_label: string | null;
   event_end_label: string | null;
+  // Nur gesetzt, wenn das Formular das Inhaltsverzeichnis mitschickt (null = zurück auf Standard)
+  toc?: WikiToc | null;
 } & Required<EventColumns>;
 
 // Liest und prüft das Formular. Eine Oberseite bestimmt den Ordner (Unterseiten liegen im Ordner ihrer Oberseite).
@@ -124,6 +127,7 @@ async function readPageForm(
       page_type: parseWikiType(formData.get("page_type"), await getWikiTypes(worldId)),
       tags: parseTags(String(formData.get("tags") ?? "")),
       is_draft: formData.get("is_draft") === "on",
+      ...(formData.get("toc_present") === "1" ? { toc: parseTocField(formData.get("toc")) } : {}),
     },
   };
 }

@@ -1,3 +1,5 @@
+import { parseToc, tocItems, TOC_TITLE } from "@/lib/wiki-toc";
+import { WikiTocNav } from "../wiki-toc-nav";
 import { PdfEmbeds } from "@/components/pdf-embeds";
 import { ShareWikiButton } from "../share-wiki-button";
 import { EmojiHtml, EmojiText } from "@/components/custom-emoji-provider";
@@ -155,7 +157,11 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   // Initiale nur, wenn der erste Absatz mit einem Buchstaben beginnt und lang genug ist, damit sie schön umflossen wird.
   const firstPara = html.match(/^\s*<p[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? "";
   const dropCap = /^[A-Za-zÄÖÜäöüß]/.test(stripHtml(firstPara).trim()) && stripHtml(firstPara).length >= 150;
-  const hasSide = fields.length > 0 || secretFields.length > 0 || headings.length >= 3;
+  const toc = parseToc(page.toc);
+  const tocList = tocItems(headings, toc);
+  const tocTitle = toc?.title || TOC_TITLE;
+  const tocSide = tocList.length > 0 && (toc?.position ?? "side") === "side";
+  const hasSide = fields.length > 0 || secretFields.length > 0 || tocSide;
   const crumbs = [
     ...folderTrail.map((f) => ({ href: `/wiki/ordner/${f.id}`, label: f.name })),
     ...pageTrail.map((p) => ({ href: `/wiki/${p.id}`, label: p.title })),
@@ -281,6 +287,8 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
         </div>
       </header>
 
+      {tocList.length > 0 && !isEmpty && <WikiTocNav items={tocList} title={tocTitle} variant={tocSide ? "mobile" : "top"} />}
+
       <div className={hasSide ? "grid gap-10 @3xl:grid-cols-[minmax(0,1fr)_260px] @3xl:items-start" : ""}>
         {isEmpty ? (
           <div className="rounded-2xl border border-dashed border-line p-8 text-center text-muted">
@@ -345,20 +353,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
                 </dl>
               </section>
             )}
-            {headings.length >= 3 && (
-              <nav aria-label="Auf dieser Seite" className="hidden text-sm @3xl:block">
-                <p className="mb-2 font-serif text-lg text-fg">Auf dieser Seite</p>
-                <ol className="flex flex-col gap-1.5 border-l border-line pl-3">
-                  {headings.map((h) => (
-                    <li key={h.id} className={h.level === 3 ? "pl-3" : ""}>
-                      <a href={`#${h.id}`} className="text-muted transition hover:text-accent">
-                        {h.text}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-            )}
+            {tocSide && <WikiTocNav items={tocList} title={tocTitle} variant="side" />}
           </aside>
         )}
       </div>

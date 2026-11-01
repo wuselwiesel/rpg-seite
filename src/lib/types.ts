@@ -20,6 +20,8 @@ export type World = {
   talent_config?: unknown;
   nature_config?: unknown;
   wiki_home?: unknown;
+  // Wiki-Design der Welt (siehe lib/wiki-style.ts); null = Standard
+  wiki_style?: unknown;
   // Würfeln eingeschaltet (Standard) oder ausgeschaltet
   dice_enabled?: boolean;
   // Schicksalswürfel der Welt (Standard: an)
@@ -334,6 +336,8 @@ export type WikiPage = {
   is_draft?: boolean;
   // Steckbrief: Zeilen aus Symbol, Titel, Text (wie die Profilfelder).
   fields?: { icon: string; title: string; text: string }[];
+  // Eigenes Inhaltsverzeichnis (siehe lib/wiki-toc.ts); null = Standard
+  toc?: unknown;
   created_by: string;
   created_at: string;
   updated_at: string;
