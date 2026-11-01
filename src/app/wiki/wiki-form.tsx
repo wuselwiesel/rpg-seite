@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { Lock, Plus } from "lucide-react";
 import { createWikiPage, updateWikiPage } from "./actions";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { AvatarUpload } from "@/components/avatar-upload";
@@ -13,6 +13,7 @@ import type { SecretItem } from "@/lib/secret-items";
 import { useDraft } from "@/lib/use-draft";
 import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf, type WikiType } from "@/lib/wiki-types";
 import { ExtraTypesPicker } from "./extra-types-picker";
+import { TypeDialog } from "./einstellungen/types-manager";
 import { useWikiTypes } from "@/components/wiki-types-context";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { stripHtml } from "@/lib/strip-html";
@@ -73,6 +74,7 @@ export function WikiForm({
   const dates = datesFromRow(page ?? {});
 
   const types = useWikiTypes();
+  const [newTypeOpen, setNewTypeOpen] = useState(false);
   const [pageType, setPageType] = useState(wikiTypeOf(page?.page_type ?? defaults?.type, types)?.id ?? "");
   const [bodyHtml, setBodyHtml] = useState(page?.content ?? "");
   const [editorKey, setEditorKey] = useState(0);
@@ -137,7 +139,18 @@ export function WikiForm({
             </button>
           ))}
         </div>
-        <ExtraTypesPicker onAdded={(t) => chooseType(t.id, t)} />
+        <div className="flex flex-wrap items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setNewTypeOpen(true)}
+            className="flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1.5 text-sm text-fg-soft transition hover:border-accent hover:text-accent"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Eigene Art
+          </button>
+          <ExtraTypesPicker onAdded={(t) => chooseType(t.id, t)} className="min-w-0 flex-1" />
+        </div>
+        {newTypeOpen && <TypeDialog type={null} onClose={() => setNewTypeOpen(false)} />}
       </section>
 
       <section className={card}>

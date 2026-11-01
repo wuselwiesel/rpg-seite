@@ -1,27 +1,15 @@
 "use client";
 
-import { CalendarDays, FileText, Gem, MapPin, PawPrint, ScrollText, User, Users, type LucideIcon } from "lucide-react";
+import { WikiIcon, isWikiIcon } from "./wiki-icon";
 import { EmojiText } from "./custom-emoji-provider";
 import { useWikiTypes } from "./wiki-types-context";
 import { wikiTypeOf, type WikiType } from "@/lib/wiki-types";
 import { folderColorHex } from "@/lib/wiki-folder-style";
 
-const ICONS: Record<string, LucideIcon> = {
-  "map-pin": MapPin,
-  "paw-print": PawPrint,
-  users: Users,
-  user: User,
-  "calendar-days": CalendarDays,
-  "scroll-text": ScrollText,
-  gem: Gem,
-  "file-text": FileText,
-};
-
 // Symbol einer Art selbst (Standard-Symbol oder Emoji), zum Beispiel in der Verwaltung.
 export function TypeGlyph({ type, className = "h-4 w-4", colored = false }: { type: WikiType; className?: string; colored?: boolean }) {
-  const Icon = ICONS[type.icon];
   const hex = colored ? folderColorHex(type.color) : null;
-  if (Icon) return <Icon aria-hidden className={className} strokeWidth={1.75} style={hex ? { color: hex } : undefined} />;
+  if (isWikiIcon(type.icon)) return <WikiIcon name={type.icon} aria-hidden className={className} strokeWidth={1.75} style={hex ? { color: hex } : undefined} />;
   return (
     <span aria-hidden className="inline-flex shrink-0 items-center justify-center leading-none">
       <EmojiText text={type.icon} />

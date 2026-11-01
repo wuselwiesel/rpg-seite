@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createWikiFolder, deleteWikiFolder, moveWikiFolder, renameWikiFolder } from "./folder-actions";
 import { folderOptions, folderSubtreeIds, type TreeFolder } from "@/lib/wiki-tree";
-import { FOLDER_COLORS } from "@/lib/wiki-folder-style";
-import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
+import { FOLDER_COLORS, folderColorHex } from "@/lib/wiki-folder-style";
+import { IconPicker } from "@/components/icon-picker";
 import { FolderGlyph } from "@/components/folder-glyph";
 
 export type FolderDialogState =
@@ -104,17 +104,13 @@ export function FolderDialog({
                 <span className="flex h-10 w-10 items-center justify-center rounded-md border border-line bg-app text-xl">
                   <FolderGlyph icon={icon} color={color} className="h-5 w-5" textClass="text-xl" />
                 </span>
-                <CustomEmojiPicker
-                  direction="down"
-                  onPick={(token) => setIcon(token.trim().slice(0, 40))}
-                  className="flex h-10 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-                />
                 {icon && (
                   <button type="button" onClick={() => setIcon("")} className="text-xs text-muted hover:text-fg">
                     Zurücksetzen
                   </button>
                 )}
               </div>
+              <IconPicker value={icon} onChange={setIcon} colorHex={folderColorHex(color)} />
             </div>
             <fieldset className="flex flex-col gap-1.5 text-sm text-fg-soft">
               <legend className="mb-1">Farbe</legend>

@@ -1,13 +1,14 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { createWikiType, deleteWikiType, updateWikiType } from "./actions";
-import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
+import { IconPicker } from "@/components/icon-picker";
 import { TypeGlyph } from "@/components/wiki-type-icon";
 import { FOLDER_COLORS, folderColorHex } from "@/lib/wiki-folder-style";
-import { STANDARD_TYPE_ICONS, type WikiType } from "@/lib/wiki-types";
+import type { WikiType } from "@/lib/wiki-types";
 import { ExtraTypesPicker } from "../extra-types-picker";
 
 type Row = { type: WikiType; count: number; canDelete: boolean };
@@ -65,7 +66,8 @@ export function TypesManager({ rows }: { rows: Row[] }) {
 }
 
 function Shell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
+  // Als eigene Ebene am Seitenende, damit das Fenster auch aus einem Formular heraus (Wiki-Editor) kein verschachteltes Formular wird
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" role="presentation" onMouseDown={onClose}>
       <div
         role="dialog"
@@ -78,11 +80,12 @@ function Shell({ title, onClose, children }: { title: string; onClose: () => voi
         <h2 className="font-serif text-xl text-fg">{title}</h2>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
-function TypeDialog({ type, onClose }: { type: WikiType | null; onClose: () => void }) {
+export function TypeDialog({ type, onClose }: { type: WikiType | null; onClose: () => void }) {
   const router = useRouter();
   const action = type ? updateWikiType.bind(null, type.id) : createWikiType;
   const [error, formAction, pending] = useActionState(
@@ -122,28 +125,12 @@ function TypeDialog({ type, onClose }: { type: WikiType | null; onClose: () => v
 
         <div className="flex flex-col gap-1.5 text-sm text-fg-soft">
           Symbol
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-app text-xl">
+          <div className="flex items-center gap-2">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-app text-xl">
               <TypeGlyph type={preview} className="h-5 w-5" colored />
             </span>
-            {STANDARD_TYPE_ICONS.map((i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setIcon(i)}
-                aria-pressed={icon === i}
-                aria-label={`Symbol ${i}`}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${icon === i ? "border-accent bg-accent/10 text-fg" : "border-line text-fg-soft hover:bg-surface-2"}`}
-              >
-                <TypeGlyph type={{ ...preview, icon: i }} className="h-4 w-4" />
-              </button>
-            ))}
-            <CustomEmojiPicker
-              direction="down"
-              onPick={(token) => setIcon(token.trim().slice(0, 40) || "file-text")}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-fg"
-            />
           </div>
+          <IconPicker value={icon} onChange={(v) => setIcon(v || "file-text")} colorHex={folderColorHex(color || null)} />
         </div>
 
         <fieldset className="flex flex-col gap-1.5 text-sm text-fg-soft">
