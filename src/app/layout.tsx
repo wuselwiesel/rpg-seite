@@ -267,6 +267,42 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// Fehlt das Stylesheet der App (nach dem Einspielen einer neuen Version gibt es die alte Datei nicht mehr, eine gerade geöffnete Seite
+// bleibt ohne Gestaltung), lädt die Seite sich einmal neu. Wer gerade in einem Feld tippt, wartet bis zum Ende der Eingabe;
+// höchstens ein Neuladen pro Minute, damit es bei einem echten Ausfall keine Schleife gibt.
+const assetGuardScript = `
+(function () {
+  try {
+    var KEY = 'ww-asset-reload';
+    var pending = false;
+    function recent() {
+      try { return Date.now() - (Number(sessionStorage.getItem(KEY)) || 0) < 60000; } catch (e) { return false; }
+    }
+    function typing() {
+      var a = document.activeElement;
+      if (!a) return false;
+      if (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT') return !!(a.value && a.value.length);
+      return !!(a.isContentEditable && (a.textContent || '').trim().length);
+    }
+    function reload() {
+      if (pending || recent()) return;
+      pending = true;
+      (function tick() {
+        if (typing()) { setTimeout(tick, 3000); return; }
+        try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+        location.reload();
+      })();
+    }
+    function ours(el) { return el && el.tagName === 'LINK' && el.rel === 'stylesheet' && (el.href || '').indexOf('/_next/static/') !== -1; }
+    window.addEventListener('error', function (e) { if (ours(e.target)) reload(); }, true);
+    window.addEventListener('load', function () {
+      var links = document.querySelectorAll('link[rel=stylesheet]');
+      for (var i = 0; i < links.length; i++) if (ours(links[i]) && !links[i].sheet) { reload(); break; }
+    });
+  } catch (e) {}
+})();
+`;
+
 const themeInitScript = `
 try {
   var stored = localStorage.getItem('theme');
@@ -303,6 +339,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: assetGuardScript }} />
         <link id="favicon" rel="icon" href="/icon.png?v=3" />
         {process.env.NEXT_PUBLIC_SUPABASE_URL && <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
