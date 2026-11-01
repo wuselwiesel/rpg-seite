@@ -11,7 +11,8 @@ import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import { SecretItemsEditor, type ShareTarget } from "@/components/secret-items-editor";
 import type { SecretItem } from "@/lib/secret-items";
 import { useDraft } from "@/lib/use-draft";
-import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf } from "@/lib/wiki-types";
+import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf, type WikiType } from "@/lib/wiki-types";
+import { ExtraTypesPicker } from "./extra-types-picker";
 import { useWikiTypes } from "@/components/wiki-types-context";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { stripHtml } from "@/lib/strip-html";
@@ -79,9 +80,9 @@ export function WikiForm({
   const currentBody = isNew ? draft.content : bodyHtml;
 
   // Typ wählen: leere Felder und eine leere Gliederung werden vorbereitet. Was schon geschrieben steht, bleibt unberührt.
-  function chooseType(id: string) {
+  function chooseType(id: string, known?: WikiType) {
     setPageType(id);
-    const type = wikiTypeOf(id, types);
+    const type = known ?? wikiTypeOf(id, types);
     if (!type) return;
     if (!fieldRows.some((f) => f.title.trim() || f.text.trim())) {
       setFieldRows(mergeFields(fieldRows, type));
@@ -136,6 +137,7 @@ export function WikiForm({
             </button>
           ))}
         </div>
+        <ExtraTypesPicker onAdded={(t) => chooseType(t.id, t)} />
       </section>
 
       <section className={card}>

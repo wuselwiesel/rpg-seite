@@ -94,6 +94,111 @@ const BUILTIN_RAW: Omit<WikiType, "color" | "portrait">[] = [
   }
 ];
 
+// Zusätzliche Vorlagen, die jede Welt bei Bedarf mit einem Klick übernehmen kann (Wiki-Editor und Wiki-Einstellungen).
+// Sie stehen nicht automatisch in jeder Welt, damit die Auswahl übersichtlich bleibt.
+export const EXTRA_WIKI_TYPES: Omit<WikiType, "portrait" | "createdBy">[] = [
+  {
+    id: "ritual",
+    label: "Ritual",
+    plural: "Rituale",
+    icon: "🕯️",
+    color: "plum",
+    hint: "Magische und religiöse Handlungen",
+    fields: ["Zweck", "Teilnehmende", "Ort und Zeit", "Voraussetzungen", "Wirkung"],
+    outline: ["Zweck", "Ablauf", "Benötigte Dinge", "Wirkung und Folgen", "Verbote und Tabus"],
+  },
+  {
+    id: "zeremonie",
+    label: "Zeremonie",
+    plural: "Zeremonien",
+    icon: "⚜️",
+    color: "gold",
+    hint: "Feiern, Weihen, Krönungen, Bestattungen",
+    fields: ["Anlass", "Ort", "Leitung", "Teilnehmende", "Wiederkehr"],
+    outline: ["Anlass", "Ablauf", "Bedeutung", "Bräuche und Kleidung", "Geschichte"],
+  },
+  {
+    id: "magie",
+    label: "Magie / Zauber",
+    plural: "Magie und Zauber",
+    icon: "🔮",
+    color: "sky",
+    hint: "Zauber, Magieformen, magische Regeln",
+    fields: ["Art", "Schule", "Kosten", "Reichweite", "Dauer"],
+    outline: ["Wirkung", "Wirkweise", "Grenzen und Preis", "Bekannte Anwender", "Geschichte"],
+  },
+  {
+    id: "religion",
+    label: "Religion / Glaube",
+    plural: "Religionen und Glaubensrichtungen",
+    icon: "⛪",
+    color: "gray",
+    hint: "Götter, Kulte, Glaubensgemeinschaften",
+    fields: ["Gottheiten", "Anhänger", "Heilige Orte", "Oberhaupt"],
+    outline: ["Glaubensinhalte", "Götter und Heilige", "Riten und Feste", "Priesterschaft", "Geschichte"],
+  },
+  {
+    id: "brauch",
+    label: "Brauch / Tradition",
+    plural: "Bräuche und Traditionen",
+    icon: "🎭",
+    color: "peach",
+    hint: "Sitten, Feiertage, Gepflogenheiten",
+    fields: ["Anlass", "Verbreitung", "Herkunft"],
+    outline: ["Beschreibung", "Herkunft", "Ablauf", "Bedeutung"],
+  },
+  {
+    id: "gesetz",
+    label: "Gesetz / Regel",
+    plural: "Gesetze und Regeln",
+    icon: "⚖️",
+    color: "slate",
+    hint: "Gesetze, Verbote, Ordnungen",
+    fields: ["Geltungsbereich", "Erlassen von", "Strafe", "Seit"],
+    outline: ["Wortlaut", "Hintergrund", "Strafen", "Ausnahmen und Schlupflöcher"],
+  },
+  {
+    id: "fluch",
+    label: "Fluch / Krankheit",
+    plural: "Flüche und Krankheiten",
+    icon: "☠️",
+    color: "rose",
+    hint: "Flüche, Seuchen, Gebrechen",
+    fields: ["Auslöser", "Wirkung", "Heilung", "Verbreitung"],
+    outline: ["Beschreibung", "Ursprung", "Verlauf", "Heilung und Gegenmittel"],
+  },
+  {
+    id: "sprache",
+    label: "Sprache / Schrift",
+    plural: "Sprachen und Schriften",
+    icon: "🔤",
+    color: "teal",
+    hint: "Sprachen, Dialekte, Schriftzeichen",
+    fields: ["Gesprochen von", "Schrift", "Verwandt mit"],
+    outline: ["Überblick", "Klang und Schrift", "Wichtige Wörter", "Geschichte"],
+  },
+  {
+    id: "beruf",
+    label: "Beruf / Handwerk",
+    plural: "Berufe und Handwerke",
+    icon: "⚒️",
+    color: "sage",
+    hint: "Handwerk, Gilden, Ausbildungen",
+    fields: ["Ausbildung", "Werkzeug", "Ansehen", "Verdienst"],
+    outline: ["Beschreibung", "Ausbildung", "Alltag", "Geheimnisse des Handwerks"],
+  },
+  {
+    id: "titel",
+    label: "Titel / Rang",
+    plural: "Titel und Ränge",
+    icon: "👑",
+    color: "gold",
+    hint: "Adelstitel, Ämter, Ränge",
+    fields: ["Vergeben durch", "Träger:in", "Rechte", "Pflichten"],
+    outline: ["Beschreibung", "Rechte und Pflichten", "Träger:innen", "Geschichte"],
+  },
+];
+
 export const BUILTIN_WIKI_TYPES: WikiType[] = BUILTIN_RAW.map((t) => ({ ...t, color: BUILTIN_COLOR[t.id] ?? null, portrait: t.id === "person" }));
 
 // Rückfall für Stellen ohne Weltdaten.

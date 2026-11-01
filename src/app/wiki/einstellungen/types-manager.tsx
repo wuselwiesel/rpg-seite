@@ -8,6 +8,7 @@ import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { TypeGlyph } from "@/components/wiki-type-icon";
 import { FOLDER_COLORS, folderColorHex } from "@/lib/wiki-folder-style";
 import { STANDARD_TYPE_ICONS, type WikiType } from "@/lib/wiki-types";
+import { ExtraTypesPicker } from "../extra-types-picker";
 
 type Row = { type: WikiType; count: number; canDelete: boolean };
 
@@ -55,6 +56,7 @@ export function TypesManager({ rows }: { rows: Row[] }) {
             Neue Art
           </button>
         </div>
+        <ExtraTypesPicker />
       </div>
       {editing && <TypeDialog key={editing === "new" ? "new" : editing.id} type={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
       {deleting && <DeleteDialog row={deleting} onClose={() => setDeleting(null)} />}

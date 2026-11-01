@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { getWikiTypes } from "@/lib/wiki-data";
-import { STANDARD_TYPE_ICONS, newTypeId } from "@/lib/wiki-types";
+import { EXTRA_WIKI_TYPES, STANDARD_TYPE_ICONS, newTypeId } from "@/lib/wiki-types";
 import { parseFolderColor, parseFolderIcon } from "@/lib/wiki-folder-style";
 import { permissionError } from "@/lib/world-permissions";
 
@@ -67,6 +67,35 @@ export async function createWikiType(_prev: string | null, formData: FormData): 
     .insert({ ...parsed.values, world_id: ctx.world.id, id, sort_order: existing.length + 1, created_by: ctx.user.id });
   if (error) return permissionError(error);
   return done();
+}
+
+// Eine mitgelieferte Zusatzart (EXTRA_WIKI_TYPES) für diese Welt übernehmen; gibt es sie schon, wird die vorhandene zurückgegeben.
+export async function addExtraWikiType(extraId: string): Promise<{ id: string } | { error: string }> {
+  const ctx = await context();
+  if (ctx.error !== null) return { error: ctx.error };
+  const extra = EXTRA_WIKI_TYPES.find((t) => t.id === extraId);
+  if (!extra) return { error: "Diese Vorlage gibt es nicht." };
+  const existing = await getWikiTypes(ctx.world.id);
+  const same = existing.find((t) => t.id === extra.id || t.label.toLowerCase() === extra.label.toLowerCase());
+  if (same) return { id: same.id };
+  const id = newTypeId(extra.id, new Set(existing.map((t) => t.id)));
+  const { error } = await ctx.supabase.from("wiki_types").insert({
+    world_id: ctx.world.id,
+    id,
+    label: extra.label,
+    plural: extra.plural,
+    icon: extra.icon,
+    color: extra.color,
+    hint: extra.hint,
+    fields: extra.fields,
+    outline: extra.outline,
+    portrait: false,
+    sort_order: existing.length + 1,
+    created_by: ctx.user.id,
+  });
+  if (error) return { error: permissionError(error) };
+  done();
+  return { id };
 }
 
 export async function updateWikiType(id: string, _prev: string | null, formData: FormData): Promise<string | null> {
