@@ -71,6 +71,28 @@ export function OnlineProvider({
   const seenWriting = useRef(new Map<string, number>());
   const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Jede eigene Änderung zählt hoch: eine Abfrage, die davor gestartet wurde, darf sie nicht mehr überschreiben
+  const localRev = useRef(0);
+
+  // Die Datenbank ist maßgeblich: ein Gerät, das die Umstellung verpasst hat (Netz weg, Tab im Hintergrund), meldet sich sonst mit
+  // dem alten Stand wieder an und steht für andere weiter online, obwohl man „offline“ gespeichert hat.
+  async function syncOwn() {
+    if (!userId) return;
+    const rev = localRev.current;
+    try {
+      const { data } = await createClient().from("profiles").select("presence_mode, presence_emoji, presence_text").eq("id", userId).maybeSingle<{ presence_mode: string | null; presence_emoji: string | null; presence_text: string | null }>();
+      if (!data || rev !== localRev.current) return;
+      const nextMode: PresenceMode = data.presence_mode === "offline" ? "offline" : "online";
+      const nextOwn: PresenceLook = { emoji: data.presence_emoji ?? null, text: data.presence_text ?? null };
+      modeRef.current = nextMode;
+      if (nextOwn.emoji !== ownRef.current.emoji || nextOwn.text !== ownRef.current.text) ownRef.current = nextOwn;
+      setModeState(nextMode);
+      setOwn((prev) => (prev.emoji === nextOwn.emoji && prev.text === nextOwn.text ? prev : nextOwn));
+    } catch {
+      // ohne Antwort bleibt es beim bisherigen Stand
+    }
+  }
+
   const payload = (): TrackPayload => ({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
 
   function reconnect() {
@@ -123,16 +145,25 @@ export function OnlineProvider({
       })
       // Stellt man den Status an einem Gerät um, ziehen die anderen Geräte desselben Accounts sofort nach
       .on("broadcast", { event: "mode" }, ({ payload }) => {
-        if (payload?.userId === userId && (payload.mode === "online" || payload.mode === "offline")) setModeState(payload.mode);
+        if (payload?.userId === userId && (payload.mode === "online" || payload.mode === "offline")) {
+          localRev.current++;
+          setModeState(payload.mode);
+        }
       })
       .on("broadcast", { event: "look" }, ({ payload }) => {
-        if (payload?.userId === userId) setOwn({ emoji: payload.emoji ?? null, text: payload.text ?? null });
+        if (payload?.userId === userId) {
+          localRev.current++;
+          setOwn({ emoji: payload.emoji ?? null, text: payload.text ?? null });
+        }
       })
       .subscribe((status) => {
         if (channelRef.current !== channel) return;
         if (status === "SUBSCRIBED") {
           subscribed.current = true;
-          publish();
+          // Erst den gespeicherten Stand holen, dann melden (ändert sich dabei etwas, meldet der Effekt unten erneut)
+          void syncOwn().then(() => {
+            if (channelRef.current === channel) publish();
+          });
         } else {
           subscribed.current = false;
         }
@@ -152,6 +183,7 @@ export function OnlineProvider({
       }
       const away = hiddenAt ? Date.now() - hiddenAt : 0;
       hiddenAt = null;
+      void syncOwn();
       refresh(away > 15000);
     }
     const onOnline = () => refresh(true);
@@ -172,12 +204,14 @@ export function OnlineProvider({
   }, [userId, epoch]);
 
   function setMode(next: PresenceMode) {
+    localRev.current++;
     setModeState(next);
     void setPresenceMode(next);
     void channelRef.current?.send({ type: "broadcast", event: "mode", payload: { userId, mode: next } });
   }
 
   function setLook(next: PresenceLook) {
+    localRev.current++;
     setOwn(next);
     void channelRef.current?.send({ type: "broadcast", event: "look", payload: { userId, ...next } });
   }
