@@ -7,7 +7,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Contact, Settings, Theater, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, House, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Shuffle, Contact, Settings, Theater, Users } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -24,6 +24,7 @@ import {
 } from "@dnd-kit/core";
 import { Wordmark } from "@/components/wordmark";
 import { WikiWorldMenu } from "./wiki-world-menu";
+import { WikiBreadcrumbs } from "./wiki-breadcrumbs";
 import { FolderGlyph } from "@/components/folder-glyph";
 import { FolderDialog, type FolderDialogState } from "./folder-dialog";
 import { useNavHidden, useOpenState } from "./use-open-folders";
@@ -68,16 +69,50 @@ function currentFromPath(pathname: string): { folder: string | null; page: strin
 // Wiki-Rahmen: links die Ordner (einklappbar, mit Unterordnern, Seiten und Unterseiten), rechts der Inhalt.
 // Werkzeuge des Wikis: am Laptop als Reiter unter der Kopfzeile, am Handy im aufklappbaren Bereich (ausgeschrieben, nichts wird gekürzt)
 const WIKI_TOOLS = [
+  { href: "/wiki", label: "Start", title: "Wiki-Startseite", Icon: House },
   { href: "/wiki/uebersicht", label: "Übersicht", Icon: LayoutList },
   { href: "/wiki/karten", label: "Karten", Icon: MapIcon },
   { href: "/wiki/graph", label: "Graph", Icon: Network },
   { href: "/wiki/zeitleiste", label: "Zeitleiste", Icon: Clock },
   { href: "/wiki/kalender", label: "Kalender", Icon: CalendarDays },
+  { href: "/wiki/zufall", label: "Zufällig", title: "Zufälliger Artikel", Icon: Shuffle },
   { href: "/wiki/besetzung", label: "Besetzung", Icon: Theater },
   { href: "/wiki/figuren", label: "Figuren", Icon: Contact },
   { href: "/characters/relationships", label: "Beziehungen", Icon: Users },
   { href: "/wiki/einstellungen", label: "Einstellungen", title: "Wiki-Einstellungen (Seitenarten)", Icon: Settings },
 ] as const;
+
+const isToolActive = (href: string, pathname: string) => (href === "/wiki" ? pathname === "/wiki" : href !== "/wiki/zufall" && pathname.startsWith(href));
+
+// Die Werkzeuge des Wikis: am Laptop als Reiter unter der Kopfzeile („bar“), am Handy als Raster im Ordnerbereich („grid“)
+function ToolLinks({ tools, pathname, castRequests, variant, onNavigate }: { tools: readonly (typeof WIKI_TOOLS)[number][]; pathname: string; castRequests: number; variant: "bar" | "grid"; onNavigate?: () => void }) {
+  return (
+    <>
+      {tools.map((t) => {
+        const active = isToolActive(t.href, pathname);
+        return (
+          <Link
+            key={t.href}
+            href={t.href}
+            prefetch={t.href === "/wiki/zufall" ? false : undefined}
+            title={"title" in t ? t.title : t.label}
+            aria-current={active ? "page" : undefined}
+            onClick={onNavigate}
+            className={`flex items-center gap-2 rounded-lg px-3 text-sm transition ${variant === "grid" ? "h-9" : "py-1.5"} ${active ? "bg-accent/10 font-medium text-accent" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}
+          >
+            <t.Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+            {t.label}
+            {t.href === "/wiki/besetzung" && castRequests > 0 && (
+              <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong" aria-label={`${castRequests} offene Anfragen`}>
+                {castRequests}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
 
 export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, isWorldOwner, showCast, showFigures = false, castRequests = 0, children }: Props) {
   const tools = WIKI_TOOLS.filter((t) => (showCast || t.href !== "/wiki/besetzung") && (showFigures || t.href !== "/wiki/figuren"));
@@ -191,58 +226,52 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10 lg:px-14 xl:px-20 print:max-w-none print:p-0">
       <header className="mb-6 hidden items-center justify-between gap-4 border-b border-line pb-4 lg:flex print:hidden">
-        <div className="flex items-center gap-3">
-          <Link href="/" aria-label="Wortwinkel" className="block">
+        <div className="flex min-w-0 items-center gap-3">
+          <Link href="/" aria-label="Wortwinkel" className="block shrink-0">
             <Wordmark height={36} />
           </Link>
-          {worlds.length > 0 && <WikiWorldMenu worlds={worlds} activeId={worldId} />}
+          <WikiBreadcrumbs folders={folders} pages={pages} />
         </div>
-        <nav aria-label="Zurück in die App" className="flex items-center gap-1 text-sm">
-          {[
-            { href: "/story", label: "Story" },
-            { href: "/profile", label: "Profil" },
-          ].map((l) => (
-            <Link key={l.href} href={l.href} className="rounded-lg px-3 py-1.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg">
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex shrink-0 items-center gap-1">
+          <nav aria-label="Zurück in die App" className="flex items-center gap-1 text-sm">
+            {[
+              { href: "/story", label: "Story" },
+              { href: "/profile", label: "Profil" },
+            ].map((l) => (
+              <Link key={l.href} href={l.href} className="rounded-lg px-3 py-1.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+          {worlds.length > 0 && <WikiWorldMenu worlds={worlds} activeId={worldId} align="right" />}
+        </div>
       </header>
 
       <nav aria-label="Wiki-Werkzeuge" className="-mt-2 mb-6 hidden flex-wrap items-center gap-1 lg:flex print:hidden">
-        {tools.map((t) => {
-          const active = pathname.startsWith(t.href);
-          return (
-            <Link
-              key={t.href}
-              href={t.href}
-              title={"title" in t ? t.title : t.label}
-              aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition ${active ? "bg-accent/10 font-medium text-accent" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}
-            >
-              <t.Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-              {t.label}
-              {t.href === "/wiki/besetzung" && castRequests > 0 && (
-                <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong" aria-label={`${castRequests} offene Anfragen`}>
-                  {castRequests}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+        <ToolLinks tools={tools} pathname={pathname} castRequests={castRequests} variant="bar" />
       </nav>
 
       <div className={`grid gap-6 print:block ${navHidden ? "lg:grid-cols-1" : "lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10"}`}>
         <div className={`print:hidden ${navHidden ? "lg:hidden" : ""}`}>
-          <button
-            type="button"
-            onClick={() => setNavOpen((v) => !v)}
-            aria-expanded={navOpen}
-            className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-fg-soft lg:hidden"
-          >
-            Ordner und Suche
-            <ChevronRight aria-hidden className={`h-4 w-4 transition-transform ${navOpen ? "rotate-90" : ""}`} strokeWidth={2} />
-          </button>
+          <div className="flex gap-2 lg:hidden">
+            <Link
+              href="/wiki"
+              aria-label="Wiki-Startseite"
+              title="Wiki-Startseite"
+              className="flex w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+            >
+              <House className="h-4 w-4" strokeWidth={2} />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setNavOpen((v) => !v)}
+              aria-expanded={navOpen}
+              className="flex min-w-0 flex-1 items-center justify-between rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-fg-soft"
+            >
+              Ordner und Suche
+              <ChevronRight aria-hidden className={`h-4 w-4 transition-transform ${navOpen ? "rotate-90" : ""}`} strokeWidth={2} />
+            </button>
+          </div>
 
           <nav
             aria-label="Wiki-Ordner"
@@ -301,27 +330,7 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
             </div>
 
             <div role="group" aria-label="Wiki-Werkzeuge" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1 lg:hidden">
-              {tools.map((t) => {
-                const active = pathname.startsWith(t.href);
-                return (
-                  <Link
-                    key={t.href}
-                    href={t.href}
-                    title={"title" in t ? t.title : t.label}
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => setNavOpen(false)}
-                    className={`flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition ${active ? "bg-accent/10 font-medium text-accent" : "text-fg-soft hover:bg-surface-2 hover:text-fg"}`}
-                  >
-                    <t.Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-                    {t.label}
-                    {t.href === "/wiki/besetzung" && castRequests > 0 && (
-                <span className="rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent-strong" aria-label={`${castRequests} offene Anfragen`}>
-                  {castRequests}
-                </span>
-              )}
-                  </Link>
-                );
-              })}
+              <ToolLinks tools={tools} pathname={pathname} castRequests={castRequests} variant="grid" onNavigate={() => setNavOpen(false)} />
             </div>
 
             <div className="min-h-0 overflow-y-auto rounded-2xl border border-line bg-surface p-2">

@@ -4,9 +4,10 @@ import { ChevronRight } from "lucide-react";
 export type Crumb = { href: string; label: string };
 
 // Pfad zur aktuellen Seite: Wiki › Ordner › Unterordner › Oberseite.
+// Ab Laptop steht der Pfad in der Wiki-Kopfzeile (WikiBreadcrumbs), hier nur am Handy.
 export function WikiCrumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
-    <nav aria-label="Pfad">
+    <nav aria-label="Pfad" className="lg:hidden">
       <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-muted">
         <li>
           <Link href="/wiki" className="rounded px-1 py-0.5 transition hover:text-accent">

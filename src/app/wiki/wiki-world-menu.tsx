@@ -6,7 +6,7 @@ import { Check, ChevronDown } from "lucide-react";
 import { setActiveWorld } from "@/app/worlds/actions";
 
 // Unauffälliger Weltwechsel in der Wiki-Kopfzeile: nur der Name der Welt, die Liste klappt bei Klick auf.
-export function WikiWorldMenu({ worlds, activeId }: { worlds: { id: string; name: string }[]; activeId: string }) {
+export function WikiWorldMenu({ worlds, activeId, align = "left" }: { worlds: { id: string; name: string }[]; activeId: string; align?: "left" | "right" }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
@@ -39,7 +39,7 @@ export function WikiWorldMenu({ worlds, activeId }: { worlds: { id: string; name
         <ChevronDown className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
       </button>
       {open && (
-        <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-60 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
+        <div role="menu" className={`absolute ${align === "right" ? "right-0" : "left-0"} top-full z-40 mt-1 w-60 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg`}>
           {worlds.map((w) => (
             <button
               key={w.id}

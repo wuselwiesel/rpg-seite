@@ -32,8 +32,8 @@ export default async function WikiFolderPage({ params }: PageProps<"/wiki/ordner
   const rights = await getWorldRights(world.id, user.id);
   const canDelete = rights.isAdmin || (folder.created_by === user.id && rights.wikiStructure);
   const counts = [
-    `${folder.total} ${folder.total === 1 ? "Artikel" : "Artikel"}`,
-    folder.children.length > 0 ? `${folder.children.length} ${folder.children.length === 1 ? "Unterordner" : "Unterordner"}` : null,
+    `${folder.total} Artikel`,
+    folder.children.length > 0 ? `${folder.children.length} Unterordner` : null,
   ].filter(Boolean);
 
   return (

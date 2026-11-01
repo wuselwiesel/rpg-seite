@@ -242,7 +242,7 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
         );
       case "shortcuts":
         return (
-          <nav aria-label="Ansichten" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] @xl:mx-0 @xl:flex-wrap @xl:px-0 [&::-webkit-scrollbar]:hidden">
+          <nav aria-label="Ansichten" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] @xl:mx-0 @xl:flex-wrap @xl:px-0 lg:hidden [&::-webkit-scrollbar]:hidden">
             {SHORTCUTS.map(({ href, label, Icon }) => (
               <Link key={href} href={href} prefetch={href === "/wiki/zufall" ? false : undefined} className={chip}>
                 <Icon className="h-4 w-4" strokeWidth={2} />
@@ -258,7 +258,7 @@ export async function HomeView({ world, userId, home, canEdit }: { world: World;
     <div className="flex flex-col gap-10">
       {(
         <div className="-mb-4 flex flex-wrap items-center justify-end gap-2 text-sm">
-          <Link href="/wiki/uebersicht" className="rounded-lg px-3 py-1.5 text-fg-soft transition hover:bg-surface-2 hover:text-fg">
+          <Link href="/wiki/uebersicht" className="rounded-lg px-3 py-1.5 text-fg-soft lg:hidden transition hover:bg-surface-2 hover:text-fg">
             Übersicht
           </Link>
           {canEdit && (
