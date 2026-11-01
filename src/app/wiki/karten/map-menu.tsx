@@ -91,8 +91,8 @@ function Shell({ title, onClose, children }: { title: string; onClose: () => voi
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" role="presentation" onMouseDown={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.stopPropagation()} className="my-4 flex w-full max-w-md flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-xl">
+    <div className="fixed inset-0 z-[70] flex justify-center overflow-y-auto bg-black/40 p-4" role="presentation" onMouseDown={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.stopPropagation()} className="mt-auto flex w-full max-w-md flex-col gap-4 sm:my-auto rounded-2xl border border-line bg-surface p-5 shadow-xl">
         <h2 className="font-serif text-xl text-fg">{title}</h2>
         {children}
       </div>

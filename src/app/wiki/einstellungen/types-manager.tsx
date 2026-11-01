@@ -68,14 +68,14 @@ export function TypesManager({ rows }: { rows: Row[] }) {
 function Shell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   // Als eigene Ebene am Seitenende, damit das Fenster auch aus einem Formular heraus (Wiki-Editor) kein verschachteltes Formular wird
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" role="presentation" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-[70] flex justify-center overflow-y-auto bg-black/40 p-4" role="presentation" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
-        className="my-4 flex w-full max-w-lg flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-xl"
+        className="mt-auto flex w-full max-w-lg flex-col gap-4 sm:my-auto rounded-2xl border border-line bg-surface p-5 shadow-xl"
       >
         <h2 className="font-serif text-xl text-fg">{title}</h2>
         {children}
