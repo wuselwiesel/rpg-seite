@@ -7,7 +7,7 @@ import { WikiTypeIcon } from "@/components/wiki-type-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, House, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Search, Shuffle, Contact, Settings, Theater, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronsDownUp, ChevronsUpDown, Clock, FileText, Folder, FolderPlus, House, LayoutList, Map as MapIcon, MoreHorizontal, Network, PanelLeftClose, PanelLeftOpen, Plus, Search, Shuffle, Contact, Settings, Theater, Users } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -271,12 +271,33 @@ export function WikiShell({ worldId, worldName, worlds, folders, pages, userId, 
               Ordner und Suche
               <ChevronRight aria-hidden className={`h-4 w-4 transition-transform ${navOpen ? "rotate-90" : ""}`} strokeWidth={2} />
             </button>
+            {rights.wikiCreate && (
+              <Link
+                href="/wiki/new"
+                aria-label="Neuer Artikel"
+                title="Neuer Artikel"
+                className="flex w-11 shrink-0 items-center justify-center rounded-xl bg-accent-strong text-on-accent-strong transition hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.25} />
+              </Link>
+            )}
           </div>
 
           <nav
             aria-label="Wiki-Ordner"
             className={`${navOpen ? "mt-3 flex" : "hidden"} flex-col gap-3 lg:sticky lg:top-4 lg:mt-0 lg:flex lg:max-h-[calc(100vh-2rem)]`}
           >
+            {rights.wikiCreate && (
+              <Link
+                href="/wiki/new"
+                onClick={() => setNavOpen(false)}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-accent-strong px-3 py-2 text-sm font-medium text-on-accent-strong transition hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.25} />
+                Neuer Artikel
+              </Link>
+            )}
+
             <div className="flex gap-1.5">
               <div className="relative min-w-0 flex-1">
                 <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={2} />
