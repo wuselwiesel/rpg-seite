@@ -2,7 +2,7 @@
 
 import { WikiTemplateEditor } from "./wiki-template-editor";
 import { parseTemplate } from "@/lib/wiki-template";
-import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { saveWorldSettings } from "../../actions";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { RichTextEditor } from "@/components/rich-text-editor";
@@ -39,15 +39,22 @@ export function EditWorldForm({
   const [talents, setTalents] = useState<TalentDef[]>(talentsInitial);
   const [natures, setNatures] = useState<NatureDef[]>(naturesInitial);
   const formRef = useRef<HTMLFormElement>(null);
-  // Nach bestätigtem Entfernen von Talenten das Formular noch einmal ohne Rückfrage abschicken
-  const confirmed = useRef(false);
   const { confirm, dialog } = useConfirm();
 
-  const [state, formAction, pending] = useActionState(async (prev: string | null, formData: FormData) => {
-    const result = await saveWorldSettings(world.id, prev, formData);
-    if (result === "ok") setDirty(false);
-    return result;
-  }, null);
+  // Das Formular wird von Hand abgeschickt (nicht über `action`): React setzt ein Formular nach einer Aktion sonst auf die
+  // Ausgangswerte zurück, und die gesteuerten Häkchen (Würfeln, Prüfung) sähen nach dem Speichern wieder aus wie vorher.
+  const [state, setState] = useState<string | null>(null);
+  const [pending, startSave] = useTransition();
+  function save() {
+    const form = formRef.current;
+    if (!form) return;
+    const data = new FormData(form);
+    startSave(async () => {
+      const result = await saveWorldSettings(world.id, null, data);
+      if (result === "ok") setDirty(false);
+      setState(result);
+    });
+  }
 
   // Wer mit ungespeicherten Änderungen die Seite verlässt, wird gefragt
   useEffect(() => {
@@ -60,15 +67,11 @@ export function EditWorldForm({
   }, [dirty]);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    if (confirmed.current) {
-      confirmed.current = false;
-      return;
-    }
-    if (!dice) return;
+    e.preventDefault();
+    if (!dice) return save();
     const removed = talentsInitial.filter((t) => !talents.some((r) => r.name.trim().toLowerCase() === t.name.toLowerCase()));
     const removedNatures = naturesInitial.filter((n) => !natures.some((r) => r.id === n.id));
-    if (removed.length === 0 && removedNatures.length === 0) return;
-    e.preventDefault();
+    if (removed.length === 0 && removedNatures.length === 0) return save();
     const parts: string[] = [];
     if (removed.length > 0) parts.push(`${removed.length} Talent(e) entfallen und verlieren ihre Punkte in den Bögen.`);
     if (removedNatures.length > 0) parts.push(`${removedNatures.map((n) => n.name || "Eine Natur").join(", ")} entfällt: Bei Charakteren mit dieser Natur bleiben die Werte stehen, die Natur wird aber nicht mehr angezeigt.`);
@@ -78,8 +81,7 @@ export function EditWorldForm({
       danger: true,
     }).then((ok) => {
       if (!ok) return;
-      confirmed.current = true;
-      formRef.current?.requestSubmit();
+      save();
     });
   }
 
@@ -94,7 +96,7 @@ export function EditWorldForm({
   ];
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} onInput={() => setDirty(true)} className="flex flex-col gap-4">
+    <form ref={formRef} onSubmit={onSubmit} onInput={() => setDirty(true)} className="flex flex-col gap-4">
       <nav aria-label="Abschnitte" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
         {sections.map((x) => (
           <a
