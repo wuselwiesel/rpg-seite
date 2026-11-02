@@ -21,3 +21,10 @@ jobs:
         run: npm run lint
       - name: Tests
         run: npm test
+      # Baut die App wie beim Ausliefern; die Supabase-Werte sind Platzhalter, es wird nichts verbunden
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-platzhalter
+          NEXT_TELEMETRY_DISABLED: "1"

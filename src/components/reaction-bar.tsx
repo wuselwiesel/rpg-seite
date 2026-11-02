@@ -223,7 +223,7 @@ export function ReactionBar({
               onClick={openCharPicker}
               title="Mit einem anderen Charakter liken"
               aria-label="Mit einem anderen Charakter liken"
-              className="relative flex h-7 w-5 items-center justify-center text-muted transition before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-[''] hover:text-fg active:scale-90"
+              className="relative flex h-7 w-5 items-center justify-center text-muted transition before:absolute before:-inset-x-2 before:-inset-y-2.5 before:content-[''] hover:text-fg active:scale-90"
             >
               <ChevronDown className="h-4 w-4" strokeWidth={2} />
             </button>
