@@ -80,17 +80,9 @@ Aus Vercel kopieren (Settings → Environment Variables). Die Werte nur im Verce
 
 Dann **Deploy** drücken. Das erste Bauen dauert 5 bis 10 Minuten (die vielen Schriftarten werden dabei geladen). Fehler stehen im Coolify-Bauprotokoll.
 
-## 7. Tägliche Zusammenfassung (Ersatz für den Vercel-Cron)
+## 7. Zeitgesteuerte Aufgaben
 
-Vercel ruft heute täglich um 17:00 UTC `/api/cron/digest` auf (`vercel.json`). Auf dem eigenen Server übernimmt das **eine** dieser zwei Möglichkeiten:
-
-**A) Coolify (einfacher):** Bei der App **Scheduled Tasks → Hinzufügen**
-- Befehl: `wget -q -O- --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/digest` (`127.0.0.1` statt `localhost`: die App lauscht nur auf IPv4)
-- Zeitplan: `0 17 * * *`
-
-**B) GitHub-Aktion:** Im Repo liegt `.github/workflows/cron-digest.yml`. Sie läuft, sobald unter *Settings → Secrets and variables → Actions* die Secrets `APP_URL` (z. B. `https://wortwinkel.xyz`, ohne Schrägstrich am Ende) und `CRON_SECRET` gesetzt sind.
-
-Nicht beides gleichzeitig, sonst bekommen alle die Zusammenfassung doppelt.
+Die App braucht keinen Cron mehr (die tägliche Zusammenfassung wurde am 9. November 2026 entfernt). In Coolify muss keine Scheduled Task angelegt werden; eine alte Task „Tägliche Zusammenfassung“ kann gelöscht werden.
 
 ## 8. Supabase auf die neue Adresse einstellen
 
@@ -102,14 +94,12 @@ Supabase → Authentication → URL Configuration: **Redirect URLs** um `https:/
 2. Szene lesen und schreiben, Bild hochladen, Chat senden, Würfeln.
 3. Titelbild in einem Wiki, Notizbuch öffnen.
 4. Unter `/api/version` sollte der aktuelle Commit stehen.
-5. Den Cron von Hand auslösen (nur mit dem Geheimnis): `curl -H "Authorization: Bearer <CRON_SECRET>" https://app.wortwinkel.xyz/api/cron/digest` (nicht in Chat oder Verlauf kopieren).
-6. Push-Benachrichtigung: auf der **Hauptadresse** gehört sie zur Hauptadresse, auf der Test-Adresse gilt sie getrennt. Der echte Push-Test geht erst nach dem Umzug.
+5. Push-Benachrichtigung: auf der **Hauptadresse** gehört sie zur Hauptadresse, auf der Test-Adresse gilt sie getrennt. Der echte Push-Test geht erst nach dem Umzug.
 
 ## 10. Umziehen (Hauptadresse)
 
 1. In Coolify bei der App die Domain `https://wortwinkel.xyz` **zusätzlich** eintragen (ohne `app.` zu löschen) und speichern.
 2. In Vercel (Domains → DNS Records) einen A-Eintrag `@` auf die Server-IP anlegen, TTL 60. Lehnt Vercel ihn ab oder kommt die Seite weiter von Vercel, die Domain im Vercel-Projekt unter Settings → Domains entfernen. Vorher einen Screenshot der DNS-Liste sichern (Rückweg).
-   Danach in Coolify die Scheduled Task „Tägliche Zusammenfassung“ einschalten und **bei Vercel den Cron ausschalten** (Projekt → Settings → Cron Jobs), sonst kommt die Zusammenfassung doppelt.
 3. Nach der Umstellung prüfen: `https://wortwinkel.xyz/api/version` zeigt den Commit, Anmelden geht, Push-Test, Bild hochladen.
 4. **Weil die Adresse gleich bleibt, behalten alle Handys ihre installierte App und ihre Push-Erlaubnis** (vorausgesetzt, die VAPID-Schlüssel sind dieselben). Angemeldete Sitzungen bleiben ebenfalls bestehen.
 

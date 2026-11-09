@@ -11,10 +11,7 @@ export type PrefsValue = {
   dnd_enabled: boolean;
   dnd_start: string;
   dnd_end: string;
-  digest_enabled: boolean;
-  digest_only: boolean;
   muted_world_ids: string[];
-  digest_world_ids: string[];
   muted_character_ids: string[];
   muted_notification_types: string[];
   only_active_world: boolean;
@@ -94,13 +91,13 @@ function CharacterMuteSearch({
   );
 }
 
-// Feinere Steuerung der Benachrichtigungen: Nicht stören, tägliche Zusammenfassung, stumme Welten/Charaktere.
+// Feinere Steuerung der Benachrichtigungen: Nicht stören, stumme Welten/Charaktere.
 export function NotificationSettings({ initial, worlds }: { initial: PrefsValue; worlds: WorldWithCharacters[] }) {
   const [prefs, setPrefs] = useState(initial);
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
 
-  const toggleIn = (key: "muted_world_ids" | "digest_world_ids" | "muted_character_ids" | "muted_notification_types", id: string) =>
+  const toggleIn = (key: "muted_world_ids" | "muted_character_ids" | "muted_notification_types", id: string) =>
     setPrefs((p) => ({ ...p, [key]: p[key].includes(id) ? p[key].filter((x) => x !== id) : [...p[key], id] }));
 
   // Eine Gruppe (z.B. "Gefällt mir") ist an, solange keiner ihrer rohen Typen stummgeschaltet ist.
@@ -124,10 +121,7 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
         dndStart: prefs.dnd_start,
         dndEnd: prefs.dnd_end,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        digestEnabled: prefs.digest_enabled,
-        digestOnly: prefs.digest_only,
         mutedWorldIds: prefs.muted_world_ids,
-        digestWorldIds: prefs.digest_world_ids,
         mutedCharacterIds: prefs.muted_character_ids,
         mutedNotificationTypes: prefs.muted_notification_types,
         onlyActiveWorld: prefs.only_active_world,
@@ -156,29 +150,6 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
             <input type="time" value={prefs.dnd_end} onChange={(e) => setPrefs({ ...prefs, dnd_end: e.target.value })} className={time} aria-label="Ruhezeit bis" />
             <span className="w-full text-xs text-muted">In dieser Zeit kommen keine Push-Nachrichten. In der Glocke siehst du trotzdem alles.</span>
           </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="flex items-center gap-3 text-sm text-fg">
-          <input
-            type="checkbox"
-            checked={prefs.digest_enabled}
-            onChange={(e) => setPrefs({ ...prefs, digest_enabled: e.target.checked })}
-            className="h-4 w-4 accent-[var(--accent-strong)]"
-          />
-          Tägliche Zusammenfassung (abends)
-        </label>
-        {prefs.digest_enabled && (
-          <label className="ml-7 flex items-center gap-3 text-sm text-fg-soft">
-            <input
-              type="checkbox"
-              checked={prefs.digest_only}
-              onChange={(e) => setPrefs({ ...prefs, digest_only: e.target.checked })}
-              className="h-4 w-4 accent-[var(--accent-strong)]"
-            />
-            Nur die Zusammenfassung, keine einzelnen Push-Nachrichten
-          </label>
         )}
       </div>
 
@@ -225,18 +196,6 @@ export function NotificationSettings({ initial, worlds }: { initial: PrefsValue;
                 />
                 {w.name} (ganze Welt)
               </label>
-              {prefs.digest_enabled && (
-                <label className="mt-2 flex items-center gap-3 pl-0 text-sm text-fg">
-                  <input
-                    type="checkbox"
-                    checked={prefs.digest_world_ids.includes(w.id)}
-                    disabled={prefs.muted_world_ids.includes(w.id)}
-                    onChange={() => toggleIn("digest_world_ids", w.id)}
-                    className="h-4 w-4 accent-[var(--accent-strong)]"
-                  />
-                  Nur in der Zusammenfassung
-                </label>
-              )}
               <div className="mt-2 pl-7">
                 <CharacterMuteSearch
                   characters={w.characters}

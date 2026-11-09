@@ -2,7 +2,7 @@
 
 Railway baut die App aus dem `Dockerfile` im Repo, startet sie, kümmert sich um HTTPS und deployt nach jedem Merge in `main` von selbst. Die Datenbank bleibt bei Supabase. Kosten nach Verbrauch (grob 5–8 $/Monat), darum unbedingt ein **Ausgabenlimit** setzen.
 
-Im Repo vorbereitet: `Dockerfile`, `railway.json` (Dockerfile-Build, Prüfung auf `/login`, Neustart bei Absturz), Versionskennung aus `RAILWAY_GIT_COMMIT_SHA`, `.github/workflows/cron-digest.yml` (Ersatz für den Vercel-Cron).
+Im Repo vorbereitet: `Dockerfile`, `railway.json` (Dockerfile-Build, Prüfung auf `/login`, Neustart bei Absturz), Versionskennung aus `RAILWAY_GIT_COMMIT_SHA`.
 
 Keine Zugangsdaten ins Repo schreiben: alle Werte gehören in Railway bzw. in die GitHub-Secrets.
 
@@ -36,12 +36,9 @@ Für diese Adresse in Supabase (Authentication → URL Configuration) **Redirect
 3. Supabase: `https://wortwinkel.xyz` steht schon in der Liste (bisherige Adresse), die Railway-Adresse kann bleiben.
 4. Auf dem Handy die App neu öffnen. Die Push-Erlaubnis bleibt für dieselbe Adresse gültig, ein Neustart der App genügt meist.
 
-## 5. Tägliche Zusammenfassung
-Auf GitHub: Repo → **Settings → Secrets and variables → Actions → New repository secret**:
-- `APP_URL` = `https://wortwinkel.xyz` (ohne Schrägstrich am Ende)
-- `CRON_SECRET` = derselbe Wert wie oben
+## 5. Zeitgesteuerte Aufgaben
 
-Danach unter **Actions → Tägliche Zusammenfassung → Run workflow** einmal von Hand starten; es sollte `{"sent":…}` ausgeben. Ab dann läuft es täglich um 17:00 UTC.
+Entfällt: Die tägliche Zusammenfassung wurde am 9. November 2026 entfernt, es gibt keinen Cron und keine GitHub-Secrets dafür.
 
 ## 6. Aufräumen, wenn alles läuft
 - Vercel-Projekt erst löschen, wenn mindestens ein Tag problemlos lief.

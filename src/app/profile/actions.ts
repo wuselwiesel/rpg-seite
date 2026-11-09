@@ -53,16 +53,13 @@ export async function updateProfile(_prevState: string | null, formData: FormDat
   redirect("/profile/konto?saved=1");
 }
 
-// Benachrichtigungs-Einstellungen speichern (Nicht stören, Zusammenfassung, stumme Welten/Charaktere).
+// Benachrichtigungs-Einstellungen speichern (Nicht stören, stumme Welten/Charaktere).
 export async function saveNotificationPrefs(input: {
   dndEnabled: boolean;
   dndStart: string;
   dndEnd: string;
   timezone: string;
-  digestEnabled: boolean;
-  digestOnly: boolean;
   mutedWorldIds: string[];
-  digestWorldIds?: string[];
   mutedCharacterIds: string[];
   mutedNotificationTypes: string[];
   onlyActiveWorld?: boolean;
@@ -88,10 +85,7 @@ export async function saveNotificationPrefs(input: {
     dnd_start: input.dndStart,
     dnd_end: input.dndEnd,
     timezone,
-    digest_enabled: input.digestEnabled,
-    digest_only: input.digestEnabled && input.digestOnly,
     muted_world_ids: input.mutedWorldIds.filter((id) => uuid.test(id)),
-    digest_world_ids: input.digestEnabled ? (input.digestWorldIds ?? []).filter((id) => uuid.test(id)) : [],
     muted_character_ids: input.mutedCharacterIds.filter((id) => uuid.test(id)),
     muted_notification_types: input.mutedNotificationTypes.filter((t) => VALID_NOTIFICATION_TYPES.has(t)),
     only_active_world: input.onlyActiveWorld === true,
