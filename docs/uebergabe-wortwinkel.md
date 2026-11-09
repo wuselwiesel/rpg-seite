@@ -3,7 +3,8 @@
 ## Stand 9. November 2026 – Tägliche Zusammenfassung entfernt
 
 - **Auf Wunsch der Nutzerin entfernt** (die Meldung „Du hast N ungelesene Benachrichtigungen“ kam jeden Abend um 17:00 UTC, solange etwas ungelesen blieb). Code: Route `api/cron/digest`, Cron in `vercel.json`, GitHub-Aktion `cron-digest.yml`, Schalter und „Nur in der Zusammenfassung“ in den Benachrichtigungs-Einstellungen, `digest_only`/`digest_world_ids` in `shouldSuppressPush`. Zum Zeitpunkt der Entfernung hatten 2 Konten sie an, niemand „nur Zusammenfassung“ oder Welten nur in der Zusammenfassung, daher ändert sich für niemanden etwas an den Sofort-Pushes.
-- **Datenbank:** Spalten `notification_prefs.digest_enabled/digest_only/digest_last_sent_at/digest_world_ids` und Funktion `digest_due(text)` bleiben vorerst bestehen (der Code liest sie nicht mehr, nichts bricht). Aufräum-Migration `supabase/migration_remove_digest.sql` liegt bereit, ist aber **nicht angewendet**.
+- **Datenbank:** Aufräum-Migration `supabase/migration_remove_digest.sql` am 9. November 2026 in Produktion **angewendet** (mit Ja der Nutzerin): Funktion `digest_due(text)` und die Spalten `notification_prefs.digest_enabled/digest_only/digest_last_sent_at/digest_world_ids` sind gelöscht. Danach geprüft: keine `digest`-Spalte und keine Funktion mehr, alle 6 Einstellungs-Zeilen vorhanden, Seite „Benachrichtigungen“ speichert. Ältere Einträge weiter unten, die `digest_due` nennen, sind damit überholt.
+- **Von Hand noch offen:** in Coolify die geplante Aufgabe „Tägliche Zusammenfassung“ löschen; bei Vercel (Settings → Cron Jobs) nach dem Deploy prüfen, dass kein Cron mehr eingetragen ist.
 - `CRON_SECRET` bleibt gebraucht (Anmeldung per Benutzername, Passwort vergessen, `dev-login`).
 
 ## Stand 1. November 2026 – Test-Durchgang und Folgearbeiten (Commits 1792364 bis a7d9ddb, alle gepusht) – zuerst lesen
