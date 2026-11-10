@@ -1,27 +1,28 @@
 "use client";
 
 import { useEffect } from "react";
-import { HIGHLIGHT_EVENT, visibleEntryElement } from "@/lib/scene-quote";
+import { FLASH_EVENT, HIGHLIGHT_EVENT, visibleEntryElement } from "@/lib/scene-quote";
 
 const FLASH = "0 0 0 3px var(--accent)";
 
 // Springt zu Nachrichten der Szene und hebt sie kurz hervor. Auslöser:
 // - Link auf einen einzelnen Beitrag (#beitrag-…, z. B. aus dem Würfelverlauf), optional mit ?hervor=id1,id2,… für mehrere (Ausschnitte)
 // - ein Klick auf ein Zitat im Szenen-Chat (Ereignis HIGHLIGHT_EVENT)
+// - ein neuer Beitrag einer anderen Person, während man die Szene offen hat (FLASH_EVENT): nur Aufleuchten, kein Scrollen
 // Frühere Beiträge sind eingeklappt und werden von EarlierEntries aufgeklappt, daher mehrfach versuchen, bis der Beitrag sichtbar ist.
 export function ScrollToEntry() {
   useEffect(() => {
     let timer: number | undefined;
     const flashTimers: number[] = [];
 
-    function focusEntries(ids: string[]) {
+    function focusEntries(ids: string[], scroll = true) {
       window.clearInterval(timer);
       let tries = 0;
       timer = window.setInterval(() => {
         const first = visibleEntryElement(ids[0]);
         if (first) {
           window.clearInterval(timer);
-          first.scrollIntoView({ block: "center", behavior: "auto" });
+          if (scroll) first.scrollIntoView({ block: "center", behavior: "auto" });
           for (const id of ids) {
             const el = visibleEntryElement(id);
             if (!el) continue;
@@ -43,9 +44,15 @@ export function ScrollToEntry() {
       const ids = (e as CustomEvent<string[]>).detail;
       if (ids?.length) focusEntries(ids);
     };
+    const onFlash = (e: Event) => {
+      const ids = (e as CustomEvent<string[]>).detail;
+      if (ids?.length) focusEntries(ids, false);
+    };
     window.addEventListener(HIGHLIGHT_EVENT, onHighlight);
+    window.addEventListener(FLASH_EVENT, onFlash);
     return () => {
       window.removeEventListener(HIGHLIGHT_EVENT, onHighlight);
+      window.removeEventListener(FLASH_EVENT, onFlash);
       window.clearInterval(timer);
       flashTimers.forEach((t) => window.clearTimeout(t));
     };

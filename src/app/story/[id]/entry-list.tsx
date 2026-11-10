@@ -6,7 +6,7 @@ import { AtSign, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import type { Character, StoryEntry } from "@/lib/types";
-import { HIGHLIGHT_EVENT, highlightEntries } from "@/lib/scene-quote";
+import { HIGHLIGHT_EVENT, flashEntries, highlightEntries } from "@/lib/scene-quote";
 import { EarlierEntries } from "./earlier-entries";
 import { StoryEntryItem } from "./story-entry-item";
 import { captureScrollAnchor } from "@/lib/keep-scroll";
@@ -134,6 +134,8 @@ export function EntryList({
             ...prev,
             { ...row, characters: author, roll_target_character: rollTarget ? { name: rollTarget.name } : null },
           ]);
+          // Beiträge anderer leuchten kurz auf (ohne zu scrollen), damit man sieht, was neu ist; eigene nicht
+          if (!myCharacterIds.includes(row.character_id)) flashEntries([row.id]);
         },
       )
       // DELETE-Ereignisse lassen sich nicht nach Szene filtern; die ID reicht, fremde IDs sind hier wirkungslos.

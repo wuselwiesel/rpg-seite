@@ -21,6 +21,12 @@ export function highlightEntries(ids: string[]) {
   window.dispatchEvent(new CustomEvent<string[]>(HIGHLIGHT_EVENT, { detail: ids }));
 }
 
+// Nur kurz aufleuchten lassen, ohne die Ansicht zu verschieben (neue Beiträge anderer, während man in der Szene liest)
+export const FLASH_EVENT = "wortwinkel-flash";
+export function flashEntries(ids: string[]) {
+  window.dispatchEvent(new CustomEvent<string[]>(FLASH_EVENT, { detail: ids }));
+}
+
 // Next behält beim Seitenwechsel die vorige Ansicht versteckt im Hintergrund (gleiche IDs zweimal): nur sichtbare Nachrichten zählen
 export function visibleEntryElement(entryId: string): HTMLElement | null {
   const all = document.querySelectorAll<HTMLElement>(`[id="beitrag-${CSS.escape(entryId)}"]`);

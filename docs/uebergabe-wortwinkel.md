@@ -1,5 +1,11 @@
 # Übergabe Wortwinkel (rpg-seite) – Stand 23. Oktober 2026 (letzter Commit zum Zeitpunkt der Aktualisierung: `940f377` „Ungelesen: eine eigene Antwort macht die Nachrichten davor gelesen”, PR 118; seit 24. Oktober wieder live auf Vercel Pro, siehe „Stand 23. Oktober” → Hosting; **Umzug auf Hetzner läuft parallel (Testphase), siehe „Stand 27. Oktober“**; Anleitung und Werbematerial siehe Abschnitt „Stand 20. Oktober – Anleitung”)
 
+## Stand 11. November 2026 – Szene offen: Meldung gleich gelesen, neuer Beitrag leuchtet auf
+
+- **Glocke (`components/notification-bell.tsx`):** Meldungen, deren Link auf die gerade offene und sichtbare Szene zeigt (`/story/<id>`, auch mit `?as=…&ziel=ende`), werden beim Eintreffen (Realtime), bei der 60-Sekunden-Abfrage und beim Öffnen der Szene sofort als gelesen gespeichert und nicht mitgezählt (`pointsToOpenScene`). Andere Szenen und Tabs im Hintergrund bleiben ungelesen.
+- **Neue Beiträge anderer** (Realtime-INSERT in `story/[id]/entry-list.tsx`) leuchten 3 Sekunden mit dem Akzentrahmen auf, **ohne zu scrollen** (`flashEntries` / `FLASH_EVENT` in `lib/scene-quote.ts`, ausgewertet in `scroll-to-entry.tsx`); eigene Beiträge leuchten nicht. Das Aufleuchten nach dem Bearbeiten (`highlightEntries`) scrollt weiter zum Beitrag.
+- Nicht geändert: Push-Meldungen aufs Handy kommen weiter, auch wenn man die Szene offen hat. Der Realtime-Weg der Glocke war im Vorschau-Browser nicht auslösbar (Verbindung kam nicht an); Abfrage- und Öffnen-Weg sind mit Test-Meldungen geprüft (danach gelöscht).
+
 ## Stand 9. November 2026 – Tägliche Zusammenfassung entfernt
 
 - **Auf Wunsch der Nutzerin entfernt** (die Meldung „Du hast N ungelesene Benachrichtigungen“ kam jeden Abend um 17:00 UTC, solange etwas ungelesen blieb). Code: Route `api/cron/digest`, Cron in `vercel.json`, GitHub-Aktion `cron-digest.yml`, Schalter und „Nur in der Zusammenfassung“ in den Benachrichtigungs-Einstellungen, `digest_only`/`digest_world_ids` in `shouldSuppressPush`. Zum Zeitpunkt der Entfernung hatten 2 Konten sie an, niemand „nur Zusammenfassung“ oder Welten nur in der Zusammenfassung, daher ändert sich für niemanden etwas an den Sofort-Pushes.

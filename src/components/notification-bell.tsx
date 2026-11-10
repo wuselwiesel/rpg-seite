@@ -3,6 +3,7 @@
 import { notificationTail } from "@/lib/notification-text";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus, Dices, Hourglass, BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
@@ -19,6 +20,13 @@ function iconForType(type: string) {
   if (type === "new_scene") return <BookOpen className="h-4 w-4" strokeWidth={2} />;
   if (type === "turn") return <Hourglass className="h-4 w-4" strokeWidth={2} />;
   return <UserPlus className="h-4 w-4" strokeWidth={2} />;
+}
+
+// Zeigt die Benachrichtigung auf die Szene, die im sichtbaren Tab gerade geöffnet ist? (Link: /story/<id>, ggf. mit ?as=…&ziel=ende)
+function pointsToOpenScene(link: string): boolean {
+  if (document.visibilityState !== "visible") return false;
+  const path = link.split(/[?#]/)[0];
+  return /^\/story\/[0-9a-f-]{36}$/i.test(path) && window.location.pathname === path;
 }
 
 export function NotificationBell({
@@ -41,6 +49,23 @@ export function NotificationBell({
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
   const panelRef = useRef<HTMLDivElement>(null);
   const instanceId = useId();
+  const pathname = usePathname();
+  const notificationsRef = useRef(notifications);
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  });
+
+  // Eine Szene öffnen (Link, Push-Tipp): ihre ungelesenen Meldungen sind damit gesehen
+  useEffect(() => {
+    if (!/^\/story\/[0-9a-f-]{36}$/i.test(pathname) || document.visibilityState !== "visible") return;
+    const seen = notificationsRef.current.filter((n) => !n.read_at && n.link.split(/[?#]/)[0] === pathname);
+    if (seen.length === 0) return;
+    const readAt = new Date().toISOString();
+    const ids = new Set(seen.map((n) => n.id));
+    setNotifications((prev) => prev.map((n) => (ids.has(n.id) ? { ...n, read_at: readAt } : n)));
+    setUnreadCount((c) => Math.max(0, c - ids.size));
+    void createClient().from("notifications").update({ read_at: readAt }).in("id", [...ids]).is("read_at", null).then();
+  }, [pathname]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -53,6 +78,13 @@ export function NotificationBell({
         (payload) => {
           const row = payload.new as AppNotification;
           if (worldFilter && row.world_id && row.world_id !== worldFilter) return;
+          // Betrifft die Meldung die Szene, die gerade offen und sichtbar ist, sieht man den Beitrag ohnehin: gleich als gelesen speichern
+          if (!row.read_at && pointsToOpenScene(row.link)) {
+            const readAt = new Date().toISOString();
+            void supabase.from("notifications").update({ read_at: readAt }).eq("id", row.id).is("read_at", null).then();
+            setNotifications((prev) => (prev.some((n) => n.id === row.id) ? prev : [{ ...row, read_at: readAt }, ...prev].slice(0, 20)));
+            return;
+          }
           setNotifications((prev) => (prev.some((n) => n.id === row.id) ? prev : [row, ...prev].slice(0, 20)));
           setUnreadCount((prev) => prev + 1);
         },
@@ -78,8 +110,15 @@ export function NotificationBell({
       if (!panelRef.current || panelRef.current.getClientRects().length === 0) return;
       let query = supabase.from("notifications").select("*").eq("user_id", userId);
       if (worldFilter) query = query.or(`world_id.is.null,world_id.eq.${worldFilter}`);
-      const { data } = await query.order("created_at", { ascending: false }).limit(20).returns<AppNotification[]>();
-      if (!data) return;
+      const { data: fetched } = await query.order("created_at", { ascending: false }).limit(20).returns<AppNotification[]>();
+      if (!fetched) return;
+      // Verpasste Meldungen zur gerade offenen Szene gelten ebenfalls als gelesen
+      const readAt = new Date().toISOString();
+      const inOpenScene = fetched.filter((n) => !n.read_at && pointsToOpenScene(n.link));
+      if (inOpenScene.length > 0) {
+        void supabase.from("notifications").update({ read_at: readAt }).in("id", inOpenScene.map((n) => n.id)).is("read_at", null).then();
+      }
+      const data = fetched.map((n) => (inOpenScene.includes(n) ? { ...n, read_at: readAt } : n));
       setNotifications((prev) => {
         const knownIds = new Set(prev.map((n) => n.id));
         const merged = [...data.filter((n) => !knownIds.has(n.id)), ...prev];
