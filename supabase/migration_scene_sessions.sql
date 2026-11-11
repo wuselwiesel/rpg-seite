@@ -118,7 +118,7 @@ begin
     || ' von ' || v_chars::text || case when v_chars = 1 then ' Charakter' else ' Charakteren' end
     || ', ' || v_words::text || ' Wörter, ' || v_dur
     || case when v_rolls > 0 then ', ' || v_rolls::text || case when v_rolls = 1 then ' Wurf' else ' Würfe' end else '' end
-    || '.</p>';
+    || '</p>';
   if v_names is not null then
     v_html := v_html || '<p>' || v_names || '</p>';
   end if;

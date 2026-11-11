@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { ClipboardCheck, Star, X } from "lucide-react";
 import { useConfirm } from "@/components/confirm-dialog";
 import { formatDateTime } from "@/lib/format";
 import { averageStars, durationLabel, SESSION_TEXT_MAX, type SceneSession } from "@/lib/scene-session";
-import { endSceneSession, saveSessionRating } from "../session-actions";
+import { useRouter } from "next/navigation";
+import { endSceneSession, postSessionToRedaktion, saveSessionRating, setSessionStart } from "../session-actions";
+import { highlightEntries } from "@/lib/scene-quote";
 
 const fmt = (n: number) => n.toLocaleString("de-DE");
 
-function Stars({ value, size = "h-4 w-4" }: { value: number; size?: string }) {
+export function Stars({ value, size = "h-4 w-4" }: { value: number; size?: string }) {
   return (
     <span className="inline-flex items-center gap-0.5" aria-label={`${value} von 5 Sternen`} role="img">
       {[1, 2, 3, 4, 5].map((i) => (
@@ -28,13 +31,20 @@ export function SceneSessions({
   selfId,
   canParticipate,
   openSessionId,
+  privateScene,
+  pendingStart,
 }: {
   storyPostId: string;
   sessions: SceneSession[];
   selfId: string;
   canParticipate: boolean;
   openSessionId: string | null;
+  // Geheime Szenen lassen sich nicht in der Redaktion posten
+  privateScene: boolean;
+  // Von Hand gewählter Anfang der nächsten Session (Nachricht), falls gesetzt
+  pendingStart: { entryId: string | null; at: string } | null;
 }) {
+  const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(openSessionId && sessions.some((s) => s.id === openSessionId) ? openSessionId : null);
   const [listOpen, setListOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -51,7 +61,9 @@ export function SceneSessions({
   async function end() {
     setError(null);
     const ok = await confirm({
-      message: "Session beenden? Die Szene bleibt, wie sie ist. Du siehst einen Rückblick und kannst die Session bewerten; die anderen Mitspielenden bekommen eine Meldung und können sie auch bewerten. Der Rückblick wird außerdem in der Redaktion gepostet.",
+      message: pendingStart
+        ? `Session beenden? Sie umfasst alles ab dem von dir gewählten Anfang (${formatDateTime(pendingStart.at)}). Die Szene bleibt, wie sie ist. Du siehst einen Rückblick und kannst die Session bewerten; die anderen Mitspielenden bekommen eine Meldung und können sie auch bewerten.`
+        : "Session beenden? Sie umfasst alles seit dem Ende der letzten Session (oder seit Szenenbeginn). Die Szene bleibt, wie sie ist. Du siehst einen Rückblick und kannst die Session bewerten; die anderen Mitspielenden bekommen eine Meldung und können sie auch bewerten.",
       confirmLabel: "Session beenden",
     });
     if (!ok) return;
@@ -90,6 +102,34 @@ export function SceneSessions({
         )}
       </div>
 
+      {pendingStart && canParticipate && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-surface-2 px-4 py-2.5 text-sm">
+          <p className="text-fg-soft">
+            Die nächste Session beginnt bei der Nachricht vom <span className="text-fg">{formatDateTime(pendingStart.at)}</span>.
+          </p>
+          <span className="ml-auto flex items-center gap-3">
+            {pendingStart.entryId && (
+              <button type="button" onClick={() => highlightEntries([pendingStart.entryId!])} className="text-xs font-medium text-accent hover:underline">
+                Anzeigen
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                startTransition(async () => {
+                  const err = await setSessionStart(storyPostId, null);
+                  if (err) setError(err);
+                  else router.refresh();
+                })
+              }
+              className="text-xs text-muted transition hover:text-fg"
+            >
+              Zurücksetzen
+            </button>
+          </span>
+        </div>
+      )}
+
       {toRate && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-accent-strong/15 px-4 py-2.5 text-sm">
           <Star className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
@@ -122,22 +162,30 @@ export function SceneSessions({
         </ul>
       )}
 
-      {open && <SessionDialog key={open.id} session={open} selfId={selfId} canRate={canParticipate} onClose={() => setOpenId(null)} />}
+      {open && <SessionDialog key={open.id} session={open} storyPostId={storyPostId} selfId={selfId} canRate={canParticipate} canPost={canParticipate && !privateScene} onClose={() => setOpenId(null)} />}
       {dialog}
     </div>
   );
 }
 
-function SessionDialog({
+// `scene`: Rückblick außerhalb der Szene (Übersicht): zeigt den Szenentitel mit Link; bewertet wird dann in der Szene
+export function SessionDialog({
   session,
+  storyPostId,
   selfId,
   canRate,
+  canPost,
   onClose,
+  scene,
 }: {
   session: SceneSession;
+  storyPostId: string;
   selfId: string;
   canRate: boolean;
+  // Von Hand in der Redaktion posten: Mitspielende, nicht bei geheimen Szenen
+  canPost: boolean;
   onClose: () => void;
+  scene?: { title: string; href: string };
 }) {
   const mine = session.ratings.find((r) => r.userId === selfId) ?? null;
   const [stars, setStars] = useState(mine?.stars ?? 0);
@@ -146,6 +194,9 @@ function SessionDialog({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [postId, setPostId] = useState<string | null>(session.redaktionPostId);
+  const [posting, startPosting] = useTransition();
+  const [postError, setPostError] = useState<string | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Portal erst nach dem Einhängen im Browser
@@ -158,7 +209,8 @@ function SessionDialog({
   const st = session.stats;
   const max = Math.max(1, ...st.characters.map((c) => c.count));
   const avg = averageStars(session.ratings);
-  const others = session.ratings.filter((r) => r.userId !== selfId);
+  // Beim Bewerten steht die eigene Bewertung im Formular; im Nur-Lesen-Fenster (Übersicht) gehört sie in die Liste
+  const others = canRate ? session.ratings.filter((r) => r.userId !== selfId) : session.ratings;
 
   function save() {
     setMessage(null);
@@ -176,7 +228,16 @@ function SessionDialog({
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
             <h2 className="font-serif text-xl text-fg">Rückblick auf die Session</h2>
-            <p className="text-xs text-muted">beendet am {formatDateTime(session.endedAt)}</p>
+            {scene && (
+              <p className="truncate text-sm">
+                <Link href={scene.href} className="text-accent hover:underline">
+                  {scene.title}
+                </Link>
+              </p>
+            )}
+            <p className="text-xs text-muted">
+              ab {formatDateTime(session.startedAt)} · beendet am {formatDateTime(session.endedAt)}
+            </p>
           </div>
           <button type="button" onClick={onClose} aria-label="Schließen" className="rounded-full p-1.5 text-muted hover:bg-surface-2 hover:text-fg">
             <X className="h-4 w-4" strokeWidth={2} />
@@ -273,7 +334,7 @@ function SessionDialog({
 
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-medium text-fg">Bewertungen der anderen</p>
+              <p className="text-sm font-medium text-fg">{canRate ? "Bewertungen der anderen" : "Bewertungen"}</p>
               {avg !== null && (
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted">
                   <Stars value={avg} size="h-3.5 w-3.5" />
@@ -282,13 +343,13 @@ function SessionDialog({
               )}
             </div>
             {others.length === 0 ? (
-              <p className="text-sm text-muted">Noch keine Bewertung der anderen.</p>
+              <p className="text-sm text-muted">{canRate ? "Noch keine Bewertung der anderen." : "Noch keine Bewertung."}</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {others.map((r) => (
                   <li key={r.userId} className="flex flex-col gap-1 rounded-xl bg-surface-2 px-3 py-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-fg">{r.characterName ?? "Jemand"}</span>
+                      <span className="font-medium text-fg">{r.characterName ?? "Jemand"}{r.userId === selfId ? " (du)" : ""}</span>
                       <Stars value={r.stars} size="h-3.5 w-3.5" />
                     </div>
                     {r.liked && (
@@ -306,6 +367,48 @@ function SessionDialog({
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2 border-t border-line pt-4">
+            <p className="text-sm font-medium text-fg">In der Redaktion</p>
+            {postId ? (
+              <p className="text-sm text-fg-soft">
+                Der Rückblick steht in der Redaktion.{" "}
+                <Link href={`/redaktion/${postId}`} className="text-accent hover:underline">
+                  Zum Beitrag
+                </Link>
+              </p>
+            ) : canPost ? (
+              <>
+                <p className="text-xs text-muted">
+                  Gepostet werden Szenentitel, Zahlen und der Sterne-Durchschnitt, ohne die Bewertungstexte. Der Beitrag erscheint in deinem Namen.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={posting}
+                    onClick={() =>
+                      startPosting(async () => {
+                        setPostError(null);
+                        const res = await postSessionToRedaktion(session.id, storyPostId);
+                        if (res.ok) setPostId(res.postId);
+                        else setPostError(res.message);
+                      })
+                    }
+                    className="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50"
+                  >
+                    {posting ? "Poste..." : "In der Redaktion posten"}
+                  </button>
+                  {postError && (
+                    <p role="status" className="text-xs text-red-600 dark:text-red-400">
+                      {postError}
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted">Nicht in der Redaktion gepostet.</p>
             )}
           </div>
         </div>

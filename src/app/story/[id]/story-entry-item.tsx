@@ -6,13 +6,14 @@ import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { highlightEntries } from "@/lib/scene-quote";
-import { Bookmark, Check, Clover, Copy, Dices, EyeOff, Flag, Pencil, ShieldAlert, Trash2, Type } from "lucide-react";
+import { Bookmark, Check, Clover, Copy, Dices, EyeOff, Flag, Pencil, Play, ShieldAlert, Trash2, Type } from "lucide-react";
 import { copyEntries } from "@/lib/entry-copy";
 import { useClipSelection } from "./clip-selection";
 import { MarkEventForm } from "./mark-event-form";
 import { unmarkEvent } from "@/app/wiki/actions";
 import { useRouter } from "next/navigation";
 import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene, setEntrySpoiler } from "../actions";
+import { setSessionStart } from "../session-actions";
 import { SpoilerGate } from "@/components/spoiler-gate";
 import { EventDateFields } from "@/components/event-date-fields";
 import { formatDate, type EventDate, type WikiCalendar } from "@/lib/wiki-calendar";
@@ -42,6 +43,8 @@ export function StoryEntryItem({
   eventType = null,
   sceneDate = null,
   ownCharacters = [],
+  canSetSessionStart = false,
+  isSessionStart = false,
 }: {
   entry: StoryEntry;
   storyPostId: string;
@@ -60,6 +63,9 @@ export function StoryEntryItem({
   sceneDate?: EventDate | null;
   // Eigene Figuren: nötig, um gebündelte Nachrichten abschnittsweise zu bearbeiten
   ownCharacters?: Character[];
+  // Diese Nachricht als Anfang der nächsten Session wählen (nur Mitspielende, nur nach dem Ende der letzten Session) / ist schon gewählt
+  canSetSessionStart?: boolean;
+  isSessionStart?: boolean;
 }) {
   const isRoll = !!entry.roll_label;
   const isNarrator = entry.kind === "narrator";
@@ -257,6 +263,14 @@ export function StoryEntryItem({
 
   return (
     <div className="flex flex-col">
+    {isSessionStart && (
+      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-accent">
+        <span className="h-px flex-1 bg-accent/40" />
+        <Play className="h-3 w-3 fill-current" strokeWidth={2} />
+        Session-Anfang
+        <span className="h-px flex-1 bg-accent/40" />
+      </div>
+    )}
     <div className="flex gap-3">
       {isNarrator ? (
         <NarratorAvatar size={32} />
@@ -363,6 +377,23 @@ export function StoryEntryItem({
                     <Flag className="h-3.5 w-3.5" strokeWidth={2} />
                   </button>
                 ))}
+              {(canSetSessionStart || isSessionStart) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void setSessionStart(storyPostId, isSessionStart ? null : entry.id).then((err) => {
+                      if (err) void alertDialog(err);
+                      else router.refresh();
+                    })
+                  }
+                  title={isSessionStart ? "Session-Anfang entfernen" : "Session beginnt hier"}
+                  aria-label={isSessionStart ? "Session-Anfang entfernen" : "Session beginnt hier"}
+                  aria-pressed={isSessionStart}
+                  className={`rounded p-1 transition hover:bg-surface-2 ${isSessionStart ? "text-accent" : `text-muted hover:text-fg ${REVEAL}`}`}
+                >
+                  <Play className={`h-3.5 w-3.5 ${isSessionStart ? "fill-current" : ""}`} strokeWidth={2} />
+                </button>
+              )}
               {canManage && !isRoll && (
                 <button
                   type="button"

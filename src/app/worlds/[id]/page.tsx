@@ -116,6 +116,10 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
   const { count: characterCount } = isMember
     ? await supabase.from("characters").select("id", { count: "exact", head: true }).eq("world_id", id).is("deleted_at", null)
     : { count: 0 };
+  // Beendete Sessions der Welt (nur zählen; fehlt die Tabelle noch, bleibt der Link weg)
+  const { count: sessionCount, error: sessionsCountError } = isMember
+    ? await supabase.from("scene_sessions").select("id, story_posts!inner(world_id)", { count: "exact", head: true }).eq("story_posts.world_id", id)
+    : { count: 0, error: null };
   const { count: reviewCount } = isAdmin
     ? await supabase.from("characters").select("id", { count: "exact", head: true }).eq("world_id", id).eq("review_status", "pending").is("deleted_at", null)
     : { count: 0 };
@@ -216,6 +220,19 @@ export default async function WorldDetailPage({ params }: PageProps<"/worlds/[id
           <span className="flex shrink-0 items-center gap-1 text-sm text-muted">
             {(reviewCount ?? 0) > 0 && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">{reviewCount} zur Prüfung</span>}
             {characterCount ?? 0}
+            <ChevronRight className="h-4 w-4" strokeWidth={2} />
+          </span>
+        </Link>
+      )}
+
+      {isMember && !sessionsCountError && (
+        <Link
+          href={`/worlds/${world.id}/sessions`}
+          className="-mt-5 mb-8 flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-fg transition hover:border-accent"
+        >
+          <span className="font-serif text-xl">Sessions</span>
+          <span className="flex shrink-0 items-center gap-1 text-sm text-muted">
+            {sessionCount ?? 0}
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </span>
         </Link>

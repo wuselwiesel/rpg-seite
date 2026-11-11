@@ -8,7 +8,7 @@ import { sceneRecipients } from "@/lib/scene-recipients";
 import { cleanSessionText, clampStars, sessionNoticeMessage } from "@/lib/scene-session";
 
 // „Session beenden“: legt den Rückblick an (Statistik rechnet die Datenbank selbst aus) und benachrichtigt die anderen Mitspielenden.
-// An der Szene ändert sich nichts (nicht gesperrt, nicht archiviert).
+// An der Szene ändert sich nichts (nicht gesperrt, nicht archiviert); in die Redaktion kommt nichts automatisch (siehe postSessionToRedaktion).
 export async function endSceneSession(storyPostId: string): Promise<{ ok: true; sessionId: string } | { ok: false; message: string }> {
   const supabase = await createClient();
   const {
@@ -90,5 +90,43 @@ export async function saveSessionRating(
   );
   if (error) return "Die Bewertung konnte nicht gespeichert werden.";
   revalidatePath(`/story/${session.story_post_id}`);
+  return null;
+}
+
+// Rückblick von Hand in der Redaktion posten (im eigenen Namen; nur Mitspielende, nicht bei geheimen Szenen, einmal je Session)
+export async function postSessionToRedaktion(sessionId: string, storyPostId: string): Promise<{ ok: true; postId: string } | { ok: false; message: string }> {
+  if (!/^[0-9a-f-]{36}$/i.test(sessionId)) return { ok: false, message: "Session nicht gefunden." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Nicht angemeldet." };
+  const { data, error } = await supabase.rpc("post_scene_session", { p_session_id: sessionId });
+  if (error || typeof data !== "string") {
+    const known = ["Geheime Szenen lassen sich nicht in der Redaktion posten", "Dieser Rückblick wurde schon in der Redaktion gepostet", "Keine Berechtigung", "Session nicht gefunden"];
+    const reason = known.find((k) => error?.message?.includes(k));
+    return { ok: false, message: reason ? `${reason}.` : "Der Rückblick konnte nicht gepostet werden." };
+  }
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/worlds/[id]/sessions", "page");
+  revalidatePath("/redaktion");
+  return { ok: true, postId: data };
+}
+
+// Anfang der nächsten Session an einer Nachricht festlegen; entryId null entfernt die Wahl (dann beginnt sie, wo die letzte endete)
+export async function setSessionStart(storyPostId: string, entryId: string | null): Promise<string | null> {
+  if (entryId !== null && !/^[0-9a-f-]{36}$/i.test(entryId)) return "Nachricht nicht gefunden.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("set_scene_session_start", { p_story_post_id: storyPostId, p_entry_id: entryId });
+  if (error) {
+    const known = ["Der Anfang muss nach dem Ende der letzten Session liegen", "Ein Kapitel kann kein Session-Anfang sein", "Nachricht nicht gefunden", "Keine Berechtigung"];
+    const reason = known.find((k) => error.message.includes(k));
+    return reason ? `${reason}.` : "Der Anfang konnte nicht gesetzt werden.";
+  }
+  revalidatePath(`/story/${storyPostId}`);
   return null;
 }

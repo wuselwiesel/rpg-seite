@@ -25,6 +25,8 @@ export type SceneSession = {
   endedAt: string;
   stats: SessionStats;
   ratings: SessionRating[];
+  // Beitrag in der Redaktion, falls jemand den Rückblick gepostet hat
+  redaktionPostId: string | null;
 };
 
 // Sterne nur als ganze Zahl von 1 bis 5

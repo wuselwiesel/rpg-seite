@@ -317,7 +317,7 @@ export default async function StoryPostDetailPage({
   // Beendete Sessions mit Bewertungen; fehlen die Tabellen noch (Migration nicht eingespielt), bleibt der Bereich einfach weg
   const { data: sessionRows, error: sessionsError } = await supabase
     .from("scene_sessions")
-    .select("id, ended_by, started_at, ended_at, stats, scene_session_ratings(user_id, stars, liked, disliked, characters(name))")
+    .select("id, ended_by, started_at, ended_at, stats, redaktion_post_id, scene_session_ratings(user_id, stars, liked, disliked, characters(name))")
     .eq("story_post_id", id)
     .order("ended_at", { ascending: false })
     .limit(30)
@@ -328,6 +328,7 @@ export default async function StoryPostDetailPage({
         started_at: string;
         ended_at: string;
         stats: unknown;
+        redaktion_post_id: string | null;
         scene_session_ratings: { user_id: string; stars: number; liked: string | null; disliked: string | null; characters: { name: string } | null }[];
       }[]
     >();
@@ -340,8 +341,15 @@ export default async function StoryPostDetailPage({
         endedAt: s.ended_at,
         stats: normalizeStats(s.stats),
         ratings: s.scene_session_ratings.map((r) => ({ userId: r.user_id, characterName: r.characters?.name ?? null, stars: r.stars, liked: r.liked, disliked: r.disliked })),
+        redaktionPostId: s.redaktion_post_id,
       }));
   const isParticipant = [storyPost.character_id, ...participantIds, ...cast.map((c) => c.id)].some((cid) => myCharacterIds.has(cid));
+  // Von Hand gewählter Anfang der nächsten Session; gilt nur, solange er nach dem Ende der letzten Session liegt
+  const lastSessionEnd = sceneSessions[0]?.endedAt ?? null;
+  const { data: startRow } = sessionsError
+    ? { data: null }
+    : await supabase.from("scene_session_starts").select("entry_id, start_at").eq("story_post_id", id).maybeSingle<{ entry_id: string | null; start_at: string }>();
+  const pendingStart = startRow && (!lastSessionEnd || startRow.start_at > lastSessionEnd) ? { entryId: startRow.entry_id, at: startRow.start_at } : null;
   const filterCharacters = mentionableCharacters
     .filter((c) => myCharacterIds.has(c.id) || involvedIds.has(c.id))
     .map((c) => ({ id: c.id, name: c.name, own: myCharacterIds.has(c.id), wrote: writtenIds.has(c.id) }))
@@ -474,6 +482,8 @@ export default async function StoryPostDetailPage({
           selfId={user.id}
           canParticipate={isParticipant}
           openSessionId={typeof sitzung === "string" ? sitzung : null}
+          privateScene={storyPost.is_private}
+          pendingStart={pendingStart}
         />
       )}
 
@@ -569,6 +579,8 @@ export default async function StoryPostDetailPage({
                 eventType={eventType}
                 sceneDate={datesFromRow(storyPost).start}
                 ownCharacters={ownCharacters}
+                canSetSessionStart={!sessionsError && isParticipant && entry.kind !== "chapter" && (!lastSessionEnd || entry.created_at > lastSessionEnd)}
+                isSessionStart={!!pendingStart && pendingStart.entryId === entry.id}
               />
             ),
           }));
