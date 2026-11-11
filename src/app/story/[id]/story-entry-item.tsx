@@ -22,6 +22,7 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { formatDateTime } from "@/lib/format";
 import { plainWithNames, splitSegments } from "@/lib/segments";
 import { BundleBuilder } from "./bundle-builder";
+import { EditedNoticePrompt } from "./scene-notice";
 import type { Character, StoryEntry } from "@/lib/types";
 
 // Flagge, Stift und Papierkorb: mit Maus erst beim Darüberfahren, am Handy erst nach einmal Antippen der Nachricht
@@ -73,10 +74,13 @@ export function StoryEntryItem({
   const updateAction = updateStoryEntry.bind(null, entry.id, storyPostId);
   const [error, formAction, pending] = useActionState(updateAction, null);
   const wasPending = useRef(false);
+  // Nach dem Speichern: anbieten, die anderen über die Änderung zu benachrichtigen
+  const [noticeAsk, setNoticeAsk] = useState(false);
 
   useEffect(() => {
     if (wasPending.current && !pending && !error) {
       setEditing(false);
+      setNoticeAsk(true);
       // Kurze Hervorhebung der soeben bearbeiteten Nachricht
       window.setTimeout(() => highlightEntries([entry.id]), 100);
     }
@@ -541,6 +545,7 @@ export function StoryEntryItem({
             )}
           </SpoilerGate>
         )}
+        {noticeAsk && !editing && <EditedNoticePrompt storyPostId={storyPostId} entryId={entry.id} onDone={() => setNoticeAsk(false)} />}
       </div>
     </div>
     {bundled?.slice(1).map((seg, i, rest) => {

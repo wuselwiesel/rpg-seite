@@ -25,6 +25,7 @@ import { parseTalentConfig } from "@/lib/talents";
 import { columnsFromDates, parsePageDates } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 import { permissionError } from "@/lib/world-permissions";
+import { cleanNoticeText, sceneNoticeLink, sceneNoticeMessage } from "@/lib/scene-notice";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -688,6 +689,74 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
     recipientName: target.name,
   });
   return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
+}
+
+// Hinweis an die Mitspielenden einer Szene: frei geschriebener Text oder „Ich habe meinen Beitrag bearbeitet“
+// (mit Sprung zum Beitrag), auch wenn die anderen danach schon geschrieben haben. Empfänger:innen sind die
+// Besitzer:innen der Charaktere, die in der Szene schreiben oder „mit dabei“ sind (ohne dich); `characterIds` grenzt das ein.
+export async function sendSceneNotice(
+  storyPostId: string,
+  input: { text?: string; entryId?: string | null; characterIds?: string[] },
+): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Nicht angemeldet." };
+
+  const text = cleanNoticeText(input.text);
+  const entryId = input.entryId && /^[0-9a-f-]{36}$/i.test(input.entryId) ? input.entryId : null;
+  if (!text && !entryId) return { ok: false, message: "Bitte einen Text eingeben." };
+
+  const { data: post } = await supabase.from("story_posts").select("title, world_id, character_id").eq("id", storyPostId).maybeSingle();
+  if (!post) return { ok: false, message: "Szene nicht gefunden." };
+  const actorId = await getActiveCharacterInWorld(user.id, post.world_id);
+  if (!actorId) return { ok: false, message: "Du brauchst einen Charakter in dieser Welt." };
+
+  if (entryId) {
+    const { data: entry } = await supabase.from("story_entries").select("id").eq("id", entryId).eq("story_post_id", storyPostId).maybeSingle();
+    if (!entry) return { ok: false, message: "Beitrag nicht gefunden." };
+  }
+
+  const [{ data: writers }, { data: castRows }] = await Promise.all([
+    supabase.from("story_entries").select("character_id").eq("story_post_id", storyPostId),
+    supabase.from("story_post_cast").select("character_id").eq("story_post_id", storyPostId),
+  ]);
+  const involved = new Set<string>([post.character_id, ...(writers ?? []).map((w) => w.character_id as string), ...(castRows ?? []).map((c) => c.character_id as string)]);
+  const wanted = input.characterIds?.length ? input.characterIds.filter((id) => involved.has(id)) : [...involved];
+  if (wanted.length === 0) return { ok: false, message: "Niemand ausgewählt." };
+
+  const { data: targets } = await supabase.from("characters").select("id, owner_id, name").in("id", wanted);
+  const byOwner = new Map<string, { id: string; name: string }[]>();
+  for (const t of targets ?? []) {
+    if (!t.owner_id || t.owner_id === user.id) continue;
+    byOwner.set(t.owner_id, [...(byOwner.get(t.owner_id) ?? []), { id: t.id, name: t.name }]);
+  }
+  if (byOwner.size === 0) return { ok: false, message: "Es gibt niemanden, der benachrichtigt werden kann." };
+
+  // Drosselung; solange die Migration noch nicht eingespielt ist (Funktion fehlt), geht es ohne Drosselung durch
+  const { data: allowed, error: limitError } = await supabase.rpc("touch_scene_notice", { p_story_post_id: storyPostId });
+  if (!limitError && !allowed) return { ok: false, message: "Gerade eben wurde schon ein Hinweis gesendet. Kurz warten." };
+  if (limitError && limitError.code !== "PGRST202") return { ok: false, message: limitError.message };
+
+  const { data: actor } = await supabase.from("characters").select("name, avatar_url").eq("id", actorId).maybeSingle();
+  const title = await sceneNotificationTitle(supabase, storyPostId, post.title);
+  const message = sceneNoticeMessage(title, text, entryId);
+
+  await Promise.all(
+    [...byOwner.entries()].map(([ownerId, chars]) =>
+      createNotification(supabase, {
+        userId: ownerId,
+        type: "scene_notice",
+        actorName: actor?.name ?? "Jemand",
+        actorAvatarUrl: actor?.avatar_url ?? null,
+        link: sceneNoticeLink(storyPostId, entryId, chars[0].id),
+        message,
+        recipientName: chars.map((c) => c.name).join(", "),
+      }),
+    ),
+  );
+  return { ok: true, message: byOwner.size === 1 ? "Hinweis gesendet." : `Hinweis an ${byOwner.size} Personen gesendet.` };
 }
 
 // Hintergrundbild einer Szene (wie Ort/Zeit: alle Mitspielenden der Welt, RPC set_scene_ambience). Musik steht in scene_tracks.

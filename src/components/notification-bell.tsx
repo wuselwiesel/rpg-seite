@@ -4,7 +4,7 @@ import { notificationTail } from "@/lib/notification-text";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus, Dices, Hourglass, BookOpen } from "lucide-react";
+import { Bell, MessageCircle, MessageSquare, Heart, AtSign, UserPlus, Dices, Hourglass, BookOpen, BellRing } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import type { AppNotification } from "@/lib/notifications";
@@ -19,6 +19,7 @@ function iconForType(type: string) {
   if (type === "roll") return <Dices className="h-4 w-4" strokeWidth={2} />;
   if (type === "new_scene") return <BookOpen className="h-4 w-4" strokeWidth={2} />;
   if (type === "turn") return <Hourglass className="h-4 w-4" strokeWidth={2} />;
+  if (type === "scene_notice") return <BellRing className="h-4 w-4" strokeWidth={2} />;
   return <UserPlus className="h-4 w-4" strokeWidth={2} />;
 }
 

@@ -40,6 +40,7 @@ import { SceneMeta } from "./scene-meta";
 import type { SceneTrack } from "./scene-tracks";
 import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
+import { SceneNotice } from "./scene-notice";
 import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
 import { SceneMarkFlag } from "./scene-mark-flag";
@@ -306,6 +307,11 @@ export default async function StoryPostDetailPage({
     if (e.kind !== "chapter") for (const id of parseMentionedCharacterIdsFromHtml(e.content)) involvedIds.add(id);
   }
   const writtenIds = new Set(participantIds);
+  // Empfänger:innen für „Hinweis senden“: Charaktere anderer, die in der Szene schreiben oder „mit dabei“ sind
+  const castIdSet = new Set(cast.map((c) => c.id));
+  const noticeTargets = mentionableCharacters
+    .filter((c) => !myCharacterIds.has(c.id) && (c.id === storyPost.character_id || writtenIds.has(c.id) || castIdSet.has(c.id)))
+    .map((c) => ({ id: c.id, name: c.name }));
   const filterCharacters = mentionableCharacters
     .filter((c) => myCharacterIds.has(c.id) || involvedIds.has(c.id))
     .map((c) => ({ id: c.id, name: c.name, own: myCharacterIds.has(c.id), wrote: writtenIds.has(c.id) }))
@@ -427,6 +433,9 @@ export default async function StoryPostDetailPage({
           waitingName={lastWriter && lastWriter.id !== turnCharacter.id ? lastWriter.name : null}
           isMine={turnIsMine}
         />
+      )}
+      {!storyPost.locked && myCharacterIds.size > 0 && (
+        <SceneNotice storyPostId={storyPost.id} targets={noticeTargets} />
       )}
 
       <SceneNote storyPostId={storyPost.id} initial={sceneNote?.body ?? ""} notesButton={<TargetNotesButton kind="scene" targetId={storyPost.id} targetLabel={storyPost.title} count={await noteCountForTarget(supabase, user.id, "scene", storyPost.id)} />} />
