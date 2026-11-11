@@ -691,12 +691,11 @@ export async function sendTurnReminder(storyPostId: string): Promise<{ ok: boole
   return { ok: true, message: `Erinnerung an ${target.name} gesendet.` };
 }
 
-// Hinweis an die Mitspielenden einer Szene: frei geschriebener Text oder „Ich habe meinen Beitrag bearbeitet“
-// (mit Sprung zum Beitrag), auch wenn die anderen danach schon geschrieben haben. Empfänger:innen sind die
-// Besitzer:innen der Charaktere, die in der Szene schreiben oder „mit dabei“ sind (ohne dich); `characterIds` grenzt das ein.
+// Hinweis an die Mitspielenden einer Szene mit frei geschriebenem Text, jederzeit (auch wenn die anderen schon weitergeschrieben haben).
+// Empfänger:innen sind die Besitzer:innen der Charaktere, die in der Szene schreiben oder „mit dabei“ sind (ohne dich); `characterIds` grenzt das ein.
 export async function sendSceneNotice(
   storyPostId: string,
-  input: { text?: string; entryId?: string | null; characterIds?: string[] },
+  input: { text: string; characterIds?: string[] },
 ): Promise<{ ok: boolean; message: string }> {
   const supabase = await createClient();
   const {
@@ -705,18 +704,12 @@ export async function sendSceneNotice(
   if (!user) return { ok: false, message: "Nicht angemeldet." };
 
   const text = cleanNoticeText(input.text);
-  const entryId = input.entryId && /^[0-9a-f-]{36}$/i.test(input.entryId) ? input.entryId : null;
-  if (!text && !entryId) return { ok: false, message: "Bitte einen Text eingeben." };
+  if (!text) return { ok: false, message: "Bitte einen Text eingeben." };
 
   const { data: post } = await supabase.from("story_posts").select("title, world_id, character_id").eq("id", storyPostId).maybeSingle();
   if (!post) return { ok: false, message: "Szene nicht gefunden." };
   const actorId = await getActiveCharacterInWorld(user.id, post.world_id);
   if (!actorId) return { ok: false, message: "Du brauchst einen Charakter in dieser Welt." };
-
-  if (entryId) {
-    const { data: entry } = await supabase.from("story_entries").select("id").eq("id", entryId).eq("story_post_id", storyPostId).maybeSingle();
-    if (!entry) return { ok: false, message: "Beitrag nicht gefunden." };
-  }
 
   const [{ data: writers }, { data: castRows }] = await Promise.all([
     supabase.from("story_entries").select("character_id").eq("story_post_id", storyPostId),
@@ -741,7 +734,7 @@ export async function sendSceneNotice(
 
   const { data: actor } = await supabase.from("characters").select("name, avatar_url").eq("id", actorId).maybeSingle();
   const title = await sceneNotificationTitle(supabase, storyPostId, post.title);
-  const message = sceneNoticeMessage(title, text, entryId);
+  const message = sceneNoticeMessage(title, text);
 
   await Promise.all(
     [...byOwner.entries()].map(([ownerId, chars]) =>
@@ -750,7 +743,7 @@ export async function sendSceneNotice(
         type: "scene_notice",
         actorName: actor?.name ?? "Jemand",
         actorAvatarUrl: actor?.avatar_url ?? null,
-        link: sceneNoticeLink(storyPostId, entryId, chars[0].id),
+        link: sceneNoticeLink(storyPostId, chars[0].id),
         message,
         recipientName: chars.map((c) => c.name).join(", "),
       }),

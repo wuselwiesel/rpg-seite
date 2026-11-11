@@ -15,22 +15,13 @@ describe("cleanNoticeText", () => {
 });
 
 describe("sceneNoticeMessage", () => {
-  it("Bearbeitet ohne Zusatz", () => {
-    expect(sceneNoticeMessage("Herbstball", "", "e1")).toBe("hat in „Herbstball“ einen Beitrag bearbeitet");
-  });
-  it("Bearbeitet mit Zusatz", () => {
-    expect(sceneNoticeMessage("Herbstball", "schau nochmal rein", "e1")).toBe("hat in „Herbstball“ einen Beitrag bearbeitet: schau nochmal rein");
-  });
-  it("Eigener Text", () => {
-    expect(sceneNoticeMessage("Herbstball", "Bist du noch da?", null)).toBe("hat dir zu „Herbstball“ geschrieben: Bist du noch da?");
+  it("setzt Szene und eigenen Text ein", () => {
+    expect(sceneNoticeMessage("Herbstball", "Bist du noch da?")).toBe("hat dir zu „Herbstball“ geschrieben: Bist du noch da?");
   });
 });
 
 describe("sceneNoticeLink", () => {
-  it("springt zum bearbeiteten Beitrag", () => {
-    expect(sceneNoticeLink("s1", "e1", "c1")).toBe("/story/s1#beitrag-e1");
-  });
-  it("führt sonst ans Ende der Szene", () => {
-    expect(sceneNoticeLink("s1", null, "c1")).toBe("/story/s1?as=c1&ziel=ende");
+  it("führt ans Ende der Szene als der Charakter", () => {
+    expect(sceneNoticeLink("s1", "c1")).toBe("/story/s1?as=c1&ziel=ende");
   });
 });

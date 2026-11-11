@@ -6,12 +6,11 @@ export function cleanNoticeText(raw: string | undefined | null): string {
   return (raw ?? "").replace(/\s+/g, " ").trim().slice(0, SCENE_NOTICE_MAX);
 }
 
-// Mit entryId: „hat … einen Beitrag bearbeitet“ (optional mit Zusatztext); ohne: der eigene Text.
-export function sceneNoticeMessage(title: string, text: string, entryId: string | null): string {
-  return entryId ? `hat in „${title}“ einen Beitrag bearbeitet${text ? `: ${text}` : ""}` : `hat dir zu „${title}“ geschrieben: ${text}`;
+export function sceneNoticeMessage(title: string, text: string): string {
+  return `hat dir zu „${title}“ geschrieben: ${text}`;
 }
 
-// Bei einem bearbeiteten Beitrag springt der Link dorthin (ohne ?as=, das den Hash verlieren könnte); sonst ans Ende der Szene als der Charakter.
-export function sceneNoticeLink(storyPostId: string, entryId: string | null, recipientCharacterId: string): string {
-  return entryId ? `/story/${storyPostId}#beitrag-${entryId}` : `/story/${storyPostId}?as=${recipientCharacterId}&ziel=ende`;
+// Führt ans Ende der Szene, als der Charakter der Empfänger:in.
+export function sceneNoticeLink(storyPostId: string, recipientCharacterId: string): string {
+  return `/story/${storyPostId}?as=${recipientCharacterId}&ziel=ende`;
 }
