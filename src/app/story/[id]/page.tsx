@@ -589,6 +589,7 @@ export default async function StoryPostDetailPage({
         storyPostId={storyPost.id}
         olderCount={olderCount}
         olderBefore={olderBefore}
+        sessionStart={sessionsError ? null : { canSet: isParticipant, lastEnd: lastSessionEnd, pendingEntryId: pendingStart?.entryId ?? null }}
         myCharacterIds={Array.from(myCharacterIds)}
         mentionCharacters={mentionableCharacters}
         ownCharacters={ownCharacters}

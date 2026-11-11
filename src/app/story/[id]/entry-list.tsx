@@ -42,8 +42,11 @@ export function EntryList({
   ownCharacters = [],
   olderCount = 0,
   olderBefore = null,
+  sessionStart = null,
 }: {
   items: EntryListItem[];
+  // „Session beginnt hier“ auch an nachgeladenen und neu eintreffenden Beiträgen: darf ich (Mitspielende), Ende der letzten Session, gewählter Anfang
+  sessionStart?: { canSet: boolean; lastEnd: string | null; pendingEntryId: string | null } | null;
   // Noch nicht geladene frühere Beiträge und der Zeitpunkt des ältesten geladenen (Kapitel zählen nicht mit)
   olderCount?: number;
   olderBefore?: string | null;
@@ -263,6 +266,11 @@ export function EntryList({
     return m === "mentions" ? mentioned : m === "author" ? written : mentioned || written;
   }
 
+  const sessionStartProps = (entry: { id: string; kind?: string | null; created_at: string }) => ({
+    canSetSessionStart: !!sessionStart?.canSet && entry.kind !== "chapter" && (!sessionStart.lastEnd || entry.created_at > sessionStart.lastEnd),
+    isSessionStart: !!sessionStart && sessionStart.pendingEntryId === entry.id,
+  });
+
   const olderListItems: EntryListItem[] = older.map(({ entry, displayHtml }) => ({
     id: entry.id,
     kind: entry.kind ?? "entry",
@@ -277,6 +285,7 @@ export function EntryList({
         mentionCharacters={mentionCharacters}
         displayHtml={displayHtml ?? undefined}
         ownCharacters={ownCharacters}
+        {...sessionStartProps(entry)}
       />
     ),
   }));
@@ -293,6 +302,7 @@ export function EntryList({
         canManage={myCharacterIds.includes(entry.character_id)}
         mentionCharacters={mentionCharacters}
         ownCharacters={ownCharacters}
+        {...sessionStartProps(entry)}
       />
     ),
   }));
