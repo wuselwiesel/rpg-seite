@@ -26,6 +26,7 @@ import { columnsFromDates, parsePageDates } from "@/lib/wiki-calendar";
 import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 import { permissionError } from "@/lib/world-permissions";
 import { cleanNoticeText, sceneNoticeLink, sceneNoticeMessage } from "@/lib/scene-notice";
+import { sceneRecipients } from "@/lib/scene-recipients";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -711,20 +712,7 @@ export async function sendSceneNotice(
   const actorId = await getActiveCharacterInWorld(user.id, post.world_id);
   if (!actorId) return { ok: false, message: "Du brauchst einen Charakter in dieser Welt." };
 
-  const [{ data: writers }, { data: castRows }] = await Promise.all([
-    supabase.from("story_entries").select("character_id").eq("story_post_id", storyPostId),
-    supabase.from("story_post_cast").select("character_id").eq("story_post_id", storyPostId),
-  ]);
-  const involved = new Set<string>([post.character_id, ...(writers ?? []).map((w) => w.character_id as string), ...(castRows ?? []).map((c) => c.character_id as string)]);
-  const wanted = input.characterIds?.length ? input.characterIds.filter((id) => involved.has(id)) : [...involved];
-  if (wanted.length === 0) return { ok: false, message: "Niemand ausgewählt." };
-
-  const { data: targets } = await supabase.from("characters").select("id, owner_id, name").in("id", wanted);
-  const byOwner = new Map<string, { id: string; name: string }[]>();
-  for (const t of targets ?? []) {
-    if (!t.owner_id || t.owner_id === user.id) continue;
-    byOwner.set(t.owner_id, [...(byOwner.get(t.owner_id) ?? []), { id: t.id, name: t.name }]);
-  }
+  const byOwner = await sceneRecipients(supabase, storyPostId, post.character_id, user.id, input.characterIds);
   if (byOwner.size === 0) return { ok: false, message: "Es gibt niemanden, der benachrichtigt werden kann." };
 
   // Drosselung; solange die Migration noch nicht eingespielt ist (Funktion fehlt), geht es ohne Drosselung durch

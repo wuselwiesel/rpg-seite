@@ -41,6 +41,8 @@ import type { SceneTrack } from "./scene-tracks";
 import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneNotice } from "./scene-notice";
+import { SceneSessions } from "./scene-sessions";
+import { normalizeStats, type SceneSession } from "@/lib/scene-session";
 import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
 import { SceneMarkFlag } from "./scene-mark-flag";
@@ -62,7 +64,7 @@ export default async function StoryPostDetailPage({
   searchParams,
 }: PageProps<"/story/[id]">) {
   const { id } = await params;
-  const { as: asCharacterId, ziel, zusammenfassung, chat: chatParam } = await searchParams;
+  const { as: asCharacterId, ziel, zusammenfassung, chat: chatParam, sitzung } = await searchParams;
   // Aus einer Benachrichtigung ("… wartet auf dich"): direkt zum letzten Beitrag springen.
   const jumpToLast = ziel === "ende" || typeof asCharacterId === "string";
   const supabase = await createClient();
@@ -312,6 +314,34 @@ export default async function StoryPostDetailPage({
   const noticeTargets = mentionableCharacters
     .filter((c) => !myCharacterIds.has(c.id) && (c.id === storyPost.character_id || writtenIds.has(c.id) || castIdSet.has(c.id)))
     .map((c) => ({ id: c.id, name: c.name }));
+  // Beendete Sessions mit Bewertungen; fehlen die Tabellen noch (Migration nicht eingespielt), bleibt der Bereich einfach weg
+  const { data: sessionRows, error: sessionsError } = await supabase
+    .from("scene_sessions")
+    .select("id, ended_by, started_at, ended_at, stats, scene_session_ratings(user_id, stars, liked, disliked, characters(name))")
+    .eq("story_post_id", id)
+    .order("ended_at", { ascending: false })
+    .limit(30)
+    .returns<
+      {
+        id: string;
+        ended_by: string;
+        started_at: string;
+        ended_at: string;
+        stats: unknown;
+        scene_session_ratings: { user_id: string; stars: number; liked: string | null; disliked: string | null; characters: { name: string } | null }[];
+      }[]
+    >();
+  const sceneSessions: SceneSession[] = sessionsError
+    ? []
+    : (sessionRows ?? []).map((s) => ({
+        id: s.id,
+        endedBy: s.ended_by,
+        startedAt: s.started_at,
+        endedAt: s.ended_at,
+        stats: normalizeStats(s.stats),
+        ratings: s.scene_session_ratings.map((r) => ({ userId: r.user_id, characterName: r.characters?.name ?? null, stars: r.stars, liked: r.liked, disliked: r.disliked })),
+      }));
+  const isParticipant = [storyPost.character_id, ...participantIds, ...cast.map((c) => c.id)].some((cid) => myCharacterIds.has(cid));
   const filterCharacters = mentionableCharacters
     .filter((c) => myCharacterIds.has(c.id) || involvedIds.has(c.id))
     .map((c) => ({ id: c.id, name: c.name, own: myCharacterIds.has(c.id), wrote: writtenIds.has(c.id) }))
@@ -436,6 +466,15 @@ export default async function StoryPostDetailPage({
       )}
       {!storyPost.locked && myCharacterIds.size > 0 && (
         <SceneNotice storyPostId={storyPost.id} targets={noticeTargets} />
+      )}
+      {!sessionsError && (isParticipant || sceneSessions.length > 0) && (
+        <SceneSessions
+          storyPostId={storyPost.id}
+          sessions={sceneSessions}
+          selfId={user.id}
+          canParticipate={isParticipant}
+          openSessionId={typeof sitzung === "string" ? sitzung : null}
+        />
       )}
 
       <SceneNote storyPostId={storyPost.id} initial={sceneNote?.body ?? ""} notesButton={<TargetNotesButton kind="scene" targetId={storyPost.id} targetLabel={storyPost.title} count={await noteCountForTarget(supabase, user.id, "scene", storyPost.id)} />} />

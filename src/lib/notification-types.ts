@@ -8,6 +8,7 @@ export const NOTIFICATION_TYPE_GROUPS: { key: string; label: string; types: stri
   { key: "mention", label: "Erwähnungen", types: ["mention", "story_mention"] },
   { key: "message", label: "Chat-Nachrichten", types: ["message"] },
   { key: "turn", label: "Du bist dran und Hinweise (Story)", types: ["turn", "scene_notice"] },
+  { key: "session", label: "Session beendet (zum Bewerten)", types: ["session_end"] },
   { key: "new_scene", label: "Neue Szenen in deiner Welt", types: ["new_scene"] },
   { key: "roll", label: "Würfe gegen dich", types: ["roll"] },
   { key: "friend", label: "Freundschaftsanfragen und Begrüßungen", types: ["friend_request", "friend_accept", "welcome_greeting"] },
