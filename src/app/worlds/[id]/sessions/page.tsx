@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { WorldAdminTabs } from "@/components/world-admin-tabs";
 import { normalizeStats, type SceneSession } from "@/lib/scene-session";
 import { SessionsOverview, type OverviewSession } from "./sessions-overview";
 
-type World = { id: string; name: string };
+type World = { id: string; name: string; created_by: string };
 
 export const metadata = { title: "Sessions" };
 
@@ -29,8 +30,11 @@ export default async function WorldSessionsPage({ params }: PageProps<"/worlds/[
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   // Die Datenbank zeigt die Welt nur Mitgliedern bzw. wenn sie öffentlich ist
-  const { data: world } = await supabase.from("worlds").select("id, name").eq("id", id).maybeSingle<World>();
+  const { data: world } = await supabase.from("worlds").select("id, name, created_by").eq("id", id).maybeSingle<World>();
   if (!world) notFound();
+  // Admins sehen die Welt-Leiste (Welt, Übersicht, Charaktere, Sessions, Einstellungen), alle anderen den Weg zurück
+  const { data: myRole } = await supabase.from("world_members").select("role").eq("world_id", id).eq("user_id", user.id).maybeSingle<{ role: string }>();
+  const isAdmin = world.created_by === user.id || myRole?.role === "admin";
 
   // Die Datenbank liefert nur, was man sehen darf (geheime Szenen anderer bleiben verborgen)
   const { data, error } = await supabase
@@ -72,10 +76,14 @@ export default async function WorldSessionsPage({ params }: PageProps<"/worlds/[
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link href={`/worlds/${world.id}`} className="mb-4 flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
-        <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-        {world.name}
-      </Link>
+      {isAdmin ? (
+        <WorldAdminTabs worldId={world.id} />
+      ) : (
+        <Link href="/welt" className="mb-4 flex w-fit items-center gap-1 text-sm text-muted transition hover:text-fg">
+          <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+          Welt
+        </Link>
+      )}
       <h1 className="mb-1 font-serif text-2xl text-fg">Sessions</h1>
       <p className="mb-6 text-sm text-muted">Alle beendeten Sessions in {world.name} mit ihren Bewertungen. Beendet wird eine Session in der jeweiligen Szene.</p>
       {error ? (

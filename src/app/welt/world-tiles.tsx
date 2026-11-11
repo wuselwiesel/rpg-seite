@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Clock, Contact, Dices, Library, MessagesSquare, Map as MapIcon, Settings, Users, UsersRound, type LucideIcon } from "lucide-react";
+import { CalendarDays, ClipboardCheck, Clock, Contact, Dices, Library, MessagesSquare, Map as MapIcon, Settings, Users, UsersRound, type LucideIcon } from "lucide-react";
 import { MobileOnline } from "@/components/mobile-online";
 import type { OnlineMember } from "@/components/online-list";
 
-const ICONS = { wiki: Library, charaktere: Contact, beziehungen: Users, karten: MapIcon, zeitleiste: Clock, kalender: CalendarDays, wuerfe: Dices, chat: MessagesSquare, verwalten: Settings } satisfies Record<string, LucideIcon>;
+const ICONS = { wiki: Library, charaktere: Contact, beziehungen: Users, karten: MapIcon, zeitleiste: Clock, kalender: CalendarDays, wuerfe: Dices, sessions: ClipboardCheck, chat: MessagesSquare, verwalten: Settings } satisfies Record<string, LucideIcon>;
 
 export type WorldTileDef = { id: keyof typeof ICONS; label: string; href: string };
 

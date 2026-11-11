@@ -11,6 +11,7 @@ export function WorldAdminTabs({ worldId }: { worldId: string }) {
     { href: `/worlds/${worldId}`, label: "Welt", also: [] as string[] },
     { href: `/worlds/${worldId}/uebersicht`, label: "Übersicht", also: [] },
     { href: `/worlds/${worldId}/charaktere`, label: "Charaktere", also: [] },
+    { href: `/worlds/${worldId}/sessions`, label: "Sessions", also: [] },
     { href: `/worlds/${worldId}/edit`, label: "Einstellungen", also: [`/worlds/${worldId}/listen`] },
   ];
   return (

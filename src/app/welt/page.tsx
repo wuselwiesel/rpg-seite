@@ -9,7 +9,7 @@ import { WorldTiles, type WorldTileDef } from "./world-tiles";
 
 export const metadata = { title: "Welt" };
 
-// Alles, was zur Welt gehört, an einem Ort (Variante D): Wiki, Charaktere, Beziehungen, Karten, Zeit, Würfe, Mitglieder, Welt-Chat
+// Alles, was zur Welt gehört, an einem Ort (Variante D): Wiki, Charaktere, Beziehungen, Karten, Zeit, Würfe, Sessions, Mitglieder, Welt-Chat
 export default async function WorldPage() {
   const supabase = await createClient();
   const {
@@ -36,6 +36,7 @@ export default async function WorldPage() {
     { id: "zeitleiste", label: "Zeitleiste", href: "/wiki/zeitleiste" },
     { id: "kalender", label: "Kalender", href: "/wiki/kalender" },
     ...(diceEnabled ? [{ id: "wuerfe", label: "Würfelverlauf", href: "/story/wuerfe" } as const] : []),
+    { id: "sessions", label: "Sessions", href: `/worlds/${world.id}/sessions` },
   ];
   // Hinter der Kachel „Mitglieder“
   const after: WorldTileDef[] = [
