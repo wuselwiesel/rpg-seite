@@ -211,7 +211,7 @@ export async function createComment(
 
   const { data: post } = await supabase
     .from("posts")
-    .select("character_id, characters(owner_id, name)")
+    .select("character_id, characters!posts_character_id_fkey(owner_id, name)")
     .eq("id", postId)
     .maybeSingle<{ character_id: string; characters: { owner_id: string; name: string } | null }>();
 
@@ -363,7 +363,7 @@ export async function toggleLike(target: { postId: string } | { commentId: strin
     if ("postId" in target) {
       const { data: post } = await supabase
         .from("posts")
-        .select("character_id, characters(owner_id, name)")
+        .select("character_id, characters!posts_character_id_fkey(owner_id, name)")
         .eq("id", target.postId)
         .maybeSingle<{ character_id: string; characters: { owner_id: string; name: string } | null }>();
       ownerName = post?.characters?.name ?? null;

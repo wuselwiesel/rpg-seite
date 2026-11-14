@@ -98,7 +98,7 @@ export async function searchPosts(sb: SupabaseClient, q: string, limit: number):
   const term = escapePostgrestValue(q.replace(/^#/, ""));
   const { data } = await sb
     .from("posts")
-    .select("id, title, content, characters(name, worlds(name))")
+    .select("id, title, content, characters!posts_character_id_fkey(name, worlds(name))")
     .lte("publish_at", new Date().toISOString())
     .or(`title.ilike.%${term}%,content.ilike.%${term}%`)
     .order("created_at", { ascending: false })

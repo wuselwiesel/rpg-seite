@@ -8,15 +8,17 @@ export async function GET(request: Request) {
     return new Response("Not found", { status: 404 });
   }
 
-  const username = process.env.E2E_USERNAME;
-  const password = process.env.E2E_PASSWORD;
+  const { searchParams } = new URL(request.url);
+  // ?user=2 meldet das zweite Testkonto an (E2E_USERNAME_2 / E2E_PASSWORD_2), z. B. um Benachrichtigungen zwischen zwei Konten zu prüfen
+  const second = searchParams.get("user") === "2";
+  const username = second ? process.env.E2E_USERNAME_2 : process.env.E2E_USERNAME;
+  const password = second ? process.env.E2E_PASSWORD_2 : process.env.E2E_PASSWORD;
   const secret = process.env.CRON_SECRET;
 
   if (!username || !password || !secret) {
-    return new Response("E2E_USERNAME, E2E_PASSWORD oder CRON_SECRET fehlt in .env.local", { status: 500 });
+    return new Response(second ? "E2E_USERNAME_2, E2E_PASSWORD_2 oder CRON_SECRET fehlt in .env.local" : "E2E_USERNAME, E2E_PASSWORD oder CRON_SECRET fehlt in .env.local", { status: 500 });
   }
 
-  const { searchParams } = new URL(request.url);
   const next = searchParams.get("next") ?? "/";
   const target = next.startsWith("/") && !next.startsWith("//") ? next : "/";
 
