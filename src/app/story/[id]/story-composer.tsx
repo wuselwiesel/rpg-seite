@@ -9,6 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 import { StoryEntryForm } from "./story-entry-form";
 import { DiceTab } from "./dice-tab";
 import { NextSceneForm } from "./next-scene-form";
+import { ChapterForm } from "./chapter-form";
+import { insertChapter } from "../actions";
+import { useRouter } from "next/navigation";
 import { WriterSelect } from "@/components/writer-select";
 import { OnlineLine } from "@/components/online-members";
 import { useOnline } from "@/components/online-status";
@@ -141,7 +144,9 @@ export function StoryComposer({
   }, [sceneChatId, userId]);
   const [showToolbar, setShowToolbar] = useState(false);
   const [narrator, setNarrator] = useState(false);
-  const [showChapter, setShowChapter] = useState(false);
+  // Buch-Symbol: erst wählen („Neues Kapitel in dieser Szene“ oder „Neue Szene beginnen“), dann das passende Formular
+  const [chapterStep, setChapterStep] = useState<"closed" | "choose" | "chapter" | "scene">("closed");
+  const router = useRouter();
 
   // Zeigt anderen, die diese Szene gerade offen haben, wer hier schreibt (wie bei den Chats).
   const [typing, setTyping] = useState<Record<string, { name: string; until: number; kind: "write" | "roll" | "edit" }>>({});
@@ -285,11 +290,12 @@ export function StoryComposer({
               </button>
               <button
                 type="button"
-                onClick={() => setShowChapter((v) => !v)}
-                aria-pressed={showChapter}
-                title="Neues Kapitel (neue Szene) beginnen"
+                onClick={() => setChapterStep((v) => (v === "closed" ? "choose" : "closed"))}
+                aria-pressed={chapterStep !== "closed"}
+                aria-expanded={chapterStep === "choose"}
+                title="Neues Kapitel oder neue Szene beginnen"
                 className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
-                  showChapter ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
+                  chapterStep !== "closed" ? "bg-surface-2 text-accent" : "text-muted hover:bg-surface-2 hover:text-fg"
                 }`}
               >
                 <BookMarked className="h-4 w-4" strokeWidth={2} />
@@ -320,8 +326,36 @@ export function StoryComposer({
         </p>
       )}
 
-      {mode === "write" && showChapter && (
-        <NextSceneForm storyPostId={storyPostId} writerId={writerId} calendar={calendar} locations={locations} location={sceneLocation} onDone={() => setShowChapter(false)} />
+      {mode === "write" && chapterStep === "choose" && (
+        <div className="flex flex-col gap-1 rounded-xl border border-line bg-surface p-1.5 shadow-sm" role="menu" aria-label="Neues Kapitel oder neue Szene">
+          <button type="button" role="menuitem" onClick={() => setChapterStep("chapter")} className="rounded-lg px-3 py-2 text-left transition hover:bg-surface-2">
+            <span className="block text-sm font-medium text-fg">Neues Kapitel in dieser Szene</span>
+            <span className="block text-xs text-muted">Die Szene bleibt, ab hier beginnt ein neuer Abschnitt.</span>
+          </button>
+          <button type="button" role="menuitem" onClick={() => setChapterStep("scene")} className="rounded-lg px-3 py-2 text-left transition hover:bg-surface-2">
+            <span className="block text-sm font-medium text-fg">Neue Szene beginnen</span>
+            <span className="block text-xs text-muted">Eigene Szene, folgt auf diese; die alte wird abgeschlossen.</span>
+          </button>
+        </div>
+      )}
+      {mode === "write" && chapterStep === "chapter" && (
+        <ChapterForm
+          calendar={calendar}
+          heading="Neues Kapitel in dieser Szene"
+          submitLabel="Kapitel beginnen"
+          onCancel={() => setChapterStep("closed")}
+          onSubmit={async (formData) => {
+            const err = await insertChapter(storyPostId, null, formData);
+            if (!err) {
+              setChapterStep("closed");
+              router.refresh();
+            }
+            return err;
+          }}
+        />
+      )}
+      {mode === "write" && chapterStep === "scene" && (
+        <NextSceneForm storyPostId={storyPostId} writerId={writerId} calendar={calendar} locations={locations} location={sceneLocation} onDone={() => setChapterStep("closed")} />
       )}
 
       {mode !== "chat" && Object.keys(typing).length > 0 && (

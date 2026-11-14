@@ -169,7 +169,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: "Kapitel",
-        text: "Mit dem Buch-Symbol im Schreibfeld setzt du eine Kapitel-Marke oder machst aus dem nächsten Teil direkt eine neue Szene. Kapitel kannst du benennen, datieren und zusammenfassen. In langen Szenen springst du über die Kapitelleiste.",
+        text: "Mit dem Buch-Symbol im Schreibfeld beginnst du ein neues Kapitel in der Szene oder eine neue Szene. Eine Szene lässt sich auch im Nachhinein in Kapitel einteilen: „In Kapitel einteilen“ oder an einer Nachricht „Kapitel beginnt hier“. Kapitel kannst du benennen, datieren und zusammenfassen. In langen Szenen springst du über die Kapitelleiste.",
         route: "@thread|/story",
       },
       {

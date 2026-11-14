@@ -1,10 +1,11 @@
 import type { createClient } from "@/lib/supabase/server";
+import { chapterNumber } from "@/lib/chapters";
 
 export type DatedChapter = {
   id: string;
   sceneId: string;
   sceneTitle: string;
-  // Laufende Nummer in der Szene (wie der Anker #kapitel-N)
+  // Anzeige-Nummer in der Szene (Kapitel 1 ist der Szenenanfang, die erste Marke ist Kapitel 2); der Link nutzt die Marken-ID als Anker
   number: number;
   title: string;
   summary: string | null;
@@ -45,7 +46,7 @@ export async function getDatedChapters(supabase: Awaited<ReturnType<typeof creat
       id: r.id,
       sceneId: r.story_post_id,
       sceneTitle: r.story_posts.title,
-      number: n,
+      number: chapterNumber(n - 1),
       title: r.chapter_title ?? r.content,
       summary: r.chapter_summary,
       event_year: r.event_year,

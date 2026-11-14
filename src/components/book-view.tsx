@@ -48,7 +48,7 @@ export function BookView({ book, epubHref, pdfHref }: { book: Book; epubHref: st
           <EmojiHtml className="post-content text-fg-soft print:text-black" html={sanitizePostHtml(scene.introHtml)} />
           <div className="mt-4 flex flex-col gap-3">
             {scene.entries.map((e, i) => (
-              <Entry key={i} entry={e} n={scene.entries.slice(0, i).filter((x) => x.kind === "chapter").length + 1} />
+              <Entry key={i} entry={e} n={scene.entries.slice(0, i).filter((x) => x.kind === "chapter").length + 2} />
             ))}
           </div>
         </section>

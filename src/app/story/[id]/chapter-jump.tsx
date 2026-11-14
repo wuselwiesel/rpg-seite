@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { BookMarked } from "lucide-react";
 
 // Schwebender Kapitel-Sprung: Sobald die Kapitelleiste oben aus dem Bild ist, springt man von überall in der Szene direkt zu einem Kapitel.
-// Die Links (#kapitel-N) klappt EarlierEntries bei Bedarf auf.
-export function ChapterJump({ chapters }: { chapters: { n: number; title: string; label?: string | null }[] }) {
+// Die Links (#kapitel-<ID>, Kapitel 1: #kapitel-anfang) klappt EarlierEntries bei Bedarf auf.
+export function ChapterJump({ chapters }: { chapters: { anchor: string; n: number; title: string; label?: string | null }[] }) {
   const [away, setAway] = useState(false);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -40,7 +40,7 @@ export function ChapterJump({ chapters }: { chapters: { n: number; title: string
           {chapters.map((c) => (
             <li key={c.n}>
               <a
-                href={`#kapitel-${c.n}`}
+                href={`#${c.anchor}`}
                 onClick={() => setOpen(false)}
                 className="flex items-baseline gap-2 rounded-xl px-2.5 py-1.5 text-sm text-fg-soft transition hover:bg-surface-2 hover:text-accent"
               >

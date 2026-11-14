@@ -17,6 +17,7 @@ import { getDatedChapters } from "@/lib/chapter-dates";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { PdfButton } from "@/components/pdf-button";
 import { TimelineEventForm } from "./event-form";
+import { chapterAnchor } from "@/lib/chapters";
 
 export const metadata = { title: "Zeitleiste" };
 
@@ -90,7 +91,7 @@ function WikiEntryCard({ e, label }: { e: Extract<Entry, { kind: "wiki" }>; labe
 function ChapterEntryCard({ e, label }: { e: Extract<Entry, { kind: "chapter" }>; label: string }) {
   return (
     <Link
-      href={`/story/${e.sceneId}#kapitel-${e.number}`}
+      href={`/story/${e.sceneId}#${chapterAnchor(e.id)}`}
       className="flex flex-col gap-1.5 rounded-2xl border border-line border-l-[3px] border-l-accent bg-surface p-3.5 transition hover:border-accent/50 hover:border-l-accent hover:bg-surface-2/50 @xl:p-4"
     >
       <span className="flex flex-wrap items-center gap-2">

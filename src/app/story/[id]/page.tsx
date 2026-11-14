@@ -42,6 +42,8 @@ import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneNotice } from "./scene-notice";
 import { SceneSessions } from "./scene-sessions";
+import { ChapterOne } from "./chapter-one";
+import { CHAPTER_ONE_ANCHOR, chapterAnchor, chapterNumber, chapterOneTitle } from "@/lib/chapters";
 import { normalizeStats, type SceneSession } from "@/lib/scene-session";
 import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
@@ -522,13 +524,16 @@ export default async function StoryPostDetailPage({
 
       {chapters.length > 0 && (
         <nav aria-label="Kapitel" className="mb-4 flex flex-wrap gap-2">
+          <a href={`#${CHAPTER_ONE_ANCHOR}`} className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-accent">
+            {storyPost.chapter_one_label?.trim() || 1} · {chapterOneTitle({ title: storyPost.chapter_one_title ?? null, label: null })}
+          </a>
           {chapters.map((c, i) => (
             <a
               key={c.id}
-              href={`#kapitel-${i + 1}`}
+              href={`#${chapterAnchor(c.id)}`}
               className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-fg-soft transition hover:text-accent"
             >
-              {c.chapter_label?.trim() || i + 1} · {c.chapter_title}
+              {c.chapter_label?.trim() || chapterNumber(i)} · {c.chapter_title}
             </a>
           ))}
         </nav>
@@ -558,12 +563,24 @@ export default async function StoryPostDetailPage({
         {/* Pfeil nach oben über „Zur letzten Nachricht“, damit er in der Szene nichts verdeckt */}
         {(entries?.length ?? 0) > 5 && <JumpToStartFloating />}
         <div className="flex items-center gap-2">
-          {chapters.length > 0 && <ChapterJump chapters={chapters.map((c, i) => ({ n: i + 1, title: c.chapter_title ?? c.content, label: c.chapter_label?.trim() || null }))} />}
+          {chapters.length > 0 && (
+            <ChapterJump
+              chapters={[
+                { anchor: CHAPTER_ONE_ANCHOR, n: 1, title: chapterOneTitle({ title: storyPost.chapter_one_title ?? null, label: null }), label: storyPost.chapter_one_label?.trim() || null },
+                ...chapters.map((c, i) => ({ anchor: chapterAnchor(c.id), n: chapterNumber(i), title: c.chapter_title ?? c.content, label: c.chapter_label?.trim() || null })),
+              ]}
+            />
+          )}
           {(entries?.length ?? 0) > 1 && <JumpToLast variant="floating" />}
         </div>
       </div>
 
+      {chapters.length > 0 && (
+        <ChapterOne storyPostId={storyPost.id} title={storyPost.chapter_one_title ?? null} label={storyPost.chapter_one_label ?? null} calendar={calendar} canEdit={isParticipant} />
+      )}
+
       <EntryList
+        chapterTools={isParticipant ? { canInsert: true, calendar } : null}
         items={(() => {
           let chapterCounter = 0;
           return (entries ?? []).map((entry) => ({
@@ -578,7 +595,7 @@ export default async function StoryPostDetailPage({
                 storyPostId={storyPost.id}
                 canManage={myCharacterIds.has(entry.character_id)}
                 mentionCharacters={mentionableCharacters}
-                chapterNumber={entry.kind === "chapter" ? ++chapterCounter : undefined}
+                chapterNumber={entry.kind === "chapter" ? chapterNumber(chapterCounter++) : undefined}
                 displayHtml={entry.kind === "chapter" || entry.roll_label ? undefined : link(entry.content)}
                 calendar={calendar}
                 canEditChapter={entry.kind === "chapter" && (myCharacterIds.has(entry.character_id) || isAuthor || isWorldOwner)}
@@ -589,6 +606,7 @@ export default async function StoryPostDetailPage({
                 ownCharacters={ownCharacters}
                 canSetSessionStart={!sessionsError && isParticipant && entry.kind !== "chapter" && (!lastSessionEnd || entry.created_at > lastSessionEnd)}
                 isSessionStart={!!pendingStart && pendingStart.entryId === entry.id}
+                canInsertChapter={isParticipant && entry.kind !== "chapter"}
               />
             ),
           }));

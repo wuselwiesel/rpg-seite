@@ -4,8 +4,8 @@ import { ChapterJump } from "@/app/story/[id]/chapter-jump";
 import { EarlierEntries } from "@/app/story/[id]/earlier-entries";
 
 const chapters = [
-  { n: 1, title: "Der Geburtstag" },
-  { n: 2, title: "Die Party" },
+  { anchor: "kapitel-1", n: 1, title: "Der Geburtstag" },
+  { anchor: "kapitel-2", n: 2, title: "Die Party" },
 ];
 const filler = (k: string, n: number) => Array.from({ length: n }, (_, i) => <p key={`${k}${i}`} style={{ margin: "0 0 12px", height: 60 }}>Beitrag {k}{i}</p>);
 

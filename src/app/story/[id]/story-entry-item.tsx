@@ -6,13 +6,15 @@ import { useEffect, useRef, useState, useActionState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { highlightEntries } from "@/lib/scene-quote";
-import { Bookmark, Check, Clover, Copy, Dices, EyeOff, Flag, Pencil, Play, ShieldAlert, Trash2, Type } from "lucide-react";
+import { BookMarked, Bookmark, Check, Clover, Copy, Dices, EyeOff, Flag, Pencil, Play, ShieldAlert, Trash2, Type } from "lucide-react";
 import { copyEntries } from "@/lib/entry-copy";
 import { useClipSelection } from "./clip-selection";
 import { MarkEventForm } from "./mark-event-form";
 import { unmarkEvent } from "@/app/wiki/actions";
 import { useRouter } from "next/navigation";
-import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene, setEntrySpoiler } from "../actions";
+import { updateStoryEntry, deleteStoryEntry, updateChapter, chapterToScene, setEntrySpoiler, insertChapter } from "../actions";
+import { chapterAnchor, chapterLabelText } from "@/lib/chapters";
+import { ChapterForm } from "./chapter-form";
 import { setSessionStart } from "../session-actions";
 import { SpoilerGate } from "@/components/spoiler-gate";
 import { EventDateFields } from "@/components/event-date-fields";
@@ -45,6 +47,7 @@ export function StoryEntryItem({
   ownCharacters = [],
   canSetSessionStart = false,
   isSessionStart = false,
+  canInsertChapter = false,
 }: {
   entry: StoryEntry;
   storyPostId: string;
@@ -66,6 +69,8 @@ export function StoryEntryItem({
   // Diese Nachricht als Anfang der nächsten Session wählen (nur Mitspielende, nur nach dem Ende der letzten Session) / ist schon gewählt
   canSetSessionStart?: boolean;
   isSessionStart?: boolean;
+  // „Kapitel beginnt hier“ an dieser Nachricht (Mitspielende; braucht den Kalender für das Datum)
+  canInsertChapter?: boolean;
 }) {
   const isRoll = !!entry.roll_label;
   const isNarrator = entry.kind === "narrator";
@@ -129,6 +134,7 @@ export function StoryEntryItem({
   const [copied, setCopied] = useState(false);
   const selectedForClip = !!clipSelection?.isSelected(entry.id);
   const [chapterEditing, setChapterEditing] = useState(false);
+  const [insertingChapter, setInsertingChapter] = useState(false);
   const [splitting, setSplitting] = useState(false);
 
   async function splitChapter() {
@@ -164,7 +170,7 @@ export function StoryEntryItem({
     const chapterDate = entry.event_year != null && calendar ? formatDate(calendar, { year: entry.event_year, month: entry.event_month ?? null, day: entry.event_day ?? null }) : null;
     if (chapterEditing && calendar) {
       return (
-        <form id={`kapitel-${chapterNumber}`} onSubmit={saveChapter} className="my-4 flex scroll-mt-20 flex-col gap-3 rounded-lg bg-surface-2 p-3">
+        <form id={chapterAnchor(entry.id)} onSubmit={saveChapter} className="my-4 flex scroll-mt-20 flex-col gap-3 rounded-lg bg-surface-2 p-3">
           <input
             type="text"
             name="label"
@@ -205,10 +211,10 @@ export function StoryEntryItem({
       );
     }
     return (
-      <div id={`kapitel-${chapterNumber}`} className="group my-4 scroll-mt-20 text-center">
+      <div id={chapterAnchor(entry.id)} className="group my-4 scroll-mt-20 text-center">
         <div className="flex items-center gap-3 text-muted">
           <span className="h-px flex-1 bg-line" />
-          <span className="text-xs">{entry.chapter_label?.trim() || `Kapitel ${chapterNumber}`}</span>
+          <span className="text-xs">{chapterLabelText(entry.chapter_label, chapterNumber ?? 2)}</span>
           <span className="h-px flex-1 bg-line" />
         </div>
         <h3 className="mt-2 font-serif text-2xl text-fg">{entry.chapter_title ?? entry.content}</h3>
@@ -270,6 +276,22 @@ export function StoryEntryItem({
         Session-Anfang
         <span className="h-px flex-1 bg-accent/40" />
       </div>
+    )}
+    {insertingChapter && calendar && (
+      <ChapterForm
+        calendar={calendar}
+        heading="Neues Kapitel vor dieser Nachricht"
+        submitLabel="Kapitel beginnen"
+        onCancel={() => setInsertingChapter(false)}
+        onSubmit={async (formData) => {
+          const err = await insertChapter(storyPostId, entry.id, formData);
+          if (!err) {
+            setInsertingChapter(false);
+            router.refresh();
+          }
+          return err;
+        }}
+      />
     )}
     <div className="flex gap-3">
       {isNarrator ? (
@@ -377,6 +399,18 @@ export function StoryEntryItem({
                     <Flag className="h-3.5 w-3.5" strokeWidth={2} />
                   </button>
                 ))}
+              {canInsertChapter && calendar && (
+                <button
+                  type="button"
+                  onClick={() => setInsertingChapter((v) => !v)}
+                  title="Kapitel beginnt hier"
+                  aria-label="Kapitel beginnt hier"
+                  aria-pressed={insertingChapter}
+                  className={`rounded p-1 transition hover:bg-surface-2 ${insertingChapter ? "text-accent" : `text-muted hover:text-fg ${REVEAL}`}`}
+                >
+                  <BookMarked className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              )}
               {(canSetSessionStart || isSessionStart) && (
                 <button
                   type="button"

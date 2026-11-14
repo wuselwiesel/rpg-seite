@@ -202,6 +202,9 @@ export type StoryPost = {
   recap_at?: string | null;
   // Kapitel = neue Szene: die Szene, auf die diese folgt
   previous_story_id?: string | null;
+  // Kapitel 1 = Szenenanfang: eigener Name und eigene Bezeichnung (leer = „Anfang“)
+  chapter_one_title?: string | null;
+  chapter_one_label?: string | null;
   created_at: string;
   characters: Character | null;
   story_entries?: { count: number }[];

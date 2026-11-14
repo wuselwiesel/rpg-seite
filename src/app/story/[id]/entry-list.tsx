@@ -8,9 +8,12 @@ import { parseMentionedCharacterIdsFromHtml } from "@/lib/mentions";
 import type { Character, StoryEntry } from "@/lib/types";
 import { HIGHLIGHT_EVENT, flashEntries, highlightEntries } from "@/lib/scene-quote";
 import { EarlierEntries } from "./earlier-entries";
+import { ChapterForm } from "./chapter-form";
+import type { WikiCalendar } from "@/lib/wiki-calendar";
 import { StoryEntryItem } from "./story-entry-item";
 import { captureScrollAnchor } from "@/lib/keep-scroll";
 import { loadEarlierEntries, type LoadedEntry } from "../entries-actions";
+import { insertChapter } from "../actions";
 import { EXPAND_EARLIER_EVENT, GO_START_DONE_EVENT, GO_START_EVENT } from "@/lib/scene-nav";
 
 export type EntryListItem = {
@@ -43,10 +46,13 @@ export function EntryList({
   olderCount = 0,
   olderBefore = null,
   sessionStart = null,
+  chapterTools = null,
 }: {
   items: EntryListItem[];
   // „Session beginnt hier“ auch an nachgeladenen und neu eintreffenden Beiträgen: darf ich (Mitspielende), Ende der letzten Session, gewählter Anfang
   sessionStart?: { canSet: boolean; lastEnd: string | null; pendingEntryId: string | null } | null;
+  // Kapitel innerhalb der Szene anlegen („Kapitel beginnt hier“, „In Kapitel einteilen“): Mitspielende, mit Kalender für das Datum
+  chapterTools?: { canInsert: boolean; calendar: WikiCalendar } | null;
   // Noch nicht geladene frühere Beiträge und der Zeitpunkt des ältesten geladenen (Kapitel zählen nicht mit)
   olderCount?: number;
   olderBefore?: string | null;
@@ -129,6 +135,11 @@ export function EntryList({
           const row = payload.new as StoryEntry;
           if (seenIds.current.has(row.id)) return;
           seenIds.current.add(row.id);
+          // Eine Kapitel-Marke kann vor schon vorhandenen Nachrichten liegen: Liste neu laden statt ans Ende zu hängen
+          if (row.kind === "chapter") {
+            router.refresh();
+            return;
+          }
           const author = mentionCharacters.find((c) => c.id === row.character_id) ?? null;
           const rollTarget = row.roll_target_character_id
             ? (mentionCharacters.find((c) => c.id === row.roll_target_character_id) ?? null)
@@ -271,6 +282,11 @@ export function EntryList({
     isSessionStart: !!sessionStart && sessionStart.pendingEntryId === entry.id,
   });
 
+  const chapterProps = (entry: { kind?: string | null }) => ({
+    canInsertChapter: !!chapterTools?.canInsert && entry.kind !== "chapter",
+    calendar: chapterTools?.calendar,
+  });
+
   const olderListItems: EntryListItem[] = older.map(({ entry, displayHtml }) => ({
     id: entry.id,
     kind: entry.kind ?? "entry",
@@ -286,6 +302,7 @@ export function EntryList({
         displayHtml={displayHtml ?? undefined}
         ownCharacters={ownCharacters}
         {...sessionStartProps(entry)}
+        {...chapterProps(entry)}
       />
     ),
   }));
@@ -303,6 +320,7 @@ export function EntryList({
         mentionCharacters={mentionCharacters}
         ownCharacters={ownCharacters}
         {...sessionStartProps(entry)}
+        {...chapterProps(entry)}
       />
     ),
   }));
@@ -324,14 +342,52 @@ export function EntryList({
   const secondary = characters.filter((c) => !c.wrote);
   const filterInSecondary = !!filter && !filter.wrote;
 
+  // „In Kapitel einteilen“: vor jeder Nachricht erscheint eine Zeile „+ Hier beginnt ein Kapitel“ (Formular erscheint an dieser Stelle)
+  const [dividing, setDividing] = useState(false);
+  const [insertBefore, setInsertBefore] = useState<string | null>(null);
+  const withDivider = (item: EntryListItem) =>
+    dividing && chapterTools?.canInsert && item.kind !== "chapter" ? (
+      <>
+        {insertBefore === item.id ? (
+          <ChapterForm
+            calendar={chapterTools.calendar}
+            heading="Neues Kapitel vor dieser Nachricht"
+            submitLabel="Kapitel beginnen"
+            onCancel={() => setInsertBefore(null)}
+            onSubmit={async (formData) => {
+              const err = await insertChapter(storyPostId, item.id, formData);
+              if (!err) {
+                setInsertBefore(null);
+                router.refresh();
+              }
+              return err;
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setInsertBefore(item.id)}
+            className="group/div mb-2 flex w-full items-center gap-2 text-xs text-muted transition hover:text-accent"
+          >
+            <span className="h-px flex-1 border-t border-dashed border-line group-hover/div:border-accent" />
+            + Hier beginnt ein Kapitel
+            <span className="h-px flex-1 border-t border-dashed border-line group-hover/div:border-accent" />
+          </button>
+        )}
+        {item.node}
+      </>
+    ) : (
+      item.node
+    );
+
   const mark = (list: EntryListItem[], offset: number) =>
     list.map((item, i) =>
       offset + i === shown.length - 1 ? (
         <div key={item.id} id="letzter-beitrag" className="scroll-mt-20">
-          {item.node}
+          {withDivider(item)}
         </div>
       ) : (
-        <div key={item.id}>{item.node}</div>
+        <div key={item.id}>{withDivider(item)}</div>
       ),
     );
 
@@ -452,6 +508,25 @@ export function EntryList({
         </div>
       )}
 
+      {chapterTools?.canInsert && allItems.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            aria-pressed={dividing}
+            onClick={() => {
+              setInsertBefore(null);
+              if (!dividing) window.dispatchEvent(new Event(EXPAND_EARLIER_EVENT));
+              setDividing((v) => !v);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+              dividing ? "border-accent bg-accent/15 text-accent" : "border-line text-fg-soft hover:bg-surface-3 hover:text-fg"
+            }`}
+          >
+            {dividing ? "Einteilen beenden" : "In Kapitel einteilen"}
+          </button>
+        </div>
+      )}
+
       <div id="beitragsliste" className="mb-6 flex scroll-mt-24 flex-col gap-4">
         {filter && shown.length === 0 && (
           <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">
@@ -478,7 +553,7 @@ export function EntryList({
           <>
             <EarlierEntries count={earlierCount}>
               {shown.slice(0, earlierCount).map((i) => (
-                <div key={i.id}>{i.node}</div>
+                <div key={i.id}>{withDivider(i)}</div>
               ))}
             </EarlierEntries>
             {mark(shown.slice(earlierCount), earlierCount)}

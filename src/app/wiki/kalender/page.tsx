@@ -11,6 +11,7 @@ import { WikiCrumbs } from "../wiki-crumbs";
 import { CalendarEventAdd } from "./event-add";
 import { CalendarDay } from "./calendar-day";
 import { PdfButton } from "@/components/pdf-button";
+import { chapterAnchor } from "@/lib/chapters";
 
 export const metadata = { title: "Kalender" };
 
@@ -58,7 +59,7 @@ export default async function WikiCalendarPage({ searchParams }: PageProps<"/wik
   const source: "welt" | "szenen" = first(sp.quelle) === "szenen" ? "szenen" : "welt";
   const dated: Dated<Entry>[] = source === "szenen" ? [
     ...(sceneRows ?? []).map((r): Dated<Entry> => ({ kind: "scene", id: r.id, title: r.title, labels: {}, dates: datesFromRow(r) })),
-    ...chapters.map((c): Dated<Entry> => ({ kind: "chapter", id: c.id, title: c.title, labels: {}, href: `/story/${c.sceneId}#kapitel-${c.number}`, dates: datesFromRow(c) })),
+    ...chapters.map((c): Dated<Entry> => ({ kind: "chapter", id: c.id, title: c.title, labels: {}, href: `/story/${c.sceneId}#${chapterAnchor(c.id)}`, dates: datesFromRow(c) })),
   ] : [
     ...rows.map((r): Dated<Entry> => ({ kind: "wiki", id: r.id, title: r.title, labels: { start: r.event_label, end: r.event_end_label }, href: r.source_story_id ? (r.source_entry_id ? `/story/${r.source_story_id}#beitrag-${r.source_entry_id}` : `/story/${r.source_story_id}`) : undefined, dates: datesFromRow(r) })).filter((r) => r.dates.start),
   ];

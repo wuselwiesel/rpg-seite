@@ -296,18 +296,9 @@ async function assignNextTurn(
   return nextId;
 }
 
-// Name, unter dem die Szene in Benachrichtigungen steht: Hat sie Kapitel-Marken (ältere Kapitel innerhalb einer Szene), zählt der Titel des
-// neuesten Kapitels, sonst der Titel der Szene (bei „Neues Kapitel = neue Szene“ ist das schon der neue Titel).
-async function sceneNotificationTitle(supabase: SupabaseClient, storyPostId: string, sceneTitle: string): Promise<string> {
-  const { data } = await supabase
-    .from("story_entries")
-    .select("chapter_title")
-    .eq("story_post_id", storyPostId)
-    .eq("kind", "chapter")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data?.chapter_title?.trim() || sceneTitle;
+// Name, unter dem die Szene in Benachrichtigungen steht: der Titel der Szene (Kapitel innerhalb der Szene ändern daran nichts).
+async function sceneNotificationTitle(_supabase: SupabaseClient, _storyPostId: string, sceneTitle: string): Promise<string> {
+  return sceneTitle;
 }
 
 // Benachrichtigt die Person, die als Nächstes dran ist ("<Schreibende> wartet auf dich").
@@ -578,6 +569,62 @@ export async function updateChapter(entryId: string, storyPostId: string, formDa
   revalidatePath(`/story/${storyPostId}`);
   revalidatePath("/wiki/zeitleiste");
   revalidatePath("/wiki/kalender");
+  return null;
+}
+
+// Neues Kapitel INNERHALB der Szene: am Ende (beforeEntryId null) oder unmittelbar vor einer Nachricht (nachträgliches Einteilen).
+// Alle Mitspielenden dürfen das; Stelle und Rechte prüft die Datenbank (RPC insert_scene_chapter).
+export async function insertChapter(storyPostId: string, beforeEntryId: string | null, formData: FormData): Promise<string | null> {
+  const title = String(formData.get("title") ?? "").trim().slice(0, 100);
+  const summary = String(formData.get("summary") ?? "").trim().slice(0, 1500);
+  const label = String(formData.get("label") ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
+  if (!title) return "Gib dem Kapitel einen Namen.";
+  if (beforeEntryId !== null && !/^[0-9a-f-]{36}$/i.test(beforeEntryId)) return "Nachricht nicht gefunden.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: post } = await supabase.from("story_posts").select("world_id").eq("id", storyPostId).maybeSingle();
+  if (!post) return "Szene nicht gefunden.";
+  const sceneDates = await readSceneDates(formData, post.world_id);
+  if (sceneDates.error !== null) return sceneDates.error;
+  const c = sceneDates.columns;
+
+  const { error } = await supabase.rpc("insert_scene_chapter", {
+    p_story_post_id: storyPostId,
+    p_before_entry: beforeEntryId,
+    p_title: title,
+    p_label: label,
+    p_summary: summary,
+    p_year: c.event_year,
+    p_month: c.event_month,
+    p_day: c.event_day,
+  });
+  if (error) {
+    const known = ["Keine Berechtigung", "Nachricht nicht gefunden", "Vor einem Kapitel kann kein weiteres beginnen", "Kein Charakter in dieser Welt", "Die Nachrichten liegen zeitlich zu dicht beieinander"];
+    const reason = known.find((k) => error.message.includes(k));
+    return reason ? `${reason}.` : "Das Kapitel konnte nicht angelegt werden.";
+  }
+  revalidatePath(`/story/${storyPostId}`);
+  revalidatePath("/wiki/zeitleiste");
+  revalidatePath("/wiki/kalender");
+  return null;
+}
+
+// Name und Bezeichnung von Kapitel 1 (dem Szenenanfang); leer = „Anfang“
+export async function setChapterOne(storyPostId: string, formData: FormData): Promise<string | null> {
+  const title = String(formData.get("title") ?? "").trim().slice(0, 100);
+  const label = String(formData.get("label") ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("set_scene_chapter_one", { p_story_post_id: storyPostId, p_title: title, p_label: label });
+  if (error) return error.message.includes("Keine Berechtigung") ? "Keine Berechtigung dafür." : "Das konnte nicht gespeichert werden.";
+  revalidatePath(`/story/${storyPostId}`);
   return null;
 }
 
