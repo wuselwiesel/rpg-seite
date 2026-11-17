@@ -18,7 +18,7 @@ type Row = {
   stats: unknown;
   redaktion_post_id: string | null;
   story_posts: { id: string; title: string; world_id: string; character_id: string; is_private: boolean } | null;
-  scene_session_ratings: { user_id: string; stars: number; liked: string | null; disliked: string | null; characters: { name: string } | null }[];
+  scene_session_ratings: { user_id: string; stars: number; liked: string | null; disliked: string | null }[];
 };
 
 // Alle beendeten Sessions der Welt mit ihren Bewertungen: jederzeit anschauen, nach Szene filtern, nach Bewertung sortieren.
@@ -39,7 +39,7 @@ export default async function WorldSessionsPage({ params }: PageProps<"/worlds/[
   // Die Datenbank liefert nur, was man sehen darf (geheime Szenen anderer bleiben verborgen)
   const { data, error } = await supabase
     .from("scene_sessions")
-    .select("id, ended_by, started_at, ended_at, stats, redaktion_post_id, story_posts!inner(id, title, world_id, character_id, is_private), scene_session_ratings(user_id, stars, liked, disliked, characters(name))")
+    .select("id, ended_by, started_at, ended_at, stats, redaktion_post_id, story_posts!inner(id, title, world_id, character_id, is_private), scene_session_ratings(user_id, stars, liked, disliked)")
     .eq("story_posts.world_id", world.id)
     .order("ended_at", { ascending: false })
     .limit(300)
@@ -59,6 +59,14 @@ export default async function WorldSessionsPage({ params }: PageProps<"/worlds/[
     for (const w of [...(written ?? []), ...(cast ?? [])]) participantScenes.add(w.story_post_id as string);
   }
 
+  // Kontonamen der Bewertenden laden (Spitzname > Benutzername)
+  const raterIds = [...new Set((data ?? []).flatMap((r) => r.scene_session_ratings.map((x) => x.user_id)))];
+  const profileMap = new Map<string, string>();
+  if (!error && raterIds.length > 0) {
+    const { data: profileRows } = await supabase.from("profiles").select("id, username, nickname").in("id", raterIds);
+    for (const p of profileRows ?? []) profileMap.set(p.id as string, (p.nickname as string | null) || (p.username as string));
+  }
+
   const sessions: OverviewSession[] = (data ?? [])
     .filter((r) => r.story_posts)
     .map((r) => {
@@ -68,7 +76,7 @@ export default async function WorldSessionsPage({ params }: PageProps<"/worlds/[
         startedAt: r.started_at,
         endedAt: r.ended_at,
         stats: normalizeStats(r.stats),
-        ratings: r.scene_session_ratings.map((x) => ({ userId: x.user_id, characterName: x.characters?.name ?? null, stars: x.stars, liked: x.liked, disliked: x.disliked })),
+        ratings: r.scene_session_ratings.map((x) => ({ userId: x.user_id, accountName: profileMap.get(x.user_id) ?? null, stars: x.stars, liked: x.liked, disliked: x.disliked })),
         redaktionPostId: r.redaktion_post_id,
       };
       return { session, sceneId: r.story_posts!.id, sceneTitle: r.story_posts!.title, participant: participantScenes.has(r.story_posts!.id), isPrivate: r.story_posts!.is_private };

@@ -317,7 +317,7 @@ export default async function StoryPostDetailPage({
   // Beendete Sessions mit Bewertungen; fehlen die Tabellen noch (Migration nicht eingespielt), bleibt der Bereich einfach weg
   const { data: sessionRows, error: sessionsError } = await supabase
     .from("scene_sessions")
-    .select("id, ended_by, started_at, ended_at, stats, redaktion_post_id, scene_session_ratings(user_id, stars, liked, disliked, characters(name))")
+    .select("id, ended_by, started_at, ended_at, stats, redaktion_post_id, scene_session_ratings(user_id, stars, liked, disliked)")
     .eq("story_post_id", id)
     .order("ended_at", { ascending: false })
     .limit(30)
@@ -329,9 +329,16 @@ export default async function StoryPostDetailPage({
         ended_at: string;
         stats: unknown;
         redaktion_post_id: string | null;
-        scene_session_ratings: { user_id: string; stars: number; liked: string | null; disliked: string | null; characters: { name: string } | null }[];
+        scene_session_ratings: { user_id: string; stars: number; liked: string | null; disliked: string | null }[];
       }[]
     >();
+  // Kontonamen der Bewertenden laden (Spitzname > Benutzername)
+  const raterIds = [...new Set((sessionRows ?? []).flatMap((s) => s.scene_session_ratings.map((r) => r.user_id)))];
+  const profileMap = new Map<string, string>();
+  if (!sessionsError && raterIds.length > 0) {
+    const { data: profileRows } = await supabase.from("profiles").select("id, username, nickname").in("id", raterIds);
+    for (const p of profileRows ?? []) profileMap.set(p.id as string, (p.nickname as string | null) || (p.username as string));
+  }
   const sceneSessions: SceneSession[] = sessionsError
     ? []
     : (sessionRows ?? []).map((s) => ({
@@ -340,7 +347,7 @@ export default async function StoryPostDetailPage({
         startedAt: s.started_at,
         endedAt: s.ended_at,
         stats: normalizeStats(s.stats),
-        ratings: s.scene_session_ratings.map((r) => ({ userId: r.user_id, characterName: r.characters?.name ?? null, stars: r.stars, liked: r.liked, disliked: r.disliked })),
+        ratings: s.scene_session_ratings.map((r) => ({ userId: r.user_id, accountName: profileMap.get(r.user_id) ?? null, stars: r.stars, liked: r.liked, disliked: r.disliked })),
         redaktionPostId: s.redaktion_post_id,
       }));
   const isParticipant = [storyPost.character_id, ...participantIds, ...cast.map((c) => c.id)].some((cid) => myCharacterIds.has(cid));
