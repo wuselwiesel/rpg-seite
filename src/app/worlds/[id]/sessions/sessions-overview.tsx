@@ -84,9 +84,12 @@ export function SessionsOverview({ sessions, selfId }: { sessions: OverviewSessi
           return (
             <li key={session.id} className="rounded-xl border border-line bg-surface p-4">
               <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <Link href={`/story/${sid}`} className="min-w-0 truncate font-medium text-fg transition hover:text-accent">
-                  {sceneTitle}
-                </Link>
+                <div className="min-w-0">
+                  {session.title && <p className="font-medium text-fg">{session.title}</p>}
+                  <Link href={`/story/${sid}`} className={`truncate transition hover:text-accent ${session.title ? "text-sm text-fg-soft" : "font-medium text-fg"}`}>
+                    {sceneTitle}
+                  </Link>
+                </div>
                 <span className="shrink-0 text-xs text-muted">{formatDateTime(session.endedAt)}</span>
               </div>
               <p className="text-sm text-fg-soft">

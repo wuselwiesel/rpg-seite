@@ -18,11 +18,14 @@ export type SessionRating = {
   disliked: string | null;
 };
 
+export const SESSION_TITLE_MAX = 80;
+
 export type SceneSession = {
   id: string;
   endedBy: string;
   startedAt: string;
   endedAt: string;
+  title: string | null;
   stats: SessionStats;
   ratings: SessionRating[];
   // Beitrag in der Redaktion, falls jemand den Rückblick gepostet hat

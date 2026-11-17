@@ -114,6 +114,23 @@ export async function postSessionToRedaktion(sessionId: string, storyPostId: str
   return { ok: true, postId: data };
 }
 
+// Titel einer Session setzen oder ändern (von jedem Mitspielenden)
+export async function updateSessionTitle(sessionId: string, title: string): Promise<string | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(sessionId)) return "Session nicht gefunden.";
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { error } = await supabase.rpc("update_scene_session_title", {
+    p_session_id: sessionId,
+    p_title: title.trim().slice(0, 80),
+  });
+  if (error) {
+    if (error.message?.includes("Keine Berechtigung")) return "Keine Berechtigung.";
+    return "Der Titel konnte nicht gespeichert werden.";
+  }
+  return null;
+}
+
 // Anfang der nächsten Session an einer Nachricht festlegen; entryId null entfernt die Wahl (dann beginnt sie, wo die letzte endete)
 export async function setSessionStart(storyPostId: string, entryId: string | null): Promise<string | null> {
   if (entryId !== null && !/^[0-9a-f-]{36}$/i.test(entryId)) return "Nachricht nicht gefunden.";

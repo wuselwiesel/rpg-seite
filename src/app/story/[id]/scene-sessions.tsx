@@ -6,9 +6,9 @@ import { createPortal } from "react-dom";
 import { ClipboardCheck, Star, X } from "lucide-react";
 import { useConfirm } from "@/components/confirm-dialog";
 import { formatDateTime } from "@/lib/format";
-import { averageStars, durationLabel, SESSION_TEXT_MAX, type SceneSession } from "@/lib/scene-session";
+import { averageStars, durationLabel, SESSION_TEXT_MAX, SESSION_TITLE_MAX, type SceneSession } from "@/lib/scene-session";
 import { useRouter } from "next/navigation";
-import { endSceneSession, postSessionToRedaktion, saveSessionRating, setSessionStart } from "../session-actions";
+import { endSceneSession, postSessionToRedaktion, saveSessionRating, setSessionStart, updateSessionTitle } from "../session-actions";
 import { highlightEntries } from "@/lib/scene-quote";
 
 const fmt = (n: number) => n.toLocaleString("de-DE");
@@ -150,7 +150,8 @@ export function SceneSessions({
             const avg = averageStars(s.ratings);
             return (
               <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
-                <span className="text-fg">{formatDateTime(s.endedAt)}</span>
+                <span className="text-fg">{s.title ?? formatDateTime(s.endedAt)}</span>
+                {s.title && <span className="text-xs text-muted">{formatDateTime(s.endedAt)}</span>}
                 <span className="text-xs text-muted">{s.stats.messages} Nachrichten</span>
                 {avg !== null ? <Stars value={avg} size="h-3.5 w-3.5" /> : <span className="text-xs text-muted">noch keine Bewertung</span>}
                 <button type="button" onClick={() => setOpenId(s.id)} className="ml-auto text-xs font-medium text-accent hover:underline">
@@ -197,6 +198,10 @@ export function SessionDialog({
   const [postId, setPostId] = useState<string | null>(session.redaktionPostId);
   const [posting, startPosting] = useTransition();
   const [postError, setPostError] = useState<string | null>(null);
+  const [titleEdit, setTitleEdit] = useState(false);
+  const [titleValue, setTitleValue] = useState(session.title ?? "");
+  const [titlePending, startTitleTransition] = useTransition();
+  const [titleError, setTitleError] = useState<string | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Portal erst nach dem Einhängen im Browser
@@ -226,8 +231,45 @@ export function SessionDialog({
       <button type="button" onClick={onClose} aria-label="Schließen" className="absolute inset-0" />
       <div role="dialog" aria-label="Rückblick auf die Session" className="relative flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-3xl border border-line bg-surface shadow-xl sm:rounded-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
-          <div className="min-w-0">
-            <h2 className="font-serif text-xl text-fg">Rückblick auf die Session</h2>
+          <div className="min-w-0 flex-1">
+            {canRate && titleEdit ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  maxLength={SESSION_TITLE_MAX}
+                  placeholder="Titel der Session"
+                  className="min-w-0 flex-1 rounded-md border border-accent bg-surface px-2 py-1 font-serif text-lg text-fg outline-none"
+                />
+                <button
+                  type="button"
+                  disabled={titlePending}
+                  onClick={() => startTitleTransition(async () => {
+                    setTitleError(null);
+                    const err = await updateSessionTitle(session.id, titleValue);
+                    if (err) { setTitleError(err); } else { setTitleEdit(false); }
+                  })}
+                  className="shrink-0 rounded-md bg-accent-strong px-2.5 py-1 text-sm font-medium text-on-accent-strong disabled:opacity-50"
+                >
+                  OK
+                </button>
+                <button type="button" onClick={() => { setTitleEdit(false); setTitleValue(session.title ?? ""); }} className="shrink-0 text-sm text-muted hover:text-fg">
+                  Abbrechen
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-baseline gap-2">
+                <h2 className="font-serif text-xl text-fg">{titleValue || "Rückblick auf die Session"}</h2>
+                {canRate && (
+                  <button type="button" onClick={() => setTitleEdit(true)} className="shrink-0 text-xs text-muted hover:text-fg">
+                    Titel
+                  </button>
+                )}
+              </div>
+            )}
+            {titleError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{titleError}</p>}
             {scene && (
               <p className="truncate text-sm">
                 <Link href={scene.href} className="text-accent hover:underline">
