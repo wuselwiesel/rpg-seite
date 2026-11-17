@@ -24,6 +24,8 @@ export type WikiType = {
   portrait: boolean;
   // wer die Art angelegt hat (für das Löschrecht); bei den mitgelieferten die Welt-Besitzer:in
   createdBy?: string | null;
+  // Standard-Inhaltsverzeichnis für Seiten dieser Art (roher Wert aus der Datenbank, siehe lib/wiki-toc.ts); null = keiner
+  toc?: unknown;
 };
 
 const BUILTIN_COLOR: Record<string, string> = { ort: "sage", spezies: "peach", organisation: "plum", person: "sky", ereignis: "rose", mythos: "gold", gegenstand: "slate" };

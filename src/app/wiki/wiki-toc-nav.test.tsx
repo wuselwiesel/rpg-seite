@@ -3,8 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { WikiTocNav } from "./wiki-toc-nav";
 
 const items = [
-  { id: "abschnitt-1", text: "Zweck", level: 2 as const, number: "1." },
-  { id: "abschnitt-2", text: "Vorbereitung", level: 3 as const, number: "1.1" },
+  { id: "abschnitt-1", key: "zweck", text: "Zweck", level: 2 as const, number: "1." },
+  { id: "abschnitt-2", key: "vorbereitung", text: "Vorbereitung", level: 3 as const, number: "1.1" },
 ];
 
 describe("WikiTocNav", () => {
@@ -27,5 +27,11 @@ describe("WikiTocNav", () => {
     const html = renderToStaticMarkup(<WikiTocNav items={items} title="Inhalt" variant="mobile" />);
     expect(html).toContain("@3xl:hidden");
     expect(html).not.toMatch(/<details[^>]*\sopen/);
+  });
+
+  it("eigene Einträge führen auf die andere Wiki-Seite statt zu einer Stelle im Text", () => {
+    const html = renderToStaticMarkup(<WikiTocNav items={[...items, { id: "x-abc", key: "x:abc", text: "Mehr dazu", level: 2 as const, number: null, href: "/wiki/11111111-1111-1111-1111-111111111111" }]} title="Inhalt" variant="top" />);
+    expect(html).toContain('href="/wiki/11111111-1111-1111-1111-111111111111"');
+    expect(html).toContain("Mehr dazu");
   });
 });

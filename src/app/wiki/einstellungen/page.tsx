@@ -7,6 +7,8 @@ import { getWikiPageRows, getWikiTypes } from "@/lib/wiki-data";
 import { WikiCrumbs } from "../wiki-crumbs";
 import { TypesManager } from "./types-manager";
 import { StyleManager } from "./style-manager";
+import { TocDefaultManager } from "./toc-default-manager";
+import { parseToc } from "@/lib/wiki-toc";
 import { parseWikiStyle } from "@/lib/wiki-style";
 
 export const metadata = { title: "Wiki-Einstellungen" };
@@ -51,6 +53,20 @@ export default async function WikiSettingsPage() {
         </div>
         <TypesManager rows={rows} />
       </section>
+
+      {rights.isAdmin && (
+        <section aria-labelledby="verzeichnis" className="flex flex-col gap-4">
+          <div>
+            <h2 id="verzeichnis" className="font-serif text-2xl text-fg">
+              Inhaltsverzeichnis (Standard)
+            </h2>
+            <p className="mt-1 text-sm text-fg-soft">
+              Gilt für alle Wiki-Seiten, die keine eigene Einstellung und keinen Standard ihrer Art haben. Pro Art stellst du es bei „Seitenarten“ ein, pro Seite im Editor.
+            </p>
+          </div>
+          <TocDefaultManager worldId={world.id} initial={parseToc(world.wiki_toc_default)} />
+        </section>
+      )}
 
       {rights.isAdmin && (
         <section aria-labelledby="design" className="flex flex-col gap-4">

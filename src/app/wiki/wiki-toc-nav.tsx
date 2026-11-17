@@ -5,7 +5,7 @@ function List({ items }: { items: TocItem[] }) {
     <ol className="flex flex-col gap-1.5 border-l border-line pl-3">
       {items.map((h) => (
         <li key={h.id} className={h.level === 3 ? "pl-3" : ""}>
-          <a href={`#${h.id}`} className="text-muted transition hover:text-accent">
+          <a href={h.href ?? `#${h.id}`} className="text-muted transition hover:text-accent">
             {h.number && <span className="mr-1.5 tabular-nums text-muted/70">{h.number}</span>}
             {h.text}
           </a>

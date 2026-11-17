@@ -15,7 +15,7 @@ import { useDraft } from "@/lib/use-draft";
 import { mergeFields, outlineHtml, usesPortraitImage, wikiTypeOf, type WikiType } from "@/lib/wiki-types";
 import { ExtraTypesPicker } from "./extra-types-picker";
 import { TocSettings } from "./toc-settings";
-import { parseToc } from "@/lib/wiki-toc";
+import { parseToc, resolveToc } from "@/lib/wiki-toc";
 import { TypeDialog } from "./einstellungen/types-manager";
 import { useWikiTypes } from "@/components/wiki-types-context";
 import { WikiTypeIcon } from "@/components/wiki-type-icon";
@@ -42,6 +42,7 @@ export function WikiForm({
   shareTargets = [],
   partnerId = null,
   friendId = null,
+  worldToc = null,
 }: {
   page?: WikiPage;
   folders: FolderOption[];
@@ -58,6 +59,8 @@ export function WikiForm({
   shareTargets?: ShareTarget[];
   partnerId?: string | null;
   friendId?: string | null;
+  // Standard-Inhaltsverzeichnis der Welt (roher Wert); der der Art kommt aus den Arten
+  worldToc?: unknown;
 }) {
   const action = page ? updateWikiPage.bind(null, page.id) : createWikiPage;
   const [error, formAction, pending] = useActionState(action, null);
@@ -268,7 +271,7 @@ export function WikiForm({
         )}
       </section>
 
-      <TocSettings initial={parseToc(page?.toc)} bodyHtml={currentBody} />
+      <TocSettings initial={parseToc(page?.toc)} bodyHtml={currentBody} inherited={resolveToc(types.find((t) => t.id === pageType)?.toc, worldToc)} pages={linkTargets} />
 
       <section className={card}>
         <h2 className="font-serif text-xl text-fg">Bilder</h2>

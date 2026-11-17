@@ -35,6 +35,7 @@ export default async function NewWikiPagePage({ searchParams }: PageProps<"/wiki
         calendar={await getWikiCalendar(world.id)}
         characters={characters.map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatarUrl }))}
         linkTargets={pages.map((p) => ({ id: p.id, title: p.title })).sort((a, b) => a.title.localeCompare(b.title, "de"))}
+        worldToc={world.wiki_toc_default ?? null}
         defaults={{ title: first(sp.title), folder: first(sp.folder), parent: first(sp.parent), type: first(sp.type) }}
       />
     </div>

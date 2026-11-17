@@ -1,6 +1,6 @@
 "use server";
 
-import { parseTocField, type WikiToc } from "@/lib/wiki-toc";
+import { BUILT_IN_MIN_HEADINGS, DEFAULT_TOC, MAX_TOC_JSON, parseTocField, resolveToc, tocKey, type WikiToc } from "@/lib/wiki-toc";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -207,6 +207,34 @@ export async function unmarkEvent(wikiPageId: string, storyPostId: string): Prom
   if (!data?.length) return "Das darfst du nicht ändern.";
   revalidatePath("/wiki", "layout");
   revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
+// Eine Überschrift im Verzeichnis der Seite ausblenden oder wieder zeigen (direkt im Artikel, ohne den Editor). Hat die Seite noch keine eigene
+// Einstellung, wird die geltende (Art, Welt oder fest eingebaut) als Kopie der Seite übernommen und nur diese Überschrift geändert.
+export async function setHeadingHidden(wikiPageId: string, headingKey: string, hidden: boolean): Promise<string | null> {
+  const key = headingKey.replace(/\s+/g, " ").trim().slice(0, 84);
+  if (!key) return "Überschrift nicht gefunden.";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+  const { data: page } = await supabase.from("wiki_pages").select("toc, page_type, world_id").eq("id", wikiPageId).maybeSingle<{ toc: unknown; page_type: string | null; world_id: string }>();
+  if (!page) return "Seite nicht gefunden.";
+  const [{ data: world }, { data: typeRow }] = await Promise.all([
+    supabase.from("worlds").select("wiki_toc_default").eq("id", page.world_id).maybeSingle<{ wiki_toc_default: unknown }>(),
+    page.page_type ? supabase.from("wiki_types").select("toc").eq("world_id", page.world_id).eq("id", page.page_type).maybeSingle<{ toc: unknown }>() : Promise.resolve({ data: null }),
+  ]);
+  const base: WikiToc = resolveToc(page.toc, typeRow?.toc, world?.wiki_toc_default) ?? { ...DEFAULT_TOC, minHeadings: BUILT_IN_MIN_HEADINGS };
+  const rest = base.hidden.filter((h) => tocKey(h) !== tocKey(key));
+  const next: WikiToc = { ...base, hidden: hidden ? [...rest, key] : rest };
+  if (JSON.stringify(next).length > MAX_TOC_JSON) return "Es sind zu viele Überschriften ausgeblendet.";
+  const { data, error } = await supabase.from("wiki_pages").update({ toc: next }).eq("id", wikiPageId).select("id");
+  if (error) return error.message;
+  if (!data?.length) return "Das darfst du nicht ändern.";
+  revalidatePath("/wiki", "layout");
+  revalidatePath(`/wiki/${wikiPageId}`);
   return null;
 }
 

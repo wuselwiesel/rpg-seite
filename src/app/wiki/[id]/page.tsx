@@ -1,4 +1,5 @@
-import { parseToc, tocItems, TOC_TITLE } from "@/lib/wiki-toc";
+import { keyedHeadings, resolveToc, tocItems, tocKey, TOC_TITLE } from "@/lib/wiki-toc";
+import { TocHeadingToggles } from "@/components/toc-heading-toggles";
 import { WikiTocNav } from "../wiki-toc-nav";
 import { PdfEmbeds } from "@/components/pdf-embeds";
 import { ShareWikiButton } from "../share-wiki-button";
@@ -134,7 +135,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   const fields = [...chabo.rows.filter((r) => !ownTitles.has(r.title.trim().toLowerCase())), ...ownFields];
   // Figuren-Seite (Option der Welt an): Titelbild, Galerie, Beziehungen und Szenen kommen live aus dem ChaBo und dem Beziehungsnetz,
   // damit sie nur einmal gepflegt werden.
-  const { data: worldFlag } = await supabase.from("worlds").select("character_wiki_enabled").eq("id", page.world_id).maybeSingle<{ character_wiki_enabled: boolean | null }>();
+  const { data: worldFlag } = await supabase.from("worlds").select("character_wiki_enabled, wiki_toc_default").eq("id", page.world_id).maybeSingle<{ character_wiki_enabled: boolean | null; wiki_toc_default: unknown }>();
   const figureOn = worldFlag?.character_wiki_enabled === true;
   const isCharPage = !!page.character_id && chabo.enabled;
   const [charGallery, relations, story] = isCharPage
@@ -158,8 +159,17 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
   // Initiale nur, wenn der erste Absatz mit einem Buchstaben beginnt und lang genug ist, damit sie schön umflossen wird.
   const firstPara = html.match(/^\s*<p[^>]*>([\s\S]*?)<\/p>/)?.[1] ?? "";
   const dropCap = /^[A-Za-zÄÖÜäöüß]/.test(stripHtml(firstPara).trim()) && stripHtml(firstPara).length >= 150;
-  const toc = parseToc(page.toc);
+  // Geltende Einstellung: Seite, sonst Standard der Art, sonst Standard der Welt, sonst fest eingebaut
+  const toc = resolveToc(page.toc, wikiTypeRows.find((t) => t.id === page.page_type)?.toc, worldFlag?.wiki_toc_default);
   const tocList = tocItems(headings, toc);
+  // Auge an den Überschriften im Text (nur wer bearbeiten darf, und nur wenn es überhaupt ein Verzeichnis gibt)
+  const hiddenKeys = new Set((toc?.hidden ?? []).map(tocKey));
+  const toggleItems =
+    canEdit && !isEmpty && (toc ? toc.mode === "auto" : headings.length >= 3)
+      ? keyedHeadings(headings)
+          .filter((h) => !toc || toc.levels === 3 || h.level === 2)
+          .map((h) => ({ id: h.id, key: h.key, shown: !hiddenKeys.has(h.key) }))
+      : [];
   const tocTitle = toc?.title || TOC_TITLE;
   const tocSide = tocList.length > 0 && (toc?.position ?? "side") === "side";
   const hasSide = fields.length > 0 || secretFields.length > 0 || tocSide;
@@ -303,6 +313,7 @@ export default async function WikiPageDetailPage({ params }: PageProps<"/wiki/[i
           <>
             <EmojiHtml className={`post-content wiki-prose min-w-0 ${dropCap ? "wiki-dropcap" : ""}`} html={html} />
             <PdfEmbeds />
+            {toggleItems.length > 0 && <TocHeadingToggles pageId={page.id} items={toggleItems} />}
           </>
         )}
 

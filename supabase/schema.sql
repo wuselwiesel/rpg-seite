@@ -9944,3 +9944,9 @@ end;
 $function$;
 
 notify pgrst, 'reload schema';
+
+-- Wiki-Inhaltsverzeichnis und Wiki-Design (siehe migration_wiki_toc_style.sql und migration_wiki_toc_defaults.sql)
+alter table public.wiki_pages add column if not exists toc jsonb;
+alter table public.worlds add column if not exists wiki_style jsonb;
+alter table public.wiki_types add column if not exists toc jsonb;
+alter table public.worlds add column if not exists wiki_toc_default jsonb;

@@ -22,6 +22,8 @@ export type World = {
   wiki_home?: unknown;
   // Wiki-Design der Welt (siehe lib/wiki-style.ts); null = Standard
   wiki_style?: unknown;
+  // Standard-Inhaltsverzeichnis für alle Wiki-Seiten der Welt (siehe lib/wiki-toc.ts)
+  wiki_toc_default?: unknown;
   // Würfeln eingeschaltet (Standard) oder ausgeschaltet
   dice_enabled?: boolean;
   // Schicksalswürfel der Welt (Standard: an)

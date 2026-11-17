@@ -7,6 +7,7 @@ import { getWikiTypes } from "@/lib/wiki-data";
 import { EXTRA_WIKI_TYPES, STANDARD_TYPE_ICONS, newTypeId } from "@/lib/wiki-types";
 import { parseFolderColor, parseFolderIcon } from "@/lib/wiki-folder-style";
 import { permissionError } from "@/lib/world-permissions";
+import { parseTocField, tocDefaultsOnly } from "@/lib/wiki-toc";
 
 function lines(raw: FormDataEntryValue | null, max = 20): string[] {
   return Array.from(
@@ -35,6 +36,8 @@ function readFields(formData: FormData): { error: string } | { values: Record<st
       fields: lines(formData.get("fields")),
       outline: lines(formData.get("outline")),
       portrait: formData.get("portrait") === "on",
+      // Standard-Verzeichnis dieser Art: nur ändern, wenn das Formular das Feld mitsendet (toc_present)
+      ...(formData.get("toc_present") === "1" ? { toc: (() => { const t = parseTocField(formData.get("toc")); return t ? tocDefaultsOnly(t) : null; })() } : {}),
     },
   };
 }

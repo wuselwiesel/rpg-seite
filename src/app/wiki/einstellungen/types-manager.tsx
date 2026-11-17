@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
+import { TocDefaultEditor } from "../toc-settings";
+import { parseToc, type WikiToc } from "@/lib/wiki-toc";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { createWikiType, deleteWikiType, updateWikiType } from "./actions";
@@ -101,6 +103,9 @@ export function TypeDialog({ type, onClose }: { type: WikiType | null; onClose: 
   );
   const [icon, setIcon] = useState(type?.icon ?? "file-text");
   const [color, setColor] = useState(type?.color ?? "");
+  // Standard-Verzeichnis dieser Art; nur gesendet, wenn es geändert wurde (sonst bleibt die Spalte unberührt)
+  const [tocValue, setTocValue] = useState<WikiToc | null>(parseToc(type?.toc));
+  const [tocTouched, setTocTouched] = useState(false);
   const preview: WikiType = { id: "x", label: "", plural: "", icon, color: color || null, hint: "", fields: [], outline: [], portrait: false };
 
   useEffect(() => {
@@ -166,6 +171,23 @@ export function TypeDialog({ type, onClose }: { type: WikiType | null; onClose: 
           Gliederung des Textes (eine Überschrift pro Zeile)
           <textarea name="outline" rows={4} defaultValue={(type?.outline ?? []).join("\n")} placeholder={"Wirkung\nGeschichte\nRisiken"} className={input} />
         </label>
+        <fieldset className="flex flex-col gap-2 rounded-xl border border-line p-3 text-sm text-fg-soft">
+          <legend className="px-1">Inhaltsverzeichnis für Seiten dieser Art</legend>
+          {tocTouched && (
+            <>
+              <input type="hidden" name="toc_present" value="1" />
+              <input type="hidden" name="toc" value={tocValue === null ? "" : JSON.stringify(tocValue)} />
+            </>
+          )}
+          <TocDefaultEditor
+            value={tocValue}
+            onChange={(v) => {
+              setTocValue(v);
+              setTocTouched(true);
+            }}
+            idPrefix="toct"
+          />
+        </fieldset>
         <label className="flex items-center gap-2 text-sm text-fg-soft">
           <input type="checkbox" name="portrait" defaultChecked={type?.portrait ?? false} className="h-4 w-4 accent-[var(--accent)]" />
           Bild im Hochformat zeigen (wie bei Personen)

@@ -15,4 +15,8 @@ describe("addHeadingIds", () => {
   it("lässt Text ohne Überschriften unverändert", () => {
     expect(addHeadingIds("<p>nur Text</p>")).toEqual({ html: "<p>nur Text</p>", headings: [] });
   });
+
+  it("liest Entities wie im Formular („A &amp; B“ wird „A & B“)", () => {
+    expect(addHeadingIds("<h2>A &amp; B&nbsp;C</h2>").headings[0].text).toBe("A & B C");
+  });
 });

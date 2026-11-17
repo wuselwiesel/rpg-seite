@@ -50,6 +50,8 @@ export default async function EditWikiPagePage({ params }: PageProps<"/wiki/[id]
     }
   }
 
+  const { data: tocWorld } = await supabase.from("worlds").select("wiki_toc_default").eq("id", page.world_id).maybeSingle<{ wiki_toc_default: unknown }>();
+
   return (
     <div>
       <h1 className="mb-6 font-serif text-4xl text-fg">Eintrag bearbeiten</h1>
@@ -64,6 +66,7 @@ export default async function EditWikiPagePage({ params }: PageProps<"/wiki/[id]
         // Eine Seite darf weder unter sich selbst noch unter ihren eigenen Unterseiten liegen.
         parentChoices={pageOptions(tree, pageSubtreeIds(pages, page.id))}
         calendar={await getWikiCalendar(page.world_id)}
+        worldToc={tocWorld?.wiki_toc_default ?? null}
         characters={characters.map((c) => ({ id: c.id, name: c.name, avatar_url: c.avatarUrl }))}
         linkTargets={pages.filter((p) => p.id !== page.id).map((p) => ({ id: p.id, title: p.title })).sort((a, b) => a.title.localeCompare(b.title, "de"))}
       />

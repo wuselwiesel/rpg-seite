@@ -64,7 +64,7 @@ export const getWikiTypes = cache(async (worldId: string): Promise<WikiType[]> =
   const supabase = await createClient();
   const { data } = await supabase
     .from("wiki_types")
-    .select("id, label, plural, icon, color, hint, fields, outline, portrait, sort_order, created_by")
+    .select("id, label, plural, icon, color, hint, fields, outline, portrait, sort_order, created_by, toc")
     .eq("world_id", worldId)
     .order("sort_order", { ascending: true })
     .order("label", { ascending: true });
@@ -79,5 +79,6 @@ export const getWikiTypes = cache(async (worldId: string): Promise<WikiType[]> =
     outline: t.outline ?? [],
     portrait: t.portrait,
     createdBy: t.created_by,
+    toc: t.toc ?? null,
   }));
 });
