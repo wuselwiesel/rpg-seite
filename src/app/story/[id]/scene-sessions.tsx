@@ -188,9 +188,9 @@ export function SessionDialog({
   scene?: { title: string; href: string };
 }) {
   const mine = session.ratings.find((r) => r.userId === selfId) ?? null;
-  const [stars, setStars] = useState(mine?.stars ?? 0);
-  const [liked, setLiked] = useState(mine?.liked ?? "");
-  const [disliked, setDisliked] = useState(mine?.disliked ?? "");
+  const [stars, setStars] = useState(0);
+  const [liked, setLiked] = useState("");
+  const [disliked, setDisliked] = useState("");
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -209,8 +209,8 @@ export function SessionDialog({
   const st = session.stats;
   const max = Math.max(1, ...st.characters.map((c) => c.count));
   const avg = averageStars(session.ratings);
-  // Beim Bewerten steht die eigene Bewertung im Formular; im Nur-Lesen-Fenster (Übersicht) gehört sie in die Liste
-  const others = canRate ? session.ratings.filter((r) => r.userId !== selfId) : session.ratings;
+  // Alle Bewertungen anzeigen (inkl. eigene), eigene am Anfang
+  const sortedRatings = [...session.ratings].sort((a, b) => (a.userId === selfId ? -1 : b.userId === selfId ? 1 : 0));
 
   function save() {
     setMessage(null);
@@ -276,9 +276,9 @@ export function SessionDialog({
             </div>
           )}
 
-          {canRate && (
+          {canRate && !mine && (
             <div className="flex flex-col gap-3 rounded-xl border border-line p-3">
-              <p className="text-sm font-medium text-fg">{mine ? "Deine Bewertung" : "Wie lief die Session?"}</p>
+              <p className="text-sm font-medium text-fg">Wie lief die Session?</p>
               <div className="flex items-center gap-1" role="radiogroup" aria-label="Sterne">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <button
@@ -321,7 +321,7 @@ export function SessionDialog({
                   disabled={pending || stars === 0}
                   className="rounded-md bg-accent-strong px-4 py-1.5 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50"
                 >
-                  {pending ? "Speichere..." : mine ? "Bewertung ändern" : "Bewertung speichern"}
+                  {pending ? "Speichere..." : "Bewertung speichern"}
                 </button>
                 {message && (
                   <p role="status" className={`text-xs ${message.ok ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
@@ -334,7 +334,7 @@ export function SessionDialog({
 
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-medium text-fg">{canRate ? "Bewertungen der anderen" : "Bewertungen"}</p>
+              <p className="text-sm font-medium text-fg">Bewertungen</p>
               {avg !== null && (
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted">
                   <Stars value={avg} size="h-3.5 w-3.5" />
@@ -342,28 +342,30 @@ export function SessionDialog({
                 </span>
               )}
             </div>
-            {others.length === 0 ? (
-              <p className="text-sm text-muted">{canRate ? "Noch keine Bewertung der anderen." : "Noch keine Bewertung."}</p>
+            {sortedRatings.length === 0 ? (
+              <p className="text-sm text-muted">Noch keine Bewertung.</p>
             ) : (
               <ul className="flex flex-col gap-2">
-                {others.map((r) => (
-                  <li key={r.userId} className="flex flex-col gap-1 rounded-xl bg-surface-2 px-3 py-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-fg">{r.characterName ?? "Jemand"}{r.userId === selfId ? " (du)" : ""}</span>
+                {sortedRatings.map((r) => (
+                  <li key={r.userId} className="flex flex-col gap-1.5 rounded-xl bg-surface-2 px-3 py-2.5 text-sm">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-medium text-fg">{r.accountName ?? "Jemand"}{r.userId === selfId ? " (du)" : ""}</span>
                       <Stars value={r.stars} size="h-3.5 w-3.5" />
+                      <span className="text-xs text-muted">{r.stars} {r.stars === 1 ? "Stern" : "Sterne"}</span>
                     </div>
                     {r.liked && (
                       <p className="text-fg-soft">
-                        <span className="text-muted">Gefiel: </span>
+                        <span className="font-medium text-fg-soft">Gefiel: </span>
                         {r.liked}
                       </p>
                     )}
                     {r.disliked && (
                       <p className="text-fg-soft">
-                        <span className="text-muted">Weniger: </span>
+                        <span className="font-medium text-fg-soft">Weniger: </span>
                         {r.disliked}
                       </p>
                     )}
+                    {!r.liked && !r.disliked && <p className="text-xs text-muted">Kein Kommentar.</p>}
                   </li>
                 ))}
               </ul>

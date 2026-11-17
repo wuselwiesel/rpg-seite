@@ -53,7 +53,7 @@ export async function endSceneSession(storyPostId: string): Promise<{ ok: true; 
   return { ok: true, sessionId };
 }
 
-// Eigene Bewertung einer Session speichern (Sterne 1 bis 5, was gefiel, was weniger); erneutes Speichern ändert sie.
+// Eigene Bewertung einer Session speichern (Sterne 1 bis 5, was gefiel, was weniger); nur einmal – nachträglich nicht mehr änderbar.
 export async function saveSessionRating(
   sessionId: string,
   input: { stars: number; liked?: string; disliked?: string },
@@ -75,19 +75,20 @@ export async function saveSessionRating(
     .maybeSingle<{ story_post_id: string; story_posts: { world_id: string } | null }>();
   if (!session?.story_posts) return "Session nicht gefunden.";
 
+  // Bereits bewertet? Dann abweisen (keine nachträgliche Änderung)
+  const { data: existing } = await supabase.from("scene_session_ratings").select("user_id").eq("session_id", sessionId).eq("user_id", user.id).maybeSingle();
+  if (existing) return "Du hast diese Session bereits bewertet.";
+
   const character = await getActiveCharacter(user.id, session.story_posts.world_id);
-  const { error } = await supabase.from("scene_session_ratings").upsert(
-    {
-      session_id: sessionId,
-      user_id: user.id,
-      character_id: character?.id ?? null,
-      stars,
-      liked: cleanSessionText(input.liked),
-      disliked: cleanSessionText(input.disliked),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "session_id,user_id" },
-  );
+  const { error } = await supabase.from("scene_session_ratings").insert({
+    session_id: sessionId,
+    user_id: user.id,
+    character_id: character?.id ?? null,
+    stars,
+    liked: cleanSessionText(input.liked),
+    disliked: cleanSessionText(input.disliked),
+    updated_at: new Date().toISOString(),
+  });
   if (error) return "Die Bewertung konnte nicht gespeichert werden.";
   revalidatePath(`/story/${session.story_post_id}`);
   return null;

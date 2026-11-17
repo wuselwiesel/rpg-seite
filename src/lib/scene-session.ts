@@ -12,7 +12,7 @@ export type SessionStats = {
 
 export type SessionRating = {
   userId: string;
-  characterName: string | null;
+  accountName: string | null;
   stars: number;
   liked: string | null;
   disliked: string | null;
