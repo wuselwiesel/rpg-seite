@@ -6,9 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import { RevealRow } from "@/components/reveal-row";
 import { parseMusicLink } from "@/lib/scene-music";
 import { decideSync } from "@/lib/music-sync";
+import { listenersFromPresence, listenersLabel, type Listener, type ListenerPayload } from "@/lib/listening";
+import { useOnline } from "@/components/online-status";
 import type { SpotifyController, SpotifyPlayback } from "@/lib/spotify-embed";
 import { SpotifyPlayer } from "./spotify-player";
 import { addSceneTrack, removeSceneTrack } from "../actions";
+
+// Zeitstempel für Ereignisse (Ereignishandler, nicht beim Rendern)
+const nowMs = () => Date.now();
 
 export type SceneTrack = { id: string; url: string; title: string | null; addedBy: string; canRemove: boolean };
 
@@ -28,7 +33,7 @@ type StartMessage = { trackId: string; by: string; byId: string };
 type SyncMessage = StartMessage & { position: number; paused: boolean; uri?: string };
 type Role = { kind: "host"; trackId: string } | { kind: "follow"; trackId: string; by: string; byId: string } | null;
 
-export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: { storyPostId: string; tracks: SceneTrack[]; canAdd: boolean; selfId: string; selfName: string }) {
+export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName, sharePublicly = false }: { storyPostId: string; tracks: SceneTrack[]; canAdd: boolean; selfId: string; selfName: string; sharePublicly?: boolean }) {
   const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
   const [url, setUrl] = useState("");
@@ -47,6 +52,14 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
   const dismissed = useRef(new Set<string>());
   const lastHeard = useRef(0);
   const lastSent = useRef({ at: 0, paused: true });
+  // „Hört gerade“: wer in dieser Szene einen Titel abspielt (Presence auf demselben Kanal); mine = der eigene laufende Titel
+  const [listeners, setListeners] = useState<Listener[]>([]);
+  const mine = useRef<string | null>(null);
+  const { setListening } = useOnline();
+  const setListeningRef = useRef(setListening);
+  useEffect(() => {
+    setListeningRef.current = setListening;
+  });
 
   useEffect(() => {
     tracksRef.current = tracks;
@@ -55,6 +68,19 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
   function setRole(next: Role) {
     roleRef.current = next;
     setRoleState(next);
+  }
+
+  // Meldet den eigenen laufenden Titel (oder nichts) an die Szene und, wenn die Szene nicht geheim ist, an die Mitgliederliste
+  function announce(trackId: string | null) {
+    if (mine.current === trackId) return;
+    mine.current = trackId;
+    const channel = channelRef.current;
+    if (channel) {
+      if (trackId) void channel.track({ userId: selfId, name: selfName, trackId, at: nowMs() } satisfies ListenerPayload);
+      else void channel.untrack();
+    }
+    const t = trackId ? tracksRef.current.find((x) => x.id === trackId) : null;
+    setListeningRef.current(sharePublicly && t ? trackLabel(t) : null);
   }
 
   function send(event: "start" | "sync" | "stop", payload: StartMessage | SyncMessage) {
@@ -79,7 +105,7 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
       state.paused = true;
       return;
     }
-    const estimated = state.paused ? state.position : state.position + (Date.now() - state.at);
+    const estimated = state.paused ? state.position : state.position + (nowMs() - state.at);
     const action = decideSync({ position: msg.position, paused: msg.paused }, { position: estimated, paused: state.paused, duration: state.duration });
     try {
       if (action.type === "seek") {
@@ -103,7 +129,10 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel(`scene-music-${storyPostId}`)
+      .channel(`scene-music-${storyPostId}`, { config: { presence: { key: selfId } } })
+      .on("presence", { event: "sync" }, () => {
+        setListeners(listenersFromPresence(channel.presenceState() as unknown as Record<string, ListenerPayload[]>, selfId));
+      })
       .on("broadcast", { event: "start" }, ({ payload }) => {
         const msg = payload as StartMessage;
         if (!msg?.byId || msg.byId === selfId) return;
@@ -129,7 +158,10 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
           setNote(`${msg.by} hat aufgehört. Bei dir läuft es weiter, bis du es anhältst.`);
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        // Lief schon ein Titel, bevor der Kanal stand, jetzt nachmelden
+        if (status === "SUBSCRIBED" && mine.current) void channel.track({ userId: selfId, name: selfName, trackId: mine.current, at: nowMs() } satisfies ListenerPayload);
+      });
     channelRef.current = channel;
 
     // Hört der Host (z. B. Fenster zu) nicht mehr, wird das Mithören nach einer Weile beendet
@@ -145,6 +177,10 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
       window.clearInterval(watchdog);
       const r = roleRef.current;
       if (r?.kind === "host") send("stop", { trackId: r.trackId, by: selfName, byId: selfId });
+      if (mine.current) {
+        mine.current = null;
+        setListeningRef.current(null);
+      }
       channelRef.current = null;
       void supabase.removeChannel(channel);
     };
@@ -154,10 +190,13 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
 
   // Position des eigenen Players: merken, und als Host regelmäßig (alle 2 s, sofort bei Pause/Weiterspielen) an die anderen schicken
   function handleUpdate(trackId: string, s: SpotifyPlayback) {
-    local.current.set(trackId, { position: s.position, paused: s.isPaused, duration: s.duration, at: Date.now(), uri: s.playingURI });
+    local.current.set(trackId, { position: s.position, paused: s.isPaused, duration: s.duration, at: nowMs(), uri: s.playingURI });
+    // Läuft der Titel (nicht pausiert), zählt das als „hört gerade“; Pause oder Ende nimmt es zurück
+    if (!s.isPaused) announce(trackId);
+    else if (mine.current === trackId) announce(null);
     const r = roleRef.current;
     if (r?.kind !== "host" || r.trackId !== trackId || s.isBuffering) return;
-    const now = Date.now();
+    const now = nowMs();
     if (s.isPaused !== lastSent.current.paused || now - lastSent.current.at >= 2000) {
       lastSent.current = { at: now, paused: s.isPaused };
       send("sync", { trackId, by: selfName, byId: selfId, position: s.position, paused: s.isPaused, uri: s.playingURI });
@@ -213,10 +252,22 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
       }
       setPlaying(null);
       setNote(null);
+      if (mine.current === id) announce(null);
     } else {
       setPlaying(id);
     }
   }
+
+  useEffect(() => {
+    if (mine.current && mine.current !== playing) announce(null);
+    // announce nutzt nur Refs und Setter
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
+
+  // Wer hört was: je Titel die Namen (nur Titel dieser Szene)
+  const listenGroups = tracks
+    .map((t) => ({ track: t, names: listeners.filter((l) => l.trackId === t.id).map((l) => l.name) }))
+    .filter((g) => g.names.length > 0);
 
   const inviteTrack = invite ? tracks.find((t) => t.id === invite.trackId) : null;
   const inviteSpotify = inviteTrack ? parseMusicLink(inviteTrack.url)?.kind === "spotify" : false;
@@ -240,6 +291,7 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
       const err = await removeSceneTrack(id, storyPostId);
       if (err) return setError(err);
       if (playing === id) setPlaying(null);
+      if (mine.current === id) announce(null);
       if (roleRef.current?.trackId === id) stopSharing();
     });
   }
@@ -254,7 +306,25 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
       >
         {open ? <X className="h-3 w-3" strokeWidth={2} /> : tracks.length > 1 ? <ListMusic className="h-3 w-3" strokeWidth={2} /> : <Music className="h-3 w-3" strokeWidth={2} />}
         {open ? "Musik schließen" : tracks.length > 0 ? `Musik · ${tracks.length}` : "Musik hinzufügen"}
+        {listenGroups.length > 0 && (
+          <span className="ml-0.5 inline-flex items-center gap-0.5 text-accent" title={listenGroups.map((g) => `${listenersLabel(g.names)}: ${trackLabel(g.track)}`).join("\n")}>
+            <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+            {listeners.length}
+          </span>
+        )}
       </button>
+      {listenGroups.length > 0 && !open && (
+        <ul className="basis-full text-xs text-fg-soft" aria-label="Hört gerade">
+          {listenGroups.slice(0, 3).map((g) => (
+            <li key={g.track.id} className="flex items-center gap-1.5 truncate">
+              <Music className="h-3 w-3 shrink-0 text-accent" strokeWidth={2} aria-hidden />
+              <span className="truncate">
+                {listenersLabel(g.names)} <span className="font-medium text-fg">{trackLabel(g.track)}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       {invite && inviteTrack && (
         <div className="flex basis-full flex-wrap items-center gap-2 rounded-xl bg-accent-strong/15 px-3 py-2 text-sm text-fg" role="status">
           <Users className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
@@ -333,6 +403,12 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm text-fg">{trackLabel(t)}</span>
+                      {listeners.some((l) => l.trackId === t.id) && (
+                        <span className="flex items-center gap-1 truncate text-xs text-accent">
+                          <Music className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
+                          {listenersLabel(listeners.filter((l) => l.trackId === t.id).map((l) => l.name))}
+                        </span>
+                      )}
                       <span className="block truncate text-xs text-muted">
                         {role?.trackId === t.id && role.kind === "host" ? "Du teilst gerade, andere können mithören" : role?.trackId === t.id && role.kind === "follow" ? `Du hörst mit bei ${role.by}` : link?.kind === "external" ? `${link.detail === "Jam" ? "Jam" : "Spotify-Link"} · öffnet sich in Spotify, von ${t.addedBy}` : `von ${t.addedBy}`}
                       </span>
@@ -349,7 +425,7 @@ export function SceneTracks({ storyPostId, tracks, canAdd, selfId, selfName }: {
                     {isPlaying && link && link.kind !== "external" && (
                       <div className="basis-full pt-1">
                         {link.kind === "audio" ? (
-                          <audio src={link.src} controls autoPlay className="w-full" />
+                          <audio src={link.src} controls autoPlay className="w-full" onPlay={() => announce(t.id)} onPause={() => mine.current === t.id && announce(null)} onEnded={() => mine.current === t.id && announce(null)} />
                         ) : link.kind === "spotify" && link.uri ? (
                           <SpotifyPlayer
                             uri={link.uri}

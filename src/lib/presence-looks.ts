@@ -1,6 +1,7 @@
 // Stand der Online-Anzeige aus dem Presence-Kanal: wer ist online, mit welchem Emoji/Text, und schreibt die Person gerade?
-export type TrackPayload = { at: number; emoji?: string | null; text?: string | null; writing?: boolean };
-export type PresenceLook = { emoji: string | null; text: string | null; writing?: boolean };
+// listening = Name des Titels, den die Person gerade in der Szenen-Musik abspielt (nur wenn die Szene nicht geheim ist)
+export type TrackPayload = { at: number; emoji?: string | null; text?: string | null; writing?: boolean; listening?: string | null };
+export type PresenceLook = { emoji: string | null; text: string | null; writing?: boolean; listening?: string | null };
 
 // „schreibt“ wird alle 4 s erneuert und verfällt für Zuschauer nach 8 s (oder wenn die Meldung älter als 20 s ist)
 export const WRITING_REFRESH = 4000;
@@ -32,7 +33,7 @@ export function deriveLooks(
         soonest = Math.min(soonest, remaining);
       }
     }
-    looks.set(key, { emoji: latest?.emoji ?? null, text: latest?.text ?? null, writing });
+    looks.set(key, { emoji: latest?.emoji ?? null, text: latest?.text ?? null, writing, listening: latest?.listening ?? null });
   }
   for (const id of [...seen.keys()]) if (!live.has(id)) seen.delete(id);
   return { looks, nextCheckIn: soonest === Infinity ? null : soonest };

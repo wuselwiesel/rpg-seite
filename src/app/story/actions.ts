@@ -27,6 +27,7 @@ import { loadWikiCalendar } from "@/lib/wiki-calendar-data";
 import { permissionError } from "@/lib/world-permissions";
 import { cleanNoticeText, sceneNoticeLink, sceneNoticeMessage } from "@/lib/scene-notice";
 import { sceneRecipients } from "@/lib/scene-recipients";
+import { fetchTrackTitle } from "@/lib/track-title";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -765,7 +766,10 @@ export async function addSceneTrack(storyPostId: string, url: string, title: str
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "Nicht angemeldet.";
-  const { error } = await supabase.rpc("add_scene_track", { p_story_post_id: storyPostId, p_url: link, p_title: title.replace(/\s+/g, " ").trim().slice(0, 80) });
+  // Ohne eigenen Namen den Titel bei Spotify/YouTube/SoundCloud nachschlagen (damit „hört gerade …“ etwas Lesbares zeigt)
+  const typed = title.replace(/\s+/g, " ").trim().slice(0, 80);
+  const name = typed || (await fetchTrackTitle(link)) || "";
+  const { error } = await supabase.rpc("add_scene_track", { p_story_post_id: storyPostId, p_url: link, p_title: name });
   if (error) {
     if (error.message === "Keine Berechtigung") return "Das dürfen nur Mitspielende dieser Welt (bei geheimen Szenen nur, wer sie sehen darf).";
     if (error.message === "Zu viele Titel") return "Mehr als 30 Titel pro Szene gehen nicht.";

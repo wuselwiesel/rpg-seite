@@ -30,6 +30,7 @@ export function SceneMeta({
   canAddTracks = false,
   selfId = "",
   selfName = "",
+  sharePublicly = false,
 }: {
   storyPostId: string;
   worldId?: string;
@@ -50,6 +51,8 @@ export function SceneMeta({
   canAddTracks?: boolean;
   selfId?: string;
   selfName?: string;
+  // Titel, den man hört, darf in der Mitgliederliste stehen (nicht bei geheimen Szenen)
+  sharePublicly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [loc, setLoc] = useState(location ?? "");
@@ -207,7 +210,7 @@ export function SceneMeta({
           {[dateLabel, inWorldTime].filter(Boolean).join(", ")}
         </Link>
       )}
-      <SceneTracks storyPostId={storyPostId} tracks={tracks} canAdd={canAddTracks} selfId={selfId} selfName={selfName} />
+      <SceneTracks storyPostId={storyPostId} tracks={tracks} canAdd={canAddTracks} selfId={selfId} selfName={selfName} sharePublicly={sharePublicly} />
       {canEdit && (
         <button
           type="button"

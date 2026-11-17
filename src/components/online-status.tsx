@@ -23,6 +23,8 @@ type OnlineContextValue = {
   setLook: (look: PresenceLook) => void;
   // „schreibt gerade“ für andere Geräte/Seiten (kontoweit, über den Presence-Kanal)
   setWriting: (writing: boolean) => void;
+  // „hört gerade <Titel>“ (Name des Titels) oder null; erscheint in der Mitgliederliste
+  setListening: (title: string | null) => void;
 };
 
 const OnlineContext = createContext<OnlineContextValue>({
@@ -34,6 +36,7 @@ const OnlineContext = createContext<OnlineContextValue>({
   setMode: () => {},
   setLook: () => {},
   setWriting: () => {},
+  setListening: () => {},
 });
 
 const CHANNEL = "wortwinkel-online";
@@ -61,6 +64,7 @@ export function OnlineProvider({
   const modeRef = useRef(mode);
   const ownRef = useRef(own);
   const writingRef = useRef(false);
+  const listeningRef = useRef<string | null>(null);
   const writingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Hochzählen baut den Kanal neu auf (nach Rückkehr in die App, Netzwechsel oder wenn Senden scheitert)
   const [epoch, setEpoch] = useState(0);
@@ -93,7 +97,7 @@ export function OnlineProvider({
     }
   }
 
-  const payload = (): TrackPayload => ({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current });
+  const payload = (): TrackPayload => ({ at: Date.now(), emoji: ownRef.current.emoji, text: ownRef.current.text, writing: writingRef.current, listening: listeningRef.current });
 
   function reconnect() {
     const now = Date.now();
@@ -231,9 +235,17 @@ export function OnlineProvider({
     }
   }
 
+  // Meldet den Titel, den man gerade abspielt (null = nichts); nur bei einer Änderung wird neu gemeldet
+  function setListening(title: string | null) {
+    const next = title?.trim().slice(0, 80) || null;
+    if (listeningRef.current === next) return;
+    listeningRef.current = next;
+    publish();
+  }
+
   const onlineIds = useMemo<ReadonlySet<string>>(() => new Set(looks.keys()), [looks]);
 
-  return <OnlineContext.Provider value={{ enabled: Boolean(userId), mode, onlineIds, looks, own, setMode, setLook, setWriting }}>{children}</OnlineContext.Provider>;
+  return <OnlineContext.Provider value={{ enabled: Boolean(userId), mode, onlineIds, looks, own, setMode, setLook, setWriting, setListening }}>{children}</OnlineContext.Provider>;
 }
 
 export function useOnline() {
@@ -247,10 +259,10 @@ export function useIsOnline(userId: string | null | undefined): boolean {
 }
 
 // Online? Und wie sieht der Status aus (Emoji, Text)?
-export function useOnlineLook(userId: string | null | undefined): (PresenceLook & { online: boolean; writing: boolean }) {
+export function useOnlineLook(userId: string | null | undefined): (PresenceLook & { online: boolean; writing: boolean; listening: string | null }) {
   const { enabled, looks } = useOnline();
   const look = enabled && userId ? looks.get(userId) : undefined;
-  return { online: Boolean(look), emoji: look?.emoji ?? null, text: look?.text ?? null, writing: look?.writing === true };
+  return { online: Boolean(look), emoji: look?.emoji ?? null, text: look?.text ?? null, writing: look?.writing === true, listening: look?.listening ?? null };
 }
 
 // Der Status selbst: grüner Punkt, oder das eigene Emoji an seiner Stelle

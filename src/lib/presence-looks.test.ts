@@ -5,7 +5,7 @@ describe("deriveLooks", () => {
   it("zeigt „schreibt“ bei frischer Meldung und meldet, wann neu geprüft wird", () => {
     const seen = new Map<string, number>();
     const { looks, nextCheckIn } = deriveLooks({ a: [{ at: 1000, writing: true, emoji: "🌙" }] }, seen, 1500);
-    expect(looks.get("a")).toEqual({ emoji: "🌙", text: null, writing: true });
+    expect(looks.get("a")).toEqual({ emoji: "🌙", text: null, writing: true, listening: null });
     expect(nextCheckIn).toBe(WRITING_TTL);
   });
 
@@ -32,6 +32,12 @@ describe("deriveLooks", () => {
 
   it("bleibt online, auch wenn ein anderes Gerät nicht schreibt", () => {
     const { looks } = deriveLooks({ a: [{ at: 1000, writing: false }, { at: 900, writing: false }] }, new Map(), 1200);
-    expect(looks.get("a")).toEqual({ emoji: null, text: null, writing: false });
+    expect(looks.get("a")).toEqual({ emoji: null, text: null, writing: false, listening: null });
+  });
+
+  it("reicht den gehörten Titel vom neuesten Eintrag durch", () => {
+    const { looks } = deriveLooks({ a: [{ at: 1000, listening: "Alt" }, { at: 2000, listening: "Neu" }], b: [{ at: 1000 }] }, new Map(), 2100);
+    expect(looks.get("a")?.listening).toBe("Neu");
+    expect(looks.get("b")?.listening).toBeNull();
   });
 });

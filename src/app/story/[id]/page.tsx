@@ -463,6 +463,7 @@ export default async function StoryPostDetailPage({
                 canAddTracks={myCharacterIds.size > 0 || isWorldOwner}
                 selfId={user.id}
                 selfName={memberName.get(user.id) ?? "Jemand"}
+                sharePublicly={!storyPost.is_private}
                 canEdit={myCharacterIds.size > 0 || isWorldOwner}
               />
             </>

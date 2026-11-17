@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { Music } from "lucide-react";
 import { SymbolPicker } from "@/components/symbol-picker";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { NameBadge } from "@/components/name-badge";
@@ -88,6 +89,19 @@ function StatusEditor({ onDone }: { onDone: () => void }) {
           ✦
         </button>
       </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => {
+            // Schnellstart: Kopfhörer-Emoji und „Ich höre gerade “ vorbelegen; den Rest tippt man selbst
+            setEmoji("🎧");
+            setText((t) => (t.trim() ? t : "Ich höre gerade "));
+          }}
+          className="rounded-full border border-line px-2.5 py-1 text-xs text-fg-soft transition hover:bg-surface-2 hover:text-fg"
+        >
+          🎧 Ich höre gerade …
+        </button>
+      </div>
       {symbols && (
         <SymbolPicker
           onPick={(symbol) =>
@@ -158,6 +172,11 @@ function Row({ m, online, selfId, open, onToggle }: { m: OnlineMember; online: b
                 <span className="typing-dot [animation-delay:300ms]" />
               </span>
               schreibt gerade
+            </span>
+          ) : online && look?.listening ? (
+            <span className="flex items-center gap-1 truncate text-xs text-muted" title={`Hört gerade: ${look.listening}`}>
+              <Music className="h-3 w-3 shrink-0 text-accent" strokeWidth={2} aria-hidden />
+              <span className="truncate">hört: {look.listening}</span>
             </span>
           ) : online && look?.text ? (
             <span className="block truncate text-xs text-muted">
