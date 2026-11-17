@@ -317,7 +317,7 @@ export default async function StoryPostDetailPage({
   // Beendete Sessions mit Bewertungen; fehlen die Tabellen noch (Migration nicht eingespielt), bleibt der Bereich einfach weg
   const { data: sessionRows, error: sessionsError } = await supabase
     .from("scene_sessions")
-    .select("id, ended_by, started_at, ended_at, stats, redaktion_post_id, scene_session_ratings(user_id, stars, liked, disliked)")
+    .select("id, ended_by, started_at, ended_at, title, stats, redaktion_post_id, scene_session_ratings(user_id, stars, liked, disliked)")
     .eq("story_post_id", id)
     .order("ended_at", { ascending: false })
     .limit(30)
@@ -327,6 +327,7 @@ export default async function StoryPostDetailPage({
         ended_by: string;
         started_at: string;
         ended_at: string;
+        title: string | null;
         stats: unknown;
         redaktion_post_id: string | null;
         scene_session_ratings: { user_id: string; stars: number; liked: string | null; disliked: string | null }[];
@@ -347,6 +348,7 @@ export default async function StoryPostDetailPage({
         startedAt: s.started_at,
         endedAt: s.ended_at,
         stats: normalizeStats(s.stats),
+        title: s.title,
         ratings: s.scene_session_ratings.map((r) => ({ userId: r.user_id, accountName: profileMap.get(r.user_id) ?? null, stars: r.stars, liked: r.liked, disliked: r.disliked })),
         redaktionPostId: s.redaktion_post_id,
       }));

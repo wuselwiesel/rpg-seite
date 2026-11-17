@@ -15,6 +15,7 @@ type Row = {
   ended_by: string;
   started_at: string;
   ended_at: string;
+  title: string | null;
   stats: unknown;
   redaktion_post_id: string | null;
   story_posts: { id: string; title: string; world_id: string; character_id: string; is_private: boolean } | null;
@@ -39,7 +40,7 @@ export default async function WorldSessionsPage({ params }: PageProps<"/worlds/[
   // Die Datenbank liefert nur, was man sehen darf (geheime Szenen anderer bleiben verborgen)
   const { data, error } = await supabase
     .from("scene_sessions")
-    .select("id, ended_by, started_at, ended_at, stats, redaktion_post_id, story_posts!inner(id, title, world_id, character_id, is_private), scene_session_ratings(user_id, stars, liked, disliked)")
+    .select("id, ended_by, started_at, ended_at, title, stats, redaktion_post_id, story_posts!inner(id, title, world_id, character_id, is_private), scene_session_ratings(user_id, stars, liked, disliked)")
     .eq("story_posts.world_id", world.id)
     .order("ended_at", { ascending: false })
     .limit(300)
@@ -76,6 +77,7 @@ export default async function WorldSessionsPage({ params }: PageProps<"/worlds/[
         startedAt: r.started_at,
         endedAt: r.ended_at,
         stats: normalizeStats(r.stats),
+        title: r.title,
         ratings: r.scene_session_ratings.map((x) => ({ userId: x.user_id, accountName: profileMap.get(x.user_id) ?? null, stars: x.stars, liked: x.liked, disliked: x.disliked })),
         redaktionPostId: r.redaktion_post_id,
       };
