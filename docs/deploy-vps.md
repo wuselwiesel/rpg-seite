@@ -100,6 +100,7 @@ Supabase → Authentication → URL Configuration: **Redirect URLs** um `https:/
 
 1. In Coolify bei der App die Domain `https://wortwinkel.xyz` **zusätzlich** eintragen (ohne `app.` zu löschen) und speichern.
 2. In Vercel (Domains → DNS Records) einen A-Eintrag `@` auf die Server-IP anlegen, TTL 60. Lehnt Vercel ihn ab oder kommt die Seite weiter von Vercel, die Domain im Vercel-Projekt unter Settings → Domains entfernen. Vorher einen Screenshot der DNS-Liste sichern (Rückweg).
+   **Zertifikat:** Wird die Domain in Coolify eingetragen und die App neu ausgeliefert, **bevor** das DNS umgestellt ist, scheitert die erste Zertifikatsanfrage, und Traefik versucht es nicht von selbst erneut. Dann in Coolify unter *Servers → localhost → Proxy* auf **Restart Proxy** klicken (kurzer Ausfall), danach kommt das Zertifikat sofort. Nicht vergessen: auch `www` mit eigenem A-Eintrag auf die Server-IP stellen.
 3. Nach der Umstellung prüfen: `https://wortwinkel.xyz/api/version` zeigt den Commit, Anmelden geht, Push-Test, Bild hochladen.
 4. **Weil die Adresse gleich bleibt, behalten alle Handys ihre installierte App und ihre Push-Erlaubnis** (vorausgesetzt, die VAPID-Schlüssel sind dieselben). Angemeldete Sitzungen bleiben ebenfalls bestehen.
 

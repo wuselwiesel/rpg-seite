@@ -47,7 +47,7 @@ export default function PrivacyPage() {
         <p className={p}>Wir geben keine Daten zu Werbezwecken weiter. Die Seite nutzt folgende Dienstleister; es gelten jeweils deren Bedingungen zur Auftragsverarbeitung:</p>
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-fg-soft">
           <li><strong>Supabase</strong> (Datenbank, Anmeldung, Dateispeicher, Versand der Anmelde-E-Mails). Der Datenbankserver steht in London (Großbritannien, Angemessenheitsbeschluss der EU).</li>
-          <li><strong>Vercel Inc.</strong> (USA) als Hoster der Seite; Übermittlung auf Grundlage von EU-Standardvertragsklauseln bzw. des EU-US Data Privacy Framework.</li>
+          <li><strong>Hetzner Online GmbH</strong> (Deutschland) als Hoster der Seite; der Server steht in Nürnberg.</li>
           <li><strong>Push-Dienste</strong> von Apple, Google oder Mozilla, wenn du Push einschaltest (sie übermitteln die Benachrichtigung an dein Gerät).</li>
         </ul>
         <p className={p}>Nur wenn du die jeweilige Funktion nutzt, kommen folgende Dienste dazu:</p>
