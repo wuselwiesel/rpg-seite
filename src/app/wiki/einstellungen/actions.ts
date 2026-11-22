@@ -96,7 +96,15 @@ export async function addExtraWikiType(extraId: string): Promise<{ id: string } 
     sort_order: existing.length + 1,
     created_by: ctx.user.id,
   });
-  if (error) return { error: permissionError(error) };
+  if (error) {
+    // Race condition: gleichzeitiger Request hat dieselbe Art bereits eingefügt → vorhandene zurückgeben
+    if (error.code === "23505") {
+      const refreshed = await getWikiTypes(ctx.world.id);
+      const found = refreshed.find((t) => t.id === id || t.label.toLowerCase() === extra.label.toLowerCase());
+      if (found) return { id: found.id };
+    }
+    return { error: permissionError(error) };
+  }
   done();
   return { id };
 }
