@@ -27,6 +27,7 @@ export const DEFAULT_TALENTS: TalentDef[] = [
   { name: "Reparieren", attrs: ["FF", "IG"] },
   { name: "Empathie", attrs: ["IN", "CH"] },
   { name: "Sinnesschärfe", attrs: ["IN", "IG"] },
+  { name: "Vernunft", attrs: ["IG", "SB"] },
   { name: "Überleben", attrs: ["KO", "MU"] },
 ];
 
