@@ -29,6 +29,9 @@ import type { WikiPage } from "@/lib/types";
 const input = "rounded-lg border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent";
 const card = "flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 @xl:p-6";
 
+// Arten, bei denen ein Zeitpunkt im Formular angeboten wird; Seiten mit schon gesetztem Zeitpunkt zeigen ihn immer
+const DATED_TYPES = new Set(["ereignis", "wichtiger_moment", "ritual", "zeremonie"]);
+
 export function WikiForm({
   page,
   folders,
@@ -224,12 +227,14 @@ export function WikiForm({
         </div>
       </section>
 
-      <section className={card}>
-        <div>
-          <h2 className="font-serif text-xl text-fg">Zeitpunkt (optional)</h2>
-        </div>
-        <EventDateRange calendar={calendar} dates={dates} labels={{ start: page?.event_label ?? null, end: page?.event_end_label ?? null }} type={pageType} />
-      </section>
+      {(DATED_TYPES.has(pageType) || Boolean(dates.start)) && (
+        <section className={card}>
+          <div>
+            <h2 className="font-serif text-xl text-fg">Zeitpunkt (optional)</h2>
+          </div>
+          <EventDateRange calendar={calendar} dates={dates} labels={{ start: page?.event_label ?? null, end: page?.event_end_label ?? null }} type={pageType} />
+        </section>
+      )}
 
       <section className={card}>
         <div>

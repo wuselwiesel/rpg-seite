@@ -66,7 +66,7 @@ describe("Talente", () => {
   });
   it("Zuordnung der Bonus-Schlüssel passt zu talentSlug", () => {
     const t = talentRows(emptySheet());
-    expect(t).toHaveLength(22);
+    expect(t).toHaveLength(23);
     expect(t[0].slug).toBe("talent_koerperbeherrschung");
   });
 });
