@@ -68,7 +68,10 @@ export async function createWikiType(_prev: string | null, formData: FormData): 
   const { error } = await ctx.supabase
     .from("wiki_types")
     .insert({ ...parsed.values, world_id: ctx.world.id, id, sort_order: existing.length + 1, created_by: ctx.user.id });
-  if (error) return permissionError(error);
+  if (error) {
+    if (error.code === "23505") return "Diese Art wurde bereits angelegt (doppelter Klick?). Bitte die Seite neu laden.";
+    return permissionError(error);
+  }
   return done();
 }
 
