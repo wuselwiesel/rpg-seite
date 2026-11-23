@@ -214,7 +214,7 @@ export async function publishClipToWiki(clipId: string): Promise<{ error: string
       sort_order: 8,
       created_by: user.id,
     });
-    if (typeError) return { error: typeError.message };
+    if (typeError && typeError.code !== "23505") return { error: typeError.message };
   }
 
   const content = sanitizePostHtml(

@@ -177,7 +177,7 @@ export async function joinAndRequestRole(worldId: string, characterId: string, m
   const { data: existing } = await supabase.from("world_members").select("world_id").eq("world_id", worldId).eq("user_id", user.id).maybeSingle();
   if (!existing) {
     const { error } = await supabase.from("world_members").insert({ world_id: worldId, user_id: user.id });
-    if (error) return error.message;
+    if (error && error.code !== "23505") return error.message;
     await notifyWorldAdmins(supabase, worldId, "member_join", user.id, "ist der Welt beigetreten");
   }
 

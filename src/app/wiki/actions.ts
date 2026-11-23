@@ -383,7 +383,7 @@ export async function toggleWikiFavorite(wikiPageId: string): Promise<{ favorite
     if (error) return { error: error.message };
   } else {
     const { error } = await supabase.from("wiki_favorites").insert({ user_id: user.id, page_id: wikiPageId });
-    if (error) return { error: error.message };
+    if (error && error.code !== "23505") return { error: error.message };
   }
   revalidatePath("/wiki", "layout");
   return { favorite: !existing };

@@ -1435,7 +1435,7 @@ export async function setSceneArcs(storyPostId: string, arcIds: string[], newArc
       if (!next.includes(found.id)) next.push(found.id);
     } else {
       const { data: created, error } = await supabase.from("story_arcs").insert({ world_id: post.world_id, name, created_by: user.id }).select("id").single<{ id: string }>();
-      if (error || !created) return error ? permissionError(error) : "Handlungsstrang konnte nicht erstellt werden.";
+      if (error || !created) return error ? (error.code === "23505" ? "Einen Handlungsstrang mit diesem Namen gibt es schon." : permissionError(error)) : "Handlungsstrang konnte nicht erstellt werden.";
       next.push(created.id);
     }
   }
