@@ -32,9 +32,9 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
 
   const { data: character } = await supabase
     .from("characters")
-    .select("id, name, owner_id, world_id, sheet_url, is_npc, choices")
+    .select("id, name, owner_id, world_id, sheet_url, is_npc, choices, avatar_url")
     .eq("id", id)
-    .maybeSingle<{ id: string; name: string; owner_id: string; world_id: string; sheet_url: string | null; is_npc: boolean; choices: Record<string, string> | null }>();
+    .maybeSingle<{ id: string; name: string; owner_id: string; world_id: string; sheet_url: string | null; is_npc: boolean; avatar_url: string | null; choices: Record<string, string> | null }>();
   if (!character) notFound();
 
   // Bearbeiten und Geheimes: Besitzer:in, bei NPCs auch die Welt-Besitzerin
@@ -67,7 +67,7 @@ export default async function ChaboPage({ params }: PageProps<"/characters/[id]/
           <ChaboSwitcher currentId={id} characters={ownChars.map((c) => ({ id: c.id, name: c.name }))} npcs={switcherNpcs.map((c) => ({ id: c.id, name: c.name }))} />
         </div>
       </div>
-      <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} talentDefs={await getWorldTalents(character.world_id)} natureDefs={await getWorldNatures(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} choices={choiceEntries(character.choices, await getWorldChoiceLists(character.world_id).catch(() => []))} mentionCharacters={mentionCharacters} randomLists={randomLists} />
+      <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} talentDefs={await getWorldTalents(character.world_id)} natureDefs={await getWorldNatures(character.world_id)} characterId={id} characterName={character.name} profileImageUrl={character.avatar_url} initial={sheet} editable={isOwn} legacyUrl={isOwn ? character.sheet_url : null} choices={choiceEntries(character.choices, await getWorldChoiceLists(character.world_id).catch(() => []))} mentionCharacters={mentionCharacters} randomLists={randomLists} />
       <CharacterGallery characterId={id} canEdit={isOwn} />
       <CharacterScenesTimeline characterId={id} isOwn={isOwn} />
     </div>

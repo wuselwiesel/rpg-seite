@@ -164,7 +164,7 @@ export default async function PreviewCharacterPage({
 
         <div className="py-5">
           {tab === "chabo" && sheetData ? (
-            <Chabo key={charId} diceEnabled={character.dice_enabled} characterId={charId} characterName={character.name} initial={sheetData} editable={false} variant="panel" />
+            <Chabo key={charId} diceEnabled={character.dice_enabled} characterId={charId} characterName={character.name} profileImageUrl={character.avatar_url} initial={sheetData} editable={false} variant="panel" />
           ) : tab === "beitraege" && showPosts ? (
             posts.length === 0 ? (
               <p className="text-muted">Noch keine Beiträge.</p>

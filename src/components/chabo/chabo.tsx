@@ -163,6 +163,7 @@ export function Chabo({
   initial,
   editable,
   legacyUrl,
+  profileImageUrl,
   mentionCharacters = [],
   randomLists,
   variant = "page",
@@ -177,6 +178,8 @@ export function Chabo({
   editable: boolean;
   // Adresse des alten Charakterbogens (öffentlicher Link) zum Übernehmen
   legacyUrl?: string | null;
+  // Profilbild des Charakters: wird gezeigt, solange der Bogen kein eigenes Bild hat (danach unabhängig davon änderbar)
+  profileImageUrl?: string | null;
   // Charaktere der Welt für @-Erwähnungen in Feldern und Notizen
   mentionCharacters?: Character[];
   // Eigene Zufallseinträge der Welt (werden unter die mitgelieferten gemischt)
@@ -363,11 +366,11 @@ export function Chabo({
         </div>
         {editing ? (
           <div key={portraitKey} className="shrink-0">
-            <AvatarUpload name="portrait_url" initialUrl={data.portraitUrl} displayName={characterName} variant="portrait" onChange={(url) => commit({ ...data, portraitUrl: url || null })} />
+            <AvatarUpload name="portrait_url" initialUrl={data.portraitUrl ?? profileImageUrl} displayName={characterName} variant="portrait" onChange={(url) => commit({ ...data, portraitUrl: url || null })} />
           </div>
-        ) : data.portraitUrl ? (
+        ) : data.portraitUrl ?? profileImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={data.portraitUrl} alt="" className="h-40 w-32 shrink-0 rounded-2xl object-cover" />
+          <img src={data.portraitUrl ?? profileImageUrl ?? ""} alt="" className="h-40 w-32 shrink-0 rounded-2xl object-cover" />
         ) : (
           <span aria-hidden className="flex h-40 w-32 shrink-0 items-center justify-center rounded-2xl bg-surface-2 font-serif text-5xl text-accent">
             {characterName.charAt(0).toUpperCase()}

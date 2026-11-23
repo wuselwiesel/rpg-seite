@@ -510,7 +510,7 @@ export default async function CharacterProfilePage({
                 </Link>
               </div>
             )}
-            <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} talentDefs={await getWorldTalents(character.world_id)} natureDefs={await getWorldNatures(character.world_id)} characterId={id} characterName={character.name} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" choices={choiceList} />
+            <Chabo key={id} diceEnabled={await getWorldDiceEnabled(character.world_id)} talentDefs={await getWorldTalents(character.world_id)} natureDefs={await getWorldNatures(character.world_id)} characterId={id} characterName={character.name} profileImageUrl={character.avatar_url} initial={sheet} editable={canEdit} mentionCharacters={mentionCharacters} randomLists={randomLists} variant="panel" choices={choiceList} />
           </div>
         ) : (
           <>

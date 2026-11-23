@@ -913,3 +913,9 @@ Alles in `main` gemergt. Nicht im Browser getestet (nur `tsc`/ESLint/vitest).
 - Bei Seiten vom Typ **Person** ist das Bild kein breiter Banner mehr, sondern ein normales Hochformat-Bild (4:5, wie ein Charakterbild) neben dem Namen (`wiki/[id]/page.tsx`). Alle anderen Typen behalten das breite Titelbild. Welche Typen das betrifft, steht in `PORTRAIT_TYPES` in `lib/wiki-types.ts` (`usesPortraitImage`), dort lässt sich z. B. `spezies` ergänzen.
 - Formular: Beschriftung wechselt je nach Typ („Bild (Hochformat, wie ein Charakterbild)“ statt „Titelbild“); `AvatarUpload` hat dafür die neue Variante `portrait` (Zuschnitt Hochformat 4:5 oder Quadrat, eckige Vorschau). Das gespeicherte Feld bleibt `cover_image_url`; bereits hochgeladene breite Bilder werden bei Personen einfach als Hochformat zugeschnitten gezeigt (`object-cover`), man kann sie neu zuschneiden.
 - Keine Datenbankänderung. Test: `e2e/wiki-form/` (20 Prüfungen). Die Seitenansicht selbst ist nicht im Browser getestet.
+
+## ChaBo-Bild (23. November)
+Der ChaBo zeigt das Charakterbild (`characters.avatar_url`), solange der Bogen kein eigenes Bild hat (`Chabo`-Prop `profileImageUrl`, auch im Fenster `chabo-drawer.tsx`). Wer im ChaBo ein Bild setzt, ändert nur `portraitUrl` im Bogen – das Profilbild bleibt unberührt. Entfernt man das ChaBo-Bild wieder, erscheint erneut das Profilbild.
+
+## Bloodlines-Orte (23. November, Daten, keine Code-Änderung)
+In der Welt Bloodlines wurden bei allen Orten „Stimmung“ (jetzt Feld im Steckbrief) und „Besonderheiten“ (jetzt Abschnitt im Artikel) vertauscht; die alten Stände liegen im Seitenverlauf. Die Felddefinition der Art „Ort“ blieb unverändert.
