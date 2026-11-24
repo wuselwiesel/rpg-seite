@@ -22,6 +22,7 @@ import {
   runCastImport,
   type ImportPreview,
 } from "./actions";
+import { SearchSelect } from "@/components/search-select";
 
 const PAGE = 60;
 const primary = "rounded-full bg-accent-strong px-3 py-1 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50";
@@ -519,15 +520,15 @@ function RoleRow({
                     run(() => linkRoleCharacter(r.id, linkTarget || null), done);
                   }}
                 >
-                  <select value={linkTarget} onChange={(e) => setLinkTarget(e.target.value)} className={field} aria-label="Charakter">
-                    <option value="">Verknüpfung lösen</option>
-                    {data.characters.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                        {c.ownerName ? ` (${c.ownerName})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchSelect
+                    value={linkTarget}
+                    onChange={setLinkTarget}
+                    className={field}
+                    ariaLabel="Charakter"
+                    placeholder="Charakter suchen …"
+                    emptyOption="Verknüpfung lösen"
+                    options={data.characters.map((c) => ({ value: c.id, label: c.name, hint: c.ownerName || undefined }))}
+                  />
                   <div className="flex gap-2">
                     <button type="submit" disabled={pending} className={primary}>
                       Speichern

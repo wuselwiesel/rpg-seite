@@ -8,6 +8,7 @@ import type { Character } from "@/lib/types";
 import { ALL_TAGS } from "@/lib/fate-data";
 import { FATE_CATEGORIES, SEVERITY_ORDER } from "@/lib/fate-types";
 import type { Char1Config, FateCategory, FateSeverity, GenderFilter, OwnerFilter, SlotConfig } from "@/lib/fate-types";
+import { SearchSelect } from "@/components/search-select";
 
 export type WorldOption = {
   id: string;
@@ -332,21 +333,14 @@ export function SchicksalForm({
               />
               <ProfilSelect owners={allOwners} value={char1FilterOwner} onChange={setChar1FilterOwner} />
             </div>
-            <select
+            <SearchSelect
               value={effectiveChar1Id}
-              onChange={(e) => setChar1Id(e.target.value)}
+              onChange={setChar1Id}
+              ariaLabel="Charakter"
+              placeholder="Charakter suchen …"
               className="rounded-md border border-line bg-app px-3 py-2 text-sm text-fg outline-none focus:border-accent"
-            >
-              {filteredCharacterOptions.map((w) => (
-                <optgroup key={w.worldId} label={w.worldName}>
-                  {w.characters.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.ownerLabel})
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              options={filteredCharacterOptions.flatMap((w) => w.characters.map((c) => ({ value: c.id, label: c.name, hint: c.ownerLabel, group: w.worldName })))}
+            />
             {filteredCharacterOptions.length === 0 && (
               <p className="text-xs text-muted">Kein Charakter passt zu dieser Filterkombination.</p>
             )}

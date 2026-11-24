@@ -9,6 +9,7 @@ import { ProfileFieldsEditor } from "@/components/profile-fields-editor";
 import type { Character } from "@/lib/types";
 import { activeLists, isSpeciesOff, type ChoiceList } from "@/lib/choice-lists";
 import { ChoiceField, ChoiceFields } from "@/components/choice-fields";
+import { SearchSelect } from "@/components/search-select";
 
 export function EditCharacterForm({
   character,
@@ -170,34 +171,28 @@ export function EditCharacterForm({
         {relationshipStatus && relationshipStatus !== "single" && (
           <label className="flex flex-col gap-1 text-sm text-fg-soft">
             Partner:in
-            <select
+            <SearchSelect
               name="partner_character_id"
               defaultValue={character.partner_character_id ?? ""}
+              ariaLabel="Partner:in"
+              placeholder="Charakter suchen …"
+              emptyOption="Keine Angabe"
               className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-            >
-              <option value="">Keine Angabe</option>
-              {mentionableCharacters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              options={mentionableCharacters.map((c) => ({ value: c.id, label: c.name, avatar: true, avatarUrl: c.avatar_url }))}
+            />
           </label>
         )}
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Beste:r Freund:in (optional)
-          <select
+          <SearchSelect
             name="best_friend_character_id"
             defaultValue={character.best_friend_character_id ?? ""}
+            ariaLabel="Beste:r Freund:in"
+            placeholder="Charakter suchen …"
+            emptyOption="Keine Angabe"
             className="rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent"
-          >
-            <option value="">Keine Angabe</option>
-            {mentionableCharacters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            options={mentionableCharacters.map((c) => ({ value: c.id, label: c.name, avatar: true, avatarUrl: c.avatar_url }))}
+          />
           <span className="text-xs text-muted">
             Wird für logisch stimmige Schicksale genutzt (z. B. &quot;wird von der Partnerin betrogen&quot; zieht die echte Partnerin).
           </span>

@@ -85,7 +85,7 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
   const panel = (
     <div className="flex flex-col gap-2">
       <h2 className="px-1 text-sm font-medium text-muted">Du spielst</h2>
-      <div role="tablist" aria-label="Welten" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
+      <div role="tablist" aria-label="Welten" className="flex flex-wrap gap-1.5">
         {worldTabs.map((w) => {
           const on = !q && w.id === shownWorldId;
           return (
@@ -98,13 +98,13 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
                 setQuery("");
                 setViewWorld(w.id);
               }}
-              className={`flex h-9 shrink-0 items-center gap-2 rounded-xl border pl-1 pr-3 text-sm font-medium transition ${
+              className={`flex h-9 max-w-full min-w-0 items-center gap-2 rounded-xl border pl-1 pr-3 text-sm font-medium transition ${
                 on ? "border-fg/40 bg-surface-2 text-fg" : "border-line bg-surface text-fg-soft hover:bg-surface-2 hover:text-fg"
               }`}
             >
-              <WorldCover name={w.name} coverUrl={w.cover_image_url} className="h-7 w-7 rounded-lg text-xs" />
-              {w.name}
-              {countIn(w.id) > 0 && <span className="text-xs font-normal text-muted">{countIn(w.id)}</span>}
+              <WorldCover name={w.name} coverUrl={w.cover_image_url} className="h-7 w-7 shrink-0 rounded-lg text-xs" />
+              <span className="truncate">{w.name}</span>
+              {countIn(w.id) > 0 && <span className="shrink-0 text-xs font-normal text-muted">{countIn(w.id)}</span>}
             </button>
           );
         })}

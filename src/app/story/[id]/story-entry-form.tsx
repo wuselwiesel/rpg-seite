@@ -9,6 +9,7 @@ import { BundleBuilder, type BundleSegment } from "./bundle-builder";
 import { useDraft } from "@/lib/use-draft";
 import { ACTION_FAILED_EVENT } from "@/components/update-notice";
 import type { Character } from "@/lib/types";
+import { SearchSelect } from "@/components/search-select";
 
 export function StoryEntryForm({
   storyPostId,
@@ -298,28 +299,18 @@ export function StoryEntryForm({
         {selectable.length > 0 && (
           <label className="flex items-center gap-1.5 text-xs text-muted">
             Danach dran:
-            <select
+            <SearchSelect
               name="next_character_id"
-              defaultValue=""
+              ariaLabel="Danach dran"
+              placeholder="Charakter suchen …"
+              emptyOption="automatisch (zuletzt Schreibende:r)"
               className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-soft outline-none focus:border-accent"
-            >
-              <option value="">automatisch (zuletzt Schreibende:r)</option>
-              {involved.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-              {others.length > 0 && (
-                <optgroup label="Weitere">
-                  {others.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              <option value="__none__">niemand bestimmtes</option>
-            </select>
+              options={[
+                ...involved.map((c) => ({ value: c.id, label: c.name, group: others.length > 0 ? "In der Szene" : undefined })),
+                ...others.map((c) => ({ value: c.id, label: c.name, group: "Weitere" })),
+                { value: "__none__", label: "niemand bestimmtes" },
+              ]}
+            />
           </label>
         )}
       </div>

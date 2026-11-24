@@ -6,6 +6,7 @@ import { Trash2, X } from "lucide-react";
 import { CustomEmojiPicker } from "@/components/custom-emoji-picker";
 import { EmojiText } from "@/components/custom-emoji-provider";
 import { awardAccountBadge, awardBadge, createBadgeDef, deleteBadgeDef, revokeBadge, setBadgeHidden, setFeaturedBadge } from "./actions";
+import { SearchSelect } from "@/components/search-select";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent";
 
@@ -77,22 +78,14 @@ export function AwardControls({
       {ownCharacters.length > 0 && (
         <label className="flex w-full items-center gap-2 text-xs text-fg-soft">
           Verleihen als
-          <select value={asId} onChange={(e) => setAsId(e.target.value)} className={`min-w-0 flex-1 ${field}`} aria-label="Verleihen als Charakter">
-            {ownCharacters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-0 flex-1">
+            <SearchSelect value={asId} onChange={setAsId} className={field} ariaLabel="Verleihen als Charakter" placeholder="Charakter suchen …" options={ownCharacters.map((c) => ({ value: c.id, label: c.name }))} />
+          </div>
         </label>
       )}
-      <select value={characterId} onChange={(e) => setCharacterId(e.target.value)} className={`min-w-0 flex-1 ${field}`} aria-label="Charakter, der das Badge bekommt">
-        {characters.filter((c) => c.id !== asId).map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
+      <div className="min-w-0 flex-1">
+        <SearchSelect value={characterId} onChange={setCharacterId} className={field} ariaLabel="Charakter, der das Badge bekommt" placeholder="Charakter suchen …" options={characters.filter((c) => c.id !== asId).map((c) => ({ value: c.id, label: c.name }))} />
+      </div>
       <button
         type="button"
         disabled={pending || !characterId}

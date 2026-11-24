@@ -10,6 +10,7 @@ import { normalizeSheet } from "@/lib/sheet-rules";
 import { DICE_CONDITIONS, resolveCondition } from "@/lib/dice-conditions";
 import { createClient } from "@/lib/supabase/client";
 import type { Character } from "@/lib/types";
+import { SearchSelect } from "@/components/search-select";
 
 const DICE_SIZES = [4, 6, 8, 10, 12, 20, 100];
 const INITIAL_STATE: DiceRollState = { error: null, luckRemaining: null };
@@ -342,19 +343,16 @@ export function DiceRollForm({
       {targets.length > 0 && (
         <label className="flex flex-col gap-1 text-sm text-fg-soft">
           Gegen wen? (optional)
-          <select
+          <SearchSelect
             name="target_character_id"
             value={target}
-            onChange={(e) => setTarget(e.target.value)}
+            onChange={setTarget}
+            ariaLabel="Gegen wen"
+            placeholder="Charakter suchen …"
+            emptyOption="Niemanden – nur für dich"
             className="rounded-md border border-line bg-app px-3 py-2 text-fg outline-none focus:border-accent"
-          >
-            <option value="">Niemanden – nur für dich</option>
-            {targets.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            options={targets.map((c) => ({ value: c.id, label: c.name, avatar: true, avatarUrl: c.avatar_url }))}
+          />
         </label>
       )}
 

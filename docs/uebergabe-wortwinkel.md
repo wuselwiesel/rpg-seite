@@ -919,3 +919,6 @@ Der ChaBo zeigt das Charakterbild (`characters.avatar_url`), solange der Bogen k
 
 ## Bloodlines-Orte (23. November, Daten, keine Code-Änderung)
 In der Welt Bloodlines wurden bei allen Orten „Stimmung“ (jetzt Feld im Steckbrief) und „Besonderheiten“ (jetzt Abschnitt im Artikel) vertauscht; die alten Stände liegen im Seitenverlauf. Die Felddefinition der Art „Ort“ blieb unverändert.
+
+## Auswahl mit Suche (24. November)
+Neue Komponente `components/search-select.tsx` (`SearchSelect`): Ersatz für `<select>` mit Suchfeld in der Liste (Pfeiltasten, Enter, Esc; mit `name` als verstecktes Feld, auch für GET-Formulare; `emptyOption` für „nichts gewählt“, `group` für Zwischenüberschriften). Eingebaut überall, wo man einen Charakter aus einer Liste wählt: Besetzung verknüpfen, Chat-Mitglied hinzufügen, Partner:in/beste:r Freund:in, Beziehungen, Badge verleihen, Schicksal, Würfelverlauf, „Danach dran“, „Gegen wen“, Chat-Blase „Als“, ChaBo-Wechsler. Nicht umgestellt: Personen-Listen („Person auswählen“ in Rollen/NPC-Rollen). Der Weltenwechsler („Du spielst“, `who-switcher.tsx`) bricht die Welten jetzt um statt seitlich zu scrollen (vorher waren ab der dritten Welt keine mehr erreichbar). E2E `npc-form` auf die versteckten Felder angepasst.

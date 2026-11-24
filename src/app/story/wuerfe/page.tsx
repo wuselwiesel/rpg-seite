@@ -6,6 +6,7 @@ import { getActiveWorld } from "@/lib/worlds";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { formatDateTime } from "@/lib/format";
 import { RollRow } from "./roll-row";
+import { SearchSelect } from "@/components/search-select";
 
 export const metadata = { title: "Würfelverlauf" };
 
@@ -97,14 +98,9 @@ export default async function RollHistoryPage({ searchParams }: PageProps<"/stor
       </div>
 
       <form method="get" action="/story/wuerfe" className="mb-5 flex flex-wrap items-center gap-2">
-        <select name="charakter" defaultValue={who} aria-label="Charakter" className={field}>
-          <option value="">Alle Charaktere</option>
-          {(characters ?? []).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <div className="min-w-[12rem]">
+          <SearchSelect name="charakter" defaultValue={who} ariaLabel="Charakter" placeholder="Charakter suchen …" emptyOption="Alle Charaktere" className={field} options={(characters ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+        </div>
         <select name="ergebnis" defaultValue={result} aria-label="Ergebnis" className={field}>
           <option value="">Alle Ergebnisse</option>
           <option value="erfolg">Erfolge</option>

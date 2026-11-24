@@ -5,6 +5,7 @@ import { ArrowLeftRight, Eye, EyeOff } from "lucide-react";
 import { FAMILY_ROLES, REL_CATEGORIES, categoryInfo, guessRelation } from "@/lib/relationships";
 import { useAllowSecrets } from "@/components/world-secrets-context";
 import type { Character, CharacterRelationship, RelationshipCategory } from "@/lib/types";
+import { SearchSelect } from "@/components/search-select";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-fg outline-none focus:border-accent";
 const DIRECTIONAL = new Set(["eltern", "adoptiv"]);
@@ -82,13 +83,7 @@ export function RelationshipFields({
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex min-w-[9rem] flex-1 flex-col gap-1 text-sm text-fg-soft">
             {directional ? "Elternteil" : "Figur"}
-            <select name="character_a_id" value={aId} onChange={(e) => setAId(e.target.value)} required className={field}>
-              {characters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect name="character_a_id" value={aId} onChange={setAId} ariaLabel={directional ? "Elternteil" : "Erste Figur"} placeholder="Charakter suchen …" className={field} options={characters.map((c) => ({ value: c.id, label: c.name, avatar: true, avatarUrl: c.avatar_url }))} />
           </label>
           <button
             type="button"
@@ -101,13 +96,7 @@ export function RelationshipFields({
           </button>
           <label className="flex min-w-[9rem] flex-1 flex-col gap-1 text-sm text-fg-soft">
             {directional ? "Kind" : "Figur"}
-            <select name="character_b_id" value={bId} onChange={(e) => setBId(e.target.value)} required className={field}>
-              {characters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect name="character_b_id" value={bId} onChange={setBId} ariaLabel={directional ? "Kind" : "Zweite Figur"} placeholder="Charakter suchen …" className={field} options={characters.map((c) => ({ value: c.id, label: c.name, avatar: true, avatarUrl: c.avatar_url }))} />
           </label>
         </div>
       )}

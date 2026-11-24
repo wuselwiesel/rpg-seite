@@ -30,6 +30,7 @@ import { useIsDark } from "@/lib/use-dark";
 import { keepScrollAnchor } from "@/lib/keep-scroll";
 import type { Character, Message } from "@/lib/types";
 import { UPLOAD_CACHE } from "@/lib/upload-cache";
+import { SearchSelect } from "@/components/search-select";
 
 const OLDER_PAGE = 100;
 
@@ -771,17 +772,15 @@ export function ChatRoom({
       {showAddForm && (
         <form action={addFormAction} className="flex flex-col gap-2 border-b border-line py-3">
           <div className="flex items-center gap-2">
-            <select
-              name="character_id"
-              required
-              className="flex-1 rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
-            >
-              {availableCharacters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div className="min-w-0 flex-1">
+              <SearchSelect
+                name="character_id"
+                ariaLabel="Charakter hinzufügen"
+                placeholder="Charakter suchen …"
+                className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+                options={availableCharacters.map((c) => ({ value: c.id, label: c.name, avatar: true, avatarUrl: c.avatar_url }))}
+              />
+            </div>
             <button
               type="submit"
               disabled={addPending}

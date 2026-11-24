@@ -12,6 +12,7 @@ import { chatTime, messagePreview } from "@/lib/chat-preview";
 import { NameBadge } from "@/components/name-badge";
 import { CharacterAvatar } from "./character-avatar";
 import { AccountMiniRoom, RpMiniRoom } from "./bubble-rooms";
+import { SearchSelect } from "@/components/search-select";
 
 export const BUBBLE_ENABLED_KEY = "wortwinkel:chat-bubble";
 export const BUBBLE_CHANGE_EVENT = "wortwinkel:chat-bubble-change";
@@ -486,18 +487,16 @@ function BubbleInner({
                   <label htmlFor="bubble-character" className="shrink-0 text-xs text-muted">
                     Als
                   </label>
-                  <select
-                    id="bubble-character"
-                    value={data.activeCharacterId ?? ""}
-                    onChange={(e) => chooseCharacter(e.target.value)}
-                    className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
-                  >
-                    {data.characters.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="min-w-0 flex-1">
+                    <SearchSelect
+                      value={data.activeCharacterId ?? ""}
+                      onChange={chooseCharacter}
+                      ariaLabel="Schreiben als"
+                      placeholder="Charakter suchen …"
+                      className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-fg outline-none focus:border-accent"
+                      options={data.characters.map((c) => ({ value: c.id, label: c.name }))}
+                    />
+                  </div>
                 </div>
               )}
               <div className="flex-1 overflow-y-auto px-1 pb-2">
