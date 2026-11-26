@@ -321,7 +321,7 @@ export function StoryEntryItem({
         }}
         className={`group min-w-0 flex-1 scroll-mt-24 rounded-lg ${bundled && bundled.length > 1 ? "rounded-b-none" : ""} border bg-surface px-4 py-2 ${selectedForClip ? "ring-2 ring-accent" : ""} ${clipSelection?.picking ? "cursor-pointer select-none" : ""} ${markedEvent ? "border-accent/50 border-l-[3px] border-l-accent" : "border-line"}`}
       >
-        <div className="mb-1 flex items-baseline justify-between gap-2">
+        <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
             {isNarrator ? (
               <p className="whitespace-nowrap text-sm font-medium text-fg">Erzähler:in</p>
@@ -336,7 +336,7 @@ export function StoryEntryItem({
             </p>
           </div>
           {!editing && (
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="ml-auto flex shrink-0 items-center gap-1">
               {!isRoll && (
                 <button
                   type="button"
