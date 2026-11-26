@@ -34,6 +34,7 @@
     </section>
 
     <section class="panel" aria-label="Einstellungen">
+      <label class="art" for="article">Was verkaufst du? <select id="article"></select></label>
       <div class="tabs" role="tablist" id="tabs">
         <button role="tab" type="button" data-tab="foto" aria-selected="true">Foto</button>
         <button role="tab" type="button" data-tab="stil" aria-selected="false">Stil</button>
@@ -86,10 +87,10 @@
           <h2>Text</h2>
           <div class="fields">
             <label class="full" for="title">Titel <input type="text" id="title" maxlength="50"></label>
-            <label for="size">Größe <input type="text" id="size" maxlength="14"></label>
+            <label for="size"><span id="sizeLabel">Größe</span> <input type="text" id="size" maxlength="24"></label>
             <label for="price">Preis in € <input type="text" id="price" maxlength="7" inputmode="decimal"></label>
             <div class="full chips" id="sizeChips" aria-label="Größe wählen"></div>
-            <label class="full" for="extra">Zusatz, zum Beispiel Marke oder Zustand <input type="text" id="extra" maxlength="24"></label>
+            <label class="full" for="extra"><span id="extraLabel">Marke oder Zustand</span> <input type="text" id="extra" maxlength="24"></label>
             <div class="full chips" id="condChips" aria-label="Zustand wählen"></div>
             <label class="full" for="shop">Shop-Name im Foto (optional) <input type="text" id="shop" maxlength="20"></label>
           </div>
@@ -97,7 +98,7 @@
       </div>
 
       <div class="tabpane" data-pane="aufkleber" hidden>
-        <div class="sec"><h2>Aufkleber hinzufügen</h2><div class="chips" id="stlib"></div><div class="chips" id="stemoji"></div></div>
+        <div class="sec"><h2>Aufkleber hinzufügen</h2><p class="hint left">Die umrandeten passen zu deiner Artikelart.</p><div class="chips" id="stlib"></div><div class="chips" id="stemoji"></div></div>
         <div class="sec">
           <h2>Gesetzte Aufkleber</h2>
           <div class="seg" id="stlist"></div>

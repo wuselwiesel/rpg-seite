@@ -34,7 +34,7 @@
     try {
       localStorage.setItem(KEY, JSON.stringify({
         format: s.format, style: s.style, collage: s.collage, font: s.font, col: s.col, t: s.t, g: s.g, radius: s.radius,
-        texts: s.texts,
+        texts: s.texts, article: s.article, byType: s.byType,
         stickers: s.stickers.map(function (k) { return { kind: k.kind, text: k.text, auto: k.auto, color: k.color, x: k.x, y: k.y, size: k.size, rot: k.rot }; })
       }));
     } catch (e) {}
@@ -51,6 +51,8 @@
       if (/^#[0-9a-f]{6}$/i.test(o.t)) s.t = o.t;
       if (/^#[0-9a-f]{6}$/i.test(o.g)) s.g = o.g;
       if (typeof o.radius === "number") s.radius = clamp(o.radius, 0, 90);
+      if (VB.ARTICLES.some(function (a) { return a.id === o.article; })) s.article = o.article;
+      if (o.byType && typeof o.byType === "object") Object.keys(o.byType).forEach(function (k) { var v = o.byType[k]; if (v && typeof v.size === "string" && typeof v.extra === "string") s.byType[k] = { size: v.size, extra: v.extra }; });
       if (o.texts) Object.keys(s.texts).forEach(function (k) { if (typeof o.texts[k] === "string") s.texts[k] = o.texts[k]; });
       if (Array.isArray(o.stickers)) {
         s.stickers = o.stickers.slice(0, 20).filter(function (k) { return k && typeof k.kind === "string"; }).map(function (k) {
@@ -224,15 +226,31 @@
     $(k).addEventListener("input", function () { s.texts[k] = this.value; render(); persist(); });
   });
   function buildChips() {
-    var box = $("sizeChips"); box.textContent = "";
-    ["XS", "S", "M", "L", "XL", "XXL", "One Size", "36", "38", "40", "42"].forEach(function (v) {
+    var a = VB.article(), box = $("sizeChips"); box.textContent = "";
+    $("sizeLabel").textContent = a.sizeLabel; $("size").placeholder = a.ph; $("title").placeholder = a.titlePh;
+    $("extraLabel").textContent = a.extraLabel;
+    box.hidden = a.sizes.length === 0;
+    a.sizes.forEach(function (v) {
       mkBtn(box, v, null, function () { s.texts.size = v; $("size").value = v; render(); persist(); });
     });
     box = $("condChips"); box.textContent = "";
-    ["Neu mit Etikett", "Neuwertig", "Sehr gut", "Gut"].forEach(function (v) {
+    a.conds.forEach(function (v) {
       mkBtn(box, v, null, function () { s.texts.extra = v; $("extra").value = v; render(); persist(); });
     });
   }
+  function buildArticles() {
+    var sel = $("article"); sel.textContent = "";
+    VB.ARTICLES.forEach(function (a) {
+      var o = document.createElement("option"); o.value = a.id; o.textContent = a.n; o.selected = a.id === s.article; sel.appendChild(o);
+    });
+  }
+  $("article").addEventListener("change", function () {
+    s.byType[s.article] = { size: s.texts.size, extra: s.texts.extra };
+    s.article = this.value;
+    var m = s.byType[s.article] || { size: "", extra: "" };
+    s.texts.size = m.size; s.texts.extra = m.extra; $("size").value = m.size; $("extra").value = m.extra;
+    buildChips(); buildLib(); render(); persist();
+  });
 
   /* Aufkleber */
   function selected() { for (var i = 0; i < s.stickers.length; i++) if (s.stickers[i].id === s.selSticker) return s.stickers[i]; return null; }
@@ -248,8 +266,11 @@
     s.selSticker = sid; buildCells(); syncSticker(); render(); persist();
   }
   function buildLib() {
-    var box = $("stlib"); box.textContent = "";
-    VB.STICKERS.forEach(function (d) { mkBtn(box, d.label, null, function () { addSticker(d); }); });
+    var box = $("stlib"), sug = VB.article().stk; box.textContent = "";
+    var first = sug.map(function (l) { return VB.STICKERS.filter(function (d) { return d.label === l; })[0]; }).filter(Boolean);
+    var rest = VB.STICKERS.filter(function (d) { return first.indexOf(d) < 0; });
+    first.forEach(function (d) { mkBtn(box, d.label, null, function () { addSticker(d); }, "sug"); });
+    rest.forEach(function (d) { mkBtn(box, d.label, null, function () { addSticker(d); }); });
     box = $("stemoji"); box.textContent = "";
     VB.EMOJIS.forEach(function (e) { mkBtn(box, e, null, function () { addSticker({ kind: "emoji", text: e }); }); });
   }
@@ -391,7 +412,7 @@
   restore();
   Object.keys(s.texts).forEach(function (k) { $(k).value = s.texts[k]; });
   $("ct").value = s.t; $("cg").value = s.g; $("radius").value = s.radius;
-  setSize(); buildFormats(); buildStyles(); buildFonts(); buildCols(); buildCollage(); buildCells(); buildChips(); buildLib();
+  buildArticles(); setSize(); buildFormats(); buildStyles(); buildFonts(); buildCols(); buildCollage(); buildCells(); buildChips(); buildLib();
   syncPhoto(); syncSticker(); updateStatus(); render();
   if (document.fonts && document.fonts.load) {
     Promise.all(VB.FONTS.map(function (f) { return document.fonts.load(f.css.replace("{s}", 60)); })

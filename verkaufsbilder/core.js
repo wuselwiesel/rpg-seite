@@ -48,7 +48,38 @@ window.VB = (function () {
     { label: "Vintage", text: "Vintage", kind: "etikett", color: "#f6efe4" },
     { label: "Unisex", text: "Unisex", kind: "pille", color: "#8fb8f0" },
     { label: "Nur Abholung", text: "Nur Abholung", kind: "pille", color: "#f4a6c1" },
-    { label: "Tausch", text: "Tausch möglich", kind: "kreis", color: "#2f8f6b" }
+    { label: "Tausch", text: "Tausch möglich", kind: "kreis", color: "#2f8f6b" },
+    { label: "Wie neu", text: "Wie neu", kind: "pille", color: "#2f8f6b" },
+    { label: "Mit OVP", text: "Mit OVP", kind: "pille", color: "#ffffff" },
+    { label: "Funktioniert", text: "Funktioniert", kind: "pille", color: "#2f8f6b" },
+    { label: "Set", text: "Set", kind: "kreis", color: "#ffd23f" },
+    { label: "Selten", text: "Selten", kind: "stern", color: "#f4a6c1" }
+  ];
+  var ARTICLES = [
+    { id: "kleidung", n: "Kleidung", sizeLabel: "Größe", ph: "z. B. M", titlePh: "z. B. Weisses Kleid", num: false,
+      sizes: ["XS", "S", "M", "L", "XL", "XXL", "One Size", "36", "38", "40", "42"], extraLabel: "Marke oder Zustand",
+      conds: ["Neu mit Etikett", "Neuwertig", "Sehr gut", "Gut"], stk: ["Preis", "NEU", "Mit Etikett", "Neuwertig", "Vintage", "Versand inkl.", "Unisex"] },
+    { id: "schuhe", n: "Schuhe", sizeLabel: "Schuhgröße", ph: "z. B. 38", titlePh: "z. B. Weisse Sneaker", num: true,
+      sizes: ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"], extraLabel: "Marke oder Zustand",
+      conds: ["Neu", "Neuwertig", "Sehr gut", "Getragen"], stk: ["Preis", "NEU", "Neuwertig", "Versand inkl.", "Unisex"] },
+    { id: "taschen", n: "Taschen & Accessoires", sizeLabel: "Größe", ph: "z. B. Klein", titlePh: "z. B. Lederhandtasche", num: false,
+      sizes: ["Mini", "Klein", "Mittel", "Groß", "One Size"], extraLabel: "Marke oder Zustand",
+      conds: ["Neu", "Neuwertig", "Sehr gut", "Gut"], stk: ["Preis", "NEU", "Vintage", "Neuwertig", "Versand inkl."] },
+    { id: "kinder", n: "Kinder", sizeLabel: "Größe", ph: "z. B. 98", titlePh: "z. B. Regenjacke", num: true,
+      sizes: ["50", "56", "62", "68", "74", "80", "86", "92", "98", "104", "110", "116", "122", "128", "134", "140"], extraLabel: "Marke oder Zustand",
+      conds: ["Neu mit Etikett", "Neuwertig", "Sehr gut", "Gut"], stk: ["Preis", "Neuwertig", "Set", "Versand inkl.", "Unisex"] },
+    { id: "buecher", n: "Bücher", sizeLabel: "Autor", ph: "Name des Autors", titlePh: "z. B. Der kleine Prinz", num: false,
+      sizes: [], extraLabel: "Zustand", conds: ["Wie neu", "Sehr gut", "Gut", "Gebraucht"], stk: ["Preis", "Wie neu", "Set", "Selten", "Versand inkl."] },
+    { id: "technik", n: "Technik", sizeLabel: "Modell oder Speicher", ph: "z. B. 128 GB", titlePh: "z. B. iPhone 12", num: false,
+      sizes: ["64 GB", "128 GB", "256 GB", "512 GB"], extraLabel: "Zustand oder Marke",
+      conds: ["Neu", "Wie neu", "Gut", "Funktioniert"], stk: ["Preis", "Wie neu", "Mit OVP", "Funktioniert", "Versand inkl."] },
+    { id: "moebel", n: "Möbel & Deko", sizeLabel: "Maße", ph: "z. B. 80 × 120 cm", titlePh: "z. B. Holztisch", num: false,
+      sizes: [], extraLabel: "Zustand", conds: ["Neuwertig", "Gut", "Gebrauchsspuren", "Selbstabholung"], stk: ["Preis", "Nur Abholung", "VB", "Vintage", "Selten"] },
+    { id: "spielzeug", n: "Spielzeug", sizeLabel: "Alter", ph: "z. B. ab 3 Jahren", titlePh: "z. B. Holzeisenbahn", num: false,
+      sizes: ["ab 0 J.", "ab 3 J.", "ab 6 J.", "ab 10 J."], extraLabel: "Zustand oder Marke",
+      conds: ["Neu", "Wie neu", "Gut", "Vollständig"], stk: ["Preis", "Wie neu", "Set", "Mit OVP", "Versand inkl."] },
+    { id: "sonstiges", n: "Sonstiges", sizeLabel: "Info", ph: "z. B. 30 cm", titlePh: "z. B. Kerzenhalter", num: false,
+      sizes: [], extraLabel: "Zustand oder Marke", conds: ["Neu", "Neuwertig", "Gut", "Gebraucht"], stk: ["Preis", "NEU", "VB", "Tausch", "Versand inkl."] }
   ];
   var EMOJIS = ["❤️", "⭐", "🔥", "✨", "🌿", "🎀", "🛍️", "💚"];
 
@@ -56,8 +87,17 @@ window.VB = (function () {
     format: "4x5", style: "tise", collage: "1", font: 2, col: 1, t: "#f6efe4", g: "#000000", radius: 48,
     photos: [null, null, null, null], sel: 0,
     stickers: [], selSticker: null,
+    article: "kleidung", byType: {},
     texts: { title: "Weisses Kleid", size: "L", price: "15", extra: "", shop: "" }
   };
+
+  function article() { for (var i = 0; i < ARTICLES.length; i++) if (ARTICLES[i].id === s.article) return ARTICLES[i]; return ARTICLES[0]; }
+  /* Untertitel je nach Artikelart: bei Schuhen und Kindergrößen wird aus "38" ein "Gr. 38" */
+  function subtitle() {
+    var T = s.texts, a = article(), sz = T.size.trim(), pr = T.price.trim(), ex = T.extra.trim();
+    if (sz && a.num && /^\d+([.,]\d)?$/.test(sz)) sz = "Gr. " + sz;
+    return [sz, pr && pr + " €", ex].filter(Boolean).join(" · ");
+  }
 
   function H() { for (var i = 0; i < FORMATS.length; i++) if (FORMATS[i][0] === s.format) return FORMATS[i][2]; return 1350; }
   function hexRgb(h) { return [1, 3, 5].map(function (i) { return parseInt(h.slice(i, i + 2), 16); }); }
@@ -74,7 +114,7 @@ window.VB = (function () {
 
   return {
     W: W, H: H, FORMATS: FORMATS, STYLES: STYLES, COLLAGES: COLLAGES, COLL_N: COLL_N, FONTS: FONTS, COLS: COLS,
-    STK_COLORS: STK_COLORS, STK_KINDS: STK_KINDS, STICKERS: STICKERS, EMOJIS: EMOJIS, s: s,
+    STK_COLORS: STK_COLORS, STK_KINDS: STK_KINDS, STICKERS: STICKERS, ARTICLES: ARTICLES, article: article, subtitle: subtitle, EMOJIS: EMOJIS, s: s,
     hexRgb: hexRgb, rgbHex: rgbHex, rgba: rgba, mix: mix, lum: lum, fontStr: fontStr,
     nCells: nCells, anyPhoto: anyPhoto, missing: missing, ready: ready, colNone: colNone
   };

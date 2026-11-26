@@ -164,7 +164,7 @@
     o = o || {};
     var H = VB.H(), st = s.style, none = VB.colNone(), T = s.texts;
     var safeB = H > 1500 ? 230 : 0, safeT = H > 1500 ? 120 : 0;
-    var title = T.title.trim(), sub = [T.size.trim(), T.price.trim() && T.price.trim() + " €", T.extra.trim()].filter(Boolean).join(" · ");
+    var title = T.title.trim(), sub = VB.subtitle();
     var area, shape, gap = st === "tise" ? 6 : 10, bgFill = "#ffffff", textInk = s.t;
     g.clearRect(0, 0, W, H);
 
