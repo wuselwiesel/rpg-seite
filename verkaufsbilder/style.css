@@ -21,7 +21,7 @@ h1 { font-family: var(--font-display); font-weight: 800; font-size: 1.9rem; line
 .stage { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 12px; }
 @media (max-width: 800px) { .stage { position: static; max-width: 400px; width: 100%; margin: 0 auto; } }
 canvas#cv {
-  width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: 9% / 7.2%; display: block; background: #222;
+  width: 100%; height: auto; border-radius: 18px; display: block; background: #222; margin: 0 auto;
   box-shadow: 0 8px 30px rgba(0,0,0,.22); cursor: grab; touch-action: none;
 }
 canvas#cv.drag { cursor: grabbing; }
@@ -77,3 +77,24 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   max-width: calc(100% - 32px);
 }
 [hidden] { display: none !important; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -4px -4px 0; overflow-x: auto; }
+.tabs button {
+  font: inherit; font-weight: 600; color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent;
+  padding: 10px 14px; cursor: pointer; white-space: nowrap; min-height: 46px;
+}
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tabpane { display: grid; gap: 22px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn.small { font-size: .9rem; padding: 8px 14px; min-height: 40px; border-radius: 999px; }
+.btn.danger { color: #c0392b; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button {
+  font: inherit; font-size: .85rem; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 12px; cursor: pointer; min-height: 36px;
+}
+.chips button:hover { border-color: var(--accent); }
+.seg.icons button { padding: 8px 12px; display: grid; place-items: center; }
+.seg.icons svg { display: block; width: 24px; height: 30px; }
+.seg button.filled::after { content: " ✓"; color: var(--accent); }
+.hint.left { text-align: left; }
