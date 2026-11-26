@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const NAMES = ["active_character_id", "active_world_id"];
+const NAMES = ["active_character_id", "active_world_id", "last_characters"];
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 // Schreibt die Auswahl von Welt und Charakter beim App-Start als dauerhaftes Cookie neu. Ältere

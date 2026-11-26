@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveWorld } from "@/lib/worlds";
 import { worldOfLink } from "@/lib/link-world";
 import { ACTIVE_CHARACTER_COOKIE, ACTIVE_WORLD_COOKIE, SELECTION_COOKIE_OPTIONS } from "@/lib/types";
-import { LAST_CHARACTERS_COOKIE, lastCharacterFor } from "@/lib/last-characters";
+import { LAST_CHARACTERS_COOKIE } from "@/lib/last-characters";
+import { resolveLastCharacter } from "@/lib/last-characters-server";
 import { appUrl } from "@/lib/app-url";
 
 // Wechselt zur Welt, zu der der Link gehört (z. B. aus einer Benachrichtigung), und leitet dann weiter.
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
   if (active?.id !== worldId) {
     response.cookies.set(ACTIVE_WORLD_COOKIE, worldId, SELECTION_COOKIE_OPTIONS);
     // Den Charakter wieder aktiv setzen, den man in dieser Welt zuletzt hatte
-    const last = lastCharacterFor(request.cookies.get(LAST_CHARACTERS_COOKIE)?.value, worldId);
+    const last = await resolveLastCharacter(supabase, user.id, worldId, request.cookies.get(LAST_CHARACTERS_COOKIE)?.value);
     if (last) response.cookies.set(ACTIVE_CHARACTER_COOKIE, last, SELECTION_COOKIE_OPTIONS);
     else response.cookies.delete(ACTIVE_CHARACTER_COOKIE);
   }

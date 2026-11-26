@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CharacterAvatar } from "@/components/character-avatar";
 import { alertDialog } from "@/components/confirm-dialog";
 import { decideCharacterClaim, offerCharacter, requestCharacter, setCharacterClaimable, withdrawCharacterClaim } from "@/app/characters/claim-actions";
+import { SearchSelect } from "@/components/search-select";
 
 export type RoleCard = {
   id: string;
@@ -178,19 +179,22 @@ export function RolesPanel({
                       className="mt-3 flex flex-col gap-2 border-t border-line pt-3"
                       onSubmit={(e) => {
                         e.preventDefault();
-                        if (canManage(r)) run(() => offerCharacter(r.id, target, message));
+                        if (canManage(r)) {
+                          if (target) run(() => offerCharacter(r.id, target, message));
+                        }
                         else run(() => requestCharacter(r.id, message));
                       }}
                     >
                       {canManage(r) && (
-                        <select value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Person auswählen" required className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
-                          <option value="">Person auswählen …</option>
-                          {members.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchSelect
+                          value={target}
+                          onChange={setTarget}
+                          ariaLabel="Person auswählen"
+                          placeholder="Person suchen …"
+                          emptyOption="Person auswählen …"
+                          className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+                          options={members.map((m) => ({ value: m.id, label: m.name }))}
+                        />
                       )}
                       <textarea
                         value={message}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { alertDialog } from "@/components/confirm-dialog";
 import { offerCharacter, requestCharacter, setCharacterClaimable, withdrawCharacterClaim } from "./claim-actions";
+import { SearchSelect } from "@/components/search-select";
 
 const primary = "rounded-full bg-accent-strong px-3 py-1 text-sm font-medium text-on-accent-strong transition hover:opacity-90 disabled:opacity-50";
 const quiet = "rounded-full border border-line px-3 py-1 text-sm font-medium text-fg-soft transition hover:border-accent hover:text-accent disabled:opacity-50";
@@ -121,17 +122,18 @@ export function NpcRoleActions({
           className="flex flex-col gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            run(() => offerCharacter(characterId, target, message));
+            if (target) run(() => offerCharacter(characterId, target, message));
           }}
         >
-          <select value={target} onChange={(e) => setTarget(e.target.value)} required aria-label="Person auswählen" className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent">
-            <option value="">Person auswählen …</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            value={target}
+            onChange={setTarget}
+            ariaLabel="Person auswählen"
+            placeholder="Person suchen …"
+            emptyOption="Person auswählen …"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent"
+            options={members.map((m) => ({ value: m.id, label: m.name }))}
+          />
           <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} rows={2} placeholder="Nachricht (optional)" className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-accent" />
           <div className="flex gap-2">
             <button type="submit" disabled={pending || !target} className={primary}>
