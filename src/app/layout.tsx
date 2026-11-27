@@ -86,6 +86,7 @@ import { AppLogoSync } from "@/components/app-logo-sync";
 import { UpdateNotice } from "@/components/update-notice";
 import { SelectionCookieKeeper } from "@/components/selection-cookie-keeper";
 import { ThemeColorSync } from "@/components/theme-color-sync";
+import { ThemeKeeper } from "@/components/theme-keeper";
 import { CustomEmojiProvider } from "@/components/custom-emoji-provider";
 import { getEmojiMap } from "@/lib/custom-emoji-server";
 import { getAccountDefaultFont } from "@/lib/default-font-server";
@@ -351,6 +352,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <UpdateNotice />
         <SelectionCookieKeeper />
         <ThemeColorSync />
+        <ThemeKeeper />
         <DefaultFontSync loggedIn={accountFont.loggedIn} accountFontId={accountFont.fontId} />
         <ServiceWorkerRegister />
         <PushSync />

@@ -4,8 +4,10 @@ import { applyAppLogo, getStoredLogoId } from "@/lib/app-logos";
 import { useState, useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 
-function subscribe() {
-  return () => {};
+function subscribe(callback: () => void) {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
 }
 
 function getSnapshot() {
