@@ -94,6 +94,53 @@ export async function saveSessionRating(
   return null;
 }
 
+// Eigene Bewertung der ganzen Szene speichern (nur bei abgeschlossener Szene, nur Mitspielende, nur einmal)
+export async function saveSceneRating(
+  storyPostId: string,
+  input: { stars: number; liked?: string; disliked?: string },
+): Promise<string | null> {
+  const stars = clampStars(input.stars);
+  if (!stars) return "Bitte 1 bis 5 Sterne wählen.";
+  if (!/^[0-9a-f-]{36}$/i.test(storyPostId)) return "Szene nicht gefunden.";
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Nicht angemeldet.";
+
+  const { data: post } = await supabase.from("story_posts").select("world_id, character_id, locked").eq("id", storyPostId).maybeSingle<{ world_id: string; character_id: string; locked: boolean }>();
+  if (!post) return "Szene nicht gefunden.";
+  if (!post.locked) return "Die Szene ist noch nicht abgeschlossen.";
+
+  // Mitspielen heißt: eigener Charakter ist Autor:in, hat geschrieben oder ist „mit dabei“
+  const { data: own } = await supabase.from("characters").select("id").eq("owner_id", user.id).eq("world_id", post.world_id);
+  const ownIds = (own ?? []).map((c) => c.id as string);
+  if (ownIds.length === 0) return "Nur Mitspielende können die Szene bewerten.";
+  const [{ data: wrote }, { data: cast }] = await Promise.all([
+    supabase.from("story_entries").select("id").eq("story_post_id", storyPostId).in("character_id", ownIds).limit(1),
+    supabase.from("story_post_cast").select("character_id").eq("story_post_id", storyPostId).in("character_id", ownIds).limit(1),
+  ]);
+  if (!ownIds.includes(post.character_id) && !wrote?.length && !cast?.length) return "Nur Mitspielende können die Szene bewerten.";
+
+  const { data: existing } = await supabase.from("scene_ratings").select("user_id").eq("story_post_id", storyPostId).eq("user_id", user.id).maybeSingle();
+  if (existing) return "Du hast diese Szene bereits bewertet.";
+
+  const character = await getActiveCharacter(user.id, post.world_id);
+  const { error } = await supabase.from("scene_ratings").insert({
+    story_post_id: storyPostId,
+    user_id: user.id,
+    character_id: character?.id ?? null,
+    stars,
+    liked: cleanSessionText(input.liked),
+    disliked: cleanSessionText(input.disliked),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) return "Die Bewertung konnte nicht gespeichert werden.";
+  revalidatePath(`/story/${storyPostId}`);
+  return null;
+}
+
 // Rückblick von Hand in der Redaktion posten (im eigenen Namen; nur Mitspielende, nicht bei geheimen Szenen, einmal je Session)
 export async function postSessionToRedaktion(sessionId: string, storyPostId: string): Promise<{ ok: true; postId: string } | { ok: false; message: string }> {
   if (!/^[0-9a-f-]{36}$/i.test(sessionId)) return { ok: false, message: "Session nicht gefunden." };

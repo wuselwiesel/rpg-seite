@@ -42,9 +42,10 @@ import { StoryPostBody } from "./story-post-body";
 import { TurnBanner } from "./turn-banner";
 import { SceneNotice } from "./scene-notice";
 import { SceneSessions } from "./scene-sessions";
+import { SceneRating } from "./scene-rating";
 import { ChapterOne } from "./chapter-one";
 import { CHAPTER_ONE_ANCHOR, chapterAnchor, chapterNumber, chapterOneTitle } from "@/lib/chapters";
-import { normalizeStats, type SceneSession } from "@/lib/scene-session";
+import { normalizeStats, type SceneSession, type SessionRating } from "@/lib/scene-session";
 import { SceneRecap } from "./scene-recap";
 import { SceneChain } from "./scene-chain";
 import { SceneMarkFlag } from "./scene-mark-flag";
@@ -354,6 +355,19 @@ export default async function StoryPostDetailPage({
         ratings: s.scene_session_ratings.map((r) => ({ userId: r.user_id, accountName: profileMap.get(r.user_id) ?? null, stars: r.stars, liked: r.liked, disliked: r.disliked })),
         redaktionPostId: s.redaktion_post_id,
       }));
+  // Bewertung der ganzen Szene (nur bei abgeschlossener Szene sichtbar); fehlt die Tabelle noch, bleibt der Bereich weg
+  const { data: sceneRatingRows, error: sceneRatingsError } = await supabase
+    .from("scene_ratings")
+    .select("user_id, stars, liked, disliked")
+    .eq("story_post_id", id)
+    .order("created_at")
+    .returns<{ user_id: string; stars: number; liked: string | null; disliked: string | null }[]>();
+  const sceneRatingNames = new Map<string, string>();
+  if (!sceneRatingsError && (sceneRatingRows ?? []).length > 0) {
+    const { data: ratingProfiles } = await supabase.from("profiles").select("id, username, nickname").in("id", sceneRatingRows!.map((r) => r.user_id));
+    for (const p of ratingProfiles ?? []) sceneRatingNames.set(p.id as string, (p.nickname as string | null) || (p.username as string));
+  }
+  const sceneRatings: SessionRating[] = (sceneRatingRows ?? []).map((r) => ({ userId: r.user_id, accountName: sceneRatingNames.get(r.user_id) ?? null, stars: r.stars, liked: r.liked, disliked: r.disliked }));
   const isParticipant = [storyPost.character_id, ...participantIds, ...cast.map((c) => c.id)].some((cid) => myCharacterIds.has(cid));
   // Von Hand gewählter Anfang der nächsten Session; gilt nur, solange er nach dem Ende der letzten Session liegt
   const lastSessionEnd = sceneSessions[0]?.endedAt ?? null;
@@ -647,6 +661,10 @@ export default async function StoryPostDetailPage({
             ))}
           </ul>
         </section>
+      )}
+
+      {storyPost.locked && !sceneRatingsError && (
+        <SceneRating storyPostId={storyPost.id} ratings={sceneRatings} selfId={user.id} canRate={isParticipant} />
       )}
 
       {storyPost.locked ? (

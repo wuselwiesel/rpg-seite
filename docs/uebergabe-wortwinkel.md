@@ -931,3 +931,6 @@ Im Notizbuch (Liste links) steht oben eine Weltauswahl (`SearchSelect`, nur bei 
 
 ## Hell/Dunkel bleibt beim Weltwechsel (27. November)
 Der Weltwechsel lädt die Seitenstruktur neu; React schrieb dabei die Klasse des `<html>` aus dem Server-Stand neu und löschte `dark` (gespeichert war es im Browser korrekt). `components/theme-keeper.tsx` (`ThemeKeeper`, im Root-Layout) stellt Hell/Dunkel (`localStorage.theme`, sonst Geräteeinstellung) und Palette (`localStorage.palette`) sofort wieder her, sobald Klasse oder Palette-Attribut des `<html>` sich ändern. Der Mond/Sonne-Knopf (`theme-toggle.tsx`) hört jetzt ebenfalls auf Klassenänderungen, damit Symbol und Beschriftung stimmen.
+
+## Szene bewerten (27. November)
+Ist eine Szene abgeschlossen (`story_posts.locked`), erscheint unten der Kasten „Bewertung der Szene“ (`app/story/[id]/scene-rating.tsx`): Mitspielende (Autor:in, Schreibende, „mit dabei“) vergeben einmal 1–5 Sterne plus „Gefiel“/„Weniger“; alle, die die Szene sehen, sehen Durchschnitt und Rückmeldungen. Neue Tabelle `scene_ratings` (`supabase/migration_scene_ratings.sql`, am 27.11. eingespielt; Einfügen nur bei abgeschlossener Szene). Server-Aktion `saveSceneRating` in `story/session-actions.ts` prüft Abschluss, Mitspielen und „nur einmal“. Fehlt die Tabelle, bleibt der Kasten einfach weg. Unabhängig von den Session-Bewertungen („Session beenden“).
