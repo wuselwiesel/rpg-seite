@@ -5,11 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
 import { setActiveCharacter } from "@/app/characters/actions";
 import { CharacterAvatar } from "@/components/character-avatar";
+import { UnreadBadge } from "@/components/unread-provider";
+import { useUnreadChatIds } from "@/lib/use-unread-chats";
 
 type Own = { id: string; name: string; username: string | null; avatar_url: string | null };
 
 // Kopf der Chatliste: Name der aktiven Figur; mit mehreren eigenen Figuren öffnet ein Tipp darauf die Auswahl, danach zeigt die Liste deren Nachrichten.
-export function ChatOwnerSwitch({ characters, activeId, subtitle, unread = {} }: { characters: Own[]; activeId: string; subtitle: string; unread?: Record<string, number> }) {
+export function ChatOwnerSwitch({ userId, characters, activeId, subtitle, unread: initialUnread = {} }: { userId: string; characters: Own[]; activeId: string; subtitle: string; unread?: Record<string, number> }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -17,8 +19,10 @@ export function ChatOwnerSwitch({ characters, activeId, subtitle, unread = {} }:
   const ref = useRef<HTMLDivElement>(null);
   const active = characters.find((c) => c.id === activeId);
   const title = active?.username ?? active?.name ?? "";
-  // Wartet bei einer anderen eigenen Figur etwas, zeigt ein Punkt am Namen, dass es sich lohnt zu wechseln
-  const othersWaiting = characters.some((c) => c.id !== activeId && (unread[c.id] ?? 0) > 0);
+  // Live: Zahl je Figur (die Chatliste selbst lädt erst beim Seitenwechsel neu)
+  const { perCharacter: unread } = useUnreadChatIds(userId, characters.map((c) => c.id), {}, activeId, initialUnread);
+  // Wartet bei anderen eigenen Figuren etwas, zeigt eine Zahl am Namen, dass es sich lohnt zu wechseln
+  const othersWaiting = characters.filter((c) => c.id !== activeId).reduce((n, c) => n + (unread[c.id] ?? 0), 0);
 
   useEffect(() => {
     if (!open) return;
@@ -43,10 +47,10 @@ export function ChatOwnerSwitch({ characters, activeId, subtitle, unread = {} }:
 
   return (
     <div ref={ref} className="relative min-w-0">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Charakter wechseln" className="flex max-w-full items-center gap-1.5 text-left">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label={othersWaiting > 0 ? `Charakter wechseln, bei anderen Charakteren ${othersWaiting} ungelesen` : "Charakter wechseln"} className="flex max-w-full items-center gap-1.5 text-left">
         <h1 className="truncate font-serif text-2xl text-fg">{title}</h1>
         <ChevronDown className={`h-5 w-5 shrink-0 text-muted transition ${open ? "rotate-180" : ""}`} strokeWidth={2} />
-        {othersWaiting && <span aria-label="Bei einem anderen Charakter warten Nachrichten" className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />}
+        <UnreadBadge count={othersWaiting} />
       </button>
       <p className="truncate text-xs text-muted">{subtitle}</p>
       {open && (
@@ -71,11 +75,7 @@ export function ChatOwnerSwitch({ characters, activeId, subtitle, unread = {} }:
               >
                 <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={32} />
                 <span className="min-w-0 flex-1 truncate">{c.username ?? c.name}</span>
-                {(unread[c.id] ?? 0) > 0 && (
-                  <span aria-label={`${unread[c.id]} ungelesen`} className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent-strong px-1.5 text-xs font-medium text-on-accent-strong">
-                    {unread[c.id]}
-                  </span>
-                )}
+                <UnreadBadge count={unread[c.id] ?? 0} />
                 {c.id === activeId && <Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />}
               </button>
             </li>

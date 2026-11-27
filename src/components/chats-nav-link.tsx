@@ -3,20 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
-import { useUnreadChatIds } from "@/lib/use-unread-chats";
+import { useUnread } from "./unread-provider";
 
-export function ChatsNavLink({
-  userId,
-  myCharacterIds,
-  initialUnreadCounts,
-  activeCharacterId,
-}: {
-  userId: string;
-  myCharacterIds: string[];
-  initialUnreadCounts: Record<string, number>;
-  activeCharacterId?: string | null;
-}) {
-  const unread = useUnreadChatIds(userId, myCharacterIds, initialUnreadCounts, activeCharacterId);
+export function ChatsNavLink() {
+  const { allTotal } = useUnread();
   const pathname = usePathname();
   const isActive = pathname === "/chats" || pathname?.startsWith("/chats/");
 
@@ -29,13 +19,14 @@ export function ChatsNavLink({
     >
       <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
       Chats
-      {unread.total > 0 && (
+      {allTotal > 0 && (
         <span
+          aria-label={`${allTotal} ungelesen`}
           className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold ${
             isActive ? "bg-on-accent-strong text-accent-strong" : "bg-accent-strong text-on-accent-strong"
           }`}
         >
-          {unread.total > 99 ? "99+" : unread.total}
+          {allTotal > 99 ? "99+" : allTotal}
         </span>
       )}
     </Link>

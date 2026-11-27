@@ -224,7 +224,9 @@ export function NotificationBell({
                       {notificationTail(n.actor_count, n.message)}
                     </span>
                     {n.recipient_name && (
-                      <span className="mt-0.5 block text-xs text-muted">für {n.recipient_name}</span>
+                      <span className="mt-1 inline-flex max-w-full items-center truncate rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-fg-soft">
+                        für {n.recipient_name}
+                      </span>
                     )}
                     <span className="mt-0.5 block text-xs text-muted">{formatDateTime(n.created_at)}</span>
                   </span>

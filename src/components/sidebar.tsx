@@ -5,7 +5,8 @@ import { CircleHelp, Search, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOwnCharacters, getActiveCharacter, getAllOwnCharacters } from "@/lib/active-character";
 import { getUserWorlds, getActiveWorld } from "@/lib/worlds";
-import { getUnreadCounts } from "@/lib/chat-reads";
+import { getUnreadOverview } from "@/lib/chat-reads";
+import { UnreadProvider } from "./unread-provider";
 import { getWorldMembers } from "@/lib/world-members";
 import { SidebarOnline } from "./sidebar-online";
 import { getRecentNotifications, getUnreadNotificationCount } from "@/lib/notifications";
@@ -111,9 +112,9 @@ export async function Sidebar() {
     getAllOwnCharacters(user.id),
   ]);
 
-  const myCharacterIds = characters.map((c) => c.id);
-  // Wie in der Chatliste aus der Sicht des aktiven Charakters zählen.
-  const unreadCounts = await getUnreadCounts(user.id, myCharacterIds, activeCharacter?.id);
+  // Zählung über alle eigenen Figuren (auch anderer Welten); der Zähler am Chat-Reiter folgt der aktiven Figur wie die Chatliste
+  const allCharacterIds = allCharacters.map((c) => c.id);
+  const { forActive: unreadCounts, perCharacter: unreadPerCharacter } = await getUnreadOverview(user.id, allCharacterIds, activeCharacter?.id);
   // Besitzer:in oder Admin: darf die Welt bearbeiten
   const canManage = activeWorld.created_by === user.id || myMembership?.role === "admin";
   const appAdmin = await isAppAdmin();
@@ -122,7 +123,7 @@ export async function Sidebar() {
   const altAccount = await getAltAccountLabel();
 
   return (
-    <>
+    <UnreadProvider userId={user.id} characterIds={allCharacterIds} activeCharacterId={activeCharacter?.id ?? null} initialCounts={unreadCounts} initialPerCharacter={unreadPerCharacter}>
       <aside className="chrome hidden h-dvh w-72 shrink-0 flex-col border-r border-line px-5 py-5 lg:sticky lg:top-0 lg:z-40 lg:flex">
         <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
           <Link href="/" className="block shrink-0" aria-label="Wortwinkel">
@@ -156,9 +157,6 @@ export async function Sidebar() {
       </div>
 
       <SidebarNav
-        userId={user.id}
-        myCharacterIds={myCharacterIds}
-        unreadCounts={unreadCounts}
         activeCharacter={activeCharacter}
         characters={characters}
         ticketUnread={ticketUnread}
@@ -197,9 +195,7 @@ export async function Sidebar() {
       initialNotifications={initialNotifications}
       initialUnreadCount={initialUnreadCount}
       worldFilter={worldFilter}
-      myCharacterIds={myCharacterIds}
-      unreadCounts={unreadCounts}
     />
-    </>
+    </UnreadProvider>
   );
 }

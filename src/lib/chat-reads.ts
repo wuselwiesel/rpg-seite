@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { computeUnreadCounts, type ChatWithMessages } from "@/lib/unread-counts";
+import { computeUnreadCounts, computeUnreadPerCharacter, type ChatWithMessages } from "@/lib/unread-counts";
 
 // Ungelesen = neuere Nachricht als der letzte Lesezeitpunkt, die nicht von einem
 // eigenen Charakter kommt, der selbst nicht der Empfänger ist: Schreibt ein eigener
@@ -39,7 +39,7 @@ export async function getUnreadChatIds(
 export async function getUnreadOverview(
   userId: string,
   myCharacterIds: string[],
-  activeCharacterId: string,
+  activeCharacterId?: string,
 ): Promise<{ forActive: Record<string, number>; perCharacter: Record<string, number> }> {
   const supabase = await createClient();
   const [{ data: chats }, { data: reads }] = await Promise.all([
@@ -51,9 +51,6 @@ export async function getUnreadOverview(
       .returns<ChatWithMessages[]>(),
     supabase.from("chat_reads").select("chat_id, last_read_at").eq("user_id", userId),
   ]);
-  const perCharacter: Record<string, number> = {};
-  for (const id of myCharacterIds) {
-    perCharacter[id] = Object.values(computeUnreadCounts(chats ?? [], reads ?? [], myCharacterIds, id)).reduce((a, b) => a + b, 0);
-  }
+  const perCharacter = computeUnreadPerCharacter(chats ?? [], reads ?? [], myCharacterIds);
   return { forActive: computeUnreadCounts(chats ?? [], reads ?? [], myCharacterIds, activeCharacterId), perCharacter };
 }

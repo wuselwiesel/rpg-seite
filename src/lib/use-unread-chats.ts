@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { computeUnreadCounts, type ChatWithMessages } from "@/lib/unread-counts";
+import { computeUnreadCounts, computeUnreadPerCharacter, type ChatWithMessages } from "@/lib/unread-counts";
 
 // Anzahl ungelesener Nachrichten pro Chat, live über Realtime aktualisiert. Mit `forCharacterId` (dem aktiven
 // Charakter) wird wie in der Chatliste nur aus dessen Sicht gezählt; ohne Angabe aus der Sicht aller eigenen Charaktere.
@@ -12,8 +12,10 @@ export function useUnreadChatIds(
   myCharacterIds: string[],
   initialUnreadCounts: Record<string, number>,
   forCharacterId?: string | null,
+  initialPerCharacter: Record<string, number> = {},
 ) {
   const [counts, setCounts] = useState(initialUnreadCounts);
+  const [perCharacter, setPerCharacter] = useState(initialPerCharacter);
   const instanceId = useId();
   const pathname = usePathname();
   const idsKey = myCharacterIds.join(",");
@@ -40,7 +42,9 @@ export function useUnreadChatIds(
         supabase.from("chat_reads").select("chat_id, last_read_at").eq("user_id", userId),
       ]);
       if (cancelled || !chats) return;
-      setCounts(computeUnreadCounts(chats, reads ?? [], idsKey ? idsKey.split(",") : [], forCharacterId ?? undefined));
+      const ids = idsKey ? idsKey.split(",") : [];
+      setCounts(computeUnreadCounts(chats, reads ?? [], ids, forCharacterId ?? undefined));
+      setPerCharacter(computeUnreadPerCharacter(chats, reads ?? [], ids));
     }
     refetchRef.current = refetch;
     // Direkt nach dem Verlassen eines Chats ist der Lese-Zeitstempel evtl. noch nicht gespeichert.
@@ -93,6 +97,8 @@ export function useUnreadChatIds(
             delete next[row.chat_id];
             return next;
           });
+          // Die Zahlen je Figur ändern sich mit: neu zählen statt zu raten
+          refetchRef.current();
         },
       )
       .subscribe();
@@ -104,5 +110,7 @@ export function useUnreadChatIds(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  return { counts, total: Object.values(counts).reduce((sum, n) => sum + n, 0) };
+  const sum = (o: Record<string, number>) => Object.values(o).reduce((a, n) => a + n, 0);
+  // total: aus Sicht der aktiven Figur (wie die Chatliste); allTotal: alle eigenen Figuren zusammen
+  return { counts, total: sum(counts), perCharacter, allTotal: sum(perCharacter) };
 }

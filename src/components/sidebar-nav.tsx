@@ -16,16 +16,10 @@ const ICON = "h-[18px] w-[18px] shrink-0";
 
 // Einträge der Seitenleiste aus derselben Quelle wie die Handy-Leiste (lib/nav-model.ts), dazu „Notizen“ und „+ Erstellen“.
 export function SidebarNav({
-  userId,
-  myCharacterIds,
-  unreadCounts,
   activeCharacter,
   characters,
   ticketUnread = 0,
 }: {
-  userId: string;
-  myCharacterIds: string[];
-  unreadCounts: Record<string, number>;
   activeCharacter: Character | null;
   // Eigene Charaktere der aktiven Welt („Erstellen als“)
   characters: Character[];
@@ -47,7 +41,7 @@ export function SidebarNav({
               {chaboLabel(diceEnabled)}
             </NavLink>
           ) : item.badge === "chats" ? (
-            <ChatsNavLink key={item.id} userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
+            <ChatsNavLink key={item.id} />
           ) : (
             <NavLink
               key={item.id}
