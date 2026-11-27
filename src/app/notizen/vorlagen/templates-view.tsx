@@ -9,9 +9,11 @@ import { adoptBuiltinTemplate, createNoteFromTemplate, deleteNote } from "../act
 import { BUILTIN_TEMPLATES } from "@/lib/note-templates";
 import { noteSnippet, noteTitle, type NoteView } from "@/lib/notes";
 import { useNotebook } from "@/components/notebook-host";
+import { useNotesStore } from "../notes-store";
 
 export function TemplatesView({ templates: initial }: { templates: NoteView[] }) {
   const notebook = useNotebook();
+  const { world } = useNotesStore();
   const [templates, setTemplates] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -19,7 +21,7 @@ export function TemplatesView({ templates: initial }: { templates: NoteView[] })
   function fromTemplate(input: { templateId?: string; builtinId?: string }) {
     setError(null);
     start(async () => {
-      const r = await createNoteFromTemplate(input);
+      const r = await createNoteFromTemplate({ ...input, worldId: world === "all" ? null : world });
       if (r.error || !r.id) return setError(r.error ?? "Konnte nicht angelegt werden.");
       notebook.open({ noteId: r.id });
     });

@@ -27,7 +27,9 @@ type Store = {
   setScope: (s: Scope) => void;
   tag: string | null;
   setTag: (t: string | null) => void;
+  // „all“ oder die ID einer Welt (Notizen dieser Welt plus Notizen ohne Welt)
   world: string;
+  setWorld: (w: string) => void;
   sort: Sort;
   setSort: (s: Sort) => void;
   q: string;
@@ -123,8 +125,9 @@ export function NotesProvider({
   }
   const [scope, setScope] = useState<Scope>("all");
   const [tag, setTag] = useState<string | null>(null);
-  // Nur die aktive Welt (plus Notizen ohne Welt); ohne aktive Welt alle
-  const world = activeWorldId && worlds.some((w) => w.id === activeWorldId) ? activeWorldId : "all";
+  // Beim Öffnen die aktive Welt (plus Notizen ohne Welt), ohne aktive Welt alle; im Notizbuch frei wechselbar, ohne die Welt der App zu ändern
+  const [chosenWorld, setWorld] = useState<string>(activeWorldId ?? "all");
+  const world = chosenWorld === "all" || worlds.some((w) => w.id === chosenWorld) ? chosenWorld : "all";
   const [sort, setSortState] = useState<Sort>({ key: "updated", dir: "desc" });
   const [q, setQ] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -365,6 +368,11 @@ export function NotesProvider({
     tag,
     setTag,
     world,
+    setWorld: (w) => {
+      setWorld(w);
+      setSelected(new Set());
+      setTag(null);
+    },
     sort,
     setSort,
     q,

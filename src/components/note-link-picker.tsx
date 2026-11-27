@@ -10,11 +10,14 @@ import { KIND_ICON } from "./note-link-chip";
 // Fenster zum Verknüpfen: Art wählen (Charakter, Wiki, Szene, Ausschnitt, Notiz), suchen, antippen.
 export function NoteLinkPicker({
   noteId,
+  worldId,
   taken,
   onPick,
   onClose,
 }: {
   noteId: string;
+  // Welt der Notiz: Ziele kommen aus dieser Welt (ohne Angabe: aktive Welt)
+  worldId?: string | null;
   // bereits verknüpfte Ziele ("art:id"), werden als erledigt markiert
   taken: Set<string>;
   onPick: (target: LinkTarget) => Promise<string | null>;
@@ -38,7 +41,7 @@ export function NoteLinkPicker({
     let cancelled = false;
     const key = `${kind}|${q}`;
     const t = setTimeout(() => {
-      void searchLinkTargets(q, kind, noteId).then((r) => {
+      void searchLinkTargets(q, kind, noteId, worldId).then((r) => {
         if (!cancelled) setFound({ key, list: r });
       });
     }, q ? 200 : 0);
@@ -46,7 +49,7 @@ export function NoteLinkPicker({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [q, kind, noteId]);
+  }, [q, kind, noteId, worldId]);
 
   // Solange die Antwort noch zu einer älteren Eingabe gehört, gilt die Liste als „lädt“
   const results = found && found.key === `${kind}|${q}` ? found.list : null;

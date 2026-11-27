@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveWorld } from "@/lib/worlds";
+import { getActiveWorld, getUserWorlds } from "@/lib/worlds";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { escapePostgrestValue } from "@/lib/postgrest";
 import { LINK_COLUMN, MAX_FOLDER_DEPTH, canMoveFolder, folderPath, normalizeTag, inlineTags, inlineTargets, isLinkKind, noteTitle, normalizeTags, setTaskInHtml, type LinkKind, type LinkTarget, type NoteFolder, type NoteLinkView } from "@/lib/notes";
@@ -29,15 +29,24 @@ async function authed() {
 
 const textToHtml = (t: string) => `<p>${t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</p>`;
 
+// Welt für Neues: die im Notizbuch gewählte (nur eine eigene Welt), sonst die aktive der App
+async function worldForNew(userId: string, requested?: string | null): Promise<string | null> {
+  if (requested) {
+    const mine = await getUserWorlds(userId);
+    if (mine.some((w) => w.id === requested)) return requested;
+  }
+  return (await getActiveWorld(userId))?.id ?? null;
+}
+
 // Neue Notiz, optional gleich mit einer Verknüpfung (von Charakter, Wiki-Seite, Szene … aus) und Anfangstext
-export async function createNote(input: { title?: string; text?: string; bodyHtml?: string; folderId?: string | null; link?: { kind: LinkKind; id: string } } = {}): Promise<Result<{ id: string }>> {
+export async function createNote(input: { title?: string; text?: string; bodyHtml?: string; folderId?: string | null; worldId?: string | null; link?: { kind: LinkKind; id: string } } = {}): Promise<Result<{ id: string }>> {
   const { supabase, user } = await authed();
   if (!user) return { error: "Nicht angemeldet." };
-  const world = await getActiveWorld(user.id);
+  const worldId = await worldForNew(user.id, input.worldId);
   const body = input.bodyHtml !== undefined ? sanitizePostHtml(input.bodyHtml) : (input.text?.trim() ? sanitizePostHtml(textToHtml(input.text.trim())) : "");
   const { data, error } = await supabase
     .from("notes")
-    .insert({ user_id: user.id, world_id: world?.id ?? null, folder_id: input.folderId ?? null, title: (input.title ?? "").trim().slice(0, 200), body })
+    .insert({ user_id: user.id, world_id: worldId, folder_id: input.folderId ?? null, title: (input.title ?? "").trim().slice(0, 200), body })
     .select("id")
     .single<{ id: string }>();
   if (error || !data) return { error: error?.message ?? "Konnte nicht angelegt werden." };
@@ -173,11 +182,13 @@ export async function removeNoteLink(linkId: string, noteId: string): Promise<st
 }
 
 // Suche für die Verknüpfungs-Auswahl: alles, was die Person sehen darf, bevorzugt in der aktiven Welt
-export async function searchLinkTargets(q: string, kind: LinkKind, excludeNoteId?: string): Promise<LinkTarget[]> {
+export async function searchLinkTargets(q: string, kind: LinkKind, excludeNoteId?: string, worldId?: string | null): Promise<LinkTarget[]> {
   const { supabase, user } = await authed();
   if (!user) return [];
   const term = escapePostgrestValue(q.trim().slice(0, 80));
-  const world = await getActiveWorld(user.id);
+  // Welt der Notiz (falls angegeben und eigene Welt), sonst die aktive
+  const requested = worldId ? (await getUserWorlds(user.id)).find((w) => w.id === worldId) : null;
+  const world = requested ?? (await getActiveWorld(user.id));
   const LIMIT = 12;
   // Streng nach Welt getrennt: nur Ziele der aktiven Welt (Notizen: dieser Welt oder ohne Welt), archivierte Szenen nicht
   if (!world && kind !== "note") return [];
@@ -385,7 +396,7 @@ export async function setNoteIsTemplate(noteId: string, isTemplate: boolean): Pr
 }
 
 // Neue Notiz aus einer eigenen oder mitgelieferten Vorlage, optional im Ordner oder mit Verknüpfung
-export async function createNoteFromTemplate(input: { templateId?: string; builtinId?: string; folderId?: string | null; link?: { kind: LinkKind; id: string } }): Promise<Result<{ id: string }>> {
+export async function createNoteFromTemplate(input: { templateId?: string; builtinId?: string; folderId?: string | null; worldId?: string | null; link?: { kind: LinkKind; id: string } }): Promise<Result<{ id: string }>> {
   const { supabase, user } = await authed();
   if (!user) return { error: "Nicht angemeldet." };
   let title = "";
@@ -402,7 +413,7 @@ export async function createNoteFromTemplate(input: { templateId?: string; built
     body = data.body;
     tags = data.tags ?? [];
   } else return { error: "Keine Vorlage gewählt." };
-  const r = await createNote({ title, bodyHtml: uncheckTasks(body), folderId: input.folderId ?? null, link: input.link });
+  const r = await createNote({ title, bodyHtml: uncheckTasks(body), folderId: input.folderId ?? null, worldId: input.worldId, link: input.link });
   if (r.error || !r.id) return r;
   if (tags.length > 0) await supabase.from("notes").update({ tags: normalizeTags(tags) }).eq("id", r.id).eq("user_id", user.id);
   return r;
@@ -546,10 +557,10 @@ const IMPORT_MAX_FILES = 100;
 const IMPORT_MAX_CHARS = 200_000;
 
 // Markdown-Dateien als Notizen anlegen: Titel aus der ersten „# “-Überschrift (sonst Dateiname), #Tags aus dem Text (wie bei Bear-Exporten)
-export async function importMarkdownNotes(files: { name: string; text: string }[], folderId: string | null = null): Promise<{ error: string } | { imported: number; skipped: number }> {
+export async function importMarkdownNotes(files: { name: string; text: string }[], folderId: string | null = null, worldId: string | null = null): Promise<{ error: string } | { imported: number; skipped: number }> {
   const { supabase, user } = await authed();
   if (!user) return { error: "Nicht angemeldet." };
-  const world = await getActiveWorld(user.id);
+  const importWorldId = await worldForNew(user.id, worldId);
   const rows: Record<string, unknown>[] = [];
   let skipped = 0;
   for (const f of files.slice(0, IMPORT_MAX_FILES)) {
@@ -567,7 +578,7 @@ export async function importMarkdownNotes(files: { name: string; text: string }[
     }
     rows.push({
       user_id: user.id,
-      world_id: world?.id ?? null,
+      world_id: importWorldId,
       folder_id: folderId,
       title,
       body: sanitizePostHtml(markdownToHtml(md)),

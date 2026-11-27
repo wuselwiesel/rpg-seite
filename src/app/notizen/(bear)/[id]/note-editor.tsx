@@ -734,7 +734,7 @@ export function NoteEditor({ id, initialTitle, initialBody, initialPinned, initi
         </div>
       )}
 
-      {picker && <NoteLinkPicker noteId={id} taken={taken} onPick={pick} onClose={() => setPicker(false)} />}
+      {picker && <NoteLinkPicker noteId={id} worldId={worldId} taken={taken} onPick={pick} onClose={() => setPicker(false)} />}
     </div>
   );
 }

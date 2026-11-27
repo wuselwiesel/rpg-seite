@@ -14,6 +14,7 @@ import { isFolderScope as isFolderScopeOf, useNotesStore, type SortKey } from ".
 import { flattenFolders, folderPath, noteSnippet, noteTitle, type NoteView } from "@/lib/notes";
 import { alertDialog, confirmDialog } from "@/components/confirm-dialog";
 import { EmojiText } from "@/components/custom-emoji-provider";
+import { SearchSelect } from "@/components/search-select";
 
 const dayFormat = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
 
@@ -23,7 +24,7 @@ const SCOPE_LABEL: Record<string, string> = { all: "Alle Notizen", pinned: "Ange
 export function NotesList() {
   const s = useNotesStore();
   const { activeId, openNote, reload } = useNotebookNav();
-  const { notes, folders, scope, tag, q, setQ, sort, setSort, shown, trashed, exportQuery, error, setError, selecting, setSelecting, selected, setSelected } = s;
+  const { notes, folders, worlds, world, setWorld, scope, tag, q, setQ, sort, setSort, shown, trashed, exportQuery, error, setError, selecting, setSelecting, selected, setSelected } = s;
   const [pending, start] = useTransition();
   const [bulkTag, setBulkTag] = useState("");
   const lastClicked = useRef<string | null>(null);
@@ -36,10 +37,13 @@ export function NotesList() {
   const current = isFolderScopeOf(scope) ? folders.find((f) => f.id === scope) : undefined;
   const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name;
 
+  // Neues landet in der gewählten Welt (bei „Alle Welten“ in der aktiven der App)
+  const newWorldId = world === "all" ? null : world;
+
   function add() {
     setError(null);
     start(async () => {
-      const r = await createNote({ folderId: current?.id ?? null });
+      const r = await createNote({ folderId: current?.id ?? null, worldId: newWorldId });
       if (r.error || !r.id) setError(r.error ?? "Konnte nicht angelegt werden.");
       else {
         openNote(r.id);
@@ -56,7 +60,7 @@ export function NotesList() {
     let skipped = 0;
     for (let i = 0; i < files.length; i += 25) {
       const chunk = await Promise.all(files.slice(i, i + 25).map(async (f) => ({ name: f.name, text: f.size > 400_000 ? "" : await f.text() })));
-      const r = await importMarkdownNotes(chunk, current?.id ?? null);
+      const r = await importMarkdownNotes(chunk, current?.id ?? null, newWorldId);
       if ("error" in r) return setError(r.error);
       imported += r.imported;
       skipped += r.skipped;
@@ -110,6 +114,19 @@ export function NotesList() {
           Neue Notiz
         </button>
       </div>
+      {worlds.length > 1 && (
+        <div className="mb-3">
+          <SearchSelect
+            options={worlds.map((w) => ({ value: w.id, label: w.name }))}
+            value={world === "all" ? "" : world}
+            onChange={(v) => setWorld(v || "all")}
+            emptyOption="Alle Welten"
+            ariaLabel="Welt der Notizen"
+            placeholder="Welt suchen …"
+            className="h-8 rounded-full border border-line bg-surface px-3 text-sm font-medium text-fg-soft outline-none transition hover:text-fg focus:border-accent"
+          />
+        </div>
+      )}
       {error && (
         <p role="alert" className="mb-3 text-sm text-red-600">
           {error}
@@ -158,7 +175,7 @@ export function NotesList() {
         <button type="button" onClick={() => window.dispatchEvent(new Event(SHORTCUTS_EVENT))} title="Tastenkürzel" aria-label="Tastenkürzel" className={`${toolBtn} hidden text-fg-soft hover:bg-surface-2 hover:text-fg lg:flex`}>
           <Keyboard className="h-4 w-4" strokeWidth={2} />
         </button>
-        <TemplateMenu folderId={current?.id ?? null} compact />
+        <TemplateMenu folderId={current?.id ?? null} worldId={newWorldId} compact />
       </RegisterBar>
 
 

@@ -8,7 +8,7 @@ import { useNotebook } from "@/components/notebook-host";
 import type { LinkKind } from "@/lib/notes";
 
 // „Aus Vorlage“: eigene und mitgelieferte Vorlagen; legt eine neue Notiz an und öffnet sie
-export function TemplateMenu({ folderId = null, link, className = "", onCreated, compact = false }: { folderId?: string | null; link?: { kind: LinkKind; id: string }; className?: string; onCreated?: () => void; compact?: boolean }) {
+export function TemplateMenu({ folderId = null, worldId, link, className = "", onCreated, compact = false }: { folderId?: string | null; worldId?: string | null; link?: { kind: LinkKind; id: string }; className?: string; onCreated?: () => void; compact?: boolean }) {
   const notebook = useNotebook();
   const [open, setOpen] = useState(false);
   const [own, setOwn] = useState<{ id: string; title: string }[] | null>(null);
@@ -38,7 +38,7 @@ export function TemplateMenu({ folderId = null, link, className = "", onCreated,
   function create(input: { templateId?: string; builtinId?: string }) {
     setError(null);
     start(async () => {
-      const r = await createNoteFromTemplate({ ...input, folderId, link });
+      const r = await createNoteFromTemplate({ ...input, folderId, worldId, link });
       if (r.error || !r.id) return setError(r.error ?? "Konnte nicht angelegt werden.");
       setOpen(false);
       notebook.open({ noteId: r.id });
