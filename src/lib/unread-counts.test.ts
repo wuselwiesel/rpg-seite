@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeUnreadCounts, type ChatWithMessages } from "./unread-counts";
+import { computeUnreadCounts, computeUnreadPerCharacter, type ChatWithMessages } from "./unread-counts";
 
 const chat = (id: string, participants: string[], messages: [string, string][]): ChatWithMessages => ({
   id,
@@ -47,5 +47,21 @@ describe("computeUnreadCounts", () => {
     const c = chat("s", [lucian, emilie], [["2026-01-02T10:00:00Z", lucian], ["2026-01-02T10:05:00Z", lucian]]);
     expect(computeUnreadCounts([c], [], [lucian, emilie])).toEqual({ s: 2 });
     expect(computeUnreadCounts([c], [], [lucian, emilie], lucian)).toEqual({});
+  });
+});
+
+describe("computeUnreadPerCharacter", () => {
+  it("summiert je eigener Figur ihre ungelesenen Nachrichten und lässt Figuren ohne weg", () => {
+    const chats = [
+      chat("c1", ["lucian", "fremd"], [["2026-01-02T10:00:00Z", "fremd"], ["2026-01-02T11:00:00Z", "fremd"]]),
+      chat("c2", ["dana", "fremd"], [["2026-01-02T10:00:00Z", "fremd"]]),
+      chat("c3", ["dana", "fremd"], [["2026-01-02T09:00:00Z", "fremd"], ["2026-01-02T09:10:00Z", "dana"]]),
+    ];
+    expect(computeUnreadPerCharacter(chats, [], ["lucian", "dana", "emilie"])).toEqual({ lucian: 2, dana: 1 });
+  });
+
+  it("zählt eine gelesene Unterhaltung nicht mit", () => {
+    const chats = [chat("c1", ["lucian", "fremd"], [["2026-01-02T10:00:00Z", "fremd"]])];
+    expect(computeUnreadPerCharacter(chats, [{ chat_id: "c1", last_read_at: "2026-01-02T10:05:00Z" }], ["lucian"])).toEqual({});
   });
 });

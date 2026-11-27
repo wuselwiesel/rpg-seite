@@ -95,6 +95,7 @@ export async function ChatList() {
     <div className="flex flex-col">
       <div className="mb-3 flex items-center justify-between gap-3 px-3">
         <ChatOwnerSwitch
+          userId={user.id}
           characters={ownCharacters.map((c) => ({ id: c.id, name: c.name, username: c.username ?? null, avatar_url: c.avatar_url ?? null }))}
           activeId={activeCharacter.id}
           unread={unreadPerCharacter}

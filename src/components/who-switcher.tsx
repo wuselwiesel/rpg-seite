@@ -10,6 +10,7 @@ import { useSwitchCharacter, WHO_OPEN_EVENT } from "@/lib/use-switch-character";
 import type { OwnCharacterLite } from "@/lib/active-character";
 import { shortName } from "@/lib/nav-model";
 import { CharacterAvatar } from "./character-avatar";
+import { UnreadBadge, useUnread } from "./unread-provider";
 import { PresenceControl } from "./character-presence";
 import { WorldCover } from "./world-cover";
 import type { Character, World } from "@/lib/types";
@@ -34,6 +35,10 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
   const buttonRef = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const { switchTo, profileHref, pending } = useSwitchCharacter(characters, activeWorld.id);
+  // Ungelesene Chat-Nachrichten je eigener Figur: die Marke am Avatar zeigt, dass bei einer anderen Figur etwas wartet
+  const { perCharacter } = useUnread();
+  const othersWaiting = characters.filter((own) => own.id !== activeCharacter?.id).reduce((n, own) => n + (perCharacter[own.id] ?? 0), 0);
+  const waitingMark = <UnreadBadge count={othersWaiting} className="pointer-events-none absolute -right-2 -top-1.5 box-content border-2 border-surface" />;
   const [worldPending, startWorld] = useTransition();
   const busy = pending || worldPending;
 
@@ -144,6 +149,7 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
                   <span className="block truncate text-[15px] font-medium text-fg">{own.name}</span>
                   {q && <span className="block truncate text-xs text-muted">{own.world_name}</span>}
                 </span>
+                <UnreadBadge count={perCharacter[own.id] ?? 0} className="ml-auto" />
               </button>
               {active && c && <PresenceControl characterId={c.id} online={!!c.presence_online} />}
               <Link href={profileHref(own)} onClick={close} className="shrink-0 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-fg transition hover:bg-surface-2">
@@ -206,6 +212,7 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
           <span className="relative shrink-0">
             {c ? <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={40} /> : <WorldCover name={activeWorld.name} coverUrl={activeWorld.cover_image_url} className="h-10 w-10 rounded-lg text-sm" />}
             {c && badge}
+            {waitingMark}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-medium leading-tight text-fg">{c ? c.name : activeWorld.name}</span>
@@ -238,6 +245,7 @@ export function WhoSwitcher({ variant, worlds, activeWorld, canManage, activeCha
         <span className="relative shrink-0">
           {c ? <CharacterAvatar name={c.name} avatarUrl={c.avatar_url} size={34} /> : <WorldCover name={activeWorld.name} coverUrl={activeWorld.cover_image_url} className="h-8 w-8 rounded-lg text-xs" />}
           {c && badge}
+          {waitingMark}
         </span>
         <span className="min-w-0">
           <span className="flex items-center gap-0.5 text-sm font-medium leading-tight text-fg">

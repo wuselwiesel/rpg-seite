@@ -42,3 +42,17 @@ export function computeUnreadCounts(
   }
   return counts;
 }
+
+// Ungelesene Nachrichten je eigener Figur (Summe über alle ihre Chats), jeweils aus deren Sicht
+export function computeUnreadPerCharacter(
+  chats: ChatWithMessages[],
+  reads: { chat_id: string; last_read_at: string }[],
+  myCharacterIds: string[],
+): Record<string, number> {
+  const perCharacter: Record<string, number> = {};
+  for (const id of myCharacterIds) {
+    const sum = Object.values(computeUnreadCounts(chats, reads, myCharacterIds, id)).reduce((a, b) => a + b, 0);
+    if (sum > 0) perCharacter[id] = sum;
+  }
+  return perCharacter;
+}

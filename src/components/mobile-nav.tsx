@@ -38,8 +38,6 @@ export function MobileNav({
   initialNotifications,
   initialUnreadCount,
   worldFilter,
-  myCharacterIds,
-  unreadCounts,
 }: {
   worlds: World[];
   activeWorld: World;
@@ -60,8 +58,6 @@ export function MobileNav({
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
   worldFilter: string | null;
-  myCharacterIds: string[];
-  unreadCounts: Record<string, number>;
 }) {
   const pathname = usePathname();
   const mode = useAppMode();
@@ -109,7 +105,7 @@ export function MobileNav({
           <Fragment key={item.id}>
             {i === 2 && <CreateMenu variant="mobile" characters={characters} activeId={activeCharacter?.id ?? null} />}
             {item.badge === "chats" ? (
-              <MobileChatsTab userId={userId} myCharacterIds={myCharacterIds} initialUnreadCounts={unreadCounts} activeCharacterId={activeCharacter?.id ?? null} />
+              <MobileChatsTab />
             ) : item.icon === "character" ? (
               <MobileCharacterTab href={item.href} label={item.label} avatar={activeCharacter ? { name: activeCharacter.name, url: activeCharacter.avatar_url } : null} />
             ) : (
